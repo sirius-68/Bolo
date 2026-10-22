@@ -78,7 +78,7 @@ export function postJob(f: JobForm): Post {
     mine: 1,
     cat: f.cat,
     title: f.title.trim(),
-    text: f.text.trim() || f.title.trim(),
+    text: f.text.trim(),
     budget: b ? `XAF ${(+b).toLocaleString('en-US')}${f.neg ? ' · negotiable' : ''}${!w ? ' / month' : ''}` : w ? 'Open to offers' : 'Salary negotiable',
     when: f.when === 'Flexible' ? 'Flexible' : `${f.when}, ${f.time}`,
     area: f.area,

@@ -75,9 +75,11 @@ function JobSheet({ id, initialStage }: { id: string; initialStage?: string }) {
       <Txt s={22} w={8} style={{ marginTop: 10, lineHeight: 26 }}>
         {po.title}
       </Txt>
-      <Txt s={14} c="#d9d9de" style={{ marginTop: 6 }}>
-        {po.text}
-      </Txt>
+      {po.text && po.text !== po.title ? (
+        <Txt s={14} c="#d9d9de" style={{ marginTop: 6 }}>
+          {po.text}
+        </Txt>
+      ) : null}
       {(po.photos || []).length ? (
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
           {po.photos!.map((s) => (

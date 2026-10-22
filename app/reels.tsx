@@ -42,7 +42,7 @@ export default function Reels() {
           showsVerticalScrollIndicator={false}
           getItemLayout={(_, idx) => ({ length: height, offset: height * idx, index: idx })}
           onMomentumScrollEnd={(e) => setCur(Math.round(e.nativeEvent.contentOffset.y / height))}
-          renderItem={({ item: [r, n], index }) => <ReelPage r={r} n={n} h={height} w={width} active={index === cur} bottom={ins.bottom} />}
+          renderItem={({ item: [r, n], index }) => <ReelPage r={r} n={n} h={height} w={width} active={index === cur} bottom={ins.bottom} top={ins.top} />}
           windowSize={3}
           initialNumToRender={2}
           maxToRenderPerBatch={2}
@@ -75,7 +75,7 @@ export default function Reels() {
   );
 }
 
-function ReelPage({ r, n, h, w, active, bottom }: { r: Reel; n: number; h: number; w: number; active: boolean; bottom: number }) {
+function ReelPage({ r, n, h, w, active, bottom, top }: { r: Reel; n: number; h: number; w: number; active: boolean; bottom: number; top: number }) {
   const p = P(r.by);
   const f = fname(p.name);
   const liked = db.reelLiked.includes(n);
@@ -122,7 +122,7 @@ function ReelPage({ r, n, h, w, active, bottom }: { r: Reel; n: number; h: numbe
         </Animated.View>
       </Pressable>
       {r.live ? (
-        <View style={[S.row, { position: 'absolute', top: 70 + 0, left: 16, gap: 6, paddingHorizontal: 8, height: 24, borderRadius: 6, backgroundColor: C.err }]}>
+        <View style={[S.row, { position: 'absolute', top: top + 62, left: 16, gap: 6, paddingHorizontal: 8, height: 24, borderRadius: 6, backgroundColor: C.err }]}>
           <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff' }} />
           <Txt s={11} w={8}>
             LIVE · {r.views}

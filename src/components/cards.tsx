@@ -225,9 +225,12 @@ export function ReqPost({ po }: { po: Post }) {
         <Txt s={18} w={8} c="#000" style={{ marginTop: 10, lineHeight: 22 }}>
           {po.title}
         </Txt>
-        <Txt s={14} w={6} c="#000" style={{ marginTop: 6, marginBottom: 12, opacity: 0.85 }} lines={3}>
-          {po.text}
-        </Txt>
+        {po.text && po.text !== po.title ? (
+          <Txt s={14} w={6} c="#000" style={{ marginTop: 6, opacity: 0.85 }} lines={3}>
+            {po.text}
+          </Txt>
+        ) : null}
+        <View style={{ height: 12 }} />
         {(po.photos || []).length ? (
           <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12 }}>
             {po.photos!.map((s) => (
