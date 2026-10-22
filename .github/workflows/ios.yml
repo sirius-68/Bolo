@@ -9,6 +9,9 @@ concurrency:
   group: ios-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build for iOS Simulator
@@ -20,30 +23,50 @@ jobs:
         with:
           node-version: 20
       - name: Install
-        run: npm install --no-audit --no-fund
+        run: |
+          set -o pipefail
+          mkdir -p ci-out
+          npm install --no-audit --no-fund 2>&1 | tee -a ci-out/install.log
       - name: Align Expo SDK versions
-        run: npx expo install --check || npx expo install --fix
+        run: |
+          set -o pipefail
+          mkdir -p ci-out
+          npx expo install --fix 2>&1 | tee -a ci-out/expo.log
       - name: Prebuild native project
-        run: npx expo prebuild --platform ios --no-install
+        run: |
+          set -o pipefail
+          mkdir -p ci-out
+          npx expo prebuild --platform ios --no-install 2>&1 | tee -a ci-out/prebuild.log
       - name: CocoaPods
-        working-directory: ios
-        run: pod install
+        run: |
+          set -o pipefail
+          mkdir -p ci-out
+          cd ios && pod install 2>&1 | tee -a ci-out/pods.log
       - name: Build (simulator, unsigned)
         run: |
           set -o pipefail
-          xcodebuild -workspace ios/bolo.xcworkspace -scheme bolo -configuration Release \
-            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath build CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcode.log | grep -E "error:|warning: unable|BUILD (SUCCEEDED|FAILED)" || true
-          test -d build/Build/Products/Release-iphonesimulator/bolo.app
+          mkdir -p ci-out
+          xcodebuild -workspace ios/bolo.xcworkspace -scheme bolo -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build CODE_SIGNING_ALLOWED=NO -quiet 2>&1 | tee -a ci-out/xcode.log
       - name: Zip app
         run: cd build/Build/Products/Release-iphonesimulator && zip -qry $GITHUB_WORKSPACE/bolo-ios-simulator.zip bolo.app
       - uses: actions/upload-artifact@v4
         with:
           name: bolo-ios-simulator
           path: bolo-ios-simulator.zip
-      - name: Upload logs
-        if: failure()
-        uses: actions/upload-artifact@v4
+      - name: Publish simulator build
+        uses: softprops/action-gh-release@v2
         with:
-          name: ios-logs
-          path: xcode.log
+          tag_name: latest-build
+          name: Latest build (CI)
+          prerelease: true
+          make_latest: false
+          files: bolo-ios-simulator.zip
+      - name: Publish logs
+        if: always()
+        run: |
+          mkdir -p /tmp/pub && cp -r ci-out/. /tmp/pub/ 2>/dev/null || true
+          cp package.json /tmp/pub/ 2>/dev/null || true
+          cp package-lock.json /tmp/pub/ 2>/dev/null || true
+          cd /tmp/pub && git init -q && git checkout -q -b logs && git add -A
+          git -c user.name=ci -c user.email=ci@bolo.app commit -qm "logs ${{ github.run_id }}" || true
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" logs:refs/heads/ci-logs/ios-${{ github.run_id }}

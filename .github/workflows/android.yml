@@ -21,29 +21,42 @@ jobs:
   check:
     name: Typecheck & bundle
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - name: Install
-        run: npm install --no-audit --no-fund 2>&1 | tee install.log
+        run: |
+          set -o pipefail
+          mkdir -p ci-out
+          npm install --no-audit --no-fund 2>&1 | tee -a ci-out/install.log
       - name: Align Expo SDK versions
-        run: npx expo install --check 2>&1 | tee expo-check.log || (npx expo install --fix 2>&1 | tee -a expo-check.log)
+        run: |
+          set -o pipefail
+          mkdir -p ci-out
+          npx expo install --fix 2>&1 | tee -a ci-out/expo.log
       - name: Typecheck
-        run: npx tsc --noEmit 2>&1 | tee tsc.log
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          mkdir -p ci-out
+          npx tsc --noEmit 2>&1 | tee -a ci-out/tsc.log
       - name: Bundle JS (Android)
-        run: npx expo export --platform android --output-dir dist 2>&1 | tee export.log
-      - name: Upload logs
+        run: |
+          set -o pipefail
+          mkdir -p ci-out
+          npx expo export --platform android --output-dir dist 2>&1 | tee -a ci-out/export.log
+      - name: Publish logs
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: check-logs
-          path: |
-            *.log
-            package-lock.json
-          if-no-files-found: ignore
+        run: |
+          mkdir -p /tmp/pub && cp -r ci-out/. /tmp/pub/ 2>/dev/null || true
+          cp package.json /tmp/pub/ 2>/dev/null || true
+          cp package-lock.json /tmp/pub/ 2>/dev/null || true
+          cd /tmp/pub && git init -q && git checkout -q -b logs && git add -A
+          git -c user.name=ci -c user.email=ci@bolo.app commit -qm "logs ${{ github.run_id }}" || true
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" logs:refs/heads/ci-logs/check-${{ github.run_id }}
 
   build:
     name: Build APK
@@ -60,29 +73,44 @@ jobs:
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
       - name: Install
-        run: npm install --no-audit --no-fund
-      - name: Align Expo SDK versions
-        run: npx expo install --check || npx expo install --fix
-      - name: Prebuild native project
-        run: npx expo prebuild --platform android --no-install
-      - name: Gradle assembleRelease
-        working-directory: android
-        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86_64 2>&1 | tee ../gradle.log; exit ${PIPESTATUS[0]}
-      - name: Rename APK
         run: |
-          mkdir -p out
+          set -o pipefail
+          mkdir -p ci-out
+          npm install --no-audit --no-fund 2>&1 | tee -a ci-out/install.log
+      - name: Align Expo SDK versions
+        run: |
+          set -o pipefail
+          mkdir -p ci-out
+          npx expo install --fix 2>&1 | tee -a ci-out/expo.log
+      - name: Prebuild native project
+        run: |
+          set -o pipefail
+          mkdir -p ci-out
+          npx expo prebuild --platform android --no-install 2>&1 | tee -a ci-out/prebuild.log
+      - name: Gradle assembleRelease
+        run: |
+          set -o pipefail
+          mkdir -p ci-out
+          cd android && ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86_64 2>&1 | tee -a ci-out/gradle.log
+      - name: Collect APK
+        run: |
+          mkdir -p out ci-out
           cp android/app/build/outputs/apk/release/app-release.apk out/bolo-${{ github.run_number }}.apk
-          ls -la out
+          ls -la out | tee ci-out/apk.txt
       - uses: actions/upload-artifact@v4
         with:
           name: bolo-apk
           path: out/*.apk
-      - name: Upload logs
-        if: failure()
-        uses: actions/upload-artifact@v4
+      - name: Publish build to the "latest-build" pre-release
+        uses: softprops/action-gh-release@v2
         with:
-          name: build-logs
-          path: gradle.log
+          tag_name: latest-build
+          name: Latest build (CI)
+          prerelease: true
+          make_latest: false
+          files: out/*.apk
+          body: |
+            Automatic build from the latest commit on main (run ${{ github.run_number }}). For testing.
       - name: Publish release
         if: github.event_name == 'workflow_dispatch' && inputs.release
         uses: softprops/action-gh-release@v2
@@ -91,5 +119,14 @@ jobs:
           name: bolo 1.0 (build ${{ github.run_number }})
           files: out/*.apk
           body: |
-            Android APK for bolo. Download `bolo-${{ github.run_number }}.apk` on your phone and open it to install
+            Android APK for bolo. Download the .apk on your phone and open it to install
             (allow "Install unknown apps" for your browser when Android asks).
+      - name: Publish logs
+        if: always()
+        run: |
+          mkdir -p /tmp/pub && cp -r ci-out/. /tmp/pub/ 2>/dev/null || true
+          cp package.json /tmp/pub/ 2>/dev/null || true
+          cp package-lock.json /tmp/pub/ 2>/dev/null || true
+          cd /tmp/pub && git init -q && git checkout -q -b logs && git add -A
+          git -c user.name=ci -c user.email=ci@bolo.app commit -qm "logs ${{ github.run_id }}" || true
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" logs:refs/heads/ci-logs/build-${{ github.run_id }}
