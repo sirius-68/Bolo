@@ -15,7 +15,7 @@ import { pickDocument } from '../logic/media';
 import { MyCV, PersonCV } from '../components/cv';
 import { openChat } from './chat';
 import { openContract } from './business';
-import { openPro } from './account';
+import { openPro, switchRole } from './account';
 
 /* ====================================================================== */
 /* Job / vacancy sheet                                                    */
@@ -101,7 +101,14 @@ function JobSheet({ id, initialStage }: { id: string; initialStage?: string }) {
         <MyJobOffers po={po} />
       ) : !isW() ? (
         <View style={{ marginTop: 16, gap: 10 }}>
-          <Note icon="storefront">{po.biz ? 'You’re viewing this as a business. Switch to your Regular profile to apply for roles.' : 'Personal jobs are for Regular profiles. Switch to your Regular profile to send an offer.'}</Note>
+          <Note icon="storefront">
+            {db.user.bizOnly
+              ? 'Business accounts recruit — they can’t apply for jobs. To apply or send offers, use a separate Regular account.'
+              : po.biz
+                ? 'You’re viewing this as a business. Switch to your Regular profile to apply for roles.'
+                : 'Personal jobs are for Regular profiles. Switch to your Regular profile to send an offer.'}
+          </Note>
+          {!db.user.bizOnly ? <Btn variant="yellow" icon="user" title="Switch to my Regular profile" onPress={() => afterSheet(() => switchRole('worker'))} /> : null}
           <Btn variant="dark" icon="chat" title={`Message ${fname(c.name)}`} onPress={() => afterSheet(() => openChat(po.client!))} />
         </View>
       ) : po.biz ? (
