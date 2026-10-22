@@ -17,6 +17,9 @@ import { db, ui } from '../src/data/db';
 import { resumeSims } from '../src/logic/work';
 import { on } from '../src/logic/events';
 import { showDoneAlert } from '../src/sheets/work';
+import { startAdTicker } from '../src/logic/career';
+
+export { ErrorBoundary } from 'expo-router';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 SystemUI.setBackgroundColorAsync('#000000').catch(() => {});
@@ -31,6 +34,7 @@ export default function Root() {
       if (db.loggedIn) {
         ui.appStarted = true;
         resumeSims();
+        if (db.BIZ.list.some((b) => (b.ads || []).some((a) => a.status === 'active'))) startAdTicker();
       }
       setReady(true);
     });

@@ -3,6 +3,9 @@ import Svg, { Path } from 'react-native-svg';
 import { GEM, ICONS, IconName } from './icons';
 import { C } from './theme';
 
+/** Friendly names used in screens → names in the bundled set. */
+const ALIAS: Record<string, string> = { camera: 'cam', tools: 'wrench', copy: 'file', call: 'phone', career: 'job', me: 'user', reels: 'play', up: 'down' };
+
 type Props = { name: IconName | string; size?: number; color?: string; style?: any };
 
 /** Phosphor icon from the bundled set. */
@@ -16,9 +19,10 @@ export const Icon = memo(function Icon({ name, size = 24, color = C.text, style 
       </Svg>
     );
   }
-  const def = (ICONS as Record<string, { vb: number; d: string[] }>)[name] || ICONS.job;
+  const n = ALIAS[name] || name;
+  const def = (ICONS as Record<string, { vb: number; d: string[] }>)[n] || ICONS.job;
   return (
-    <Svg width={size} height={size} viewBox={`0 0 ${def.vb} ${def.vb}`} style={style}>
+    <Svg width={size} height={size} viewBox={`0 0 ${def.vb} ${def.vb}`} style={name === 'up' ? [{ transform: [{ rotate: '180deg' }] }, style] : style}>
       {def.d.map((d, i) => (
         <Path key={i} d={d} fill={color} />
       ))}

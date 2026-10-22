@@ -1105,3 +1105,21 @@ export const st = StyleSheet.create({
     borderColor: '#000',
   },
 });
+
+/** Text with <b>bold</b> segments (used for activity logs and notifications). */
+export function Rich({ text, s = 13, c = C.text, lines, style }: { text: string; s?: number; c?: string; lines?: number; style?: any }) {
+  const parts = String(text || '').split(/(<b>.*?<\/b>)/g).filter(Boolean);
+  return (
+    <Txt s={s} c={c} lines={lines} style={style}>
+      {parts.map((p, i) =>
+        p.startsWith('<b>') ? (
+          <Txt key={i} s={s} w={8} c={C.text}>
+            {p.slice(3, -4)}
+          </Txt>
+        ) : (
+          p.replace(/<[^>]+>/g, '')
+        ),
+      )}
+    </Txt>
+  );
+}
