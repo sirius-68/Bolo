@@ -1,0 +1,95 @@
+appId: cm.bolo.app
+name: Regular account tour
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 20000
+- takeScreenshot: r00-splash
+- tapOn: "Continue"
+- extendedWaitUntil:
+    visible:
+      id: "skip"
+    timeout: 10000
+- takeScreenshot: r01-onboard
+- tapOn:
+    id: "skip"
+- takeScreenshot: r02-welcome
+- tapOn:
+    id: "have-account"
+- tapOn:
+    id: "li-contact"
+- inputText: "677123456"
+- tapOn:
+    id: "li-pwd"
+- inputText: "password123"
+- hideKeyboard
+- takeScreenshot: r03-login
+- tapOn:
+    id: "li-submit"
+- extendedWaitUntil:
+    visible:
+      id: "tab-feed"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: r04-feed
+- scroll
+- takeScreenshot: r05-feed-scrolled
+- tapOn: "Jobs"
+- waitForAnimationToEnd
+- takeScreenshot: r06-feed-jobs
+- tapOn: "People"
+- takeScreenshot: r07-feed-people
+- tapOn: "Mentors"
+- takeScreenshot: r08-feed-mentors
+- tapOn:
+    id: "tab-home"
+- waitForAnimationToEnd
+- takeScreenshot: r09-map
+- tapOn: "People to hire"
+- takeScreenshot: r10-map-people
+- tapOn:
+    id: "tab-career"
+- waitForAnimationToEnd
+- takeScreenshot: r11-career
+- scroll
+- takeScreenshot: r12-career-2
+- tapOn:
+    id: "tab-me"
+- waitForAnimationToEnd
+- takeScreenshot: r13-me
+- scroll
+- takeScreenshot: r14-me-2
+- tapOn: "Create"
+- waitForAnimationToEnd
+- takeScreenshot: r15-create-sheet
+- tapOn: "Post a job"
+- waitForAnimationToEnd
+- tapOn:
+    id: "pj-title"
+- inputText: "Kitchen sink is leaking"
+- hideKeyboard
+- takeScreenshot: r16-post-job
+- scrollUntilVisible:
+    element:
+      id: "pj-submit"
+- tapOn:
+    id: "pj-submit"
+- waitForAnimationToEnd
+- takeScreenshot: r17-job-posted
+- back
+- tapOn:
+    id: "tab-feed"
+- tapOn: "Messages"
+- waitForAnimationToEnd
+- takeScreenshot: r18-inbox
+- back
+- tapOn: "Notifications"
+- waitForAnimationToEnd
+- takeScreenshot: r19-notifs
+- back
+- tapOn: "Reels"
+- waitForAnimationToEnd
+- takeScreenshot: r20-reels
+- back

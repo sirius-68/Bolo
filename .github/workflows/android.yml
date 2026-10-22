@@ -42,7 +42,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p ci-out
-          npx tsc --noEmit 2>&1 | tee -a ci-out/tsc.log
+          npx tsc --noEmit > ci-out/tsc.log 2>&1; code=$?; echo "tsc exit=$code" >> ci-out/tsc.log; cat ci-out/tsc.log; exit $code
       - name: Bundle JS (Android)
         run: |
           set -o pipefail
@@ -130,3 +130,45 @@ jobs:
           cd /tmp/pub && git init -q && git checkout -q -b logs && git add -A
           git -c user.name=ci -c user.email=ci@bolo.app commit -qm "logs ${{ github.run_id }}" || true
           git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" logs:refs/heads/ci-logs/build-${{ github.run_id }}
+
+  qa:
+    name: Emulator UI tour
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: bolo-apk
+          path: out
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install Maestro
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Run flows on an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash .maestro/run.sh
+      - name: Publish logs
+        if: always()
+        run: |
+          mkdir -p /tmp/pub && cp -r qa-out/. /tmp/pub/ 2>/dev/null || true
+          cd /tmp/pub && git init -q && git checkout -q -b logs && git add -A
+          git -c user.name=ci -c user.email=ci@bolo.app commit -qm "qa ${{ github.run_id }}" || true
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" logs:refs/heads/ci-logs/qa-${{ github.run_id }}

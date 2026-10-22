@@ -1,0 +1,99 @@
+appId: cm.bolo.app
+name: Business account tour
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 20000
+- tapOn: "Continue"
+- extendedWaitUntil:
+    visible:
+      id: "skip"
+    timeout: 10000
+- tapOn:
+    id: "skip"
+- tapOn:
+    id: "create-business"
+- tapOn:
+    id: "bo-owner"
+- inputText: "Peter Ekole"
+- tapOn:
+    id: "bo-email"
+- inputText: "jobs@ekole.cm"
+- tapOn:
+    id: "bo-pass"
+- inputText: "password123"
+- hideKeyboard
+- takeScreenshot: b00-bizob-owner
+- tapOn:
+    id: "bo-continue"
+- tapOn:
+    id: "bo-name"
+- inputText: "Ekole Services"
+- hideKeyboard
+- tapOn: "Choose a sector"
+- tapOn: "IT & Software"
+- takeScreenshot: b01-bizob-company
+- tapOn:
+    id: "bo-continue"
+- takeScreenshot: b02-bizob-location
+- tapOn: "Continue"
+- takeScreenshot: b03-bizob-hiring
+- tapOn: "Continue"
+- takeScreenshot: b04-bizob-verify
+- tapOn:
+    id: "bo-create"
+- waitForAnimationToEnd
+- takeScreenshot: b05-bizob-done
+- tapOn:
+    id: "bo-enter"
+- extendedWaitUntil:
+    visible:
+      id: "tab-home"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: b06-dashboard
+- scroll
+- takeScreenshot: b07-dashboard-2
+- scroll
+- takeScreenshot: b08-dashboard-3
+- tapOn:
+    id: "tab-feed"
+- waitForAnimationToEnd
+- takeScreenshot: b09-feed
+- tapOn: "Talent"
+- takeScreenshot: b10-talent
+- tapOn:
+    id: "tab-career"
+- waitForAnimationToEnd
+- takeScreenshot: b11-career
+- tapOn:
+    id: "tab-me"
+- waitForAnimationToEnd
+- takeScreenshot: b12-me
+- tapOn: "Create"
+- waitForAnimationToEnd
+- takeScreenshot: b13-create
+- tapOn: "Post a vacancy"
+- waitForAnimationToEnd
+- tapOn:
+    id: "pj-title"
+- inputText: "Sales representative"
+- hideKeyboard
+- takeScreenshot: b14-post-vacancy
+- scrollUntilVisible:
+    element:
+      id: "pj-submit"
+- tapOn:
+    id: "pj-submit"
+- waitForAnimationToEnd
+- takeScreenshot: b15-vacancy-sheet
+- back
+- waitForAnimationToEnd
+- takeScreenshot: b16-dashboard-with-vacancy
+- tapOn:
+    id: "tab-me"
+- tapOn: "Settings"
+- waitForAnimationToEnd
+- takeScreenshot: b17-settings
