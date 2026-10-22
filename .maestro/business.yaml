@@ -14,9 +14,11 @@ name: Business account tour
 - tapOn:
     id: "bo-owner"
 - inputText: "Peter Ekole"
+- hideKeyboard
 - tapOn:
     id: "bo-email"
 - inputText: "jobs@ekole.cm"
+- hideKeyboard
 - tapOn:
     id: "bo-pass"
 - inputText: "password123"
@@ -41,6 +43,7 @@ name: Business account tour
 - tapOn:
     id: "bo-create"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: b05-bizob-done
 - tapOn:
     id: "bo-enter"
@@ -49,6 +52,7 @@ name: Business account tour
       id: "tab-home"
     timeout: 15000
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: b06-dashboard
 - scroll
 - takeScreenshot: b07-dashboard-2
@@ -57,22 +61,27 @@ name: Business account tour
 - tapOn:
     id: "tab-feed"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: b09-feed
 - tapOn: "Talent"
 - takeScreenshot: b10-talent
 - tapOn:
     id: "tab-career"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: b11-career
 - tapOn:
     id: "tab-me"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: b12-me
 - tapOn: "Create"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: b13-create
 - tapOn: "Post a vacancy"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - tapOn:
     id: "pj-title"
 - inputText: "Sales representative"
@@ -84,12 +93,15 @@ name: Business account tour
 - tapOn:
     id: "pj-submit"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: b15-vacancy-sheet
 - back
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: b16-dashboard-with-vacancy
 - tapOn:
     id: "tab-me"
 - tapOn: "Settings"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: b17-settings

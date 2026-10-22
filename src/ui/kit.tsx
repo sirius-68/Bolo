@@ -12,6 +12,7 @@ import {
   TextStyle,
   View,
   ViewStyle,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
@@ -891,7 +892,7 @@ export function Page({
   const ins = useSafeAreaInsets();
   const inner = { paddingHorizontal: pad ? 20 : 0, paddingBottom: bottom + ins.bottom };
   return (
-    <View style={[{ flex: 1, backgroundColor: bg, paddingTop: ins.top }, style]}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'android' ? 'padding' : undefined} style={[{ flex: 1, backgroundColor: bg, paddingTop: ins.top }, style]}>
       {header ? <View style={{ paddingHorizontal: pad ? 20 : 0 }}>{header}</View> : null}
       {scroll ? (
         <ScrollView
@@ -907,7 +908,7 @@ export function Page({
       ) : (
         <View style={[{ flex: 1 }, inner, contentStyle]}>{children}</View>
       )}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

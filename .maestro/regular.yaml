@@ -16,6 +16,7 @@ name: Regular account tour
 - tapOn:
     id: "li-contact"
 - inputText: "677123456"
+- hideKeyboard
 - tapOn:
     id: "li-pwd"
 - inputText: "password123"
@@ -28,12 +29,15 @@ name: Regular account tour
       id: "tab-feed"
     timeout: 15000
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: r04-feed
 - scroll
 - takeScreenshot: r05-feed-scrolled
 - tapOn: "Jobs"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: r06-feed-jobs
+- runFlow: dismiss.yaml
 - tapOn: "People"
 - takeScreenshot: r07-feed-people
 - tapOn: "Mentors"
@@ -41,26 +45,40 @@ name: Regular account tour
 - tapOn:
     id: "tab-home"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: r09-map
 - tapOn: "People to hire"
 - takeScreenshot: r10-map-people
 - tapOn:
     id: "tab-career"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: r11-career
 - scroll
 - takeScreenshot: r12-career-2
 - tapOn:
     id: "tab-me"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: r13-me
 - scroll
 - takeScreenshot: r14-me-2
 - tapOn: "Create"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: r15-create-sheet
+- tapOn: "Offer a mentorship"
+- waitForAnimationToEnd
+- tapOn: "e.g. Start your career in sales"
+- inputText: "Start in plumbing"
+- takeScreenshot: r15b-sheet-keyboard
+- hideKeyboard
+- back
+- tapOn: "Create"
+- waitForAnimationToEnd
 - tapOn: "Post a job"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - tapOn:
     id: "pj-title"
 - inputText: "Kitchen sink is leaking"
@@ -72,32 +90,39 @@ name: Regular account tour
 - tapOn:
     id: "pj-submit"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: r17-job-posted
 - back
 - tapOn:
     id: "tab-feed"
 - tapOn: "Messages"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: r18-inbox
 - tapOn: "Marie.*"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: r18b-chat
 - tapOn:
     id: "chat-input"
 - inputText: "Hello, are you free tomorrow?"
+- hideKeyboard
 - takeScreenshot: r18c-chat-keyboard
 - tapOn:
     id: "chat-send"
 - hideKeyboard
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: r18d-chat-sent
 - back
 - back
 - tapOn: "Notifications"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: r19-notifs
 - back
 - tapOn: "Reels"
 - waitForAnimationToEnd
+- runFlow: dismiss.yaml
 - takeScreenshot: r20-reels
 - back

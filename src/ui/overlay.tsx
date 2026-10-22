@@ -86,7 +86,7 @@ function SheetHost() {
       <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,.6)', opacity: y.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }}>
         <Pressable style={{ flex: 1 }} onPress={() => sheet.close()} accessibilityLabel="Close" />
       </Animated.View>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }} pointerEvents="box-none">
+      <KeyboardAvoidingView behavior="padding" style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }} pointerEvents="box-none">
         <Animated.View
           style={{
             maxHeight: H * (cur.opts.full ? 0.94 : 0.9),
