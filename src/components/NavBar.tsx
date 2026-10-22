@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -17,13 +17,16 @@ import { Text } from 'react-native';
 const fabY = new Animated.Value(0);
 let lastY = 0;
 let hidden = false;
+let onHidden: ((h: boolean) => void) | null = null;
 export function onScrollFab(e: any) {
   const y = e.nativeEvent.contentOffset.y;
   if (y > lastY + 6 && y > 120 && !hidden) {
     hidden = true;
+    onHidden?.(true);
     Animated.timing(fabY, { toValue: 1, duration: 180, useNativeDriver: true }).start();
   } else if ((y < lastY - 6 || y < 40) && hidden) {
     hidden = false;
+    onHidden?.(false);
     Animated.timing(fabY, { toValue: 0, duration: 180, useNativeDriver: true }).start();
   }
   lastY = y;
@@ -49,15 +52,27 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
   }, []);
   const fab = useRef(fabY).current;
   // Each tab starts with the + button visible (it only hides while scrolling down).
+  const [fabOff, setFabOff] = useState(false);
+  useEffect(() => {
+    onHidden = setFabOff;
+    return () => {
+      onHidden = null;
+    };
+  }, []);
   useEffect(() => {
     hidden = false;
     lastY = 0;
+    setFabOff(false);
     Animated.timing(fabY, { toValue: 0, duration: 140, useNativeDriver: true }).start();
   }, [cur]);
   return (
-    <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 14 + ins.bottom, alignItems: 'center' }}>
+    // Tall, touch-transparent container so the floating + stays inside its parent (Android only delivers touches within parent bounds).
+    <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 14 + ins.bottom + 66 + 14 + 64 }}>
       <View
         style={{
+          position: 'absolute',
+          bottom: 14 + ins.bottom,
+          alignSelf: 'center',
           width: w,
           height: 66,
           borderRadius: 999,
@@ -75,42 +90,6 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
           elevation: 14,
         }}
       >
-        <Animated.View
-          style={{
-            position: 'absolute',
-            right: 2,
-            bottom: 66 + 14,
-            transform: [{ translateY: fab.interpolate({ inputRange: [0, 1], outputRange: [0, 120] }) }, { scale: fab.interpolate({ inputRange: [0, 1], outputRange: [1, 0.6] }) }],
-            opacity: fab.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
-          }}
-        >
-          <Pressable
-            testID="fab-create"
-            accessibilityLabel="Create"
-            onPress={() => {
-              tap();
-              openCreate();
-            }}
-            style={({ pressed }) => ({
-              width: 60,
-              height: 60,
-              borderRadius: 30,
-              backgroundColor: C.yellow,
-              alignItems: 'center',
-              justifyContent: 'center',
-              transform: [{ scale: pressed ? 0.94 : 1 }],
-              shadowColor: '#000',
-              shadowOpacity: 0.5,
-              shadowRadius: 14,
-              shadowOffset: { width: 0, height: 8 },
-              elevation: 10,
-              borderWidth: 4,
-              borderColor: 'rgba(0,0,0,0.35)',
-            })}
-          >
-            <Icon name="plus" size={28} color="#000" />
-          </Pressable>
-        </Animated.View>
         {ROUTES.map(([name, icon, label]) => {
           const on = cur === name;
           const ic = name === 'home' && !isW() ? 'squares' : icon;
@@ -143,6 +122,43 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
           );
         })}
       </View>
+        <Animated.View
+          pointerEvents={fabOff ? 'none' : 'auto'}
+          style={{
+            position: 'absolute',
+            right: (width - w) / 2 + 2,
+            bottom: 14 + ins.bottom + 66 + 14,
+            transform: [{ translateY: fab.interpolate({ inputRange: [0, 1], outputRange: [0, 120] }) }, { scale: fab.interpolate({ inputRange: [0, 1], outputRange: [1, 0.6] }) }],
+            opacity: fab.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+          }}
+        >
+          <Pressable
+            testID="fab-create"
+            accessibilityLabel="Create"
+            onPress={() => {
+              tap();
+              openCreate();
+            }}
+            style={({ pressed }) => ({
+              width: 60,
+              height: 60,
+              borderRadius: 30,
+              backgroundColor: C.yellow,
+              alignItems: 'center',
+              justifyContent: 'center',
+              transform: [{ scale: pressed ? 0.94 : 1 }],
+              shadowColor: '#000',
+              shadowOpacity: 0.5,
+              shadowRadius: 14,
+              shadowOffset: { width: 0, height: 8 },
+              elevation: 10,
+              borderWidth: 4,
+              borderColor: 'rgba(0,0,0,0.35)',
+            })}
+          >
+            <Icon name="plus" size={28} color="#000" />
+          </Pressable>
+        </Animated.View>
     </View>
   );
 }
