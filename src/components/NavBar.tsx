@@ -87,7 +87,6 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
           <Pressable
             testID="fab-create"
             accessibilityLabel="Create"
-            testID="fab"
             onPress={() => {
               tap();
               openCreate();
