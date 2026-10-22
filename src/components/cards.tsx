@@ -5,7 +5,7 @@ import { catIcon } from '../data/catalog';
 import { Avatar, CoTag, Pict, Pill, Rate, StatusPill, Txt, Verified, Meta, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { C, R, S } from '../ui/theme';
-import { P, isW, k, oppBiz, mOwner, has, WORKERS, fname, myPhoto } from '../logic/core';
+import { P, isW, k, oppBiz, mOwner, has, WORKERS, fname, myPhoto, meAs } from '../logic/core';
 import { follow, hireState, isSaved, likePost, saveToggle, toggleSave } from '../logic/work';
 import { openProfile } from '../logic/nav';
 import { openJob, openHire, openComments, sharePost, openMedia } from '../sheets/work';
@@ -162,7 +162,7 @@ export function JobCard({ po, i }: { po: Post; i: number }) {
 /* ------------------------- job post in the feed ------------------------- */
 export function ReqPost({ po }: { po: Post }) {
   const mine = !!po.mine;
-  const c = mine ? P('me') : P(po.client!);
+  const c = mine ? meAs(po.as, po.biz) : P(po.client!);
   const off = db.myOffers[po.id];
   const n = mine ? po.offerList!.length : (po.offers || 0) + (off ? 1 : 0);
   const saved = has(db.savedJobs, po.id);
@@ -183,9 +183,11 @@ export function ReqPost({ po }: { po: Post }) {
         : po.biz
           ? 'Applied ✓'
           : 'Offer sent ✓'
-      : po.biz
-        ? 'Apply now'
-        : 'Send an offer';
+      : !isW()
+        ? 'View job'
+        : po.biz
+          ? 'Apply now'
+          : 'Send an offer';
   return (
     <View style={{ borderRadius: 24, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, overflow: 'hidden' }}>
       <View style={[S.row, { gap: 12, padding: 14, paddingBottom: 10 }]}>
@@ -266,7 +268,7 @@ export function ReqPost({ po }: { po: Post }) {
 export function PostCard({ po }: { po: Post }) {
   if (po.kind === 'request') return <ReqPost po={po} />;
   const self = po.by === 'me';
-  const p = self ? P('me') : P(po.by!);
+  const p = self ? meAs(po.as, po.biz) : P(po.by!);
   if (!p) return null;
   const liked = has(db.liked, po.id);
   const saved = has(db.savedPosts, po.id);

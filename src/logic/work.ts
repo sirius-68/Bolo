@@ -49,7 +49,8 @@ export function sendHireRequest(id: string, job: string, price: string, when: st
 }
 export const hireState = (id: string): 'none' | 'requested' | 'booked' => {
   if (db.BOOKINGS.some((b) => b.worker === id && b.client === 'me' && b.state !== 'confirmed')) return 'booked';
-  return has(db.hired, id) ? 'requested' : 'none';
+  const th = THREADS()[id];
+  return th?.msgs.some((m) => m.k === 'offer' && m.f === 'me' && !m.state && m.dur === 'Hire request') ? 'requested' : 'none';
 };
 
 /* =========================== posting jobs =========================== */

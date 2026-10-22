@@ -93,6 +93,15 @@ export function me(): Person {
   base.pin = base.photo;
   return base;
 }
+/** Author card for something I posted, as the profile I posted it from. */
+export function meAs(as?: string, bizId?: string | number | null): Person {
+  if (as === 'business') {
+    const b = db.BIZ.list.find((x) => x.id === bizId);
+    if (b) return { ...me(), name: bizName(b), role: 'Business', photo: bizLogo(b), pin: bizLogo(b), client: 1, biz: 1, area: b.area || 'Buea', verified: b.verified === 'verified' ? 1 : 0 };
+  }
+  const u = db.user;
+  return { ...me(), name: u.name || 'You', role: mySkill(), photo: myPhoto(), pin: myPhoto(), client: undefined, biz: undefined, area: myCity(), verified: 1 };
+}
 /** Other people you can hire (not clients, businesses or groups). */
 export const WORKERS = () => Object.keys(db.P).filter((id) => !db.P[id].client && !db.P[id].group && id !== 'me');
 export const isGroup = (id: string) => !!db.P[id]?.group;
