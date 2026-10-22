@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { db, Course } from '../data/db';
+import { db, ui, Course } from '../data/db';
+import { router } from 'expo-router';
 import { ARTICLES, CATS, EXPERTS, OPP_KINDS, PATHS, RULES, SALARIES, catIcon } from '../data/catalog';
-import { AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Meta, Note, Pill, ProTag, Rate, SelectBox, StatusPill, Stepper, Txt, Verified, tap } from '../ui/kit';
+import { OptRow, AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Meta, Note, Pill, ProTag, Rate, SelectBox, StatusPill, Stepper, Txt, Verified, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { afterSheet, pick, sheet, SheetTitle, toast } from '../ui/overlay';
 import { C, R, S } from '../ui/theme';
@@ -285,9 +286,7 @@ function OppFormSheet({ f }: { f: OF }) {
         onPress={() => {
           const kind = publishOpp({ ...f, start: toISO(f.start), deadline: toISO(f.deadline) });
           sheet.close();
-          import('../logic/core').then(() => {});
           if (kind) {
-            const { ui } = require('../data/db');
             ui.meTab = 'Programs';
             resetTo('/me');
           }
@@ -697,7 +696,6 @@ function CourseOwner({ c }: { c: Course }) {
 function openStudentMenu(cid: string, pid: string) {
   const c = db.COURSES.find((x) => x.id === cid)!;
   const pr = (c.prog || {})[pid] || 0;
-  const { OptRow } = require('../ui/kit');
   sheet.show(() => (
     <View>
       <View style={[S.row, { gap: 12, marginBottom: 8 }]}>
@@ -751,7 +749,6 @@ export function openCV() {
   sheet.show(() => <CVSheet />, { full: true });
 }
 function CVSheet() {
-  const { ui } = require('../data/db');
   const [t, setT] = useState<string>(ui.cvT);
   const [busy, setBusy] = useState(false);
   return (
@@ -785,7 +782,6 @@ function CVSheet() {
           onPress={() =>
             afterSheet(() => {
               db.user.cvDone = false;
-              const { router } = require('expo-router');
               router.push('/cvflow');
             })
           }
@@ -823,8 +819,7 @@ export function openSalaries() {
             key={p}
             onPress={() =>
               afterSheet(() => {
-                const { ui } = require('../data/db');
-                ui.cat = c;
+                    ui.cat = c;
                 ui.feedView = 'jobs';
                 resetTo('/feed');
               })

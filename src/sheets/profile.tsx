@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { db, Service, uid } from '../data/db';
 import { CATS, CT, DOCS, EDU, FOLLOWERS, JOB_HIST, NB, QUIZ, UNITS, WHERE, catIcon } from '../data/catalog';
-import { AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Note, SelectBox, Seg, StatusPill, SwitchRow, Txt, Kpis, CoTag } from '../ui/kit';
+import { OptRow, AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Note, SelectBox, Seg, StatusPill, SwitchRow, Txt, Kpis, CoTag } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { afterSheet, pick, sheet, SheetTitle, toast, confirm } from '../ui/overlay';
 import { C, R, S } from '../ui/theme';
@@ -98,7 +98,6 @@ function delService(id: string) {
   });
 }
 export function openSvcMenu(id: string) {
-  const { OptRow } = require('../ui/kit');
   sheet.show(() => {
     const s = services().find((x) => x.id === id);
     if (!s) return <Empty title="Service not found" />;
