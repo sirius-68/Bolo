@@ -4,6 +4,9 @@ set -x
 mkdir -p qa-out
 adb install -r out/*.apk > qa-out/install.txt 2>&1
 adb logcat -c
+adb shell settings put global hide_error_dialogs 1 || true
+adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
+sleep 20
 for f in regular business; do
   mkdir -p qa-out/$f
   (cd qa-out/$f && maestro test ../../.maestro/$f.yaml > maestro.log 2>&1; echo "exit=$?" >> maestro.log)
