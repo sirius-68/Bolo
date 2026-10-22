@@ -3,6 +3,10 @@ name: iOS
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - ".maestro/**"
+      - ".github/workflows/qa.yml"
+      - "README.md"
   workflow_dispatch: {}
 
 concurrency:
