@@ -47,6 +47,11 @@ function MapHome() {
   const ins = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const k = width / STAGE_W;
+  // Pins live below the header (profile + toggle) and above the bottom chip.
+  const top0 = ins.top + 120;
+  const sy = (STAGE_H * k - 120 - 64) / (STAGE_H * k);
+  const Y = (y: number) => top0 + (y - 60) * k * sy;
+  const X = (x: number, w: number) => Math.max(8, Math.min(width - w - 8, x * k - w / 2));
   const [mode, setMode] = useState<'jobs' | 'people'>(db.user.intents.includes('find') || !db.user.intents.includes('hire') ? 'jobs' : 'people');
   const cat = ui.cat;
   const jobs = openJobs().filter((p) => matchJob(p, '', cat));
@@ -58,7 +63,7 @@ function MapHome() {
       <View style={{ height: STAGE_H * k + ins.top, overflow: 'hidden' }}>
         <Pict pic="img/map-bg" style={{ position: 'absolute', left: 0, top: 0, width, height: 612 * k + ins.top }} />
         <View style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 140 + ins.top, backgroundColor: 'rgba(0,0,0,.55)' }} />
-        <Pict pic="img/radius" style={{ position: 'absolute', left: (229 - 130) * k, top: (322 - 130) * k + ins.top, width: 260 * k, height: 260 * k, opacity: 0.8 }} />
+        <Pict pic="img/radius" style={{ position: 'absolute', left: 229 * k - 130 * k * sy, top: Y(322) - 130 * k * sy, width: 260 * k * sy, height: 260 * k * sy, opacity: 0.8 }} />
         {mode === 'jobs'
           ? jobs.slice(0, 5).map((po, i) => {
               const [x, y] = JOB_SLOTS[i];
@@ -68,12 +73,12 @@ function MapHome() {
                   accessibilityRole="button"
                   accessibilityLabel={`${po.title}, ${po.budget}`}
                   onPress={() => (tap(), openJob(po.id))}
-                  style={{ position: 'absolute', left: x * k - 50, top: y * k + ins.top - 18, width: 100, alignItems: 'center' }}
+                  style={{ position: 'absolute', left: X(x, 120), top: Y(y) - 18, width: 120, alignItems: 'center' }}
                 >
                   <View style={[S.row, { gap: 4, height: 30, paddingHorizontal: 8, borderRadius: 999, backgroundColor: po.urgent ? C.orange : C.yellow }]}>
                     <Icon name={catIcon(po.cat)} size={14} color="#000" />
-                    <Txt s={12} w={8} c="#000">
-                      {(po.budget || '').replace('XAF ', '').split(' · ')[0]}
+                    <Txt s={12} w={8} c="#000" lines={1}>
+                      {(po.budget || '').replace('XAF ', '').split(' · ')[0].replace(' / month', '/mo').replace(/ \+ .*/, '+').slice(0, 12)}
                     </Txt>
                   </View>
                   <View style={{ marginTop: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: 'rgba(0,0,0,.7)' }}>
@@ -88,9 +93,9 @@ function MapHome() {
               const [x, y] = PEOPLE_SLOTS[i];
               const p = P(id);
               return (
-                <Pressable key={id} accessibilityRole="button" accessibilityLabel={p.name} onPress={() => (tap(), openProfile(id))} style={{ position: 'absolute', left: x * k - 10, top: y * k + ins.top - 10, alignItems: 'center' }}>
+                <Pressable key={id} accessibilityRole="button" accessibilityLabel={p.name} onPress={() => (tap(), openProfile(id))} style={{ position: 'absolute', left: X(x, 110), top: Y(y) - 10, width: 110, alignItems: 'center' }}>
                   <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: 'rgba(0,0,0,.75)', marginBottom: 4 }}>
-                    <Txt s={11} w={8}>
+                    <Txt s={11} w={8} lines={1}>
                       {p.short || p.name.split(' ')[0]} · {p.rate}★
                     </Txt>
                   </View>
@@ -98,7 +103,7 @@ function MapHome() {
                 </Pressable>
               );
             })}
-        <View style={{ position: 'absolute', left: 229 * k - 24, top: 322 * k + ins.top - 24, alignItems: 'center' }} pointerEvents="none">
+        <View style={{ position: 'absolute', left: 229 * k - 24, top: Y(322) - 24, alignItems: 'center' }} pointerEvents="none">
           <Avatar pic={myPhoto()} size={48} ring={C.blue} />
           <View style={{ marginTop: 3, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, backgroundColor: C.blue }}>
             <Txt s={10} w={8}>
