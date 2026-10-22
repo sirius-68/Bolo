@@ -84,6 +84,19 @@ name: Regular account tour
 - tapOn: "Messages"
 - waitForAnimationToEnd
 - takeScreenshot: r18-inbox
+- tapOn: "Marie.*"
+- waitForAnimationToEnd
+- takeScreenshot: r18b-chat
+- tapOn:
+    id: "chat-input"
+- inputText: "Hello, are you free tomorrow?"
+- takeScreenshot: r18c-chat-keyboard
+- tapOn:
+    id: "chat-send"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: r18d-chat-sent
+- back
 - back
 - tapOn: "Notifications"
 - waitForAnimationToEnd
