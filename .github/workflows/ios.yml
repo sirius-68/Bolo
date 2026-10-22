@@ -41,7 +41,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p ci-out
-          cd ios && pod install 2>&1 | tee -a ci-out/pods.log
+          (cd ios && pod install) 2>&1 | tee -a ci-out/pods.log
       - name: Build (simulator, unsigned)
         run: |
           set -o pipefail

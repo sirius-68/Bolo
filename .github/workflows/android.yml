@@ -91,7 +91,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p ci-out
-          cd android && ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86_64 2>&1 | tee -a ci-out/gradle.log
+          (cd android && ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86_64) 2>&1 | tee -a ci-out/gradle.log
       - name: Collect APK
         run: |
           mkdir -p out ci-out
