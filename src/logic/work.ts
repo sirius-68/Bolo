@@ -316,15 +316,15 @@ export function setState(b: Booking, s: Booking['state']) {
     const w = P(b.worker);
     if (s === 'onway') {
       N.unshift({ id, g: 'Today', type: 'onway', who: b.worker, booking: b.id, time: 'now', text: `is on the way for “${b.title}” · ${b.eta} min` });
-      if (ui.appStarted) toast(`${w.name} is on the way · ${b.eta} min`);
+      if (ui.appStarted && myBookings().includes(b)) toast(`${w.name} is on the way · ${b.eta} min`);
     }
     if (s === 'working') {
       N.unshift({ id, g: 'Today', type: 'arrived', who: b.worker, booking: b.id, time: 'now', text: `has arrived and started “${b.title}”.` });
-      if (ui.appStarted) toast(`${w.name} has arrived`);
+      if (ui.appStarted && myBookings().includes(b)) toast(`${w.name} has arrived`);
     }
     if (s === 'done') {
       N.unshift({ id, g: 'Today', type: 'jobdone', who: b.worker, booking: b.id, time: 'now', text: `marked “${b.title}” as done. Please confirm.` });
-      if (ui.appStarted) emit('doneAlert', b.id);
+      if (ui.appStarted && myBookings().includes(b)) emit('doneAlert', b.id);
     }
   }
   if (b.worker === 'me' && s === 'confirmed') db.NOTIFS_W.unshift({ id, g: 'Today', type: 'payment_in', who: b.client, time: 'now', amount: b.price });

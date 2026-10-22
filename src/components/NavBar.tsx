@@ -48,6 +48,12 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
     setToastOffset(98);
   }, []);
   const fab = useRef(fabY).current;
+  // Each tab starts with the + button visible (it only hides while scrolling down).
+  useEffect(() => {
+    hidden = false;
+    lastY = 0;
+    Animated.timing(fabY, { toValue: 0, duration: 140, useNativeDriver: true }).start();
+  }, [cur]);
   return (
     <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 14 + ins.bottom, alignItems: 'center' }}>
       <View

@@ -1,5 +1,7 @@
 import React, { useCallback } from 'react';
 import { Tabs, useFocusEffect } from 'expo-router';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavBar } from '../../src/components/NavBar';
 import { setToastOffset } from '../../src/ui/overlay';
 import { C } from '../../src/ui/theme';
@@ -11,7 +13,9 @@ export default function TabsLayout() {
       return () => setToastOffset(32);
     }, []),
   );
+  const ins = useSafeAreaInsets();
   return (
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
     <Tabs
       tabBar={(p) => <NavBar {...p} />}
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: C.bg }, lazy: true, animation: 'fade' }}
@@ -21,5 +25,8 @@ export default function TabsLayout() {
       <Tabs.Screen name="career" />
       <Tabs.Screen name="me" />
     </Tabs>
+      {/* keeps the status bar readable over scrolled content */}
+      <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ins.top, backgroundColor: 'rgba(0,0,0,0.88)' }} />
+    </View>
   );
 }
