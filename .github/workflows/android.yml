@@ -91,6 +91,12 @@ jobs:
           set -o pipefail
           mkdir -p ci-out
           npx expo prebuild --platform android --no-install 2>&1 | tee -a ci-out/prebuild.log
+      - name: Install Android NDK (with retries)
+        run: |
+          for i in 1 2 3; do
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;27.1.12297006" > /dev/null && break
+            echo "NDK install failed, retrying ($i)"; rm -rf "$ANDROID_HOME/ndk/27.1.12297006"; sleep 10
+          done
       - name: Gradle assembleRelease
         run: |
           set -o pipefail
