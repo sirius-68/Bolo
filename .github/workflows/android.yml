@@ -114,7 +114,10 @@ jobs:
           A=$(ls $D/*arm64-v8a*.apk 2>/dev/null | head -1)
           if [ -n "$A" ]; then cp "$A" phone/bolo.apk; else cp "$U" phone/bolo.apk; fi
           cp out/bolo-${{ github.run_number }}.apk phone/bolo-universal.apk
-          ls -la out phone | tee -a ci-out/apk.txt
+          mkdir -p rel
+          cp phone/bolo.apk rel/bolo-${{ github.run_number }}-phone.apk
+          cp out/bolo-${{ github.run_number }}.apk rel/bolo-${{ github.run_number }}-universal.apk
+          ls -la out phone rel | tee -a ci-out/apk.txt
       - uses: actions/upload-artifact@v4
         with:
           name: bolo-apk
@@ -153,10 +156,10 @@ jobs:
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: bolo 1.0 (build ${{ github.run_number }})
-          files: out/*.apk
+          files: rel/*.apk
           body: |
-            Android APK for bolo. Download the .apk on your phone and open it to install
-            (allow "Install unknown apps" for your browser when Android asks).
+            **Install on Android:** open this page in Chrome on your phone (signed in to GitHub), tap **bolo-${{ github.run_number }}-phone.apk** under Assets, then **Open → Install**.
+            Use the **universal** file only if the phone version says "App not installed".
       - name: Publish logs
         if: always()
         run: |
