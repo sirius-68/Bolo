@@ -107,10 +107,16 @@ function ReqRow({ pid, st, word, onAnswer }: { pid: string; st?: string; word: s
 }
 
 /* ======================= internships & programs ======================= */
-export function openOpp(id: string) {
-  sheet.show(() => <OppSheet id={id} />, { tag: 'opp:' + id });
+/** Navigate to a full screen, closing any open sheet first. */
+function pushScreen(path: string) {
+  const go = () => router.push(path as any);
+  if (sheet.isOpen()) afterSheet(go);
+  else go();
 }
-function OppSheet({ id }: { id: string }) {
+export function openOpp(id: string) {
+  pushScreen(`/opp/${id}`);
+}
+export function OppSheet({ id }: { id: string }) {
   const o = db.OPPS.find((x) => x.id === id);
   if (!o) return <Empty title="No longer available" />;
   const b = oppBiz(o);
@@ -316,24 +322,14 @@ function toISO(label: string) {
 
 /* ======================= company page (sheet) ======================= */
 export function crSee(kind: 'Internship' | 'program') {
-  const L = db.OPPS.filter((o) => (kind === 'Internship' ? o.kind === 'Internship' : o.kind !== 'Internship'));
-  sheet.show(() => (
-    <View style={{ gap: 10 }}>
-      <SheetTitle>{kind === 'Internship' ? 'All internships' : 'All programs'}</SheetTitle>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-        {L.map((o) => (
-          <OppCard key={o.id} o={o} width="48%" />
-        ))}
-      </View>
-    </View>
-  ));
+  pushScreen(`/opps?kind=${kind}`);
 }
 
 /* ======================= mentorship ======================= */
 export function openMentor(id: string) {
-  sheet.show(() => <MentorSheet id={id} />, { tag: 'mentor:' + id });
+  pushScreen(`/mentor/${id}`);
 }
-function MentorSheet({ id }: { id: string }) {
+export function MentorSheet({ id }: { id: string }) {
   const m = db.MENTORSHIPS.find((x) => x.id === id);
   if (!m) return <Empty title="No longer available" />;
   const o = mOwner(m);

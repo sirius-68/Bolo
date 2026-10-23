@@ -450,7 +450,7 @@ export function PTabs<T extends string>({
               tap();
               onChange(k);
             }}
-            style={{ height: 38, paddingHorizontal: 16, borderRadius: R.pill, backgroundColor: on ? (light ? C.yellow : C.white) : 'transparent', flexDirection: 'row', alignItems: 'center' }}
+            style={{ flexGrow: 1, height: 38, paddingHorizontal: 16, borderRadius: R.pill, backgroundColor: on ? (light ? C.yellow : C.white) : 'transparent', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
           >
             <Text style={tx(13, 7, on ? C.black : C.muted)}>{l}</Text>
             {n != null ? <Text style={tx(12, 6, on ? 'rgba(0,0,0,.55)' : 'rgba(141,141,149,.7)', { marginLeft: 5 })}>{n}</Text> : null}

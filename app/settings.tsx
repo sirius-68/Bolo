@@ -89,7 +89,7 @@ export default function Settings() {
         </Box>
       </View>
       <Txt s={12} c={C.faint} center style={{ marginTop: 18 }}>
-        bolo · version {Constants.expoConfig?.version || '1.0.0'} · Made in Buea 🇨🇲
+        bolo · version {Constants.expoConfig?.version || '1.0.0'} · Powered by igne-industries
       </Txt>
     </Page>
   );

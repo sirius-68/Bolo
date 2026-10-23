@@ -215,18 +215,18 @@ export function ReqPost({ po }: { po: Post }) {
           </Pressable>
         ) : null}
       </View>
-      <Pressable onPress={() => openJob(po.id)} style={{ marginHorizontal: 12, marginBottom: 12, borderRadius: 18, backgroundColor: C.yellow, padding: 16 }}>
-        <View style={{ flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: 6, height: 24, paddingHorizontal: 10, borderRadius: 999, backgroundColor: '#000' }}>
-          <Icon name={catIcon(po.cat)} size={13} color={C.yellow} />
-          <Txt s={11} w={8} c={C.yellow}>
+      <Pressable onPress={() => openJob(po.id)} style={{ marginHorizontal: 12, marginBottom: 12, borderRadius: 18, backgroundColor: C.s2, borderWidth: 1, borderColor: '#2c2c30', padding: 16 }}>
+        <View style={{ flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: 6, height: 24, paddingHorizontal: 10, borderRadius: 999, backgroundColor: C.s3 }}>
+          <Icon name={catIcon(po.cat)} size={13} color={C.lav} />
+          <Txt s={11} w={8} c={C.lav}>
             {po.biz ? `${po.type} · ${po.cat}` : `${po.cat} needed`}
           </Txt>
         </View>
-        <Txt s={18} w={8} c="#000" style={{ marginTop: 10, lineHeight: 22 }}>
+        <Txt s={18} w={8} c={C.text} style={{ marginTop: 10, lineHeight: 22 }}>
           {po.title}
         </Txt>
         {po.text && po.text !== po.title ? (
-          <Txt s={14} w={6} c="#000" style={{ marginTop: 6, opacity: 0.85 }} lines={3}>
+          <Txt s={14} w={5} c="#c9c9cf" style={{ marginTop: 6 }} lines={3}>
             {po.text}
           </Txt>
         ) : null}
@@ -247,20 +247,20 @@ export function ReqPost({ po }: { po: Post }) {
               ['pin', po.area],
             ].filter(Boolean) as [string, string][]
           ).map(([ic, t]) => (
-            <View key={ic} style={[S.row, { gap: 5, height: 28, paddingHorizontal: 10, borderRadius: 999, backgroundColor: 'rgba(0,0,0,.08)' }]}>
-              <Icon name={ic} size={14} color="#000" />
-              <Txt s={12} w={7} c="#000" lines={1}>
+            <View key={ic} style={[S.row, { gap: 5, height: 28, paddingHorizontal: 10, borderRadius: 999, backgroundColor: C.s3 }]}>
+              <Icon name={ic} size={14} color="#b9b9c0" />
+              <Txt s={12} w={7} c="#e6e6ea" lines={1}>
                 {t}
               </Txt>
             </View>
           ))}
         </View>
         <View style={[S.rowB, { marginTop: 14, gap: 10 }]}>
-          <Txt s={12} w={7} c="#000" style={{ opacity: 0.7, flex: 1 }} lines={1}>
+          <Txt s={12} w={7} c={C.muted} style={{ flex: 1 }} lines={1}>
             {n} {po.biz ? (n === 1 ? 'applicant' : 'applicants') : n === 1 ? 'offer' : 'offers'}
             {isW() && !mine && db.user.skills.includes(po.cat!) ? ' · Matches your skills' : ''}
           </Txt>
-          <Pill kind="black" on={!!off} title={btn} onPress={() => openJob(po.id)} />
+          <Pill kind="white" on={!!off} title={btn} onPress={() => openJob(po.id)} />
         </View>
       </Pressable>
     </View>

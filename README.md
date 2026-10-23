@@ -1,6 +1,6 @@
 # bolo
 
-Jobs, talent and careers near you — a native Android and iOS app for Cameroon (built in Buea).
+Jobs, talent and careers near you — a native Android and iOS app for Cameroon. Powered by igne-industries.
 
 bolo has two kinds of profile on one account:
 
