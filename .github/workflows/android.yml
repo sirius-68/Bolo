@@ -65,6 +65,8 @@ jobs:
   build:
     name: Build APK
     runs-on: ubuntu-latest
+    env:
+      RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
     timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
@@ -104,9 +106,15 @@ jobs:
           (cd android && ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86_64) 2>&1 | tee -a ci-out/gradle.log
       - name: Collect APK
         run: |
-          mkdir -p out ci-out
-          cp android/app/build/outputs/apk/release/app-release.apk out/bolo-${{ github.run_number }}.apk
-          ls -la out | tee ci-out/apk.txt
+          mkdir -p out phone ci-out
+          D=android/app/build/outputs/apk/release
+          ls -la $D | tee ci-out/apk.txt
+          U=$(ls $D/*universal*.apk 2>/dev/null | head -1); [ -z "$U" ] && U=$D/app-release.apk
+          cp "$U" out/bolo-${{ github.run_number }}.apk
+          A=$(ls $D/*arm64-v8a*.apk 2>/dev/null | head -1)
+          if [ -n "$A" ]; then cp "$A" phone/bolo.apk; else cp "$U" phone/bolo.apk; fi
+          cp out/bolo-${{ github.run_number }}.apk phone/bolo-universal.apk
+          ls -la out phone | tee -a ci-out/apk.txt
       - uses: actions/upload-artifact@v4
         with:
           name: bolo-apk
@@ -121,6 +129,24 @@ jobs:
           files: out/*.apk
           body: |
             Automatic build from the latest commit on main (run ${{ github.run_number }}). For testing.
+      - name: Publish to the public download page
+        if: env.RELEASES_TOKEN != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: ${{ vars.RELEASES_REPO || 'sirius-68/bolo-download' }}
+          token: ${{ secrets.RELEASES_TOKEN }}
+          tag_name: latest
+          name: bolo — latest Android build
+          make_latest: true
+          files: |
+            phone/bolo.apk
+            phone/bolo-universal.apk
+          body: |
+            **Install bolo on Android**
+            1. Download **bolo.apk** on your phone (most phones). Use bolo-universal.apk only if bolo.apk says "App not installed".
+            2. Open it and allow "Install unknown apps" when Android asks.
+
+            Build ${{ github.run_number }} · commit ${{ github.sha }}
       - name: Publish release
         if: github.event_name == 'workflow_dispatch' && inputs.release
         uses: softprops/action-gh-release@v2
