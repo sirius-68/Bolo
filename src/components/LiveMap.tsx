@@ -50,9 +50,9 @@ export function LiveMap({ mode, jobs, people, bottomInset = 64, onLock }: { mode
     }
   };
   // Fit the view to the pins once per set of pins (not on every re-render, so panning isn't undone).
-  const key = mode + ':' + (mode === 'jobs' ? jobs.slice(0, 12).map((p) => p.id) : people.slice(0, 14)).join(',');
+  const key = mode + ':' + (mode === 'jobs' ? jobs.slice(0, 8).map((p) => p.id) : people.slice(0, 10)).join(',');
   const bounds = useMemo(() => {
-    const pts: LngLat[] = mode === 'jobs' ? jobs.slice(0, 12).map((po) => coordOf(po.id, po.area)) : people.slice(0, 14).map((id) => coordOf(id, P(id).area));
+    const pts: LngLat[] = mode === 'jobs' ? jobs.slice(0, 8).map((po) => coordOf(po.id, po.area)) : people.slice(0, 10).map((id) => coordOf(id, P(id).area));
     if (pts.length < 2) return undefined;
     const lngs = pts.map((p) => p[0]);
     const lats = pts.map((p) => p[1]);
@@ -67,34 +67,29 @@ export function LiveMap({ mode, jobs, people, bottomInset = 64, onLock }: { mode
         <M.Camera ref={cam} bounds={bounds} defaultSettings={{ centerCoordinate: [9.284, 4.149], zoomLevel: 13.2 }} animationDuration={600} />
         {locOk ? <M.LocationPuck visible pulsing={{ isEnabled: true, color: C.blue }} /> : null}
         {mode === 'jobs'
-          ? jobs.slice(0, 12).map((po) => (
-              <M.MarkerView key={po.id} coordinate={coordOf(po.id, po.area)} allowOverlap={false} anchor={{ x: 0.5, y: 1 }}>
-                <Pressable accessibilityRole="button" accessibilityLabel={`${po.title}, ${po.budget}`} onPress={() => (tap(), openJob(po.id))} style={{ alignItems: 'center', width: 120 }}>
+          ? jobs.slice(0, 8).map((po) => (
+              <M.MarkerView key={po.id} coordinate={coordOf(po.id, po.area)} allowOverlap anchor={{ x: 0.5, y: 1 }}>
+                <Pressable accessibilityRole="button" accessibilityLabel={`${po.title}, ${po.budget}`} onPress={() => (tap(), openJob(po.id))} style={{ alignItems: 'center' }}>
                   <View style={[S.row, { gap: 4, height: 30, paddingHorizontal: 8, borderRadius: 999, backgroundColor: po.urgent ? C.orange : C.yellow }]}>
                     <Icon name={catIcon(po.cat)} size={14} color="#000" />
                     <Txt s={12} w={8} c="#000" lines={1}>
                       {shortBudget(po.budget)}
                     </Txt>
                   </View>
-                  <View style={{ marginTop: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: 'rgba(0,0,0,.75)', maxWidth: 120 }}>
-                    <Txt s={10} w={7} lines={1}>
-                      {po.title}
-                    </Txt>
-                  </View>
                 </Pressable>
               </M.MarkerView>
             ))
-          : people.slice(0, 14).map((id) => {
+          : people.slice(0, 10).map((id) => {
               const p = P(id);
               return (
-                <M.MarkerView key={id} coordinate={coordOf(id, p.area)} allowOverlap={false} anchor={{ x: 0.5, y: 1 }}>
-                  <Pressable accessibilityRole="button" accessibilityLabel={p.name} onPress={() => (tap(), openProfile(id))} style={{ alignItems: 'center', width: 110 }}>
-                    <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: 'rgba(0,0,0,.8)', marginBottom: 4 }}>
-                      <Txt s={11} w={8} lines={1}>
-                        {p.short || p.name.split(' ')[0]} · {p.rate}★
+                <M.MarkerView key={id} coordinate={coordOf(id, p.area)} allowOverlap anchor={{ x: 0.5, y: 1 }}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={p.name} onPress={() => (tap(), openProfile(id))} style={{ alignItems: 'center' }}>
+                    <Avatar pic={p.pin || p.photo} size={38} ring={C.yellow} />
+                    <View style={{ marginTop: 2, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6, backgroundColor: 'rgba(0,0,0,.8)' }}>
+                      <Txt s={10} w={8} lines={1}>
+                        {p.short || p.name.split(' ')[0]} {p.rate}★
                       </Txt>
                     </View>
-                    <Avatar pic={p.pin || p.photo} size={40} ring={C.yellow} />
                   </Pressable>
                 </M.MarkerView>
               );
