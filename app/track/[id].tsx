@@ -13,6 +13,10 @@ import { bk, cancelBooking, confirmDone, pctOf, reportIssue, trOther, wArrive, w
 import { openProfile } from '../../src/logic/nav';
 import { openChat } from '../../src/sheets/chat';
 import { openHire, openReview } from '../../src/sheets/work';
+import { RouteMap } from '../../src/components/LiveMap';
+import { hasMapbox } from '../../src/lib/mapbox';
+import { coordOf } from '../../src/data/geo';
+import { db } from '../../src/data/db';
 
 const STEPS: [string, string, string][] = [
   ['booked', 'Booked', 'calcheck'],
@@ -175,6 +179,12 @@ export default function Track() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={{ height: H + ins.top, overflow: 'hidden' }}>
+        {hasMapbox ? (
+          <View style={{ position: 'absolute', left: 0, right: 0, top: 0 }}>
+            <RouteMap from={coordOf(b.worker, W ? db.PR.area.home : P(b.worker).area)} to={coordOf(b.id, b.area)} progress={prog} workerPic={W ? myPhoto() : P(b.worker).photo} height={H + ins.top} />
+          </View>
+        ) : (
+          <>
         <Pict pic="img/map-bg" style={{ position: 'absolute', width, height: 612 * k, top: -60 * k }} />
         <Svg width={width} height={H} style={{ position: 'absolute', top: ins.top }}>
           <Path d={d} stroke={C.yellow} strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" strokeDasharray="2 9" fill="none" opacity={0.9} />
@@ -186,6 +196,8 @@ export default function Track() {
         <View style={{ position: 'absolute', left: px * k - 24, top: ins.top + py * k - 24 }}>
           <Avatar pic={W ? myPhoto() : P(b.worker).photo} size={48} ring={C.blue} />
         </View>
+          </>
+        )}
         <View style={[S.rowB, { position: 'absolute', left: 16, right: 16, top: ins.top + 8 }]}>
           <IconBtn name="back" label="Back" bg="rgba(0,0,0,.6)" onPress={goBack} />
           <View style={[S.row, { gap: 6, height: 36, paddingHorizontal: 14, borderRadius: 999, backgroundColor: C.yellow }]}>

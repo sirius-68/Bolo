@@ -1,0 +1,131 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { Pressable, View } from 'react-native';
+import * as Location from 'expo-location';
+import { Post } from '../data/db';
+import { catIcon } from '../data/catalog';
+import { BUEA, LngLat, coordOf, kmBetween } from '../data/geo';
+import { Mapbox } from '../lib/mapbox';
+import { Avatar, Txt, tap } from '../ui/kit';
+import { Icon } from '../ui/Icon';
+import { toast } from '../ui/overlay';
+import { C, S } from '../ui/theme';
+import { P, myPhoto } from '../logic/core';
+import { openProfile } from '../logic/nav';
+import { openJob } from '../sheets/work';
+
+const shortBudget = (b?: string) => (b || '').replace('XAF ', '').split(' · ')[0].replace(' / month', '/mo').replace(/ \+ .*/, '+').slice(0, 12);
+
+/** Real Mapbox map of jobs or people near you. `onLock` tells the parent scroll view to stop scrolling while the map is being dragged. */
+export function LiveMap({ mode, jobs, people, bottomInset = 64, onLock }: { mode: 'jobs' | 'people'; jobs: Post[]; people: string[]; bottomInset?: number; onLock?: (locked: boolean) => void }) {
+  const cam = useRef<any>(null);
+  const [me, setMe] = useState<LngLat | null>(null);
+  const [locOk, setLocOk] = useState(false);
+  useEffect(() => {
+    Location.getForegroundPermissionsAsync()
+      .then((p) => setLocOk(p.granted))
+      .catch(() => {});
+  }, []);
+  const centre = async () => {
+    tap();
+    try {
+      let p = await Location.getForegroundPermissionsAsync();
+      if (!p.granted) p = await Location.requestForegroundPermissionsAsync();
+      if (!p.granted) {
+        toast('Allow location to see what’s near you');
+        cam.current?.setCamera({ centerCoordinate: BUEA, zoomLevel: 13, animationDuration: 600 });
+        return;
+      }
+      setLocOk(true);
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const here: LngLat = [pos.coords.longitude, pos.coords.latitude];
+      if (kmBetween(here, BUEA) > 150) {
+        toast('bolo is live in Buea for now — showing Buea');
+        cam.current?.setCamera({ centerCoordinate: BUEA, zoomLevel: 13, animationDuration: 800 });
+        return;
+      }
+      setMe(here);
+      cam.current?.setCamera({ centerCoordinate: here, zoomLevel: 14.5, animationDuration: 800 });
+    } catch {
+      toast('Couldn’t get your location');
+    }
+  };
+  if (!Mapbox) return null;
+  const M = Mapbox;
+  return (
+    <View style={{ flex: 1 }} onTouchStart={() => onLock?.(true)} onTouchEnd={() => onLock?.(false)} onTouchCancel={() => onLock?.(false)}>
+      <M.MapView style={{ flex: 1 }} styleURL={M.StyleURL.Dark} scaleBarEnabled={false} compassEnabled={false} pitchEnabled={false} rotateEnabled={false} logoPosition={{ bottom: bottomInset + 50, left: 12 }} attributionPosition={{ bottom: bottomInset + 50, right: 62 }}>
+        <M.Camera ref={cam} defaultSettings={{ centerCoordinate: [9.284, 4.149], zoomLevel: 13.2 }} />
+        {locOk ? <M.LocationPuck visible pulsing={{ isEnabled: true, color: C.blue }} /> : null}
+        {mode === 'jobs'
+          ? jobs.slice(0, 25).map((po) => (
+              <M.MarkerView key={po.id} coordinate={coordOf(po.id, po.area)} allowOverlap anchor={{ x: 0.5, y: 1 }}>
+                <Pressable accessibilityRole="button" accessibilityLabel={`${po.title}, ${po.budget}`} onPress={() => (tap(), openJob(po.id))} style={{ alignItems: 'center', width: 120 }}>
+                  <View style={[S.row, { gap: 4, height: 30, paddingHorizontal: 8, borderRadius: 999, backgroundColor: po.urgent ? C.orange : C.yellow }]}>
+                    <Icon name={catIcon(po.cat)} size={14} color="#000" />
+                    <Txt s={12} w={8} c="#000" lines={1}>
+                      {shortBudget(po.budget)}
+                    </Txt>
+                  </View>
+                  <View style={{ marginTop: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: 'rgba(0,0,0,.75)', maxWidth: 120 }}>
+                    <Txt s={10} w={7} lines={1}>
+                      {po.title}
+                    </Txt>
+                  </View>
+                </Pressable>
+              </M.MarkerView>
+            ))
+          : people.slice(0, 25).map((id) => {
+              const p = P(id);
+              return (
+                <M.MarkerView key={id} coordinate={coordOf(id, p.area)} allowOverlap anchor={{ x: 0.5, y: 1 }}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={p.name} onPress={() => (tap(), openProfile(id))} style={{ alignItems: 'center', width: 110 }}>
+                    <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: 'rgba(0,0,0,.8)', marginBottom: 4 }}>
+                      <Txt s={11} w={8} lines={1}>
+                        {p.short || p.name.split(' ')[0]} · {p.rate}★
+                      </Txt>
+                    </View>
+                    <Avatar pic={p.pin || p.photo} size={40} ring={C.yellow} />
+                  </Pressable>
+                </M.MarkerView>
+              );
+            })}
+        {me ? (
+          <M.MarkerView coordinate={me} allowOverlap>
+            <Avatar pic={myPhoto()} size={40} ring={C.blue} />
+          </M.MarkerView>
+        ) : null}
+      </M.MapView>
+      <Pressable accessibilityLabel="Centre on me" onPress={centre} style={{ position: 'absolute', right: 16, bottom: bottomInset, width: 42, height: 42, borderRadius: 21, backgroundColor: C.s1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.line }}>
+        <Icon name="gpsfix" size={20} color={C.text} />
+      </Pressable>
+    </View>
+  );
+}
+
+/** Small route map for job tracking: worker → client, with the worker moving along the line. */
+export function RouteMap({ from, to, progress, workerPic, height }: { from: LngLat; to: LngLat; progress: number; workerPic: any; height: number }) {
+  if (!Mapbox) return null;
+  const M = Mapbox;
+  const t = Math.max(0, Math.min(1, progress));
+  const cur: LngLat = [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t];
+  const line = { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [from, to] } };
+  const mid: LngLat = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2];
+  return (
+    <View style={{ height }}>
+      <M.MapView style={{ flex: 1 }} styleURL={M.StyleURL.Dark} scaleBarEnabled={false} compassEnabled={false} pitchEnabled={false} rotateEnabled={false} logoPosition={{ bottom: 34, left: 10 }} attributionPosition={{ bottom: 34, right: 10 }}>
+        <M.Camera defaultSettings={{ centerCoordinate: mid, zoomLevel: 13.6 }} />
+        <M.ShapeSource id="route" shape={line}>
+          <M.LineLayer id="routeLine" style={{ lineColor: C.yellow, lineWidth: 4, lineDasharray: [0.5, 2], lineCap: 'round' }} />
+        </M.ShapeSource>
+        <M.MarkerView coordinate={to} allowOverlap>
+          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.yellow, borderWidth: 3, borderColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="house" size={18} color="#000" />
+          </View>
+        </M.MarkerView>
+        <M.MarkerView coordinate={cur} allowOverlap>
+          <Avatar pic={workerPic} size={44} ring={C.blue} />
+        </M.MarkerView>
+      </M.MapView>
+    </View>
+  );
+}

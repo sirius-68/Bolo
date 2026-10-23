@@ -20,6 +20,8 @@ import { openOppForm } from '../../src/sheets/career';
 import { toast } from '../../src/ui/overlay';
 import { adPct, adsOf } from '../../src/logic/career';
 import { ST_C } from '../../src/data/catalog';
+import { LiveMap } from '../../src/components/LiveMap';
+import { hasMapbox } from '../../src/lib/mapbox';
 
 export default function Home() {
   useLive();
@@ -58,11 +60,17 @@ function MapHome() {
   const people = WORKERS().filter((id) => matchPerson(id, '', cat));
   const match = jobs.filter((p) => db.user.skills.includes(p.cat!)).length;
   const pinPeople = PEOPLE.filter((id) => !cat || P(id).role === cat);
+  const [scrollOk, setScrollOk] = useState(true);
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 + ins.bottom }}>
+    <ScrollView scrollEnabled={scrollOk} style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 + ins.bottom }}>
       <View style={{ height: STAGE_H * k + ins.top, overflow: 'hidden' }}>
+        {hasMapbox ? (
+          <View style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}>
+            <LiveMap mode={mode} jobs={jobs} people={people} bottomInset={12} onLock={(l) => setScrollOk(!l)} />
+          </View>
+        ) : (
+          <>
         <Pict pic="img/map-bg" style={{ position: 'absolute', left: 0, top: 0, width, height: 612 * k + ins.top }} />
-        <View style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 140 + ins.top, backgroundColor: 'rgba(0,0,0,.55)' }} />
         <Pict pic="img/radius" style={{ position: 'absolute', left: 229 * k - 130 * k * sy, top: Y(322) - 130 * k * sy, width: 260 * k * sy, height: 260 * k * sy, opacity: 0.8 }} />
         {mode === 'jobs'
           ? jobs.slice(0, 5).map((po, i) => {
@@ -111,6 +119,9 @@ function MapHome() {
             </Txt>
           </View>
         </View>
+          </>
+        )}
+        <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 140 + ins.top, backgroundColor: 'rgba(0,0,0,.55)' }} />
         <View style={{ position: 'absolute', left: 20, right: 20, top: ins.top }}>
           <TabHeader />
           <View style={{ flexDirection: 'row', marginTop: 8, padding: 4, borderRadius: 999, backgroundColor: 'rgba(20,20,22,.9)', alignSelf: 'flex-start' }}>
@@ -134,9 +145,11 @@ function MapHome() {
             {mode === 'jobs' ? `${jobs.length} jobs near you${match ? ` · ${match} match you` : ''}` : `${people.length} people available near you`}
           </Txt>
         </View>
+        {!hasMapbox ? (
         <Pressable accessibilityLabel="Centre on me" onPress={() => toast('Location updated')} style={{ position: 'absolute', right: 20, bottom: 12, width: 40, height: 40, borderRadius: 20, backgroundColor: C.s1, alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name="gps" size={20} color={C.text} />
-        </Pressable>
+            <Icon name="gps" size={20} color={C.text} />
+          </Pressable>
+        ) : null}
       </View>
       <View style={{ paddingHorizontal: 20 }}>
         <LiveCards />
