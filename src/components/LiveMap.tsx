@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import * as Location from 'expo-location';
 import { Post } from '../data/db';
@@ -49,16 +49,26 @@ export function LiveMap({ mode, jobs, people, bottomInset = 64, onLock }: { mode
       toast('Couldn’t get your location');
     }
   };
+  // Fit the view to the pins once per set of pins (not on every re-render, so panning isn't undone).
+  const key = mode + ':' + (mode === 'jobs' ? jobs.slice(0, 12).map((p) => p.id) : people.slice(0, 14)).join(',');
+  const bounds = useMemo(() => {
+    const pts: LngLat[] = mode === 'jobs' ? jobs.slice(0, 12).map((po) => coordOf(po.id, po.area)) : people.slice(0, 14).map((id) => coordOf(id, P(id).area));
+    if (pts.length < 2) return undefined;
+    const lngs = pts.map((p) => p[0]);
+    const lats = pts.map((p) => p[1]);
+    return { ne: [Math.max(...lngs), Math.max(...lats)], sw: [Math.min(...lngs), Math.min(...lats)], paddingTop: 150, paddingBottom: 70, paddingLeft: 50, paddingRight: 50 };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
   if (!Mapbox) return null;
   const M = Mapbox;
   return (
     <View style={{ flex: 1 }} onTouchStart={() => onLock?.(true)} onTouchEnd={() => onLock?.(false)} onTouchCancel={() => onLock?.(false)}>
       <M.MapView style={{ flex: 1 }} styleURL={M.StyleURL.Dark} scaleBarEnabled={false} compassEnabled={false} pitchEnabled={false} rotateEnabled={false} logoPosition={{ bottom: bottomInset + 50, left: 12 }} attributionPosition={{ bottom: bottomInset + 50, right: 62 }}>
-        <M.Camera ref={cam} defaultSettings={{ centerCoordinate: [9.284, 4.149], zoomLevel: 13.2 }} />
+        <M.Camera ref={cam} bounds={bounds} defaultSettings={{ centerCoordinate: [9.284, 4.149], zoomLevel: 13.2 }} animationDuration={600} />
         {locOk ? <M.LocationPuck visible pulsing={{ isEnabled: true, color: C.blue }} /> : null}
         {mode === 'jobs'
-          ? jobs.slice(0, 25).map((po) => (
-              <M.MarkerView key={po.id} coordinate={coordOf(po.id, po.area)} allowOverlap anchor={{ x: 0.5, y: 1 }}>
+          ? jobs.slice(0, 12).map((po) => (
+              <M.MarkerView key={po.id} coordinate={coordOf(po.id, po.area)} allowOverlap={false} anchor={{ x: 0.5, y: 1 }}>
                 <Pressable accessibilityRole="button" accessibilityLabel={`${po.title}, ${po.budget}`} onPress={() => (tap(), openJob(po.id))} style={{ alignItems: 'center', width: 120 }}>
                   <View style={[S.row, { gap: 4, height: 30, paddingHorizontal: 8, borderRadius: 999, backgroundColor: po.urgent ? C.orange : C.yellow }]}>
                     <Icon name={catIcon(po.cat)} size={14} color="#000" />
@@ -74,10 +84,10 @@ export function LiveMap({ mode, jobs, people, bottomInset = 64, onLock }: { mode
                 </Pressable>
               </M.MarkerView>
             ))
-          : people.slice(0, 25).map((id) => {
+          : people.slice(0, 14).map((id) => {
               const p = P(id);
               return (
-                <M.MarkerView key={id} coordinate={coordOf(id, p.area)} allowOverlap anchor={{ x: 0.5, y: 1 }}>
+                <M.MarkerView key={id} coordinate={coordOf(id, p.area)} allowOverlap={false} anchor={{ x: 0.5, y: 1 }}>
                   <Pressable accessibilityRole="button" accessibilityLabel={p.name} onPress={() => (tap(), openProfile(id))} style={{ alignItems: 'center', width: 110 }}>
                     <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: 'rgba(0,0,0,.8)', marginBottom: 4 }}>
                       <Txt s={11} w={8} lines={1}>

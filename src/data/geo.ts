@@ -23,7 +23,7 @@ function jitter(id: string): LngLat {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
   const a = ((h & 0xffff) / 0xffff) * Math.PI * 2;
-  const r = 0.0018 + (((h >>> 16) & 0xff) / 0xff) * 0.0035;
+  const r = 0.003 + (((h >>> 16) & 0xff) / 0xff) * 0.008;
   return [Math.cos(a) * r, Math.sin(a) * r];
 }
 export function coordOf(id: string, area?: string): LngLat {
