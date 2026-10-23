@@ -4,7 +4,7 @@ import { Field, Input, Pict, Seg, Txt, tap } from '../ui/kit';
 import { C, R } from '../ui/theme';
 
 /** Shared sign-up state between auth screens. */
-export const signup = { otpMode: 'signup' as 'signup' | 'reset' | 'login', contact: '' };
+export const signup = { otpMode: 'signup' as 'signup' | 'reset' | 'login', contact: '', next: null as null | (() => void) };
 
 export type Mode = 'phone' | 'email';
 export function ContactField({ mode, setMode, value, onChange, error, testID }: { mode: Mode; setMode: (m: Mode) => void; value: string; onChange: (v: string) => void; error?: string | false; testID?: string }) {

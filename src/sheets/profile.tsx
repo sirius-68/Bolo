@@ -508,8 +508,8 @@ function DocSheet({ k }: { k: string }) {
   const st = db.PR.docs[k];
   const submit = () => {
     db.PR.docs[k] = 'review';
-    sheet.close(`${t} sent for review`);
-    later(4000, () => {
+    sheet.close(db.demo ? `${t} sent for review` : `${t} sent — we’ll notify you once it’s checked`);
+    if (db.demo) later(4000, () => {
       db.PR.docs[k] = 'verified';
       toast(`✅ ${t} verified`);
     });

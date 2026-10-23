@@ -7,13 +7,15 @@ import { curBiz, bizName, isW, nowT, mySkill, ensureSkillList, add, P } from './
 import { resumeSims, bizLog } from './work';
 import { clearSaved } from './persist';
 import { stopAdTicker } from './career';
+import { signOut } from './remote';
 
 export const wantsWork = () => db.user.intents.includes('find');
 
 /** Fresh account after sign-up / log-in (keeps the demo data). */
 export function startApp(viaLogin = false) {
   db.loggedIn = true;
-  db.user.role = 'worker';
+  db.user.role = db.user.bizOnly && db.BIZ.list.length ? 'client' : 'worker';
+  if (db.user.role === 'client' && !db.BIZ.active) db.BIZ.active = db.BIZ.list[0].id;
   ui.feedView = 'all';
   ui.appStarted = true;
   resumeSims();
@@ -28,6 +30,7 @@ export function enterBusinessOnly() {
 }
 
 export async function logout() {
+  if (!db.demo) await signOut();
   cancelAll();
   stopAdTicker();
   await clearSaved();
@@ -85,7 +88,8 @@ export function saveBiz(b: MyBiz, opts: { submitDocs?: boolean } = {}) {
   db.user.role = 'client';
   if (opts.submitDocs && b.rccm && b.niu && b.verified === 'none') {
     b.verified = 'review';
-    later(5000, () => {
+    // Demo: approve automatically. Real accounts wait for bolo staff to check the documents.
+    if (db.demo) later(5000, () => {
       b.verified = 'verified';
       toast(`✅ ${bizName(b)} is now a verified business`);
     });

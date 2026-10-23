@@ -270,6 +270,8 @@ export type MyBiz = {
   ads: Ad[];
   hires?: string[];
   hireTypes?: string[];
+  /** id of this page in Supabase */
+  remoteId?: string;
 };
 export type SkillEntry = { si: number; n: string; a: string; c: string | null; x: Record<string, any>; xo: Record<string, string[]>; lv: string; custom?: number; desc?: string };
 export type MyOffer = { price: string; when: string; state: 'sent' | 'acc'; app?: number; stage?: string; cv?: CvFile | null };
@@ -673,6 +675,10 @@ export function makeDb() {
   return {
     v: 3,
     loggedIn: false,
+    /** true = offline demo (fake codes, sample data only); false = real bolo account in Supabase */
+    demo: false,
+    /** Supabase user id of the signed-in account */
+    uid: null as string | null,
     user: {
       name: '',
       role: 'worker' as 'worker' | 'client',

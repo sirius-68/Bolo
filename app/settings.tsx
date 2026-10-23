@@ -32,7 +32,7 @@ export default function Settings() {
             {b ? bizName(b) : db.user.name || 'Your name'}
           </Txt>
           <Txt s={12} c={C.muted}>
-            {b ? 'Business' : 'Regular'} profile{isPro() ? ' · PRO' : ''} · tap to switch
+            {b ? 'Business' : 'Regular'} profile{isPro() ? ' · PRO' : ''}{db.demo ? ' · demo' : ''} · tap to switch
           </Txt>
         </View>
         <Icon name="chev" size={20} color={C.faint} />
@@ -72,7 +72,7 @@ export default function Settings() {
             onPress={() =>
               confirm({
                 title: 'Log out of bolo?',
-                text: 'Your demo data on this phone will be reset.',
+                text: db.demo ? 'Demo data on this phone will be reset.' : 'Your account stays saved — log back in any time.',
                 ok: 'Log out',
                 danger: true,
                 icon: 'logout',

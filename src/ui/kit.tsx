@@ -286,9 +286,9 @@ export function IconBtn({
   );
 }
 
-export function TextLink({ title, onPress, style, s = 13 }: { title: string; onPress?: () => void; style?: any; s?: number }) {
+export function TextLink({ title, onPress, style, s = 13, testID }: { title: string; onPress?: () => void; style?: any; s?: number; testID?: string }) {
   return (
-    <Pressable hitSlop={hit} onPress={onPress} style={style}>
+    <Pressable testID={testID} accessibilityRole="button" hitSlop={hit} onPress={onPress} style={style}>
       <Text style={tx(s, 7, C.lav)}>{title}</Text>
     </Pressable>
   );

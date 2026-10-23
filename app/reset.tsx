@@ -6,10 +6,12 @@ import { Icon } from '../src/ui/Icon';
 import { C } from '../src/ui/theme';
 import { toast } from '../src/ui/overlay';
 import { db } from '../src/data/db';
+import { isReal, signOut, updatePassword } from '../src/logic/remote';
 
 export default function Reset() {
   const [a, setA] = useState('');
   const [b, setB] = useState('');
+  const [busy, setBusy] = useState(false);
   const r = { len: a.length >= 8, num: /\d/.test(a), match: !!a && a === b };
   const ok = r.len && r.num && r.match;
   const rule = (on: boolean, t: string) => (
@@ -42,8 +44,16 @@ export default function Reset() {
         <Btn
           title="Update password"
           disabled={!ok}
+          loading={busy}
           style={{ marginTop: 12 }}
-          onPress={() => {
+          onPress={async () => {
+            if (isReal()) {
+              setBusy(true);
+              const e = await updatePassword(a);
+              setBusy(false);
+              if (e) return toast(e);
+              if (!db.loggedIn) await signOut();
+            }
             if (db.loggedIn) {
               toast('Password updated');
               router.dismissTo('/settings');

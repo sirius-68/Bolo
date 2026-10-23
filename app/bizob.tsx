@@ -12,6 +12,9 @@ import { bizLogo, isEmail, digits } from '../src/logic/core';
 import { pickImage } from '../src/logic/media';
 import { resetTo } from '../src/logic/nav';
 import { LogoPicker } from '../src/components/business';
+import { signup } from '../src/components/auth';
+import { isReal, signUp } from '../src/logic/remote';
+import { db } from '../src/data/db';
 
 /** Business-only sign-up (from the welcome screen). */
 export default function BizOnboarding() {
@@ -48,10 +51,30 @@ export default function BizOnboarding() {
     if (!verify) ub({ rccm: '', niu: '' });
     goStep(5);
   };
-  const enter = () => {
+  const [busy, setBusy] = useState(false);
+  const enter = async () => {
     const biz = { ...b, phone: b.phone || digits(o.phone), email: b.email || o.email.trim(), hires: areas, hireTypes: types };
-    createBusinessAccount({ owner: o.owner.trim(), email: o.email.trim(), phone: digits(o.phone), biz });
-    resetTo('/home');
+    const done = () => {
+      createBusinessAccount({ owner: o.owner.trim(), email: o.email.trim(), phone: digits(o.phone), biz });
+      resetTo('/home');
+    };
+    if (!isReal()) return done();
+    // Real account: log-in uses the work email (or the phone when there's no email).
+    const contact = isEmail(o.email) ? o.email.trim() : digits(o.phone);
+    setBusy(true);
+    const r = await signUp(contact, o.pass, { name: o.owner.trim(), biz_only: true });
+    setBusy(false);
+    if (r.error) {
+      toast(r.error);
+      if (/already exists/.test(r.error)) goStep(0);
+      return;
+    }
+    db.user.contact = contact;
+    if (!r.needsCode) return done();
+    signup.otpMode = 'signup';
+    signup.contact = contact;
+    signup.next = done;
+    router.push('/otp');
   };
 
   let body: React.ReactNode = null;
@@ -234,7 +257,7 @@ export default function BizOnboarding() {
         <Btn variant="soft" title="Verify later" onPress={() => finish(false)} />
       </View>
     ) : (
-      <Btn testID="bo-enter" variant="yellow" title="Go to my dashboard" onPress={enter} />
+      <Btn testID="bo-enter" variant="yellow" title="Go to my dashboard" loading={busy} onPress={enter} />
     );
 
   return (
