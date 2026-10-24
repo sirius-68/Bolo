@@ -15,7 +15,8 @@ on:
         default: false
 
 concurrency:
-  group: android-${{ github.ref }}
+  # Quick push builds and manual release builds don't cancel each other.
+  group: android-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 permissions:
@@ -118,7 +119,7 @@ jobs:
           mkdir -p ci-out
           if [ "$FULL" = true ]; then ARCH=armeabi-v7a,arm64-v8a,x86_64; else ARCH=arm64-v8a; fi
           echo "Building for $ARCH" | tee -a ci-out/gradle.log
-          (cd android && ./gradlew assembleRelease --no-daemon --build-cache --parallel -PreactNativeArchitectures=$ARCH) 2>&1 | tee -a ci-out/gradle.log
+          (cd android && ./gradlew assembleRelease --no-daemon --build-cache -PreactNativeArchitectures=$ARCH) 2>&1 | tee -a ci-out/gradle.log
       - name: Collect APK
         run: |
           mkdir -p out phone ci-out
