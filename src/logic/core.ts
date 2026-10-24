@@ -36,7 +36,11 @@ export const fmtDate = (d: string | Date, withYear = false) => {
 };
 export const digits = (s: string) => s.replace(/\D/g, '');
 export const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s.trim());
-export const isPhone = (s: string) => digits(s).length >= 9;
+/** International numbers (+7 915…) need 8–15 digits; older local Cameroon numbers 9. */
+export const isPhone = (s: string) => {
+  const d = digits(s);
+  return (s || '').trim().startsWith('+') ? d.length >= 8 && d.length <= 15 : d.length >= 9;
+};
 
 /* ---------------- sets stored as arrays ---------------- */
 export const has = (a: (string | number)[], x: string | number) => a.includes(x);

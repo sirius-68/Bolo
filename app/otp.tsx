@@ -4,10 +4,18 @@ import { router } from 'expo-router';
 import { Btn, Grow, Page, Steps, Sub, TextLink, Title, TopBar, Txt } from '../src/ui/kit';
 import { C, R, tx } from '../src/ui/theme';
 import { db } from '../src/data/db';
-import { signup } from '../src/components/auth';
+import { signup, splitPhone } from '../src/components/auth';
+import { showPhone } from '../src/data/countries';
 import { toast } from '../src/ui/overlay';
 import { wantsWork } from '../src/logic/account';
-import { isReal, resendCode, verifyCode } from '../src/logic/remote';
+import { isReal, resendCode, signIn, verifyCode } from '../src/logic/remote';
+
+/** +7 9•• ••• •• 67 — keeps the country code and the last two digits. */
+function maskPhone(p: string) {
+  const { c, local } = splitPhone(showPhone(p));
+  const l = local.replace(/\D/g, '');
+  return '+' + c.dial + ' ' + l.split('').map((x, i) => (i === 0 || i >= l.length - 2 ? x : '•')).join('');
+}
 
 export default function Otp() {
   const [v, setV] = useState('');
@@ -21,7 +29,7 @@ export default function Otp() {
   const reset = signup.otpMode === 'reset';
   const c = signup.contact || db.user.contact;
   const d = (c || '').replace(/\D/g, '');
-  const to = c.includes('@') ? c : '+237 ' + (d ? d.slice(0, 1) + '•• •• •• ' + d.slice(-2) : '6•• •• •• 40');
+  const to = c.includes('@') ? c : d ? maskPhone(c) : '+237 6•• •• •• 40';
 
   useEffect(() => {
     const i = setInterval(() => setT((x) => (x > 0 ? x - 1 : 0)), 1000);
@@ -48,8 +56,20 @@ export default function Otp() {
       signup.next = null;
       return n();
     }
+    signup.pwd = '';
     router.replace(reset ? '/reset' : '/setup');
   };
+  // Some email templates send a confirmation link instead of a code. Once the link is tapped the
+  // account is confirmed, so logging in with the password just chosen finishes the same step.
+  const linkDone = async () => {
+    if (busy) return;
+    setBusy(true);
+    const e = await signIn(c, signup.pwd);
+    setBusy(false);
+    if (e) return toast(/confirm/i.test(e) ? 'Not confirmed yet — tap the link in the email first' : e);
+    ok();
+  };
+  const canLink = real && !reset && c.includes('@') && !!signup.pwd;
   const verify = async (code: string) => {
     if (code.length < LEN || busy) return;
     if (!real) return code === '1234' ? ok() : fail('That code isn’t right. Try 1234');
@@ -120,6 +140,11 @@ export default function Otp() {
           </View>
         )}
       </View>
+      {canLink ? (
+        <View style={{ alignItems: 'center', marginTop: 14 }}>
+          <TextLink testID="otp-link" title="Got a link instead? I’ve tapped it" onPress={linkDone} />
+        </View>
+      ) : null}
       <Grow />
       <Btn testID="otp-verify" title="Verify" loading={busy} disabled={v.length < LEN} onPress={() => verify(v)} style={{ marginTop: 24 }} />
     </Page>

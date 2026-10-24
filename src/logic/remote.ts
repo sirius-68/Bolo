@@ -10,7 +10,8 @@ import { bump, subscribe } from './live';
 export const isReal = () => !db.demo;
 const digits = (s: string) => (s || '').replace(/\D/g, '');
 /** Cameroon numbers in E.164 (+2376XXXXXXXX). */
-export const toE164 = (phone: string) => '+237' + digits(phone).replace(/^237/, '');
+/** +<country><number>. Numbers saved before international support were local Cameroon numbers. */
+export const toE164 = (phone: string) => ((phone || '').trim().startsWith('+') ? '+' + digits(phone) : '+237' + digits(phone).replace(/^237/, ''));
 const isEmail = (c: string) => c.includes('@');
 const cred = (contact: string) => (isEmail(contact) ? { email: contact.trim().toLowerCase() } : { phone: toE164(contact) });
 
@@ -162,9 +163,9 @@ export async function pull() {
     const q = pv.data;
     if (q) {
       db.PR.ct = { ...db.PR.ct, ...(q.contacts || {}) };
-      if (q.phone && !db.PR.ct.phone) db.PR.ct.phone = digits(q.phone).replace(/^237/, '');
+      if (q.phone && !db.PR.ct.phone) db.PR.ct.phone = '+' + digits(q.phone);
       if (q.email && !db.PR.ct.email) db.PR.ct.email = q.email;
-      db.user.contact = db.user.contact || q.email || digits(q.phone || '').replace(/^237/, '');
+      db.user.contact = db.user.contact || q.email || (q.phone ? '+' + digits(q.phone) : '');
       if (q.cv) {
         db.user.cv = q.cv;
         db.user.cvDone = true;

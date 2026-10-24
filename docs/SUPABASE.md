@@ -21,7 +21,7 @@ It is safe to run again. It creates:
 
 ### 2. Turn on email codes
 
-The app asks for a **6-digit code** after sign-up and for password resets. Supabase sends links by default, so add the code to the emails:
+The app asks for a **6-digit code** after sign-up and for password resets. Supabase sends a **link** by default — that's why the email has no code. The code only appears if the email template contains `{{ .Token }}`:
 
 Authentication → **Emails** (Email Templates):
 
@@ -37,13 +37,19 @@ Authentication → **Emails** (Email Templates):
   <p>Your code is <strong style="font-size:24px;letter-spacing:4px">{{ .Token }}</strong></p>
   ```
 
-Authentication → **Sign In / Providers** → Email: keep **Confirm email** on.
+Authentication → **Sign In / Providers** → Email: keep **Confirm email** on, and set **Email OTP length** to `6`.
+
+If someone still gets a link (old template, or an email sent before the change), they can tap it and then tap **“Got a link instead? I’ve tapped it”** on the code screen — the app logs them in with the password they just chose.
 
 Supabase’s built-in mailer only sends a few emails per hour. Before real users arrive, add your own sender under Authentication → **SMTP Settings** (Brevo, Resend, Mailgun… all have free tiers).
 
-### 3. Phone numbers (later)
+### 3. Phone numbers (any country)
+
+The phone field has a country picker with every dialling code (it starts on the phone's own country). Numbers are stored and sent as `+<country code><number>`, e.g. `+79151234567` for Russia, `+237677123456` for Cameroon.
 
 Phone sign-up needs an SMS provider: Authentication → **Sign In / Providers** → **Phone** → choose Twilio, Vonage or MessageBird and paste its keys. Until then the app tells people to use email.
+
+Some countries filter SMS from unknown senders. **Russia** is one of them: Vonage may need a registered sender ID before codes arrive (Vonage dashboard → Messaging → sender ID / country restrictions). Test with your own number first; if nothing arrives, check the Vonage message logs.
 
 For testing without SMS you can add test numbers there (e.g. `237677000000` → code `123456`).
 

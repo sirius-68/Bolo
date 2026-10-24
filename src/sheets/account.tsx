@@ -13,6 +13,7 @@ import { bump } from '../logic/live';
 import { resetTo } from '../logic/nav';
 import { LogoPicker } from '../components/business';
 import { pickImage } from '../logic/media';
+import { PhoneInput } from '../components/auth';
 
 /* ---------------- Pro plans ---------------- */
 export function openPro(kind?: 'regular' | 'business', why?: string) {
@@ -389,8 +390,8 @@ function BizSetup({ st }: { st: BzState }) {
         <Field label="Street address">
           <Input icon="pin" value={b.address} onChangeText={(v) => (set('address', v), re())} placeholder="e.g. Opposite Total, Molyko" />
         </Field>
-        <Field label="Business phone" error={phoneBad && 'Enter 9 digits, e.g. 677 12 34 56'}>
-          <Input prefix="+237" keyboardType="phone-pad" value={b.phone} onChangeText={(v) => (set('phone', v), re())} placeholder="6XX XX XX XX" invalid={phoneBad} />
+        <Field label="Business phone" error={phoneBad && 'Enter a valid phone number'}>
+          <PhoneInput value={b.phone || ''} onChange={(v) => (set('phone', v), re())} invalid={phoneBad} />
         </Field>
         <Field label="Email" error={mailBad && 'That email doesn’t look right'}>
           <Input keyboardType="email-address" autoCapitalize="none" value={b.email} onChangeText={(v) => (set('email', v.trim()), re())} placeholder="jobs@yourbusiness.cm" invalid={mailBad} />

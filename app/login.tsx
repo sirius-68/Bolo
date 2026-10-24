@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { Btn, Field, Grow, Input, Page, Pict, TextLink, TopBar, Txt } from '../src/ui/kit';
 import { C } from '../src/ui/theme';
 import { db } from '../src/data/db';
-import { ContactField, Divider, Mode, Socials, contactOk } from '../src/components/auth';
+import { ContactField, Divider, Mode, Socials, contactOk, contactValue } from '../src/components/auth';
 import { startApp } from '../src/logic/account';
 import { resetTo } from '../src/logic/nav';
 import { isReal, signIn } from '../src/logic/remote';
@@ -25,7 +25,7 @@ export default function Login() {
     setTried(true);
     setErr('');
     if (!contactOk(mode, contact) || pwd.length < 4) return;
-    const c = mode === 'phone' ? contact.replace(/\D/g, '') : contact.trim();
+    const c = contactValue(mode, contact);
     if (!isReal()) {
       db.user.contact = db.user.contact || c;
       return enter();

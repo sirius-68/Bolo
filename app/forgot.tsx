@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { router } from 'expo-router';
 import { Btn, Page, Pict, Sub, TextLink, Title, TopBar, Txt } from '../src/ui/kit';
 import { C } from '../src/ui/theme';
-import { ContactField, Mode, contactOk, signup } from '../src/components/auth';
+import { ContactField, Mode, contactOk, contactValue, signup } from '../src/components/auth';
 import { isReal, sendReset } from '../src/logic/remote';
 
 export default function Forgot() {
@@ -34,7 +34,7 @@ export default function Forgot() {
             setErr('');
             if (!contactOk(mode, contact)) return;
             signup.otpMode = 'reset';
-            signup.contact = mode === 'phone' ? contact.replace(/\D/g, '') : contact.trim();
+            signup.contact = contactValue(mode, contact);
             signup.next = null;
             if (isReal()) {
               setBusy(true);

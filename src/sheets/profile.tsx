@@ -12,6 +12,7 @@ import { services, syncContacts, toggleFollow } from '../logic/account';
 import { bump, later } from '../logic/live';
 import { openProfile } from '../logic/nav';
 import { LanguagesEditor } from '../components/skills';
+import { PhoneInput } from '../components/auth';
 
 /* ---------------- services ---------------- */
 export function openService(id?: string) {
@@ -341,10 +342,12 @@ function Contacts({ d, focus }: { d: Record<string, string>; focus?: string }) {
     <View style={{ gap: 14 }}>
       <SheetTitle>Contact info</SheetTitle>
       {CT.map(([k, l, i, ph, t]) => (
-        <Field key={k} label={l} error={bad(k) && (k === 'email' ? 'That email doesn’t look right' : 'Enter 9 digits, e.g. 677 12 34 56')}>
+        <Field key={k} label={l} error={bad(k) && (k === 'email' ? 'That email doesn’t look right' : 'Enter a valid phone number')}>
+{k === 'phone' || k === 'whatsapp' ? (
+            <PhoneInput value={d[k] || ''} onChange={(v) => ((d[k] = v), re())} invalid={bad(k)} />
+          ) : (
           <Input
             icon={i}
-            prefix={k === 'phone' || k === 'whatsapp' ? '+237' : undefined}
             value={d[k] || ''}
             onChangeText={(v) => ((d[k] = v), re())}
             placeholder={ph}
@@ -353,6 +356,7 @@ function Contacts({ d, focus }: { d: Record<string, string>; focus?: string }) {
             autoFocus={focus === k}
             invalid={bad(k)}
           />
+          )}
         </Field>
       ))}
       <Note icon="lock">Only shown to people you’ve agreed to work with.</Note>

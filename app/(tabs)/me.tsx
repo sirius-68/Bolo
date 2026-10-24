@@ -20,6 +20,7 @@ import { openCourse, openOpp, openOppForm, openMentor } from '../../src/sheets/c
 import { openInvite, viewContract } from '../../src/sheets/business';
 import { pickImage } from '../../src/logic/media';
 import { toast } from '../../src/ui/overlay';
+import { showPhone } from '../../src/data/countries';
 
 export default function Me() {
   useLive();
@@ -234,7 +235,7 @@ function MeRegular() {
         roleColor={st[3]}
         verified={db.PR.docs.id === 'verified'}
         bio={db.user.bio || `${mySkill()} in ${myCity()} · ${db.user.years} years experience.`}
-        contact={db.user.contact ? (db.user.contact.includes('@') ? db.user.contact : '+237 ' + db.user.contact.replace(/^\+?237\s?/, '')) : 'Add your email or phone'}
+        contact={db.user.contact ? (db.user.contact.includes('@') ? db.user.contact : showPhone(db.user.contact)) : 'Add your email or phone'}
         onAvatar={PR_ACT.photo}
         stats={[
           [12 + acc, 'Jobs done', openJobHistory],
@@ -444,9 +445,9 @@ function ProfilePanel() {
       <Card>
         {(
           [
-            ['phone', 'phone', 'Phone number', c.phone ? '+237 ' + c.phone : 'Add your number'],
+            ['phone', 'phone', 'Phone number', c.phone ? showPhone(c.phone) : 'Add your number'],
             ['email', 'mail', 'Email', c.email || 'Add your email'],
-            ['whatsapp', 'wa', 'WhatsApp', c.whatsapp ? '+237 ' + c.whatsapp : 'Not added'],
+            ['whatsapp', 'wa', 'WhatsApp', c.whatsapp ? showPhone(c.whatsapp) : 'Not added'],
           ] as [string, string, string, string][]
         ).map(([k, i, l, v]) => (
           <Pressable key={k} onPress={() => openContacts(k)} style={[S.row, { gap: 12 }]}>
@@ -706,7 +707,7 @@ function MeBusiness() {
               <KV k="Sector · size" v={`${b.sector || 'Add a sector'} · ${b.size || 'Team size'}`} mute={!b.sector} />
               <KV k="About" v={b.about || 'Tell candidates what you do'} mute={!b.about} />
               <KV k="Location" v={`${b.address ? b.address + ', ' : ''}${b.area ? b.area + ', ' : ''}${b.city}`} />
-              <KV k="Contact" v={[b.phone ? '+237 ' + b.phone : '', b.email, b.web].filter(Boolean).join(' · ') || 'Add a phone or email'} mute={!b.phone && !b.email} />
+              <KV k="Contact" v={[b.phone ? showPhone(b.phone) : '', b.email, b.web].filter(Boolean).join(' · ') || 'Add a phone or email'} mute={!b.phone && !b.email} />
               <KV k="Registration" v={b.rccm ? `RCCM ${b.rccm} · NIU ${b.niu.replace(/.(?=.{4})/g, '•')}` : 'Not added yet'} mute={!b.rccm} />
             </Card>
             <H t="Recruiters" action="+ Invite" onAction={openInvite} />

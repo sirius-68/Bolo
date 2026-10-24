@@ -146,7 +146,7 @@ function PickerHost() {
   useEffect(() => setQ(''), [pickState?.title]);
   if (!pickState) return null;
   const p = pickState;
-  const L = p.options.filter((o) => !q || o.v.toLowerCase().includes(q.toLowerCase()));
+  const L = p.options.filter((o) => !q || (o.v + ' ' + (o.sub || '')).toLowerCase().includes(q.toLowerCase().trim()));
   return (
     <Modal visible transparent statusBarTranslucent animationType="fade" onRequestClose={closePick}>
       <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,.6)' }} onPress={closePick} />

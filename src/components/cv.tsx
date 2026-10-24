@@ -6,6 +6,7 @@ import { Avatar, Txt } from '../ui/kit';
 import { P, WORKERS, aboutOf, ensureSkillList, k, myLevel, myPhoto, myCity } from '../logic/core';
 import { syncContacts } from '../logic/account';
 import { exSummary } from './skills';
+import { showPhone } from '../data/countries';
 
 const H = ({ children }: { children: string }) => (
   <Txt s={11} w={8} c="#3d5af1" style={{ letterSpacing: 1, marginTop: 16, marginBottom: 4 }}>
@@ -36,7 +37,7 @@ export function MyCV({ modern }: { modern?: boolean }) {
           </Txt>
           <T>{cv?.prof || `${m?.n || 'Professional'} · ${myLevel()} · ${u.years} years`}</T>
           <Txt s={11} c="#555">
-            {[db.PR.ct.phone ? '+237 ' + db.PR.ct.phone : '', db.PR.ct.email, myCity()].filter(Boolean).join(' · ')}
+            {[db.PR.ct.phone ? showPhone(db.PR.ct.phone) : '', db.PR.ct.email, myCity()].filter(Boolean).join(' · ')}
           </Txt>
         </View>
       </View>
@@ -152,7 +153,7 @@ export function myCvHtml() {
   const esc = (s: string) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
   const s = u.skillList || [];
   return `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Helvetica,Arial,sans-serif;max-width:720px;margin:28px auto;color:#111;padding:0 20px}h2{margin:0}h4{text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:#3d5af1;margin:18px 0 6px}p,li{font-size:14px;line-height:1.5}small{color:#555}.h{border-bottom:3px solid #3d5af1;padding-bottom:12px}</style></head><body>
-  <div class="h"><h2>${esc(u.name || 'Your name')}</h2><p>${esc(u.cv?.prof || (s[0]?.n || 'Professional') + ' · ' + myLevel() + ' · ' + u.years + ' years')}</p><small>${[db.PR.ct.phone ? '+237 ' + db.PR.ct.phone : '', db.PR.ct.email, myCity()].filter(Boolean).map(esc).join(' · ')}</small></div>
+  <div class="h"><h2>${esc(u.name || 'Your name')}</h2><p>${esc(u.cv?.prof || (s[0]?.n || 'Professional') + ' · ' + myLevel() + ' · ' + u.years + ' years')}</p><small>${[db.PR.ct.phone ? showPhone(db.PR.ct.phone) : '', db.PR.ct.email, myCity()].filter(Boolean).map(esc).join(' · ')}</small></div>
   <h4>Profile</h4><p>${esc(u.bio || `${s[0]?.n || 'Professional'} with ${u.years} years of experience, based in ${myCity()}.`)}</p>
   <h4>Skills</h4><ul>${s.map((e) => `<li><b>${esc(e.n)}</b>${exSummary(e) ? ' — ' + esc(exSummary(e)) : ''}</li>`).join('')}</ul>
   ${db.PR.exp.length ? `<h4>Experience</h4>${db.PR.exp.map((e) => `<p><b>${esc(e.role)} · ${esc(e.org)}</b><br><small>${e.from} – ${e.to || 'present'}</small>${e.desc ? '<br>' + esc(e.desc) : ''}</p>`).join('')}` : ''}

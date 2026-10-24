@@ -26,6 +26,9 @@ jobs:
     name: Typecheck & bundle
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -52,6 +55,13 @@ jobs:
           set -o pipefail
           mkdir -p ci-out
           npx expo export --platform android --output-dir dist 2>&1 | tee -a ci-out/export.log
+      - name: Send the update to installed apps (EAS Update)
+        if: env.EXPO_TOKEN != '' && env.EAS_PROJECT_ID != '' && github.event_name == 'push'
+        run: |
+          set -o pipefail
+          mkdir -p ci-out
+          npx --yes eas-cli@latest update --channel production --platform android --non-interactive \
+            --message "$(git log -1 --pretty=%s | head -c 200)" 2>&1 | tee -a ci-out/eas-update.log
       - name: Publish logs
         if: always()
         run: |
@@ -67,6 +77,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+      EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
+      # Pushes build a quick arm64-only APK (every phone from the last ~8 years). Manual runs build all CPU types and run the emulator tour.
+      FULL: ${{ github.event_name == 'workflow_dispatch' }}
     timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
@@ -103,15 +116,19 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p ci-out
-          (cd android && ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86_64) 2>&1 | tee -a ci-out/gradle.log
+          if [ "$FULL" = true ]; then ARCH=armeabi-v7a,arm64-v8a,x86_64; else ARCH=arm64-v8a; fi
+          echo "Building for $ARCH" | tee -a ci-out/gradle.log
+          (cd android && ./gradlew assembleRelease --no-daemon --build-cache --parallel -PreactNativeArchitectures=$ARCH) 2>&1 | tee -a ci-out/gradle.log
       - name: Collect APK
         run: |
           mkdir -p out phone ci-out
           D=android/app/build/outputs/apk/release
           ls -la $D | tee ci-out/apk.txt
           U=$(ls $D/*universal*.apk 2>/dev/null | head -1); [ -z "$U" ] && U=$D/app-release.apk
-          cp "$U" out/bolo-${{ github.run_number }}.apk
           A=$(ls $D/*arm64-v8a*.apk 2>/dev/null | head -1)
+          # Quick builds only contain arm64 code, so the "universal" file is the phone file.
+          if [ "$FULL" != true ] && [ -n "$A" ]; then U="$A"; fi
+          cp "$U" out/bolo-${{ github.run_number }}.apk
           if [ -n "$A" ]; then cp "$A" phone/bolo.apk; else cp "$U" phone/bolo.apk; fi
           cp out/bolo-${{ github.run_number }}.apk phone/bolo-universal.apk
           mkdir -p rel
@@ -173,6 +190,7 @@ jobs:
   qa:
     name: Emulator UI tour
     needs: build
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:

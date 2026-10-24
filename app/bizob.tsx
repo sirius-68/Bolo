@@ -8,13 +8,14 @@ import { Icon } from '../src/ui/Icon';
 import { C, R } from '../src/ui/theme';
 import { pick, toast } from '../src/ui/overlay';
 import { createBusinessAccount, newBizDraft } from '../src/logic/account';
-import { bizLogo, isEmail, digits } from '../src/logic/core';
+import { bizLogo, isEmail, isPhone } from '../src/logic/core';
 import { pickImage } from '../src/logic/media';
 import { resetTo } from '../src/logic/nav';
 import { LogoPicker } from '../src/components/business';
 import { signup } from '../src/components/auth';
 import { isReal, signUp } from '../src/logic/remote';
 import { db } from '../src/data/db';
+import { PhoneInput, intlPhone } from '../src/components/auth';
 
 /** Business-only sign-up (from the welcome screen). */
 export default function BizOnboarding() {
@@ -36,7 +37,7 @@ export default function BizOnboarding() {
   const next = () => {
     if (step === 0) {
       if (o.owner.trim().length < 2) return setErr('owner');
-      if (!isEmail(o.email) && digits(o.phone).length < 9) return setErr('contact');
+      if (!isEmail(o.email) && !isPhone(o.phone)) return setErr('contact');
       if (o.pass.length < 8) return setErr('pass');
     }
     if (step === 1) {
@@ -53,14 +54,14 @@ export default function BizOnboarding() {
   };
   const [busy, setBusy] = useState(false);
   const enter = async () => {
-    const biz = { ...b, phone: b.phone || digits(o.phone), email: b.email || o.email.trim(), hires: areas, hireTypes: types };
+    const biz = { ...b, phone: b.phone ? intlPhone(b.phone) : o.phone ? intlPhone(o.phone) : '', email: b.email || o.email.trim(), hires: areas, hireTypes: types };
     const done = () => {
-      createBusinessAccount({ owner: o.owner.trim(), email: o.email.trim(), phone: digits(o.phone), biz });
+      createBusinessAccount({ owner: o.owner.trim(), email: o.email.trim(), phone: o.phone ? intlPhone(o.phone) : '', biz });
       resetTo('/home');
     };
     if (!isReal()) return done();
     // Real account: log-in uses the work email (or the phone when there's no email).
-    const contact = isEmail(o.email) ? o.email.trim() : digits(o.phone);
+    const contact = isEmail(o.email) ? o.email.trim() : intlPhone(o.phone);
     setBusy(true);
     const r = await signUp(contact, o.pass, { name: o.owner.trim(), biz_only: true });
     setBusy(false);
@@ -74,6 +75,7 @@ export default function BizOnboarding() {
     signup.otpMode = 'signup';
     signup.contact = contact;
     signup.next = done;
+    signup.pwd = o.pass;
     router.push('/otp');
   };
 
@@ -104,7 +106,7 @@ export default function BizOnboarding() {
             <Input testID="bo-email" value={o.email} onChangeText={(v) => up('email', v)} icon="mail" placeholder="you@yourbusiness.cm" keyboardType="email-address" invalid={err === 'contact'} />
           </Field>
           <Field label="Phone number">
-            <Input value={o.phone} onChangeText={(v) => up('phone', v)} prefix="+237" placeholder="6XX XX XX XX" keyboardType="phone-pad" />
+            <PhoneInput value={o.phone} onChange={(v) => up('phone', v)} />
           </Field>
           <Field label="Create a password" error={err === 'pass' && 'Password needs at least 8 characters'}>
             <Input testID="bo-pass" value={o.pass} onChangeText={(v) => up('pass', v)} icon="lock" placeholder="At least 8 characters" secure invalid={err === 'pass'} />
@@ -157,7 +159,7 @@ export default function BizOnboarding() {
             <Input value={b.address} onChangeText={(v) => ub({ address: v })} icon="pin" placeholder="e.g. Opposite Total, Molyko" />
           </Field>
           <Field label="Business phone">
-            <Input value={b.phone} onChangeText={(v) => ub({ phone: v })} prefix="+237" placeholder="6XX XX XX XX" keyboardType="phone-pad" />
+            <PhoneInput value={b.phone} onChange={(v) => ub({ phone: v })} />
           </Field>
           <Field label="Website · optional">
             <Input value={b.web} onChangeText={(v) => ub({ web: v })} icon="globe" placeholder="yourbusiness.cm" autoCapitalize="none" />

@@ -11,6 +11,7 @@ import { digits, ensureSkillList, isEmail, isPhone, myCity } from '../src/logic/
 import { syncContacts } from '../src/logic/account';
 import { bump, later } from '../src/logic/live';
 import { openCV } from '../src/sheets/career';
+import { PhoneInput } from '../src/components/auth';
 
 type Edu = { lv: string; name: string; org: string; year: string };
 type Exp = { role: string; org: string; from: number; to: number | null; desc: string };
@@ -130,8 +131,8 @@ export default function CVFlow() {
         <Field label="Email address" error={mailBad && 'That email doesn’t look right'}>
           <Input value={c.email} onChangeText={(v) => ((c.email = v), re())} keyboardType="email-address" autoCapitalize="none" invalid={mailBad} />
         </Field>
-        <Field label="Phone number" error={phoneBad && 'Enter 9 digits'}>
-          <Input prefix="+237" value={c.phone} onChangeText={(v) => ((c.phone = v), re())} keyboardType="phone-pad" invalid={phoneBad} />
+        <Field label="Phone number" error={phoneBad && 'Enter a valid phone number'}>
+          <PhoneInput value={c.phone || ''} onChange={(v) => ((c.phone = v), re())} invalid={phoneBad} />
         </Field>
         <Field label="City of residence">
           <SelectBox value={c.city} onPress={() => pick('City', CITIES.map(([n, r]) => ({ v: n, sub: r })), c.city, (v) => ((c.city = v), re()), true)} />
