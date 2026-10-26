@@ -66,10 +66,18 @@ name: Regular account tour
 - waitForAnimationToEnd
 - takeScreenshot: r12b-internship-screen
 - back
-- tapOn: "Break into web development"
-- waitForAnimationToEnd
-- takeScreenshot: r12c-mentor-screen
-- back
+- scrollUntilVisible:
+    element: "Break into web development"
+    direction: DOWN
+    optional: true
+- runFlow:
+    when:
+      visible: "Break into web development"
+    commands:
+      - tapOn: "Break into web development"
+      - waitForAnimationToEnd
+      - takeScreenshot: r12c-mentor-screen
+      - back
 - tapOn:
     id: "tab-me"
 - waitForAnimationToEnd

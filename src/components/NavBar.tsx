@@ -38,6 +38,9 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
     { name: 'me', icon: 'user', label: W ? 'Profile' : 'Company' },
   ];
   return (
+    <>
+    {/* Backdrop behind the status bar so scrolled content never shows through it */}
+    <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ins.top, backgroundColor: 'rgba(0,0,0,0.94)' }} />
     <View
       style={{
         position: 'absolute',
@@ -104,5 +107,6 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
         );
       })}
     </View>
+    </>
   );
 }

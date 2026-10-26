@@ -47,7 +47,7 @@ export function TabHeader({ hello = true, reels }: { hello?: boolean; reels?: bo
             >
               <Icon name="pin" size={12} color={place ? C.muted : C.yellow} />
               <Txt s={12} c={place ? C.muted : C.yellow} lines={1} style={{ flexShrink: 1 }}>
-                {place || 'Set location'}
+                {place || 'Set city'}
               </Txt>
             </Pressable>
           </View>
