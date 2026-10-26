@@ -4,8 +4,9 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, ui, REELS, Post } from '../../src/data/db';
 import { Btn, Empty, Txt, tap } from '../../src/ui/kit';
+import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
-import { P, curBiz, bizName, fCount, isW, listJobs, listPeople, matchJob, matchPerson, postVisible, sortJobs, sortPeople } from '../../src/logic/core';
+import { P, cityLabel, curBiz, bizName, fCount, isW, listJobs, listPeople, matchJob, matchPerson, postVisible, sortJobs, sortPeople } from '../../src/logic/core';
 import { bump, useLive } from '../../src/logic/live';
 import { openBrowse } from '../../src/logic/nav';
 import { CatRail, LiveCards, Rail, SearchBar, Sec, TabHeader } from '../../src/components/common';
@@ -68,10 +69,21 @@ export default function Feed() {
 
   const header = (
     <View style={{ paddingTop: ins.top }}>
-      <TabHeader />
+      <TabHeader reels />
       <Txt s={28} w={8} style={{ marginTop: 14, lineHeight: 32 }}>
         {w ? 'Let’s find the right\nperson near you' : `Find talent for\n${bizName(curBiz())}`}
       </Txt>
+      {!db.demo && !(db.PREF as any).sampleSeen ? (
+        <View testID="early-note" style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, padding: 12, borderRadius: 16, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }}>
+          <Icon name="sparkle" size={18} color={C.lav} />
+          <Txt s={12} c={C.muted} style={{ flex: 1 }}>
+            Early access: the listings below are examples while bolo grows{cityLabel() ? ` in ${cityLabel()}` : ' near you'}. Your own posts and profile are real.
+          </Txt>
+          <Pressable accessibilityRole="button" accessibilityLabel="Dismiss" hitSlop={10} onPress={() => (((db.PREF as any).sampleSeen = true), bump())}>
+            <Icon name="x" size={16} color={C.muted} />
+          </Pressable>
+        </View>
+      ) : null}
       <View style={{ marginTop: 16 }}>
         <SearchBar
           value={ui.q}
@@ -208,7 +220,7 @@ function Promo() {
           {w ? 'Njeiforbi is hiring' : `Hiring for ${bizName(curBiz())}?`}
         </Txt>
         <Txt s={12} c="#e3e7ff">
-          {w ? 'Sales reps and delivery riders in Buea — apply in minutes.' : 'Post a vacancy or create an internship — people near you apply in minutes.'}
+          {w ? 'Sales reps and delivery riders near you — apply in minutes.' : 'Post a vacancy or create an internship — people near you apply in minutes.'}
         </Txt>
       </View>
       <Btn

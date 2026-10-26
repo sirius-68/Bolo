@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, View } from 'react-native';
 import { router } from 'expo-router';
 import * as Location from 'expo-location';
+import { locate } from '../src/logic/here';
+import { cityLabel } from '../src/logic/core';
 import { Avatar, Btn, Grow, Page, Sub, Title, TopBar, Txt } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { C } from '../src/ui/theme';
@@ -29,8 +31,9 @@ export default function LocationScreen() {
   const after = () => router.push(w ? '/jobtypes' : '/done');
   const allow = async () => {
     try {
-      const r = await Location.requestForegroundPermissionsAsync();
-      if (r.granted) toast('Location on');
+      // Ask now; the position and city fill in in the background so the next screen isn't held up.
+      const p = await Location.requestForegroundPermissionsAsync();
+      if (p.granted) locate(false).then((c) => c && cityLabel() && toast('Location on · ' + cityLabel()));
       else toast('You can turn location on later in Settings');
     } catch {}
     after();

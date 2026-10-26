@@ -5,7 +5,7 @@ import { toast, undoBar } from '../ui/overlay';
 import { bump, later, every, cancel } from './live';
 import { emit } from './events';
 import {
-  P, isW, thread, nowT, fname, first, xaf, budgetNum, WORKERS, mySkill, myCity, hiringSide, THREADS, ORDER, NOTIFS, curBiz, bizName, postById, add, toggle, has, mOwner,
+  P, isW, thread, nowT, fname, first, xaf, budgetNum, WORKERS, mySkill, myCity, cityLabel, hiringSide, THREADS, ORDER, NOTIFS, curBiz, bizName, postById, add, toggle, has, mOwner,
 } from './core';
 
 /* =========================== saves & follows =========================== */
@@ -557,7 +557,7 @@ export function sendQuote(id: string, job: string, price: string, whenKey: strin
   reply(id, 'quote');
 }
 export const sendLocation = (id: string) => {
-  pushMsg({ f: 'me', k: 'loc', t: `📍 ${myCity().split(' · ')[0]} · ${db.PR.area.home}`, at: nowT(), st: 'sent' }, id);
+  pushMsg({ f: 'me', k: 'loc', t: `📍 ${[db.PR.area.home, cityLabel()].filter(Boolean).join(' · ') || 'Shared my location'}`, at: nowT(), st: 'sent' }, id);
   reply(id, 'location');
 };
 export const sendPhoto = (id: string, uri: string) => {

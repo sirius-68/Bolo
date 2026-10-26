@@ -7,7 +7,7 @@ import { DOCS, ST_C, ST_W, catIcon } from '../../src/data/catalog';
 import { Avatar, Btn, Empty, IconBtn, PTabs, ProTag, Ring, StatusPill, Txt, Verified, tap } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
-import { P, bizLogo, bizName, bizPct, curBiz, isPro, isW, myHandle, myCity, myPhoto, mySkill, myVacancies, myOpps, myCourses, xaf, postById, openJobs, has } from '../../src/logic/core';
+import { P, bizLogo, bizName, bizPct, curBiz, isPro, isW, myHandle, myCity, cityLabel, myPhoto, mySkill, myVacancies, myOpps, myCourses, xaf, postById, openJobs, has } from '../../src/logic/core';
 import { bump, useLive } from '../../src/logic/live';
 import { followingCount, prItems, prPct, services } from '../../src/logic/account';
 import { openProfile } from '../../src/logic/nav';
@@ -229,7 +229,7 @@ function MeRegular() {
       <TopRow />
       <Head
         pic={myPhoto()}
-        name={db.user.name || 'Your name'}
+        name={db.user.name || 'Add your name'}
         handle={myHandle()}
         role={st[1]}
         roleColor={st[3]}
@@ -323,8 +323,6 @@ function ProfilePanel() {
   const c = db.PR.ct;
   const sv = services();
   const A = db.PR.area;
-  const ar = A.areas;
-  const arT = ar.length > 3 ? `${ar.slice(0, 3).join(', ')} and ${ar.length - 3} more` : ar.join(', ') || 'Not set';
   const matchN = (s: string) => openJobs().filter((p) => p.cat === s).length;
   const Y = new Date().getFullYear();
   return (
@@ -436,9 +434,8 @@ function ProfilePanel() {
       </View>
       <H t="Work area" />
       <Card>
-        <KV k="Lives in" v={`${A.home}, Buea`} />
-        <KV k="Takes jobs in" v={arT} />
-        <KV k="Travels up to" v={`${A.radius} km`} />
+        <KV k="Lives in" v={[A.home, cityLabel()].filter(Boolean).join(', ') || 'Not set'} />
+        <KV k="Travels up to" v={`${A.radius} km from where you are`} />
         <Btn small variant="dark" title="Edit" style={{ alignSelf: 'flex-start' }} onPress={openArea} />
       </Card>
       <H t="Contact info" action="Edit" onAction={() => openContacts()} />

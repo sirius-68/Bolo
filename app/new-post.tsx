@@ -5,7 +5,7 @@ import { Btn, Chip, Chips, Field, Input, Label, Page, Pict, SelectBox, Sub, Titl
 import { Icon } from '../src/ui/Icon';
 import { pick, toast } from '../src/ui/overlay';
 import { C, R } from '../src/ui/theme';
-import { bizName, curBiz, isW, mySkill } from '../src/logic/core';
+import { bizName, curBiz, isW, mySkill, cityLabel } from '../src/logic/core';
 import { services } from '../src/logic/account';
 import { bump } from '../src/logic/live';
 import { pickImage } from '../src/logic/media';
@@ -18,7 +18,7 @@ export default function NewPost() {
   const [tags, setTags] = useState<string[]>([]);
   const svc = w ? services().filter((s) => !s.draft) : [];
   const [link, setLink] = useState(svc[0]?.skill || '');
-  const TAGS = w ? [mySkill(), 'Before & after', 'Same-day', 'Guaranteed', 'Molyko', 'Buea'] : ['Hiring', 'Team', 'Event', 'News', 'Buea'];
+  const TAGS = w ? [mySkill(), 'Before & after', 'Same-day', 'Guaranteed', cityLabel()].filter(Boolean) : ['Hiring', 'Team', 'Event', 'News', cityLabel()].filter(Boolean);
   const ok = !!src || text.trim().length >= 5;
   const choose = async (camera: boolean) => {
     const p = await pickImage({ camera });
@@ -54,7 +54,7 @@ export default function NewPost() {
           </View>
         )}
         <Field label="Caption">
-          <Input multiline value={text} onChangeText={setText} maxLength={300} placeholder={w ? 'e.g. Fixed a leaking kitchen faucet in Molyko today — 40 minutes, no mess.' : 'e.g. We’re hiring 3 sales reps in Buea — apply on bolo!'} />
+          <Input multiline value={text} onChangeText={setText} maxLength={300} placeholder={w ? 'e.g. Fixed a leaking kitchen faucet today — 40 minutes, no mess.' : 'e.g. We’re hiring 3 sales reps — apply on bolo!'} />
         </Field>
         <View>
           <Label>Tags</Label>

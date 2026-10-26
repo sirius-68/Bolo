@@ -6,7 +6,7 @@ import { Btn, Check, Chip, Chips, Field, Fine, Input, Label, Page, Pict, SelectB
 import { Icon } from '../src/ui/Icon';
 import { pick, toast } from '../src/ui/overlay';
 import { C, R, S } from '../src/ui/theme';
-import { bizName, curBiz, digits, isW } from '../src/logic/core';
+import { bizName, cityLabel, curBiz, digits, isW } from '../src/logic/core';
 import { postJob } from '../src/logic/work';
 import { pickImages } from '../src/logic/media';
 import { later } from '../src/logic/live';
@@ -27,7 +27,7 @@ export default function PostJob() {
   const [openings, setOpenings] = useState(1);
   const [when, setWhen] = useState(w ? 'Today' : 'Flexible');
   const [time, setTime] = useState('09:00');
-  const [area, setArea] = useState(db.PR.area.home || 'Molyko');
+  const [area, setArea] = useState(db.PR.area.home || cityLabel());
   const [urgent, setUrgent] = useState(false);
   const [tried, setTried] = useState(false);
   const auto = detectCat(title + ' ' + text);
@@ -133,8 +133,13 @@ export default function PostJob() {
           ) : null}
         </View>
         <Field label="Where">
-          <SelectBox icon="pin" value={area} onPress={() => pick('Where', PJ_AREAS, area, setArea)} />
+          <Input testID="pj-where" icon="pin" value={area} onChangeText={setArea} placeholder="Neighbourhood, street or landmark" autoCapitalize="words" />
         </Field>
+        <Chips>
+          {[cityLabel(), 'Remote / online'].filter(Boolean).map((c) => (
+            <Chip key={c} small label={c} on={area === c} onPress={() => setArea(c)} />
+          ))}
+        </Chips>
         {w ? <SwitchRow title="Urgent" sub="Show it first to people nearby" value={urgent} onChange={setUrgent} /> : null}
         <Btn variant="yellow" title={w ? 'Post job' : 'Publish vacancy'} onPress={submit} testID="pj-submit" />
         <Fine style={{ marginTop: -6 }}>{w ? 'People see your phone number only after you hire them.' : 'Applicants can message you through bolo; your phone stays private.'}</Fine>

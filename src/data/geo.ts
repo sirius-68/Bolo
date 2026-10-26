@@ -1,5 +1,7 @@
 /* Approximate coordinates for Buea neighbourhoods (lng, lat), used to place people and jobs on the map
    until real addresses are stored on the server. */
+import { db } from './db';
+
 export type LngLat = [number, number];
 
 export const BUEA: LngLat = [9.2705, 4.1525];
@@ -26,10 +28,16 @@ function jitter(id: string): LngLat {
   const r = 0.003 + (((h >>> 16) & 0xff) / 0xff) * 0.008;
   return [Math.cos(a) * r, Math.sin(a) * r];
 }
+/** Centre of the map: the person's live position when known (anywhere in the world), else Buea. */
+export const anchor = (): LngLat => (db.user.coord as LngLat | null) || BUEA;
+
+/** Where to draw a listing. The sample listings are laid out around the person's own position,
+    keeping their distances from each other, so the map works in any city. */
 export function coordOf(id: string, area?: string): LngLat {
   const base = (area && (AREA_COORDS[area] || AREA_COORDS[area.split(' · ')[0]] || AREA_COORDS[area.split(',')[0]])) || BUEA;
+  const a = anchor();
   const [dx, dy] = jitter(id);
-  return [base[0] + dx, base[1] + dy];
+  return [a[0] + (base[0] - BUEA[0]) + dx, a[1] + (base[1] - BUEA[1]) + dy];
 }
 /** Distance in km between two points (haversine). */
 export function kmBetween(a: LngLat, b: LngLat) {

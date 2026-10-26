@@ -122,7 +122,7 @@ export async function hasSession() {
 }
 
 /* ---------------------------------------------------------------- pull: server → app */
-const city = (c?: string | null) => (c ? (/ CM$/.test(c) ? c : c + ' CM') : db.user.city);
+const city = (c?: string | null) => c || db.user.city;
 const pic = (url?: string | null) => (url ? 'uri:' + url : null);
 
 export async function pull() {
@@ -229,7 +229,7 @@ function profilePayload() {
   return {
     name: u.name,
     avatar_url: u.avatar?.startsWith('uri:http') ? u.avatar.slice(4) : null,
-    city: (u.city || 'Buea').replace(/ CM$/, ''),
+    city: (u.city || '').replace(/ CM$/, ''),
     bio: u.bio,
     role: u.role,
     intents: u.intents,

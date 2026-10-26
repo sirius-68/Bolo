@@ -7,7 +7,7 @@ import { Avatar, OptRow, Page, TopBar, Txt } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { confirm, toast } from '../src/ui/overlay';
 import { C, S } from '../src/ui/theme';
-import { bizLogo, bizName, curBiz, isPro, isW, myCity, myPhoto } from '../src/logic/core';
+import { bizLogo, bizName, curBiz, isPro, isW, cityLabel, myPhoto } from '../src/logic/core';
 import { useLive } from '../src/logic/live';
 import { logout } from '../src/logic/account';
 import { openAccounts, openBizSetup, openCities, openEdit, openHelp, openLang, openNotifSettings, openPayments, openPrivacy, openPro } from '../src/sheets/account';
@@ -48,7 +48,7 @@ export default function Settings() {
       <Box>
         <OptRow icon="bell" bg={C.lav} title="Notifications" sub="Hires, messages and reminders" onPress={openNotifSettings} />
         <OptRow icon="translate" bg={C.orange} title="Language" sub={db.PREF.lang} onPress={openLang} />
-        <OptRow icon="pin" title="Location" sub={myCity()} onPress={() => openCities()} />
+        <OptRow icon="pin" title="Location" sub={cityLabel() || 'Not set'} onPress={() => openCities()} />
       </Box>
       <G t="Privacy & safety" />
       <Box>

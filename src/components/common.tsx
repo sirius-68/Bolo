@@ -6,7 +6,7 @@ import { CATS } from '../data/catalog';
 import { Avatar, IconBtn, Txt, tap, Verified } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { C, R, S, tx } from '../ui/theme';
-import { bizLogo, bizName, curBiz, fname, greet, isPro, isW, myCity, myPhoto, P, unreadMsgs, unreadNotifs, fCount } from '../logic/core';
+import { bizLogo, bizName, curBiz, fname, greet, isPro, isW, cityLabel, myPhoto, P, unreadMsgs, unreadNotifs, fCount } from '../logic/core';
 import { liveInfo, myBookings, pctOf, trOther } from '../logic/work';
 import { bump } from '../logic/live';
 import { openTrack } from '../logic/nav';
@@ -14,11 +14,12 @@ import { openAccounts, openCities } from '../sheets/account';
 import { openReview } from '../sheets/work';
 
 /** Header used on the main tabs: who you are (tap to switch), messages and notifications. */
-export function TabHeader({ hello = true }: { hello?: boolean }) {
+export function TabHeader({ hello = true, reels }: { hello?: boolean; reels?: boolean }) {
   const w = isW();
   const b = curBiz();
   const m = unreadMsgs();
   const n = unreadNotifs();
+  const place = w || !b ? cityLabel() : b.city;
   return (
     <View style={[S.row, { gap: 10, paddingTop: 8, paddingBottom: 6 }]}>
       <Pressable accessibilityRole="button" accessibilityLabel="Switch profile" onPress={() => (tap(), openAccounts())} style={[S.row, { gap: 10, flex: 1, minWidth: 0 }]}>
@@ -33,12 +34,26 @@ export function TabHeader({ hello = true }: { hello?: boolean }) {
           <View style={[S.row, { gap: 4 }]}>
             <Txt s={12} c={C.muted} lines={1}>
               {w ? 'Regular' : 'Business'}
-              {isPro() ? ' · PRO' : ''} · {w ? myCity() : b?.city || 'Buea'}
+              {isPro() ? ' · PRO' : ''}
             </Txt>
             <Icon name="down" size={12} color={C.muted} />
+            <Pressable
+              testID="hdr-city"
+              accessibilityRole="button"
+              accessibilityLabel={`Location: ${place || 'not set'}. Change`}
+              hitSlop={8}
+              onPress={() => (tap(), w || !b ? openCities() : openCities((c) => ((b.city = c), bump())))}
+              style={[S.row, { gap: 2, marginLeft: 6, flexShrink: 1 }]}
+            >
+              <Icon name="pin" size={12} color={place ? C.muted : C.yellow} />
+              <Txt s={12} c={place ? C.muted : C.yellow} lines={1} style={{ flexShrink: 1 }}>
+                {place || 'Set location'}
+              </Txt>
+            </Pressable>
           </View>
         </View>
       </Pressable>
+      {reels ? <IconBtn name="play" ring label="Reels — videos of work" onPress={() => router.push('/reels')} /> : null}
       <IconBtn name="chat" ring count={m} label="Messages" onPress={() => router.push('/inbox')} />
       <IconBtn name="bell" ring count={n} label="Notifications" onPress={() => router.push('/notifs')} />
     </View>

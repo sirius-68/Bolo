@@ -8,6 +8,7 @@ import { Icon } from '../src/ui/Icon';
 import { C, R } from '../src/ui/theme';
 import { pick, toast } from '../src/ui/overlay';
 import { createBusinessAccount, newBizDraft } from '../src/logic/account';
+import { openCities } from '../src/sheets/account';
 import { bizLogo, isEmail, isPhone } from '../src/logic/core';
 import { pickImage } from '../src/logic/media';
 import { resetTo } from '../src/logic/nav';
@@ -44,6 +45,7 @@ export default function BizOnboarding() {
       if (!b.name.trim()) return setErr('name');
       if (!b.sector) return setErr('sector');
     }
+    if (step === 2 && !b.city.trim()) return setErr('city');
     goStep(step + 1);
   };
   const back = () => (step === 0 || step === 5 ? router.back() : goStep(step - 1));
@@ -149,14 +151,14 @@ export default function BizOnboarding() {
           Where is your business?
         </Txt>
         <View style={{ gap: 14, marginTop: 22 }}>
-          <Field label="City">
-            <SelectBox value={b.city} onPress={() => pick('City', CITIES.map(([c, r]) => ({ v: c, sub: r + ' Region' })), b.city, (v) => ub({ city: v }))} />
+          <Field label="City" error={err === 'city' && 'Choose the city your business is in'}>
+            <SelectBox testID="bo-city" value={b.city} placeholder="Choose a city" icon="pin" invalid={err === 'city'} onPress={() => openCities((v) => setB((x) => ({ ...x, city: v })), b.city)} />
           </Field>
           <Field label="Neighbourhood">
-            <Input value={b.area} onChangeText={(v) => ub({ area: v })} placeholder="e.g. Molyko" />
+            <Input value={b.area} onChangeText={(v) => ub({ area: v })} placeholder="Neighbourhood or district" />
           </Field>
           <Field label="Street address">
-            <Input value={b.address} onChangeText={(v) => ub({ address: v })} icon="pin" placeholder="e.g. Opposite Total, Molyko" />
+            <Input value={b.address} onChangeText={(v) => ub({ address: v })} icon="pin" placeholder="Street, building or landmark" />
           </Field>
           <Field label="Business phone">
             <PhoneInput value={b.phone} onChange={(v) => ub({ phone: v })} />
@@ -176,6 +178,7 @@ export default function BizOnboarding() {
         <Txt s={14} c={C.muted} style={{ marginTop: 6 }}>
           We’ll show you matching talent near you. Pick all that apply.
         </Txt>
+        <View style={{ height: 14 }} />
         <Label>
           <Txt s={12} w={6} c={C.muted}>
             Kinds of work

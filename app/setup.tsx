@@ -1,24 +1,29 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { Avatar, Btn, Field, Input, Page, SelectBox, Steps, Sub, TextLink, Title, TopBar } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { C } from '../src/ui/theme';
 import { db } from '../src/data/db';
-import { pick } from '../src/ui/overlay';
+import { openCities } from '../src/sheets/account';
+import { locate, setCityManually } from '../src/logic/here';
+import { cityLabel } from '../src/logic/core';
 import { wantsWork } from '../src/logic/account';
 import { pickImage } from '../src/logic/media';
 import { bump, useLive } from '../src/logic/live';
 
-const CITIES = ['Buea CM', 'Limbe CM', 'Douala CM', 'Yaoundé CM', 'Bamenda CM', 'Kumba CM', 'Bafoussam CM'];
 
 export default function Setup() {
   useLive();
   const [name, setName] = useState(db.user.name);
-  const [city, setCity] = useState(db.user.city);
+  const [city, setCity] = useState(cityLabel());
+  useEffect(() => {
+    // Fill the city from GPS if the person already allowed location.
+    if (!city) locate(false).then(() => cityLabel() && setCity(cityLabel()));
+  }, []);
   const go = () => {
     if (name.trim()) db.user.name = name.trim();
-    db.user.city = city;
+    if (city && city !== cityLabel()) setCityManually(city);
     bump();
     router.push('/location');
   };
@@ -55,7 +60,7 @@ export default function Setup() {
           <Input value={name} onChangeText={setName} icon="user" placeholder="How people will see you" autoCapitalize="words" />
         </Field>
         <Field label="Location">
-          <SelectBox icon="pin" value={city} onPress={() => pick('Your city', CITIES, city, setCity)} />
+          <SelectBox icon="pin" value={city} placeholder="Choose your city" onPress={() => openCities(setCity, city)} />
         </Field>
         <Btn testID="setup-continue" title="Continue" onPress={go} style={{ marginTop: 8 }} />
       </View>

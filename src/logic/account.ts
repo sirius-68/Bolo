@@ -3,7 +3,7 @@ import { db, makeDb, setDb, ui, uid, MyBiz, Service } from '../data/db';
 import { CATS, SKILLS, lvOf } from '../data/catalog';
 import { toast } from '../ui/overlay';
 import { bump, cancelAll, later } from './live';
-import { curBiz, bizName, isW, nowT, mySkill, ensureSkillList, add, P } from './core';
+import { curBiz, bizName, cityLabel, isW, nowT, mySkill, ensureSkillList, add, P } from './core';
 import { resumeSims, bizLog } from './work';
 import { clearSaved } from './persist';
 import { stopAdTicker } from './career';
@@ -70,7 +70,7 @@ export const canAddBiz = () => db.BIZ.list.length < MAX_FREE_BIZ || db.user.pro.
 
 /* ---------------- businesses ---------------- */
 export function newBizDraft(): MyBiz {
-  return { id: uid('mb'), name: '', sector: '', size: '', city: 'Buea', area: 'Molyko', address: '', phone: '', email: '', web: '', about: '', rccm: '', niu: '', logo: null, color: '#f6ee5c', verified: 'none', draft: true, recruiters: [], team: [], contracts: [], events: [], ads: [] };
+  return { id: uid('mb'), name: '', sector: '', size: '', city: cityLabel(), area: '', address: '', phone: '', email: '', web: '', about: '', rccm: '', niu: '', logo: null, color: '#f6ee5c', verified: 'none', draft: true, recruiters: [], team: [], contracts: [], events: [], ads: [] };
 }
 export function saveBiz(b: MyBiz, opts: { submitDocs?: boolean } = {}) {
   const pct = (() => {

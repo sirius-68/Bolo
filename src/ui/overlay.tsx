@@ -4,6 +4,7 @@ import {
   BackHandler,
   Dimensions,
   Easing,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -78,8 +79,19 @@ function SheetHost() {
     }
   }, [open]);
 
+  // Keep the sheet below the status bar when the keyboard pushes it up.
+  const [kb, setKb] = useState(0);
+  useEffect(() => {
+    const a = Keyboard.addListener('keyboardDidShow', (e) => setKb(e.endCoordinates.height));
+    const b = Keyboard.addListener('keyboardDidHide', () => setKb(0));
+    return () => {
+      a.remove();
+      b.remove();
+    };
+  }, []);
   const H = Dimensions.get('window').height;
   const cur = last.current;
+  const room = H - kb - ins.top - 12;
   if (!visible || !cur.render) return null;
   return (
     <Modal visible transparent statusBarTranslucent navigationBarTranslucent animationType="none" onRequestClose={() => sheet.close()}>
@@ -89,8 +101,8 @@ function SheetHost() {
       <KeyboardAvoidingView behavior="padding" style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }} pointerEvents="box-none">
         <Animated.View
           style={{
-            maxHeight: H * (cur.opts.full ? 0.94 : 0.9),
-            minHeight: cur.opts.full ? H * 0.7 : undefined,
+            maxHeight: Math.min(H * (cur.opts.full ? 0.94 : 0.9), room),
+            minHeight: cur.opts.full ? Math.min(H * 0.7, room) : undefined,
             backgroundColor: C.s1,
             borderTopLeftRadius: 28,
             borderTopRightRadius: 28,
@@ -222,7 +234,7 @@ export function undoBar(msg: string, undo: () => void) {
     toastSubs.forEach((f) => f());
   }, 4000);
 }
-let toastBottom = 110;
+let toastBottom = 32;
 export function setToastOffset(px: number) {
   toastBottom = px;
 }
@@ -250,6 +262,7 @@ function ToastHost({ inModal }: { inModal?: boolean }) {
   // only one host renders: the modal one while a sheet is open
   if (!inModal && sheet.isOpen()) return null;
   if (!shown) return null;
+  const atTop = inModal || toastBottom <= 40;
   return (
     <Animated.View
       pointerEvents="box-none"
@@ -257,10 +270,11 @@ function ToastHost({ inModal }: { inModal?: boolean }) {
         position: 'absolute',
         left: 16,
         right: 16,
-        bottom: (inModal ? 24 : toastBottom) + ins.bottom,
+        // Above the tab bar on the main tabs; at the top elsewhere so it never covers a screen's or sheet's main button.
+        ...(atTop ? { top: ins.top + 8 } : { bottom: toastBottom + ins.bottom }),
         alignItems: 'center',
         opacity: a,
-        transform: [{ translateY: a.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }],
+        transform: [{ translateY: a.interpolate({ inputRange: [0, 1], outputRange: [atTop ? -16 : 16, 0] }) }],
       }}
     >
       <View

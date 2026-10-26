@@ -568,9 +568,11 @@ export function Input(p: InputProps) {
 }
 
 /** Looks like an input; opens a picker sheet. */
-export function SelectBox({ value, placeholder, icon, onPress, invalid }: { value?: string; placeholder?: string; icon?: string; onPress: () => void; invalid?: boolean }) {
+export function SelectBox({ value, placeholder, icon, onPress, invalid, testID }: { value?: string; placeholder?: string; icon?: string; onPress: () => void; invalid?: boolean; testID?: string }) {
   return (
     <Pressable
+      testID={testID}
+      accessibilityRole="button"
       onPress={onPress}
       style={{
         flexDirection: 'row',

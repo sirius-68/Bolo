@@ -7,9 +7,10 @@ import { AlertIll, Avatar, Btn, Chip, Chips, Field, Input, Label, Note, OptRow, 
 import { Icon } from '../ui/Icon';
 import { afterSheet, pick, sheet, SheetTitle, toast } from '../ui/overlay';
 import { C, S } from '../ui/theme';
-import { bizLogo, bizName, bizPct, curBiz, isEmail, isPhone, isW, myPhoto, digits, xaf } from '../logic/core';
+import { bizLogo, bizName, bizPct, curBiz, myCity, isEmail, isPhone, isW, myPhoto, digits, xaf } from '../logic/core';
 import { canAddBiz, cancelPro, MAX_FREE_BIZ, newBizDraft, payPro, saveBiz, setRole, useBiz } from '../logic/account';
 import { bump } from '../logic/live';
+import { setCityManually, gpsCity } from '../logic/here';
 import { resetTo } from '../logic/nav';
 import { LogoPicker } from '../components/business';
 import { pickImage } from '../logic/media';
@@ -695,17 +696,45 @@ export function openNotifSettings() {
     return <N />;
   });
 }
-export function openCities(onPick?: (c: string) => void) {
-  pick(
-    'Your city',
-    CITIES.map(([c, r]) => ({ v: c, sub: r })),
-    db.user.city.replace(/ CM$/, ''),
-    (v) => {
-      if (onPick) return onPick(v);
-      db.user.city = v + ' CM';
-      bump();
-      toast('Location: ' + v);
-    },
-    true,
+/** Choose a city anywhere in the world: from GPS, by typing it, or from suggestions. */
+export function openCities(onPick?: (c: string) => void, current?: string) {
+  sheet.show(() => <CitySheet onPick={onPick} current={current ?? myCity()} />, { tag: 'city' });
+}
+function CitySheet({ onPick, current }: { onPick?: (c: string) => void; current: string }) {
+  const [q, setQ] = useState('');
+  const [busy, setBusy] = useState(false);
+  const done = (c: string, auto = false) => {
+    sheet.close();
+    if (onPick) return onPick(c);
+    if (!auto) setCityManually(c);
+    toast('Location: ' + c);
+  };
+  const sugg = CITIES.map(([c]) => c).filter((c) => !q || c.toLowerCase().includes(q.trim().toLowerCase()));
+  return (
+    <View style={{ gap: 14 }}>
+      <SheetTitle sub={current ? `Now: ${current}` : 'Used for the map, distances and what’s near you.'}>Your location</SheetTitle>
+      <Btn
+        testID="city-gps"
+        title="Use my current location"
+        icon="gpsfix"
+        loading={busy}
+        onPress={async () => {
+          setBusy(true);
+          const ok = await gpsCity();
+          setBusy(false);
+          if (!ok) return toast('Allow location in your phone settings, or type your city');
+          done(myCity(), true);
+        }}
+      />
+      <Field label="Or type your city">
+        <Input testID="city-input" value={q} onChangeText={setQ} icon="pin" placeholder="e.g. Moscow, Lagos, Douala" autoCapitalize="words" returnKeyType="done" onSubmit={() => q.trim() && done(q.trim())} />
+      </Field>
+      {q.trim() && !sugg.some((c) => c.toLowerCase() === q.trim().toLowerCase()) ? <OptRow icon="pin" title={q.trim()} sub="Use this city" onPress={() => done(q.trim())} /> : null}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {sugg.slice(0, 8).map((c) => (
+          <Chip key={c} label={c} on={c === current} onPress={() => done(c)} />
+        ))}
+      </View>
+    </View>
   );
 }

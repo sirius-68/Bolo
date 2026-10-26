@@ -26,7 +26,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="me" />
     </Tabs>
       {/* keeps the status bar readable over scrolled content */}
-      <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ins.top, backgroundColor: 'rgba(0,0,0,0.88)' }} />
+      <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ins.top, backgroundColor: 'rgba(0,0,0,0.92)', zIndex: 50, elevation: 50 }} />
     </View>
   );
 }

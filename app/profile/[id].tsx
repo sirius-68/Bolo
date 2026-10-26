@@ -147,7 +147,7 @@ export default function Profile() {
       <View style={[S.row, { gap: 8, marginTop: 12, paddingHorizontal: 4 }]}>
         <Icon name="pin" size={16} color={C.muted} />
         <Txt s={13} c={C.muted}>
-          {p.area}, Buea · {kind === 'company' ? `${b?.size || ''} people` : p.dist}
+          {p.area} · {kind === 'company' ? `${b?.size || ''} people` : p.dist}
         </Txt>
       </View>
       <PTabs style={{ marginTop: 16 }} items={tabs.map((x) => [x, x] as [string, string])} value={t} onChange={setTab} />
@@ -429,7 +429,7 @@ function ClientTab({ id, t }: { id: string; t: string }) {
         <Card title="Trust">
           <Cred icon="shield" t="Phone verified" s="Confirmed when they joined" />
           <Cred icon="shield" t="Pays on time" s={`${p.hires || 0} completed payments`} />
-          <Cred icon="shield" t={`Member for ${p.years} year${p.years > 1 ? 's' : ''}`} s="Active in Buea" />
+          <Cred icon="shield" t={`Member for ${p.years} year${p.years > 1 ? 's' : ''}`} s="Active on bolo" />
         </Card>
       </>
     );
@@ -479,7 +479,7 @@ function CompanyTab({ id, t }: { id: string; t: string }) {
         <Card title="Details">
           <Cred icon="storefront" t={b?.sector || p.sector || 'Company'} s="Sector" />
           <Cred icon="follow" t={`${b?.size || ''} people`} s="Company size" />
-          <Cred icon="pin" t={`${p.area}, Buea`} s="Location" />
+          <Cred icon="pin" t={p.area} s="Location" />
           <Cred icon="verified" t="Verified business" s="RCCM checked by bolo" />
         </Card>
         <Card title="Find us online">

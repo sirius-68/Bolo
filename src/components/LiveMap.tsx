@@ -1,15 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
-import * as Location from 'expo-location';
 import { Post } from '../data/db';
 import { catIcon } from '../data/catalog';
-import { BUEA, LngLat, coordOf, kmBetween } from '../data/geo';
+import { LngLat, anchor, coordOf } from '../data/geo';
+import { hasCoord, locGranted, locate } from '../logic/here';
+import { useLive } from '../logic/live';
 import { Mapbox } from '../lib/mapbox';
 import { Avatar, Txt, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { toast } from '../ui/overlay';
 import { C, S } from '../ui/theme';
-import { P, myPhoto } from '../logic/core';
+import { P } from '../logic/core';
 import { openProfile } from '../logic/nav';
 import { openJob } from '../sheets/work';
 
@@ -17,42 +18,32 @@ const shortBudget = (b?: string) => (b || '').replace('XAF ', '').split(' · ')[
 
 /** Real Mapbox map of jobs or people near you. `onLock` tells the parent scroll view to stop scrolling while the map is being dragged. */
 export function LiveMap({ mode, jobs, people, bottomInset = 64, onLock }: { mode: 'jobs' | 'people'; jobs: Post[]; people: string[]; bottomInset?: number; onLock?: (locked: boolean) => void }) {
+  useLive();
   const cam = useRef<any>(null);
-  const [me, setMe] = useState<LngLat | null>(null);
-  const [locOk, setLocOk] = useState(false);
+  const [locOk, setLocOk] = useState<boolean | null>(null);
   useEffect(() => {
-    Location.getForegroundPermissionsAsync()
-      .then((p) => setLocOk(p.granted))
-      .catch(() => {});
+    locGranted().then((g) => {
+      setLocOk(g);
+      if (g) locate(false);
+    });
   }, []);
   const centre = async () => {
     tap();
-    try {
-      let p = await Location.getForegroundPermissionsAsync();
-      if (!p.granted) p = await Location.requestForegroundPermissionsAsync();
-      if (!p.granted) {
-        toast('Allow location to see what’s near you');
-        cam.current?.setCamera({ centerCoordinate: BUEA, zoomLevel: 13, animationDuration: 600 });
-        return;
-      }
-      setLocOk(true);
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const here: LngLat = [pos.coords.longitude, pos.coords.latitude];
-      if (kmBetween(here, BUEA) > 150) {
-        toast('bolo is live in Buea for now — showing Buea');
-        cam.current?.setCamera({ centerCoordinate: BUEA, zoomLevel: 13, animationDuration: 800 });
-        return;
-      }
-      setMe(here);
-      cam.current?.setCamera({ centerCoordinate: here, zoomLevel: 14.5, animationDuration: 800 });
-    } catch {
-      toast('Couldn’t get your location');
+    const c = await locate(true);
+    if (!c) {
+      setLocOk(false);
+      toast('Allow location in your phone settings to see what’s near you');
+      return;
     }
+    setLocOk(true);
+    cam.current?.setCamera({ centerCoordinate: c, zoomLevel: 14, animationDuration: 800 });
   };
-  // Fit the view to the pins once per set of pins (not on every re-render, so panning isn't undone).
-  const key = mode + ':' + (mode === 'jobs' ? jobs.slice(0, 8).map((p) => p.id) : people.slice(0, 10)).join(',');
+  // Fit the view to the pins once per set of pins / position (not on every re-render, so panning isn't undone).
+  const a = anchor();
+  const key = mode + ':' + a.map((x) => x.toFixed(3)).join(',') + ':' + (mode === 'jobs' ? jobs.slice(0, 8).map((p) => p.id) : people.slice(0, 10)).join(',');
   const bounds = useMemo(() => {
     const pts: LngLat[] = mode === 'jobs' ? jobs.slice(0, 8).map((po) => coordOf(po.id, po.area)) : people.slice(0, 10).map((id) => coordOf(id, P(id).area));
+    if (hasCoord()) pts.push(anchor());
     if (pts.length < 2) return undefined;
     const lngs = pts.map((p) => p[0]);
     const lats = pts.map((p) => p[1]);
@@ -64,7 +55,7 @@ export function LiveMap({ mode, jobs, people, bottomInset = 64, onLock }: { mode
   return (
     <View style={{ flex: 1 }} onTouchStart={() => onLock?.(true)} onTouchEnd={() => onLock?.(false)} onTouchCancel={() => onLock?.(false)}>
       <M.MapView style={{ flex: 1 }} styleURL={M.StyleURL.Dark} scaleBarEnabled={false} compassEnabled={false} pitchEnabled={false} rotateEnabled={false} logoPosition={{ bottom: bottomInset + 50, left: 12 }} attributionPosition={{ bottom: bottomInset + 50, right: 62 }}>
-        <M.Camera ref={cam} bounds={bounds} defaultSettings={{ centerCoordinate: [9.284, 4.149], zoomLevel: 13.2 }} animationDuration={600} />
+        <M.Camera ref={cam} bounds={bounds} defaultSettings={{ centerCoordinate: a, zoomLevel: 13.2 }} animationDuration={600} />
         {locOk ? <M.LocationPuck visible pulsing={{ isEnabled: true, color: C.blue }} /> : null}
         {mode === 'jobs'
           ? jobs.slice(0, 8).map((po) => (
@@ -94,12 +85,15 @@ export function LiveMap({ mode, jobs, people, bottomInset = 64, onLock }: { mode
                 </M.MarkerView>
               );
             })}
-        {me ? (
-          <M.MarkerView coordinate={me} allowOverlap>
-            <Avatar pic={myPhoto()} size={40} ring={C.blue} />
-          </M.MarkerView>
-        ) : null}
       </M.MapView>
+      {locOk === false ? (
+        <Pressable testID="map-loc-on" accessibilityRole="button" onPress={centre} style={[S.row, { position: 'absolute', left: 16, right: 70, bottom: bottomInset, minHeight: 42, gap: 8, paddingHorizontal: 14, borderRadius: 21, backgroundColor: C.blue }]}>
+          <Icon name="gpsfix" size={16} color="#fff" />
+          <Txt s={13} w={8} lines={2} style={{ flex: 1 }}>
+            Turn on location to see what’s near you
+          </Txt>
+        </Pressable>
+      ) : null}
       <Pressable accessibilityLabel="Centre on me" onPress={centre} style={{ position: 'absolute', right: 16, bottom: bottomInset, width: 42, height: 42, borderRadius: 21, backgroundColor: C.s1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.line }}>
         <Icon name="gpsfix" size={20} color={C.text} />
       </Pressable>

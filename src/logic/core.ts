@@ -83,7 +83,9 @@ export const mySkill = () => db.user.skills[0] || 'Plumber';
 export const myName = () => db.user.name || 'You';
 export const myFirst = () => (db.user.name ? db.user.name.split(' ')[0] : '');
 export const myPhoto = () => db.user.avatar || 'img/me';
-export const myCity = () => db.user.city.replace(' CM', '');
+export const myCity = () => (db.user.city || '').replace(/ CM$/, '') || 'your area';
+/** City for labels; empty when unknown. */
+export const cityLabel = () => (db.user.city || '').replace(/ CM$/, '');
 export const myHandle = () => '@' + (db.user.name ? db.user.name.toLowerCase().replace(/[^a-z]+/g, '.').replace(/^\.|\.$/g, '') : 'you');
 
 /** The signed-in person as a Person record (Regular or the active business). */
@@ -92,7 +94,7 @@ export function me(): Person {
   const base: Person = { name: u.name || 'You', role: isW() ? mySkill() : 'Client', tag: 'You', years: u.years, rate: 5, dist: 'You', area: myCity(), photo: myPhoto(), verified: 1, jobs: 12, reviews: '0', followers: 1200, self: 1 };
   if (!isW()) {
     const b = curBiz();
-    if (b) Object.assign(base, { name: bizName(b), role: 'Business', photo: bizLogo(b), client: 1, biz: 1, area: b.area || 'Buea', verified: b.verified === 'verified' ? 1 : 0 });
+    if (b) Object.assign(base, { name: bizName(b), role: 'Business', photo: bizLogo(b), client: 1, biz: 1, area: b.area || b.city || '', verified: b.verified === 'verified' ? 1 : 0 });
   }
   base.pin = base.photo;
   return base;
@@ -101,7 +103,7 @@ export function me(): Person {
 export function meAs(as?: string, bizId?: string | number | null): Person {
   if (as === 'business') {
     const b = db.BIZ.list.find((x) => x.id === bizId);
-    if (b) return { ...me(), name: bizName(b), role: 'Business', photo: bizLogo(b), pin: bizLogo(b), client: 1, biz: 1, area: b.area || 'Buea', verified: b.verified === 'verified' ? 1 : 0 };
+    if (b) return { ...me(), name: bizName(b), role: 'Business', photo: bizLogo(b), pin: bizLogo(b), client: 1, biz: 1, area: b.area || b.city || '', verified: b.verified === 'verified' ? 1 : 0 };
   }
   const u = db.user;
   return { ...me(), name: u.name || 'You', role: mySkill(), photo: myPhoto(), pin: myPhoto(), client: undefined, biz: undefined, area: myCity(), verified: 1 };

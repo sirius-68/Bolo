@@ -8,7 +8,7 @@ import { AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Note, S
 import { Icon } from '../ui/Icon';
 import { afterSheet, sheet, SheetTitle, toast, confirm } from '../ui/overlay';
 import { C, S } from '../ui/theme';
-import { P, curBiz, bizName, bizLogo, myVacancies, postById, isEmail, isPhone, xaf } from '../logic/core';
+import { P, cityLabel, curBiz, bizName, bizLogo, myVacancies, postById, isEmail, isPhone, xaf } from '../logic/core';
 import { endContract, sendContract, ContractDraft } from '../logic/work';
 import { invite } from '../logic/account';
 import { adRate, adTargets, adHead, launchAd } from '../logic/career';
@@ -325,7 +325,7 @@ function InviteForm() {
 type AdDraft = { t: [string, string, string, string]; head: string; text: string; areas: string[]; fields: string[]; reach: number; days: number };
 export function openAdCreate() {
   const T = adTargets();
-  const a: AdDraft = { t: T[0], head: '', text: '', areas: ['Buea'], fields: [], reach: 1000, days: 7 };
+  const a: AdDraft = { t: T[0], head: '', text: '', areas: [curBiz()?.city || cityLabel() || 'Near my business'], fields: [], reach: 1000, days: 7 };
   sheet.show(() => <AdForm a={a} />, { full: true });
 }
 const REACH = [500, 1000, 2000, 5000, 10000, 20000];
@@ -418,7 +418,7 @@ function AdForm({ a }: { a: AdDraft }) {
       <View>
         <Label>Where</Label>
         <Chips>
-          {['Buea', 'Limbe', 'Douala', 'Yaoundé', 'Bamenda', 'All Cameroon'].map((c) => (
+          {[curBiz()?.city || cityLabel() || 'Near my business', 'Within 25 km', 'Within 100 km', 'Whole country'].map((c) => (
             <Chip key={c} small label={c} on={a.areas.includes(c)} onPress={() => tog(a.areas, c)} />
           ))}
         </Chips>

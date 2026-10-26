@@ -112,7 +112,7 @@ export function PersonCV({ id }: { id: string }) {
             {p.role} · {p.years} years experience
           </T>
           <Txt s={11} c="#555">
-            {p.area}, Buea · {p.rate}★ on bolo
+            {p.area} · {p.rate}★ on bolo
           </Txt>
         </View>
       </View>

@@ -1,8 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, View, useWindowDimensions } from 'react-native';
+import React, { useEffect } from 'react';
+import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { router } from 'expo-router';
 import { Icon } from '../ui/Icon';
 import { C, tx } from '../ui/theme';
 import { tap } from '../ui/kit';
@@ -11,154 +10,99 @@ import { isW } from '../logic/core';
 import { prItems } from '../logic/account';
 import { openCreate } from '../sheets/create';
 import { setToastOffset } from '../ui/overlay';
-import { Text } from 'react-native';
 
-/** Floating FAB visibility, driven by scrolling (hides while scrolling down). */
-const fabY = new Animated.Value(0);
-let lastY = 0;
-let hidden = false;
-let onHidden: ((h: boolean) => void) | null = null;
-export function onScrollFab(e: any) {
-  const y = e.nativeEvent.contentOffset.y;
-  if (y > lastY + 6 && y > 120 && !hidden) {
-    hidden = true;
-    onHidden?.(true);
-    Animated.timing(fabY, { toValue: 1, duration: 180, useNativeDriver: true }).start();
-  } else if ((y < lastY - 6 || y < 40) && hidden) {
-    hidden = false;
-    onHidden?.(false);
-    Animated.timing(fabY, { toValue: 0, duration: 180, useNativeDriver: true }).start();
-  }
-  lastY = y;
-}
+/** Kept for screens that still pass it; the create button now lives in the bar, so nothing floats over content. */
+export function onScrollFab(_e?: any) {}
 
-const ROUTES: [string, string, string][] = [
-  ['home', 'nav', 'Map'],
-  ['feed', 'feed', 'Feed'],
-  ['reels', 'play', 'Reels'],
-  ['career', 'job', 'Career'],
-  ['me', 'user', 'My profile'],
-];
+/** Height of the bar including the gap under it (for content padding). */
+export const NAV_H = 76;
+
+type Tab = { name: string; icon: string; label: string };
 
 export function NavBar({ state, navigation }: BottomTabBarProps) {
   useTick();
   const ins = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const w = Math.min(380, width - 32);
+  const w = Math.min(420, width - 24);
   const cur = state.routes[state.index]?.name;
   const todo = isW() ? prItems().filter((x) => !x[1]).length : 0;
   useEffect(() => {
-    setToastOffset(98);
+    setToastOffset(NAV_H + 22);
   }, []);
-  const fab = useRef(fabY).current;
-  // Each tab starts with the + button visible (it only hides while scrolling down).
-  const [fabOff, setFabOff] = useState(false);
-  useEffect(() => {
-    onHidden = setFabOff;
-    return () => {
-      onHidden = null;
-    };
-  }, []);
-  useEffect(() => {
-    hidden = false;
-    lastY = 0;
-    setFabOff(false);
-    Animated.timing(fabY, { toValue: 0, duration: 140, useNativeDriver: true }).start();
-  }, [cur]);
+  const W = isW();
+  const tabs: Tab[] = [
+    W ? { name: 'home', icon: 'mapt', label: 'Map' } : { name: 'home', icon: 'squares', label: 'Home' },
+    { name: 'feed', icon: 'feed', label: W ? 'Feed' : 'Talent' },
+    { name: '+', icon: 'plus', label: 'Create' },
+    { name: 'career', icon: 'job', label: 'Career' },
+    { name: 'me', icon: 'user', label: W ? 'Profile' : 'Company' },
+  ];
   return (
-    // Tall, touch-transparent container so the floating + stays inside its parent (Android only delivers touches within parent bounds).
-    <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 14 + ins.bottom + 66 + 14 + 64 }}>
-      <View
-        style={{
-          position: 'absolute',
-          bottom: 14 + ins.bottom,
-          alignSelf: 'center',
-          width: w,
-          height: 66,
-          borderRadius: 999,
-          paddingHorizontal: 9,
-          backgroundColor: 'rgba(28,28,31,0.96)',
-          borderWidth: 1,
-          borderColor: '#2c2c30',
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          shadowColor: '#000',
-          shadowOpacity: 0.55,
-          shadowRadius: 20,
-          shadowOffset: { width: 0, height: 12 },
-          elevation: 14,
-        }}
-      >
-        {ROUTES.map(([name, icon, label]) => {
-          const on = cur === name;
-          const ic = name === 'home' && !isW() ? 'squares' : icon;
-          const lab = name === 'home' && !isW() ? 'Business home' : label;
+    <View
+      style={{
+        position: 'absolute',
+        bottom: 10 + ins.bottom,
+        alignSelf: 'center',
+        width: w,
+        height: 66,
+        borderRadius: 24,
+        paddingHorizontal: 6,
+        backgroundColor: 'rgba(24,24,27,0.97)',
+        borderWidth: 1,
+        borderColor: '#2c2c30',
+        flexDirection: 'row',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOpacity: 0.55,
+        shadowRadius: 20,
+        shadowOffset: { width: 0, height: 12 },
+        elevation: 14,
+      }}
+    >
+      {tabs.map((t) => {
+        if (t.name === '+')
           return (
-            <Pressable
-              key={name}
-              testID={`tab-${name}`}
-              accessibilityRole="tab"
-              accessibilityLabel={name === 'me' && todo ? `${lab}, ${todo} things to complete` : lab}
-              accessibilityState={{ selected: on }}
-              onPress={() => {
-                tap();
-                if (name === 'reels') {
-                  router.push('/reels');
-                  return;
-                }
-                const route = state.routes.find((r) => r.name === name);
-                if (route) navigation.navigate(route.name as never);
-              }}
-              style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.yellow : C.s2 }}
-            >
-              <Icon name={ic} size={22} color={on ? '#000' : '#fff'} />
-              {name === 'me' && todo ? (
-                <View style={{ position: 'absolute', top: -2, right: -2, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#000' }}>
-                  <Text style={tx(10, 8, '#000', { lineHeight: 13 })}>{todo}</Text>
-                </View>
-              ) : null}
-            </Pressable>
+            <View key="+" style={{ flex: 1, alignItems: 'center' }}>
+              <Pressable
+                testID="fab-create"
+                accessibilityRole="button"
+                accessibilityLabel={W ? 'Create: post a job, share your work, offer a mentorship' : 'Create: post a vacancy, internship or program'}
+                onPress={() => (tap(), openCreate())}
+                style={({ pressed }) => ({ width: 52, height: 52, borderRadius: 18, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.94 : 1 }] })}
+              >
+                <Icon name="plus" size={26} color="#000" />
+              </Pressable>
+            </View>
           );
-        })}
-      </View>
-        <Animated.View
-          pointerEvents={fabOff ? 'none' : 'auto'}
-          style={{
-            position: 'absolute',
-            right: (width - w) / 2 + 2,
-            bottom: 14 + ins.bottom + 66 + 14,
-            transform: [{ translateY: fab.interpolate({ inputRange: [0, 1], outputRange: [0, 120] }) }, { scale: fab.interpolate({ inputRange: [0, 1], outputRange: [1, 0.6] }) }],
-            opacity: fab.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
-          }}
-        >
+        const on = cur === t.name;
+        return (
           <Pressable
-            testID="fab-create"
-            accessibilityLabel="Create"
+            key={t.name}
+            testID={`tab-${t.name}`}
+            accessibilityRole="tab"
+            accessibilityLabel={t.name === 'me' && todo ? `${t.label}, ${todo} things to complete` : t.label}
+            accessibilityState={{ selected: on }}
             onPress={() => {
               tap();
-              openCreate();
+              const route = state.routes.find((r) => r.name === t.name);
+              if (route) navigation.navigate(route.name as never);
             }}
-            style={({ pressed }) => ({
-              width: 60,
-              height: 60,
-              borderRadius: 30,
-              backgroundColor: C.yellow,
-              alignItems: 'center',
-              justifyContent: 'center',
-              transform: [{ scale: pressed ? 0.94 : 1 }],
-              shadowColor: '#000',
-              shadowOpacity: 0.5,
-              shadowRadius: 14,
-              shadowOffset: { width: 0, height: 8 },
-              elevation: 10,
-              borderWidth: 4,
-              borderColor: 'rgba(0,0,0,0.35)',
-            })}
+            style={{ flex: 1, height: 58, alignItems: 'center', justifyContent: 'center', gap: 3 }}
           >
-            <Icon name="plus" size={28} color="#000" />
+            <View style={{ width: 52, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.yellow : 'transparent' }}>
+              <Icon name={t.icon} size={21} color={on ? '#000' : C.muted} />
+              {t.name === 'me' && todo ? (
+                <View style={{ position: 'absolute', top: -3, right: 4, minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: 4, backgroundColor: C.blue, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#18181b' }}>
+                  <Text style={tx(9, 8, '#fff', { lineHeight: 12 })}>{todo}</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={tx(11, on ? 8 : 6, on ? C.text : C.muted)}>
+              {t.label}
+            </Text>
           </Pressable>
-        </Animated.View>
+        );
+      })}
     </View>
   );
 }

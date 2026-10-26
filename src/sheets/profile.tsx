@@ -7,7 +7,8 @@ import { OptRow, AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label,
 import { Icon } from '../ui/Icon';
 import { afterSheet, pick, sheet, SheetTitle, toast, confirm } from '../ui/overlay';
 import { C, R, S } from '../ui/theme';
-import { P, budgetNum, digits, isEmail, isPhone, isW, mySkill, has } from '../logic/core';
+import { P, budgetNum, cityLabel, digits, isEmail, isPhone, isW, myCity, mySkill, has } from '../logic/core';
+import { openCities } from './account';
 import { services, syncContacts, toggleFollow } from '../logic/account';
 import { bump, later } from '../logic/live';
 import { openProfile } from '../logic/nav';
@@ -139,7 +140,7 @@ function Boost({ id }: { id: string }) {
   return (
     <View>
       <AlertIll icon="rocket" />
-      <SheetTitle center sub={`Show up first on the map and feed around ${db.PR.area.home}. Boosted profiles get about 4× more views.`}>
+      <SheetTitle center sub={`Show up first on the map and feed around ${db.PR.area.home || myCity()}. Boosted profiles get about 4× more views.`}>
         Boost your {s.skill.toLowerCase()} service
       </SheetTitle>
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
@@ -281,37 +282,21 @@ function AreaForm({ a }: { a: { home: string; areas: string[]; radius: number } 
   return (
     <View style={{ gap: 14 }}>
       <SheetTitle>{w ? 'Work area' : 'Where you live'}</SheetTitle>
-      <Field label="Neighbourhood you live in">
-        <SelectBox
-          icon="pin"
-          value={a.home}
-          onPress={() =>
-            pick('Neighbourhood', NB, a.home, (v) => {
-              a.home = v;
-              if (!a.areas.includes(v)) a.areas.push(v);
-              re();
-            })
-          }
-        />
+      <Field label="Neighbourhood or district you live in">
+        <Input testID="area-home" icon="pin" value={a.home} onChangeText={(v) => ((a.home = v), re())} placeholder={cityLabel() ? `e.g. a district of ${cityLabel()}` : 'e.g. your district'} autoCapitalize="words" />
       </Field>
+      <OptRow icon="gpsfix" title={cityLabel() || 'Set your city'} sub="City · tap to change or use GPS" onPress={() => openCities()} />
       {w ? (
         <>
           <View>
-            <Label>Neighbourhoods you take jobs in · {a.areas.length} selected</Label>
+            <Label>How far you’ll travel for jobs</Label>
             <Chips>
-              {NB.map((n) => (
-                <Chip key={n} small label={n} on={a.areas.includes(n)} onPress={() => ((a.areas = a.areas.includes(n) ? a.areas.filter((x) => x !== n) : [...a.areas, n]), re())} />
-              ))}
-            </Chips>
-          </View>
-          <View>
-            <Label>How far you’ll travel</Label>
-            <Chips>
-              {[2, 5, 10, 20].map((r) => (
+              {[2, 5, 10, 25, 50].map((r) => (
                 <Chip key={r} small label={`${r} km`} on={a.radius === r} onPress={() => ((a.radius = r), re())} />
               ))}
             </Chips>
           </View>
+          <Note icon="pin">We show you jobs within {a.radius} km of where you are.</Note>
         </>
       ) : (
         <Note icon="lock">People you hire only see your neighbourhood until you book them.</Note>
@@ -320,7 +305,8 @@ function AreaForm({ a }: { a: { home: string; areas: string[]; radius: number } 
         variant="yellow"
         title="Save"
         onPress={() => {
-          if (!a.areas.length) a.areas.push(a.home);
+          a.home = a.home.trim();
+          a.areas = a.home ? [a.home] : [];
           db.PR.area = a;
           sheet.close(w ? 'Work area saved' : 'Location saved');
         }}

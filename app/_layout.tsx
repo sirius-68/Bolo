@@ -19,6 +19,7 @@ import { on } from '../src/logic/events';
 import { showDoneAlert } from '../src/sheets/work';
 import { startAdTicker } from '../src/logic/career';
 import { hasSession, pull, startSync } from '../src/logic/remote';
+import { locate } from '../src/logic/here';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -33,6 +34,8 @@ export default function Root() {
     restore().then(async () => {
       startAutosave();
       startSync();
+      // Refresh position and city quietly when location is already allowed (never prompts here).
+      locate(false);
       // Copies saved before real accounts existed are demo sessions.
       if (db.loggedIn && !db.uid) db.demo = true;
       if (db.loggedIn && !db.demo) {
