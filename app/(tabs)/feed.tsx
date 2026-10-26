@@ -13,6 +13,8 @@ import { CatRail, LiveCards, Rail, SearchBar, Sec, TabHeader } from '../../src/c
 import { MentorCard, PersonRow, PostCard, RecCard, ReelThumb, ReqPost, JobCard } from '../../src/components/cards';
 import { onScrollFab } from '../../src/components/NavBar';
 import { openFilters, resetFilters } from '../../src/sheets/filters';
+import { openService } from '../../src/sheets/profile';
+import { services } from '../../src/logic/account';
 import { toast } from '../../src/ui/overlay';
 
 type FV = 'all' | 'jobs' | 'people' | 'mentors';
@@ -66,12 +68,13 @@ export default function Feed() {
   const noun = v === 'jobs' ? ['job', 'jobs'] : v === 'people' ? (w ? ['person', 'people'] : ['candidate', 'candidates']) : ['mentorship', 'mentorships'];
   const count = v === 'mentors' ? mentors.length : items.length;
   const findOnly = w && db.user.intents.includes('find') && !db.user.intents.includes('hire');
+  const hireOnly = w && db.user.intents.includes('hire') && !db.user.intents.includes('find');
 
   const header = (
     <View style={{ paddingTop: ins.top }}>
       <TabHeader reels />
       <Txt s={28} w={8} style={{ marginTop: 14, lineHeight: 32 }}>
-        {w ? 'Let’s find the right\nperson near you' : `Find talent for\n${bizName(curBiz())}`}
+        {w ? (findOnly ? 'Find work and\nclients near you' : hireOnly ? 'What do you need\ndone today?' : 'Get hired. Get help.\nRight near you.') : `Find talent for\n${bizName(curBiz())}`}
       </Txt>
       {!db.demo && !(db.PREF as any).sampleSeen ? (
         <View testID="early-note" style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, padding: 12, borderRadius: 16, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }}>
@@ -96,6 +99,7 @@ export default function Feed() {
           filters={nf}
         />
       </View>
+      {w && v === 'all' && !q ? <QuickStart findFirst={!hireOnly} offerToo={!hireOnly} needToo={!findOnly} /> : null}
       <View style={{ flexDirection: 'row', gap: 6, marginTop: 14, padding: 4, borderRadius: 14, backgroundColor: C.s1 }}>
         {views.map(([k, l]) => (
           <Pressable key={k} accessibilityRole="tab" accessibilityState={{ selected: v === k }} onPress={() => (tap(), setV(k))} style={{ flex: 1, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: v === k ? C.blue : 'transparent' }}>
@@ -238,4 +242,40 @@ function Promo() {
       />
     </View>
   );
+}
+
+/** Two big doors into the app's main intents: get something done, or get booked for what you do. */
+function QuickStart({ findFirst, offerToo, needToo }: { findFirst: boolean; offerToo: boolean; needToo: boolean }) {
+  const need = needToo ? (
+    <Pressable key="need" testID="qs-need" accessibilityRole="button" onPress={() => (tap(), router.push('/post-job'))} style={{ flex: 1, minHeight: 84, padding: 14, borderRadius: 20, backgroundColor: C.yellow, justifyContent: 'space-between' }}>
+      <Icon name="job" size={22} color="#000" />
+      <View>
+        <Txt s={15} w={8} c="#000">
+          Need it done?
+        </Txt>
+        <Txt s={11} c="#000" style={{ opacity: 0.7 }} lines={2}>
+          Post in a minute, get offers nearby
+        </Txt>
+      </View>
+    </Pressable>
+  ) : null;
+  const offer = offerToo ? (
+    <Pressable key="offer" testID="qs-offer" accessibilityRole="button" onPress={() => (tap(), services().some((x) => x.pub) ? setFeedJobs() : openService())} style={{ flex: 1, minHeight: 84, padding: 14, borderRadius: 20, backgroundColor: C.lav, justifyContent: 'space-between' }}>
+      <Icon name="wrench" size={22} color="#000" />
+      <View>
+        <Txt s={15} w={8} c="#000">
+          {services().some((x) => x.pub) ? 'Find gigs' : 'Get booked'}
+        </Txt>
+        <Txt s={11} c="#000" style={{ opacity: 0.7 }} lines={2}>
+          {services().some((x) => x.pub) ? 'Open jobs that match your skills' : 'List your service and price'}
+        </Txt>
+      </View>
+    </Pressable>
+  ) : null;
+  return <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>{findFirst ? [offer, need] : [need, offer]}</View>;
+}
+function setFeedJobs() {
+  ui.feedView = 'jobs';
+  ui.q = '';
+  bump();
 }

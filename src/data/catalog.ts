@@ -166,12 +166,9 @@ export function detectCat(t: string): string | null {
 }
 
 export const OB = [
-  { t: 'Find work. Find people.', p: 'From developers, teachers and accountants to plumbers and drivers — jobs, gigs and skilled people near you.', art: 'house' },
-  { t: 'Hire in a single tap.', p: 'Compare ratings, prices and past work, then hire the right person — with live job tracking.', art: 'phone' },
-  { t: 'Show your work. Get paid.', p: 'Build a profile, share your work and get booked by people and businesses around you.', art: 'toolbox' },
-  { t: 'Run your business hiring.', p: 'Create a business page, post vacancies, track applicants and hire under company contracts.', art: 'biz' },
-  { t: 'Grow your career.', p: 'Internships, programs and courses from real businesses — plus a free CV builder.', art: 'career' },
-  { t: 'Learn from mentors.', p: 'Join 1-to-1 or group mentorships from experienced people and companies — or become a mentor yourself.', art: 'mentor' },
+  { t: 'Every skill has a place here.', p: 'Tailors, plumbers, electricians, hairdressers, drivers, teachers, designers, developers — get found and booked by people near you.', art: 'toolbox' },
+  { t: 'Need something done? Sorted.', p: 'Say what you need in under a minute. People nearby send offers — compare ratings, prices and past work, then hire and track it live.', art: 'phone' },
+  { t: 'Grow your career. Hire your team.', p: 'Jobs, internships, programs and mentors to grow — and business pages to post vacancies and hire.', art: 'career' },
 ];
 
 /* -------------------- skills taxonomy -------------------- */

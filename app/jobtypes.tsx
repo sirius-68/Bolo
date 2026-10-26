@@ -20,9 +20,9 @@ export default function JobTypes() {
     <Page keyboard bottom={110}>
       <TopBar title="Your work" />
       <Steps total={7} on={4} />
-      <Title sm>What kind of work are you looking for?</Title>
-      <Sub>Pick all that apply — office jobs, trades, gigs or remote work. We’ll show you matching jobs.</Sub>
-      <Input value={q} onChangeText={setQ} icon="search" placeholder="Search — e.g. design, driving, teaching" style={{ marginTop: 20 }} autoCapitalize="none" />
+      <Title sm>What do you do?</Title>
+      <Sub>Pick everything you can be hired for — trades, crafts, office jobs, gigs or remote work. We’ll send you matching jobs and clients.</Sub>
+      <Input value={q} onChangeText={setQ} icon="search" placeholder="Search — e.g. tailoring, plumbing, driving, design" style={{ marginTop: 20 }} autoCapitalize="none" />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 18, marginBottom: 10, marginHorizontal: 4 }}>
         <Txt s={12} w={6} c={C.muted}>
           All kinds of work

@@ -10,8 +10,16 @@ import { bump } from '../logic/live';
 import { resetTo } from '../logic/nav';
 import { openOppForm, openMentorForm } from './career';
 import { bizOnlyPrompt } from './account';
+import { openService } from './profile';
 
 /** The yellow “+” button. Regular and Business get different options. */
+const need = (
+  <OptRow key="need" testID="cr-job" icon="job" title="I need something done" sub="Post a job — a repair, a tailor, a tutor. People nearby send offers." onPress={() => afterSheet(() => router.push('/post-job'))} />
+);
+const offer = (
+  <OptRow key="offer" testID="cr-service" icon="wrench" bg={C.mint} title="Offer a service" sub="List what you do with a price — people near you can book it" onPress={() => afterSheet(() => openService())} />
+);
+
 export function openCreate() {
   sheet.show(() => <CreateSheet />);
 }
@@ -21,8 +29,8 @@ function CreateSheet() {
   if (w)
     return (
       <View>
-        <SheetTitle sub="Your Regular profile — for personal jobs and your own work.">Create</SheetTitle>
-        <OptRow icon="job" title="Post a job" sub="Personal jobs — a fix, a tutor, a driver. Unlimited." onPress={() => go(() => router.push('/post-job'))} />
+        <SheetTitle sub="What would you like to do?">Create</SheetTitle>
+        {db.user.intents.includes("find") ? [offer, need] : [need, offer]}
         <OptRow icon="post" bg={C.orange} title="Share your work" sub="Photos of a job you’re proud of" onPress={() => go(() => router.push('/new-post'))} />
         <OptRow icon="clock" bg={C.lav} title="Set availability" sub="Let people book your free slots today" onPress={() => go(openAvailability)} />
         <OptRow icon="follow" bg={C.mint} title="Offer a mentorship" sub="Share what you know — free or paid" onPress={() => go(openMentorForm)} />

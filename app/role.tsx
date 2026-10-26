@@ -9,8 +9,8 @@ import { useLive, bump } from '../src/logic/live';
 import { toggle } from '../src/logic/core';
 
 const ROLES: [string, string, string, string, string, string][] = [
-  ['find', 'Find work', 'Jobs, gigs, internships and programs near you', 'toolbox', C.yellow, '#000'],
-  ['hire', 'Hire for personal jobs', 'A fix at home, a tutor, a driver', 'house', C.blue, '#fff'],
+  ['find', 'Offer my skills · find work', 'Tailor, plumber, electrician, designer, driver… get booked or hired near you', 'toolbox', C.yellow, '#000'],
+  ['hire', 'Get something done', 'A repair, a tailor, a tutor, a driver — someone good, nearby', 'house', C.blue, '#fff'],
   ['biz', 'Hire for my business', 'Vacancies, contracts, internships and programs', 'phone', C.lav, '#000'],
 ];
 
@@ -21,7 +21,7 @@ export default function Role() {
     <Page>
       <TopBar title="Sign up" />
       <Title>What brings you to bolo?</Title>
-      <Sub>Pick all that apply. Everyone gets a Regular profile — you can add a business page any time.</Sub>
+      <Sub>Pick all that apply — you can do both. Every skill is welcome, and you can add a business page any time.</Sub>
       <View style={{ gap: 14, marginTop: 28 }}>
         {ROLES.map(([k, t, s, art, bg, fg]) => {
           const on = I.includes(k);

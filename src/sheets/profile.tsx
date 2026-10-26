@@ -20,7 +20,7 @@ export function openService(id?: string) {
   const s = id ? services().find((x) => x.id === id) : null;
   const e: Service & { isNew?: number } = s
     ? { ...s, pub: s.draft ? true : s.pub }
-    : { id: uid('s'), skill: CATS.map((c) => c[0]).find((n) => !services().some((x) => x.skill === n)) || mySkill(), price: '', unit: 'per job', where: WHERE[0], desc: '', pub: true, boost: 0, isNew: 1 };
+    : { id: uid('s'), skill: [mySkill(), ...db.user.skills, ...CATS.map((c) => c[0])].find((n) => n && !services().some((x) => x.skill === n)) || mySkill(), price: '', unit: 'per job', where: WHERE[0], desc: '', pub: true, boost: 0, isNew: 1 };
   sheet.show(() => <ServiceForm e={e} />, { full: true });
 }
 function ServiceForm({ e }: { e: Service & { isNew?: number } }) {
