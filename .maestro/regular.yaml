@@ -46,6 +46,14 @@ name: Regular account tour
 - runFlow: dismiss.yaml
 - tapOn: "People"
 - takeScreenshot: r07-feed-people
+- runFlow:
+    when:
+      visible: "Grace Ewane"
+    commands:
+      - tapOn: "Grace Ewane"
+      - waitForAnimationToEnd
+      - takeScreenshot: r07b-worker-profile
+      - back
 - tapOn: "Mentors"
 - takeScreenshot: r08-feed-mentors
 - tapOn:
