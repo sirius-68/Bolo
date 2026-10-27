@@ -90,17 +90,17 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
               const route = state.routes.find((r) => r.name === t.name);
               if (route) navigation.navigate(route.name as never);
             }}
-            style={{ flex: 1, height: 58, alignItems: 'center', justifyContent: 'center', gap: 3 }}
+            style={{ flex: 1, height: 54, marginHorizontal: 2, borderRadius: 18, alignItems: 'center', justifyContent: 'center', gap: 2, backgroundColor: on ? C.yellow : 'transparent' }}
           >
-            <View style={{ width: 52, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.yellow : 'transparent' }}>
-              <Icon name={t.icon} size={21} color={on ? '#000' : C.muted} />
+            <View style={{ height: 26, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name={t.icon} size={22} color={on ? '#000' : C.muted} />
               {t.name === 'me' && todo ? (
-                <View style={{ position: 'absolute', top: -3, right: 4, minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: 4, backgroundColor: C.blue, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#18181b' }}>
+                <View style={{ position: 'absolute', top: -4, right: -12, minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: 4, backgroundColor: C.blue, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: on ? C.yellow : '#18181b' }}>
                   <Text style={tx(9, 8, '#fff', { lineHeight: 12 })}>{todo}</Text>
                 </View>
               ) : null}
             </View>
-            <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={tx(11, on ? 8 : 6, on ? C.text : C.muted)}>
+            <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={tx(11, on ? 8 : 6, on ? '#000' : C.muted)}>
               {t.label}
             </Text>
           </Pressable>

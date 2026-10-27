@@ -433,11 +433,12 @@ export function PTabs<T extends string>({
   light?: boolean;
 }) {
   return (
+    // The rounded frame stays inside the screen; only the tabs scroll inside it when they don't fit.
+    <View style={[{ flexGrow: 0, borderRadius: R.pill, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, overflow: 'hidden' }, style]}>
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      style={[{ flexGrow: 0 }, style]}
-      contentContainerStyle={{ padding: 4, gap: 6, borderRadius: R.pill, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, flexGrow: 1 }}
+      contentContainerStyle={{ padding: 4, gap: 4, flexGrow: 1 }}
     >
       {items.map(([k, l, n]) => {
         const on = value === k;
@@ -450,7 +451,7 @@ export function PTabs<T extends string>({
               tap();
               onChange(k);
             }}
-            style={{ flexGrow: 1, height: 38, paddingHorizontal: 16, borderRadius: R.pill, backgroundColor: on ? (light ? C.yellow : C.white) : 'transparent', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
+            style={{ flexGrow: 1, height: 38, paddingHorizontal: 14, borderRadius: R.pill, backgroundColor: on ? (light ? C.yellow : C.white) : 'transparent', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
           >
             <Text style={tx(13, 7, on ? C.black : C.muted)}>{l}</Text>
             {n != null ? <Text style={tx(12, 6, on ? 'rgba(0,0,0,.55)' : 'rgba(141,141,149,.7)', { marginLeft: 5 })}>{n}</Text> : null}
@@ -458,6 +459,7 @@ export function PTabs<T extends string>({
         );
       })}
     </ScrollView>
+    </View>
   );
 }
 
@@ -540,6 +542,7 @@ export function Input(p: InputProps) {
         secureTextEntry={p.secure && !show}
         keyboardType={p.keyboardType}
         multiline={multi}
+        numberOfLines={multi ? undefined : 1}
         maxLength={p.maxLength}
         autoFocus={p.autoFocus}
         editable={p.editable}
@@ -553,7 +556,7 @@ export function Input(p: InputProps) {
         selectionColor={C.yellow}
         style={[
           tx(15, 6, C.text),
-          { flex: 1, paddingVertical: multi ? 2 : 0, minHeight: multi ? (p.minHeight || 96) - 24 : 50, textAlignVertical: multi ? 'top' : 'center' },
+          { flex: 1, paddingVertical: multi ? 2 : 0, minHeight: multi ? (p.minHeight || 96) - 24 : 50, maxHeight: multi ? undefined : 50, textAlignVertical: multi ? 'top' : 'center' },
           p.inputStyle,
         ]}
       />
@@ -736,13 +739,13 @@ export function Empty({ title, text, children, style }: { title: string; text?: 
 export function Verified({ size = 16 }: { size?: number }) {
   return <Icon name="verified" size={size} color={C.yellow} style={{ marginLeft: 4 }} />;
 }
-export function Rate({ r, s = 12 }: { r: number | string; s?: number }) {
+export function Rate({ r, s = 12, c }: { r: number | string; s?: number; c?: string }) {
   return (
     <View style={[S.row, { gap: 3 }]}>
-      <Txt s={s} w={8}>
+      <Txt s={s} w={8} c={c}>
         {r}
       </Txt>
-      <Icon name="star" size={s} color={C.yellow} />
+      <Icon name="star" size={s} color={c || C.yellow} />
     </View>
   );
 }

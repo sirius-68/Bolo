@@ -22,7 +22,7 @@ export default function JobTypes() {
       <Steps total={7} on={4} />
       <Title sm>What do you do?</Title>
       <Sub>Pick everything you can be hired for — trades, crafts, office jobs, gigs or remote work. We’ll send you matching jobs and clients.</Sub>
-      <Input value={q} onChangeText={setQ} icon="search" placeholder="Search — e.g. tailoring, plumbing, driving, design" style={{ marginTop: 20 }} autoCapitalize="none" />
+      <Input value={q} onChangeText={setQ} icon="search" placeholder="Search: tailor, plumber, driver…" style={{ marginTop: 20 }} autoCapitalize="none" />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 18, marginBottom: 10, marginHorizontal: 4 }}>
         <Txt s={12} w={6} c={C.muted}>
           All kinds of work

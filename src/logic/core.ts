@@ -191,7 +191,7 @@ export function aboutOf(id: string) {
   const p = P(id);
   if (id === 'edward') return ABOUT_EDWARD;
   return {
-    bio: `${p.role} with ${p.years} years of experience serving homes and businesses around ${p.area}, Buea. Reliable, on time and focused on doing the job right the first time.`,
+    bio: `${p.role} with ${p.years} years of experience serving homes and businesses around ${p.area}. Reliable, on time and focused on doing the job right the first time.`,
     spec: [`${p.role} work for homes and businesses`, 'Emergency call-outs', 'Free on-site estimates', 'Clear pricing before I start'],
     cred: [
       ['Verified by bolo', 'Identity and skills checked'],

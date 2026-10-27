@@ -83,9 +83,9 @@ export default function Profile() {
   const main =
     kind === 'worker' ? (
       w ? (
-        <Btn variant="yellow" style={{ flex: 1 }} title={st === 'booked' ? 'Booked ✓' : st === 'requested' ? 'Requested ✓' : `Hire ${f}`} onPress={() => openHire(id)} testID="profile-hire" />
+        <Btn variant="white" style={{ flex: 1 }} title={st === 'booked' ? 'Booked ✓' : st === 'requested' ? 'Requested ✓' : `Hire ${f}`} onPress={() => openHire(id)} testID="profile-hire" />
       ) : (
-        <Btn variant="yellow" style={{ flex: 1 }} title="Invite to apply" onPress={inviteToVacancy} />
+        <Btn variant="white" style={{ flex: 1 }} title="Invite to apply" onPress={inviteToVacancy} />
       )
     ) : (
       <Btn variant="yellow" style={{ flex: 1 }} title={`Message ${f}`} onPress={() => openChat(id)} />
@@ -122,7 +122,7 @@ export default function Profile() {
               <Txt s={12} c={kind === 'worker' ? '#333' : C.muted}>
                 {kind === 'company' ? `${b?.sector || p.sector || ''} · ${p.area}` : kind === 'client' ? `Hires on bolo · ${p.area}` : `${p.role} · ${p.years} years`}
               </Txt>
-              <Rate r={p.rate} />
+              <Rate r={p.rate} c={kind === 'worker' ? '#000' : undefined} />
             </View>
           </View>
         </View>
@@ -144,8 +144,8 @@ export default function Profile() {
           {kind === 'worker' ? <IconBtn name="chat" bg="#000" label={`Message ${f}`} onPress={() => openChat(id)} /> : null}
         </View>
       </View>
-      <View style={[S.row, { gap: 8, marginTop: 12, paddingHorizontal: 4 }]}>
-        <Icon name="pin" size={16} color={C.muted} />
+      <View style={[S.row, { gap: 6, marginTop: 12, paddingHorizontal: 16 }]}>
+        <Icon name="pin" size={15} color={C.muted} />
         <Txt s={13} c={C.muted}>
           {p.area} · {kind === 'company' ? `${b?.size || ''} people` : p.dist}
         </Txt>

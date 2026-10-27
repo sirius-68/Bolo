@@ -71,6 +71,7 @@ export function SearchBar({ value, onChange, placeholder, onFilter, filters }: {
         placeholder={placeholder}
         placeholderTextColor={C.faint}
         returnKeyType="search"
+        numberOfLines={1}
         style={[tx(14, 6, C.text), { flex: 1, height: 50, paddingVertical: 0 }]}
         accessibilityLabel={placeholder}
         clearButtonMode="while-editing"
