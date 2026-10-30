@@ -70,6 +70,23 @@ name: Regular account tour
 - takeScreenshot: r11-career
 - scroll
 - takeScreenshot: r12-career-2
+- runFlow:
+    when:
+      visible: "Career experts"
+    commands:
+      - tapOn: "Career experts"
+      - waitForAnimationToEnd
+      - takeScreenshot: r12d-experts
+      - scrollUntilVisible:
+          element:
+            id: "become-expert"
+          direction: DOWN
+      - tapOn:
+          id: "become-expert"
+      - waitForAnimationToEnd
+      - takeScreenshot: r12e-expert-apply
+      - back
+      - back
 - tapOn: "Software engineering internship"
 - waitForAnimationToEnd
 - takeScreenshot: r12b-internship-screen
@@ -108,6 +125,12 @@ name: Regular account tour
 - inputText: "Start in plumbing"
 - takeScreenshot: r15b-sheet-keyboard
 - hideKeyboard
+- tapOn: "Choose a field"
+- tapOn: "Plumber"
+- tapOn:
+    id: "mf-next"
+- waitForAnimationToEnd
+- takeScreenshot: r15c-mentor-step2
 - back
 - tapOn:
     id: "fab-create"
