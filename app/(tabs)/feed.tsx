@@ -9,7 +9,7 @@ import { C, S } from '../../src/ui/theme';
 import { P, cityLabel, curBiz, bizName, fCount, isW, listJobs, listPeople, matchJob, matchPerson, postVisible, sortJobs, sortPeople } from '../../src/logic/core';
 import { bump, useLive } from '../../src/logic/live';
 import { openBrowse } from '../../src/logic/nav';
-import { LiveBubble, hasLive, Rail, SearchBar, Sec, TabHeader } from '../../src/components/common';
+import { notchScale, Rail, SearchBar, Sec, TabHeader } from '../../src/components/common';
 import { MentorCard, PersonRow, PostCard, RecCard, ReelThumb, ReqPost, JobCard } from '../../src/components/cards';
 import { onScrollFab } from '../../src/components/NavBar';
 import { openFilters, resetFilters } from '../../src/sheets/filters';
@@ -29,7 +29,6 @@ export default function Feed() {
   const w = isW();
   const list = useRef<FlatList<Item>>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
-  const bubbleScale = useRef(new Animated.Value(1)).current;
   const lastY = useRef(0);
   const small = useRef(false);
   // Businesses don't take jobs, so they get Talent / Mentors instead of Jobs.
@@ -80,7 +79,6 @@ export default function Feed() {
   const header = (
     <View style={{ paddingTop: ins.top }}>
       <TabHeader />
-      {hasLive() ? <View style={{ height: BUBBLE_SPACE }} /> : null}
       <Txt s={28} w={8} style={{ marginTop: 14, lineHeight: 32 }}>
         {w ? (findOnly ? 'Find work and\nclients near you' : hireOnly ? 'What do you need\ndone today?' : 'Get hired. Get help.\nRight near you.') : `Find talent for\n${bizName(curBiz())}`}
       </Txt>
@@ -178,10 +176,10 @@ export default function Feed() {
     const up = y < lastY.current - 4 || y < 24;
     if (down && !small.current) {
       small.current = true;
-      Animated.spring(bubbleScale, { toValue: 0.8, useNativeDriver: true, speed: 16, bounciness: 8 }).start();
+      Animated.spring(notchScale, { toValue: 0.82, useNativeDriver: true, speed: 16, bounciness: 8 }).start();
     } else if (up && small.current) {
       small.current = false;
-      Animated.spring(bubbleScale, { toValue: 1, useNativeDriver: true, speed: 14, bounciness: 12 }).start();
+      Animated.spring(notchScale, { toValue: 1, useNativeDriver: true, speed: 14, bounciness: 12 }).start();
     }
     lastY.current = y;
   };
@@ -221,22 +219,6 @@ export default function Feed() {
       windowSize={7}
       maxToRenderPerBatch={6}
     />
-      {/* Live jobs bubble: sits under the header, then sticks to the top while scrolling */}
-      {hasLive() ? (
-        <Animated.View
-          pointerEvents="box-none"
-          style={{
-            position: 'absolute',
-            top: ins.top + 6,
-            left: 0,
-            right: 0,
-            alignItems: 'center',
-            transform: [{ translateY: scrollY.interpolate({ inputRange: [0, HEADER_ROW], outputRange: [HEADER_ROW, 0], extrapolate: 'clamp' }) }, { scale: bubbleScale }],
-          }}
-        >
-          <LiveBubble />
-        </Animated.View>
-      ) : null}
     </View>
   );
 }
