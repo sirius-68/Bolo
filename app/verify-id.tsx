@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
+import { ui } from '../src/data/db';
 import { Btn, Grow, Page, Pict, Seg, Steps, Sub, TextLink, Title, TopBar, Txt } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { C, R } from '../src/ui/theme';
@@ -52,7 +53,7 @@ export default function VerifyId() {
   };
   return (
     <Page>
-      <TopBar title="Verify identity" right={<TextLink title="Later" onPress={() => router.push('/done')} />} />
+      <TopBar title="Verify identity" right={<TextLink title="Later" onPress={() => (ui.verifyReturn ? (router.dismissTo(ui.verifyReturn as any), (ui.verifyReturn = '')) : router.push('/done'))} />} />
       <Steps total={7} on={6} />
       <Title sm>Upload your ID</Title>
       <Sub>Verified profiles get a badge and up to 3× more hires.</Sub>

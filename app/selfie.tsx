@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Animated, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
+import { ui } from '../src/data/db';
 import { Btn, Grow, Page, Pict, Steps, Sub, TextLink, Title, TopBar } from '../src/ui/kit';
 import { C } from '../src/ui/theme';
 import { pickImage } from '../src/logic/media';
@@ -19,7 +20,7 @@ export default function Selfie() {
   const corner = (pos: any) => <View style={[{ position: 'absolute', width: 34, height: 34, borderColor: '#fff' }, pos]} />;
   return (
     <Page>
-      <TopBar right={<TextLink title="Later" onPress={() => router.push('/done')} />} />
+      <TopBar right={<TextLink title="Later" onPress={() => (ui.verifyReturn ? (router.dismissTo(ui.verifyReturn as any), (ui.verifyReturn = '')) : router.push('/done'))} />} />
       <Steps total={7} on={7} />
       <Pressable onPress={() => !ok && done(null)} style={{ width: '100%', maxWidth: 300, aspectRatio: 1, alignSelf: 'center', marginTop: 22, borderRadius: 22, backgroundColor: C.lav, overflow: 'hidden' }}>
         <Pict pic={pic || 'art/face'} style={{ width: '100%', height: '100%' }} />

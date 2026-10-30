@@ -15,6 +15,7 @@ import { ListRow, MentorCard, OppCard } from '../../src/components/cards';
 import { onScrollFab } from '../../src/components/NavBar';
 import { openOpp, crSee, openArticles, openCourse, openExperts, openMentor, openMentorForm, openOppForm, openPaths, openSalaries, openCV } from '../../src/sheets/career';
 import { openPro } from '../../src/sheets/account';
+import { applying, isExpert } from '../../src/logic/expert';
 
 export default function Career() {
   useLive();
@@ -97,10 +98,17 @@ export default function Career() {
           <Txt s={12} c="#e3e7ff" style={{ marginTop: 2 }}>
             Help with your CV, interviews, job search and first job
           </Txt>
-          <View style={{ flexDirection: 'row', marginTop: 10 }}>
-            {EXPERTS.map((e, i) => (
-              <Avatar key={e[0]} pic={e[2]} size={34} style={{ marginLeft: i ? -8 : 0, borderWidth: 2, borderColor: C.blue }} />
-            ))}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+            <View style={{ flexDirection: 'row' }}>
+              {EXPERTS.map((e, i) => (
+                <Avatar key={e[0]} pic={e[2]} size={34} style={{ marginLeft: i ? -8 : 0, borderWidth: 2, borderColor: C.blue }} />
+              ))}
+            </View>
+            <View style={{ paddingHorizontal: 12, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,.18)', justifyContent: 'center' }}>
+              <Txt s={12} w={8}>
+                {isExpert() ? 'You’re an expert ✓' : applying() ? 'Application in review' : 'Become an expert'}
+              </Txt>
+            </View>
           </View>
         </Pressable>
       ) : null}

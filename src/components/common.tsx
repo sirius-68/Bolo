@@ -1,5 +1,6 @@
-import React from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { db, ui } from '../data/db';
 import { CATS } from '../data/catalog';
@@ -8,7 +9,8 @@ import { Icon } from '../ui/Icon';
 import { C, R, S, tx } from '../ui/theme';
 import { bizLogo, bizName, curBiz, fname, greet, isPro, isW, cityLabel, myPhoto, P, unreadMsgs, unreadNotifs, fCount } from '../logic/core';
 import { liveInfo, myBookings, pctOf, trOther } from '../logic/work';
-import { bump } from '../logic/live';
+import { bump, useTick } from '../logic/live';
+import { afterSheet, sheet, SheetTitle } from '../ui/overlay';
 import { openTrack } from '../logic/nav';
 import { openAccounts, openCities } from '../sheets/account';
 import { openReview } from '../sheets/work';
@@ -97,16 +99,136 @@ export function SearchBar({ value, onChange, placeholder, onFilter, filters }: {
   );
 }
 
+const liveList = () => myBookings().filter((b) => b.state !== 'confirmed' || !b.reviewed);
+const openLive = (b: any, fromSheet?: boolean) => {
+  const go = () => (b.state === 'confirmed' ? openReview(trOther(b), b.id) : openTrack(b.id));
+  if (fromSheet) afterSheet(go);
+  else go();
+};
+const liveBg = (cls: string) => (cls === 'done' ? C.mint : cls === 'sched' ? C.s3 : C.yellow);
+
+/** Small bubble of faces at the top of the screen — one per live job. Tap to see them all. */
+export function LiveBubble({ style }: { style?: any }) {
+  const L = liveList();
+  if (!L.length) return null;
+  const shown = L.slice(0, 3);
+  const label = L.map((b) => liveInfo(b)[0]).join('. ');
+  return (
+    <Pressable
+      testID="live-bubble"
+      accessibilityRole="button"
+      accessibilityLabel={`${L.length} live ${L.length === 1 ? 'job' : 'jobs'}: ${label}. Open`}
+      onPress={() => (tap(), openLiveSheet())}
+      style={[{ alignSelf: 'center', flexDirection: 'row', alignItems: 'center', padding: 4, paddingRight: L.length > 3 ? 10 : 4, borderRadius: 999, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }, style]}
+    >
+      {shown.map((b, i) => {
+        const cls = liveInfo(b)[2];
+        return (
+          <View key={b.id} style={{ marginLeft: i ? -10 : 0, borderRadius: 22, borderWidth: 2.5, borderColor: liveBg(cls) }}>
+            <Avatar pic={P(trOther(b)).photo} size={36} />
+          </View>
+        );
+      })}
+      {L.length > 3 ? (
+        <Txt s={12} w={8} style={{ marginLeft: 6 }}>
+          +{L.length - 3}
+        </Txt>
+      ) : null}
+    </Pressable>
+  );
+}
+export function openLiveSheet() {
+  sheet.show(() => (
+    <View>
+      <SheetTitle sub="Jobs happening now — tap one to follow it.">Live now</SheetTitle>
+      <LiveCards fromSheet />
+    </View>
+  ));
+}
+
+/** When a job changes (on the way, arrived, done…), a card pops in at the top, then shrinks back into the bubble. */
+export function LivePop() {
+  useTick();
+  const ins = useSafeAreaInsets();
+  const [cur, setCur] = useState<{ id: string; key: string } | null>(null);
+  const a = useRef(new Animated.Value(0)).current;
+  const seen = useRef<Set<string> | null>(null);
+  const timer = useRef<any>(null);
+  const keys = liveList().map((b) => b.id + ':' + b.state);
+  useEffect(() => {
+    if (!ui.appStarted) return;
+    if (!seen.current) {
+      seen.current = new Set(keys);
+      return;
+    }
+    const fresh = keys.filter((k) => !seen.current!.has(k));
+    keys.forEach((k) => seen.current!.add(k));
+    if (!fresh.length) return;
+    const k = fresh[fresh.length - 1];
+    setCur({ id: k.split(':')[0], key: k });
+    a.setValue(0);
+    Animated.spring(a, { toValue: 1, useNativeDriver: true, speed: 14, bounciness: 7 }).start();
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => Animated.timing(a, { toValue: 2, duration: 420, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(() => setCur(null)), 3600);
+  }, [keys.join('|')]);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  const b = cur ? db.BOOKINGS.find((x) => x.id === cur.id) : null;
+  if (!b) return null;
+  const [t, s2, cls] = liveInfo(b);
+  const bg = liveBg(cls);
+  const fg = cls === 'sched' ? C.text : '#000';
+  return (
+    <Animated.View
+      pointerEvents="box-none"
+      style={{
+        position: 'absolute',
+        top: ins.top + 6,
+        left: 14,
+        right: 14,
+        alignItems: 'center',
+        opacity: a.interpolate({ inputRange: [0, 0.6, 1, 1.7, 2], outputRange: [0, 1, 1, 0.6, 0] }),
+        transform: [
+          { translateY: a.interpolate({ inputRange: [0, 1, 2], outputRange: [-40, 0, -6] }) },
+          { scaleX: a.interpolate({ inputRange: [0, 1, 2], outputRange: [0.4, 1, 0.18] }) },
+          { scaleY: a.interpolate({ inputRange: [0, 1, 2], outputRange: [0.6, 1, 0.5] }) },
+        ],
+      }}
+    >
+      <Pressable
+        testID="live-pop"
+        accessibilityRole="alert"
+        accessibilityLabel={`${t}. ${s2}`}
+        onPress={() => {
+          clearTimeout(timer.current);
+          setCur(null);
+          openLive(b);
+        }}
+        style={{ width: '100%', maxWidth: 420, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, paddingRight: 14, borderRadius: 26, backgroundColor: bg, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 20 }}
+      >
+        <Avatar pic={P(trOther(b)).photo} size={40} />
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Txt s={14} w={8} c={fg} lines={1}>
+            {t}
+          </Txt>
+          <Txt s={12} c={cls === 'sched' ? C.muted : '#222'} lines={1}>
+            {s2}
+          </Txt>
+        </View>
+        <Icon name="chev" size={18} color={fg} />
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 /** Live booking cards: “Yann is on the way”, “Confirm the job”, “Rate Ama”. */
-export function LiveCards() {
-  const L = myBookings().filter((b) => b.state !== 'confirmed' || !b.reviewed);
+export function LiveCards({ fromSheet }: { fromSheet?: boolean } = {}) {
+  const L = liveList();
   if (!L.length) return null;
   return (
     <View style={{ gap: 8, marginTop: 12 }}>
       {L.map((b) => {
         const [t, s, cls] = liveInfo(b);
         const o = P(trOther(b));
-        const rate = b.state === 'confirmed';
         const moving = b.state === 'onway' || b.state === 'working';
         const bg = cls === 'done' ? C.mint : cls === 'sched' ? C.s1 : C.yellow;
         const fg = cls === 'sched' ? C.text : '#000';
@@ -115,7 +237,7 @@ export function LiveCards() {
             key={b.id}
             accessibilityRole="button"
             accessibilityLabel={`${t}. ${s}`}
-            onPress={() => (rate ? openReview(trOther(b), b.id) : openTrack(b.id))}
+            onPress={() => openLive(b, fromSheet)}
             style={{ overflow: 'hidden', flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 20, backgroundColor: bg, borderWidth: cls === 'sched' ? 1 : 0, borderColor: C.line }}
           >
             <Avatar pic={o.photo} size={42} />

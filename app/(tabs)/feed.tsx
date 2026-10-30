@@ -9,7 +9,7 @@ import { C, S } from '../../src/ui/theme';
 import { P, cityLabel, curBiz, bizName, fCount, isW, listJobs, listPeople, matchJob, matchPerson, postVisible, sortJobs, sortPeople } from '../../src/logic/core';
 import { bump, useLive } from '../../src/logic/live';
 import { openBrowse } from '../../src/logic/nav';
-import { CatRail, LiveCards, Rail, SearchBar, Sec, TabHeader } from '../../src/components/common';
+import { LiveBubble, Rail, SearchBar, Sec, TabHeader } from '../../src/components/common';
 import { MentorCard, PersonRow, PostCard, RecCard, ReelThumb, ReqPost, JobCard } from '../../src/components/cards';
 import { onScrollFab } from '../../src/components/NavBar';
 import { openFilters, resetFilters } from '../../src/sheets/filters';
@@ -73,6 +73,7 @@ export default function Feed() {
   const header = (
     <View style={{ paddingTop: ins.top }}>
       <TabHeader reels />
+      <LiveBubble style={{ marginTop: 6 }} />
       <Txt s={28} w={8} style={{ marginTop: 14, lineHeight: 32 }}>
         {w ? (findOnly ? 'Find work and\nclients near you' : hireOnly ? 'What do you need\ndone today?' : 'Get hired. Get help.\nRight near you.') : `Find talent for\n${bizName(curBiz())}`}
       </Txt>
@@ -109,16 +110,8 @@ export default function Feed() {
           </Pressable>
         ))}
       </View>
-      <CatRail
-        value={cat}
-        onChange={(c) => {
-          ui.cat = c;
-          bump();
-        }}
-      />
       {v === 'all' ? (
         <>
-          <LiveCards />
           <Promo />
           <Sec title={findOnly ? 'Jobs for you' : w ? 'Recommended for you' : 'Talent near you'} action="See all" onAction={() => openBrowse(findOnly ? 'jobs' : 'people')} />
           {findOnly ? (

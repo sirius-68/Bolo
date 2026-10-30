@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { Btn, Grow, Page, Pict, Sub, Title, Txt } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { C } from '../src/ui/theme';
-import { db } from '../src/data/db';
+import { db, ui } from '../src/data/db';
 
 const ITEMS = ['Documents uploaded', 'Documents approved', 'Selfie approved'];
 
@@ -55,7 +55,13 @@ export default function Verifying() {
         style={{ marginTop: 24 }}
         onPress={() => {
           db.user.verified = true;
-          router.push('/done');
+          // Demo approves at once; real accounts wait for a reviewer.
+          db.PR.docs.id = db.demo ? 'verified' : 'review';
+          if (ui.verifyReturn) {
+            const to = ui.verifyReturn;
+            ui.verifyReturn = '';
+            router.dismissTo(to as any);
+          } else router.push('/done');
         }}
       />
     </Page>

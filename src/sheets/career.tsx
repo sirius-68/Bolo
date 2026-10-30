@@ -5,7 +5,7 @@ import * as Sharing from 'expo-sharing';
 import { db, ui, Course } from '../data/db';
 import { router } from 'expo-router';
 import { ARTICLES, CATS, EXPERTS, OPP_KINDS, PATHS, RULES, SALARIES, catIcon } from '../data/catalog';
-import { OptRow, AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Meta, Note, Pill, ProTag, Rate, SelectBox, StatusPill, Stepper, Txt, Verified, tap } from '../ui/kit';
+import { OptRow, AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Meta, Note, Pill, ProTag, Rate, SelectBox, StatusPill, Stepper, Steps, Txt, Verified, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { afterSheet, pick, sheet, SheetTitle, toast } from '../ui/overlay';
 import { C, R, S } from '../ui/theme';
@@ -401,61 +401,98 @@ export function openMentorForm() {
   const f: MF = { title: '', field: '', format: '1-to-1', dur: '1 month', price: 'Free', amount: '', seats: 3, desc: '', rules: ['noDM', 'respect'] };
   sheet.show(() => <MentorForm f={f} />, { full: true });
 }
+const MSTEPS = ['What you’ll mentor', 'How it runs', 'Price and what mentees get', 'Group rules and publish'];
 function MentorForm({ f }: { f: MF }) {
   const [, force] = useState(0);
+  const [step, setStep] = useState(0);
+  const [tried, setTried] = useState(false);
   const re = () => force((x) => x + 1);
   const who = isW() ? db.user.name || 'you' : bizName(curBiz());
+  const okStep = [f.title.trim().length >= 4 && !!f.field, true, f.price === 'Free' || Number(f.amount) > 0, true][step];
+  const next = () => {
+    setTried(true);
+    if (!okStep) return;
+    setTried(false);
+    if (step < MSTEPS.length - 1) return setStep(step + 1);
+    publishMentor(f);
+    sheet.close();
+  };
   return (
     <View style={{ gap: 14 }}>
-      <SheetTitle sub={`Published by ${who} in Career. Share what you know and help people grow.`}>Offer a mentorship</SheetTitle>
-      <Field label="Title">
-        <Input value={f.title} onChangeText={(v) => ((f.title = v), re())} maxLength={60} placeholder="e.g. Start your career in sales" />
-      </Field>
-      <Field label="Field">
-        <SelectBox value={f.field} placeholder="Choose a field" onPress={() => pick('Field', CATS.map((c) => c[0]), f.field, (v) => ((f.field = v), re()))} />
-      </Field>
+      <Steps total={MSTEPS.length} on={step + 1} />
       <View>
-        <Label>Format</Label>
-        <Chips>
-          {(['1-to-1', 'Group'] as const).map((x) => (
-            <Chip key={x} small label={x} on={f.format === x} onPress={() => ((f.format = x), (f.seats = x === 'Group' ? 10 : 3), re())} />
-          ))}
-        </Chips>
+        <Txt s={12} w={7} c={C.muted}>
+          Step {step + 1} of {MSTEPS.length}
+        </Txt>
+        <SheetTitle sub={step === 0 ? `Published by ${who} in Career. Share what you know and help people grow.` : undefined}>{MSTEPS[step]}</SheetTitle>
       </View>
-      <View>
-        <Label>Length</Label>
-        <Chips>
-          {['2 weeks', '1 month', '3 months', '6 months'].map((x) => (
-            <Chip key={x} small label={x} on={f.dur === x} onPress={() => ((f.dur = x), re())} />
-          ))}
-        </Chips>
+      {step === 0 ? (
+        <>
+          <Field label="Title" error={tried && f.title.trim().length < 4 && 'Give it a short title'}>
+            <Input testID="mf-title" value={f.title} onChangeText={(v) => ((f.title = v), re())} maxLength={60} placeholder="e.g. Start your career in sales" invalid={tried && f.title.trim().length < 4} />
+          </Field>
+          <Field label="Field" error={tried && !f.field && 'Choose the field you’ll mentor in'}>
+            <SelectBox testID="mf-field" value={f.field} placeholder="Choose a field" invalid={tried && !f.field} onPress={() => pick('Field', CATS.map((c) => c[0]), f.field, (v) => ((f.field = v), re()), true)} />
+          </Field>
+        </>
+      ) : null}
+      {step === 1 ? (
+        <>
+          <View>
+            <Label>Format</Label>
+            <Chips>
+              {(['1-to-1', 'Group'] as const).map((x) => (
+                <Chip key={x} small label={x} on={f.format === x} onPress={() => ((f.format = x), (f.seats = x === 'Group' ? 10 : 3), re())} />
+              ))}
+            </Chips>
+          </View>
+          <View>
+            <Label>Length</Label>
+            <Chips>
+              {['2 weeks', '1 month', '3 months', '6 months'].map((x) => (
+                <Chip key={x} small label={x} on={f.dur === x} onPress={() => ((f.dur = x), re())} />
+              ))}
+            </Chips>
+          </View>
+          <View>
+            <Label>{f.format === 'Group' ? 'Places in the group' : 'Mentees at a time'}</Label>
+            <Stepper text={String(f.seats)} onMinus={() => ((f.seats = Math.max(1, f.seats - 1)), re())} onPlus={() => ((f.seats = Math.min(100, f.seats + 1)), re())} />
+          </View>
+        </>
+      ) : null}
+      {step === 2 ? (
+        <>
+          <View>
+            <Label>Price</Label>
+            <Chips>
+              {(['Free', 'Paid'] as const).map((x) => (
+                <Chip key={x} small label={x} on={f.price === x} onPress={() => ((f.price = x), re())} />
+              ))}
+            </Chips>
+            {f.price === 'Paid' ? <Input style={{ marginTop: 10 }} value={f.amount} onChangeText={(v) => ((f.amount = digits(v)), re())} prefix="XAF" keyboardType="number-pad" placeholder="Per month, e.g. 10,000" invalid={tried && !(Number(f.amount) > 0)} /> : null}
+          </View>
+          <Field label="What will mentees get? · optional">
+            <Input multiline value={f.desc} onChangeText={(v) => ((f.desc = v), re())} maxLength={300} placeholder="e.g. Weekly calls, CV feedback, help with your first applications" />
+          </Field>
+        </>
+      ) : null}
+      {step === 3 ? (
+        <>
+          <RulePicker rules={f.rules} onChange={(r) => ((f.rules = r), re())} />
+          <View style={{ padding: 14, borderRadius: 16, backgroundColor: C.s2, gap: 4 }}>
+            <Txt s={15} w={8}>
+              {f.title}
+            </Txt>
+            <Txt s={12} c={C.muted}>
+              {[f.field, f.format, f.dur, `${f.seats} ${f.seats === 1 ? 'place' : 'places'}`, f.price === 'Free' ? 'Free' : `XAF ${Number(f.amount).toLocaleString('en')} / month`].join(' · ')}
+            </Txt>
+          </View>
+        </>
+      ) : null}
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+        {step > 0 ? <Btn variant="dark" title="Back" style={{ flex: 1 }} onPress={() => (setTried(false), setStep(step - 1))} /> : null}
+        <Btn testID="mf-next" variant="yellow" style={{ flex: 2 }} title={step < MSTEPS.length - 1 ? 'Continue' : 'Publish mentorship'} onPress={next} />
       </View>
-      <View>
-        <Label>Price</Label>
-        <Chips>
-          {(['Free', 'Paid'] as const).map((x) => (
-            <Chip key={x} small label={x} on={f.price === x} onPress={() => ((f.price = x), re())} />
-          ))}
-        </Chips>
-        {f.price === 'Paid' ? <Input style={{ marginTop: 10 }} value={f.amount} onChangeText={(v) => ((f.amount = digits(v)), re())} prefix="XAF" keyboardType="number-pad" placeholder="Per month, e.g. 10,000" /> : null}
-      </View>
-      <Field label="What will mentees get?">
-        <Input multiline value={f.desc} onChangeText={(v) => ((f.desc = v), re())} maxLength={300} />
-      </Field>
-      <View>
-        <Label>Mentees</Label>
-        <Stepper text={String(f.seats)} onMinus={() => ((f.seats = Math.max(1, f.seats - 1)), re())} onPlus={() => ((f.seats = Math.min(100, f.seats + 1)), re())} />
-      </View>
-      <RulePicker rules={f.rules} onChange={(r) => ((f.rules = r), re())} />
-      <Btn
-        variant="yellow"
-        title="Publish mentorship"
-        disabled={!f.title.trim()}
-        onPress={() => {
-          publishMentor(f);
-          sheet.close();
-        }}
-      />
     </View>
   );
 }
@@ -944,38 +981,6 @@ function openPath(k: number) {
   ));
 }
 export function openExperts() {
-  const booked: string[] = [];
-  sheet.show(() => {
-    const E = () => {
-      const [, f] = useState(0);
-      return (
-        <View style={{ gap: 8 }}>
-          <SheetTitle sub={`30-minute video session · XAF 5,000${db.user.pro.regular ? ' · 1 free with Pro' : ''}`}>Career experts</SheetTitle>
-          {EXPERTS.map(([n, r, ph]) => (
-            <View key={n} style={[S.row, { gap: 12, padding: 12, borderRadius: 16, backgroundColor: C.s2 }]}>
-              <Avatar pic={ph} size={44} />
-              <View style={{ flex: 1 }}>
-                <Txt s={14} w={8}>
-                  {n}
-                </Txt>
-                <Meta parts={[r, <Rate key="r" r={4.9} />]} />
-              </View>
-              <Pill
-                title={booked.includes(n) ? 'Booked ✓' : 'Book'}
-                on={booked.includes(n)}
-                onPress={() => {
-                  if (booked.includes(n)) return;
-                  booked.push(n);
-                  f((x) => x + 1);
-                  toast(`Session booked with ${n} — tomorrow 6 pm`);
-                }}
-              />
-            </View>
-          ))}
-        </View>
-      );
-    };
-    return <E />;
-  });
+  router.push('/experts');
 }
 export { openCourses, Verified, AlertIll, postById, openJob, fname };
