@@ -8,7 +8,7 @@ import { tap } from '../ui/kit';
 import { useTick } from '../logic/live';
 import { isW } from '../logic/core';
 import { prItems } from '../logic/account';
-import { openCreate } from '../sheets/create';
+import { CreateFab } from './CreateFab';
 import { setToastOffset } from '../ui/overlay';
 import { LivePop } from './common';
 
@@ -31,13 +31,22 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
     setToastOffset(NAV_H + 22);
   }, []);
   const W = isW();
-  const tabs: Tab[] = [
-    W ? { name: 'home', icon: 'mapt', label: 'Map' } : { name: 'home', icon: 'squares', label: 'Home' },
-    { name: 'feed', icon: 'feed', label: W ? 'Feed' : 'Talent' },
-    { name: '+', icon: 'plus', label: 'Create' },
-    { name: 'career', icon: 'job', label: 'Career' },
-    { name: 'me', icon: 'user', label: W ? 'Profile' : 'Company' },
-  ];
+  // Regular: Home (feed) first, Map in the middle. Business: Home is the dashboard.
+  const tabs: Tab[] = W
+    ? [
+        { name: 'feed', icon: 'home', label: 'Home' },
+        { name: 'home', icon: 'mapt', label: 'Map' },
+        { name: 'career', icon: 'job', label: 'Career' },
+        { name: 'me', icon: 'user', label: 'Profile' },
+      ]
+    : [
+        { name: 'home', icon: 'squares', label: 'Home' },
+        { name: 'feed', icon: 'feed', label: 'Talent' },
+        { name: 'career', icon: 'job', label: 'Career' },
+        { name: 'me', icon: 'user', label: 'Company' },
+      ];
+  // The map is a full-screen experience with its own Home button.
+  if (W && cur === 'home') return null;
   return (
     <>
     {/* Backdrop behind the status bar so scrolled content never shows through it */}
@@ -65,20 +74,6 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
       }}
     >
       {tabs.map((t) => {
-        if (t.name === '+')
-          return (
-            <View key="+" style={{ flex: 1, alignItems: 'center' }}>
-              <Pressable
-                testID="fab-create"
-                accessibilityRole="button"
-                accessibilityLabel={W ? 'Create: post a job, share your work, offer a mentorship' : 'Create: post a vacancy, internship or program'}
-                onPress={() => (tap(), openCreate())}
-                style={({ pressed }) => ({ width: 52, height: 52, borderRadius: 18, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.94 : 1 }] })}
-              >
-                <Icon name="plus" size={26} color="#000" />
-              </Pressable>
-            </View>
-          );
         const on = cur === t.name;
         return (
           <Pressable
@@ -109,6 +104,7 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
         );
       })}
     </View>
+    <CreateFab bottom={10 + ins.bottom + 66 + 14} />
     </>
   );
 }

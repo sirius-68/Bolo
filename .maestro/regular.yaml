@@ -61,8 +61,13 @@ name: Regular account tour
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - takeScreenshot: r09-map
-- tapOn: "People to hire"
+- tapOn:
+    id: "map-people"
+- waitForAnimationToEnd
 - takeScreenshot: r10-map-people
+- tapOn:
+    id: "map-home"
+- waitForAnimationToEnd
 - tapOn:
     id: "tab-career"
 - waitForAnimationToEnd
@@ -119,7 +124,8 @@ name: Regular account tour
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - takeScreenshot: r15-create-sheet
-- tapOn: "Offer a mentorship"
+- tapOn:
+    id: "cr-mentor"
 - waitForAnimationToEnd
 - tapOn: "e.g. Start your career in sales"
 - inputText: "Start in plumbing"
@@ -135,7 +141,8 @@ name: Regular account tour
 - tapOn:
     id: "fab-create"
 - waitForAnimationToEnd
-- tapOn: "I need something done"
+- tapOn:
+    id: "cr-need"
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - tapOn:

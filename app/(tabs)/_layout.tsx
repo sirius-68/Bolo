@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavBar } from '../../src/components/NavBar';
 import { setToastOffset } from '../../src/ui/overlay';
 import { C } from '../../src/ui/theme';
+import { isW } from '../../src/logic/core';
 
 export default function TabsLayout() {
   useFocusEffect(
@@ -17,6 +18,7 @@ export default function TabsLayout() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
     <Tabs
+      initialRouteName={isW() ? 'feed' : 'home'}
       tabBar={(p) => <NavBar {...p} />}
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: C.bg }, lazy: true, animation: 'fade' }}
     >

@@ -20,6 +20,29 @@ const offer = (
   <OptRow key="offer" testID="cr-service" icon="wrench" bg={C.mint} title="Offer a service" sub="List what you do with a price — people near you can book it" onPress={() => afterSheet(() => openService())} />
 );
 
+/** The actions the floating + offers, ordered by what this person came for. */
+export type CreateAction = { k: string; icon: string; bg: string; fg?: string; label: string; run: () => void };
+export function createActions(): CreateAction[] {
+  if (isW()) {
+    const need: CreateAction = { k: 'need', icon: 'job', bg: C.yellow, label: 'I need something done', run: () => router.push('/post-job') };
+    const offer: CreateAction = { k: 'offer', icon: 'wrench', bg: C.mint, label: 'Offer a service', run: () => openService() };
+    return [
+      ...(db.user.intents.includes('find') ? [offer, need] : [need, offer]),
+      { k: 'work', icon: 'post', bg: C.orange, label: 'Share your work', run: () => router.push('/new-post') },
+      { k: 'avail', icon: 'clock', bg: C.lav, label: 'Set availability', run: () => openAvailability() },
+      { k: 'mentor', icon: 'follow', bg: C.pink, label: 'Offer a mentorship', run: () => openMentorForm() },
+    ];
+  }
+  return [
+    { k: 'vacancy', icon: 'job', bg: C.yellow, label: 'Post a vacancy', run: () => router.push('/post-job') },
+    { k: 'intern', icon: 'cap', bg: C.lav, label: 'Create an internship', run: () => openOppForm('Internship') },
+    { k: 'program', icon: 'sparkle', bg: C.orange, label: 'Create a program', run: () => openOppForm('Training program') },
+    { k: 'course', icon: 'file', bg: C.mint, label: 'Create a course', run: () => openOppForm('Course') },
+    { k: 'mentor', icon: 'follow', bg: C.pink, label: 'Offer a mentorship', run: () => openMentorForm() },
+    { k: 'update', icon: 'post', bg: '#fff', label: 'Company update', run: () => router.push('/new-post') },
+  ];
+}
+
 export function openCreate() {
   sheet.show(() => <CreateSheet />);
 }
