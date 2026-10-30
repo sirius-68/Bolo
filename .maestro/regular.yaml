@@ -90,6 +90,20 @@ name: Regular account tour
           id: "become-expert"
       - waitForAnimationToEnd
       - takeScreenshot: r12e-expert-apply
+      - runFlow:
+          when:
+            visible: "Verify ID"
+          commands:
+            - tapOn: "Verify ID"
+            - waitForAnimationToEnd
+            - takeScreenshot: r12f-id-verify
+            - tapOn:
+                id: "idv-next"
+            - tapOn:
+                id: "idv-doc-id"
+            - takeScreenshot: r12g-id-document
+            - back
+            - back
       - back
       - back
 - tapOn: "Software engineering internship"
