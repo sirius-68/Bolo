@@ -54,7 +54,7 @@ export function LiveMap({ mode, jobs, people, bottomInset = 64, topInset = 150, 
   const M = Mapbox;
   return (
     <View style={{ flex: 1 }} onTouchStart={() => onLock?.(true)} onTouchEnd={() => onLock?.(false)} onTouchCancel={() => onLock?.(false)}>
-      <M.MapView style={{ flex: 1 }} onPress={() => onBackground?.()} styleURL={M.StyleURL.Dark} scaleBarEnabled={false} compassEnabled={false} pitchEnabled={false} rotateEnabled={false} logoPosition={{ bottom: bottomInset + 50, left: 12 }} attributionPosition={{ bottom: bottomInset + 50, right: 62 }}>
+      <M.MapView style={{ flex: 1 }} onPress={() => onBackground?.()} styleURL={M.StyleURL.Dark} scaleBarEnabled={false} compassEnabled={false} pitchEnabled={false} rotateEnabled={false} logoPosition={{ bottom: bottomInset + 18, left: 16 }} attributionPosition={{ bottom: bottomInset + 18, right: 70 }}>
         <M.Camera ref={cam} bounds={bounds} defaultSettings={{ centerCoordinate: a, zoomLevel: 13.2 }} animationDuration={600} />
         {locOk ? <M.LocationPuck visible pulsing={{ isEnabled: true, color: C.blue }} /> : null}
         {mode === 'jobs'
@@ -87,14 +87,14 @@ export function LiveMap({ mode, jobs, people, bottomInset = 64, topInset = 150, 
             })}
       </M.MapView>
       {locOk === false ? (
-        <Pressable testID="map-loc-on" accessibilityRole="button" onPress={centre} style={[S.row, { position: 'absolute', left: 16, right: 70, bottom: bottomInset, minHeight: 42, gap: 8, paddingHorizontal: 14, borderRadius: 21, backgroundColor: C.blue }]}>
+        <Pressable testID="map-loc-on" accessibilityRole="button" onPress={centre} style={[S.row, { position: 'absolute', left: 16, right: 72, bottom: bottomInset + 10, minHeight: 44, gap: 8, paddingHorizontal: 14, borderRadius: 21, backgroundColor: C.blue }]}>
           <Icon name="gpsfix" size={16} color="#fff" />
           <Txt s={13} w={8} lines={2} style={{ flex: 1 }}>
             Turn on location to see what’s near you
           </Txt>
         </Pressable>
       ) : null}
-      <Pressable accessibilityLabel="Centre on me" onPress={centre} style={{ position: 'absolute', right: 16, bottom: bottomInset, width: 42, height: 42, borderRadius: 21, backgroundColor: C.s1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.line }}>
+      <Pressable accessibilityLabel="Centre on me" onPress={centre} style={{ position: 'absolute', right: 16, bottom: bottomInset + 10, width: 46, height: 46, borderRadius: 23, backgroundColor: C.s1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.line }}>
         <Icon name="gpsfix" size={20} color={C.text} />
       </Pressable>
     </View>
