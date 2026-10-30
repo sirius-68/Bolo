@@ -213,7 +213,7 @@ function Row({ n, sel, onPress, onLong }: { n: Notif; sel: string[] | null; onPr
     case 'verified':
       text = (
         <Txt s={14}>
-          <B>You’re verified!</B> Your profile now shows the badge <Verified size={13} /> — people trust verified profiles more.{T}
+          <B>You’re verified!</B> Your profile now shows the badge <Verified size={13} />. People trust verified profiles more.{T}
         </Txt>
       );
       break;
@@ -237,7 +237,7 @@ function Row({ n, sel, onPress, onLong }: { n: Notif; sel: string[] | null; onPr
         <>
           {quote(`${n.job} · ${n.price}`, n.when || '')}
           {n.state
-            ? done(n.state === 'acc' ? 'check' : 'x', n.state === 'acc' ? 'Quote accepted — job booked' : 'Quote declined')
+            ? done(n.state === 'acc' ? 'check' : 'x', n.state === 'acc' ? 'Quote accepted, job booked' : 'Quote declined')
             : acts(<Pill key="a" title="Accept" onPress={() => answerQuoteNotif(n.id, 'acc')} />, <Pill key="d" kind="outline" title="Decline" onPress={() => answerQuoteNotif(n.id, 'dec')} />, <Pill key="m" kind="dim" title="Message" onPress={() => openChat(who!)} />)}
         </>
       );

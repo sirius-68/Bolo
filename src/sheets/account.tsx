@@ -30,14 +30,14 @@ function ProSheet({ kind, why }: { kind: 'regular' | 'business'; why?: string })
   const yr = Math.round((price * 12 * 0.8) / 100) * 100;
   const F: [string, string, string][] = R
     ? [
-        ['rocket', 'Get jobs faster', 'Priority applications — you show first to employers'],
+        ['rocket', 'Get jobs faster', 'Priority applications. You show first to employers'],
         ['file', 'Premium CV templates', 'Stand-out CV designs on top of the free CV builder'],
         ['rocket', 'Profile boosts', '2 free boosts every month for your services'],
         ['eye', 'Who viewed you', 'See which businesses looked at your profile'],
         ['cap', '1 free career expert session', 'A CV or interview review each month'],
       ]
     : [
-        ['rocket', 'Cheaper ads', '20% off every ad — vacancies, programs and courses'],
+        ['rocket', 'Cheaper ads', '20% off every ad, vacancies, programs and courses'],
         ['storefront', 'More businesses', `Run more than ${MAX_FREE_BIZ} business pages from one account`],
         ['star', 'Featured company', 'Your company shows first in “Companies hiring”'],
         ['follow', 'Applicant insights', 'Skills match scores and priority candidates'],
@@ -52,7 +52,7 @@ function ProSheet({ kind, why }: { kind: 'regular' | 'business'; why?: string })
           {R ? 'Get hired faster with bolo Pro' : 'Grow your team with Business Pro'}
         </Txt>
         <Txt s={13} c={R ? '#222' : '#e8ebff'} style={{ marginTop: 4 }}>
-          {lead || (R ? 'For your Regular profile — tools that put you ahead.' : 'Business pages are free. Pro adds promotion and growth tools.')}
+          {lead || (R ? 'For your Regular profile, tools that put you ahead.' : 'Business pages are free. Pro adds promotion and growth tools.')}
         </Txt>
       </View>
       <View style={{ gap: 12, marginTop: 16 }}>
@@ -149,7 +149,7 @@ export function bizOnlyPrompt(what: string) {
   sheet.show(() => (
     <View>
       <AlertIll icon="storefront" />
-      <SheetTitle center sub={`Only business pages can ${what}. Setting one up is free — you keep your Regular profile too.`}>
+      <SheetTitle center sub={`Only business pages can ${what}. Setting one up is free. You keep your Regular profile too.`}>
         That’s a Business feature
       </SheetTitle>
       <Btn variant="yellow" style={{ marginTop: 16 }} title={first ? 'Switch to ' + bizName(first) : 'Set up a business'} onPress={() => (first ? switchToBiz(first.id) : afterSheet(() => openBizSetup('new')))} />
@@ -206,7 +206,7 @@ function Accounts() {
   );
   return (
     <View style={{ gap: 8 }}>
-      <SheetTitle sub={bo ? 'Business account — switch between your business pages or add another.' : 'One account — a Regular profile for everyday jobs, and business pages to recruit for your company.'}>{bo ? 'Switch business' : 'Switch profile'}</SheetTitle>
+      <SheetTitle sub={bo ? 'Business account. Switch between your business pages or add another.' : 'One account, a Regular profile for everyday jobs, and business pages to recruit for your company.'}>{bo ? 'Switch business' : 'Switch profile'}</SheetTitle>
       {!bo ? (
         <Row
           on={w}
@@ -231,7 +231,7 @@ function Accounts() {
             Add a business
           </Txt>
           <Txt s={12} c={C.muted}>
-            {canAddBiz() ? `Free · ${db.BIZ.list.length} of ${db.user.pro.business ? 'unlimited' : MAX_FREE_BIZ} used` : `You’ve used your ${MAX_FREE_BIZ} free businesses — upgrade to Business Pro`}
+            {canAddBiz() ? `Free · ${db.BIZ.list.length} of ${db.user.pro.business ? 'unlimited' : MAX_FREE_BIZ} used` : `You’ve used your ${MAX_FREE_BIZ} free businesses, upgrade to Business Pro`}
           </Txt>
         </View>
       </Pressable>
@@ -605,7 +605,7 @@ export function openLang() {
       <SheetTitle>Language</SheetTitle>
       {[
         ['English', 'Use bolo in English'],
-        ['Français', 'Utiliser bolo en français — bientôt disponible'],
+        ['Français', 'Utiliser bolo en français, bientôt disponible'],
       ].map(([l, s]) => (
         <OptRow
           key={l}
@@ -615,7 +615,7 @@ export function openLang() {
           right={db.PREF.lang === l ? <Icon name="check" size={20} color={C.yellow} /> : null}
           onPress={() => {
             if (l !== 'English') {
-              toast('French is coming soon — we’ll let you know');
+              toast('French is coming soon. We’ll let you know');
               return;
             }
             db.PREF.lang = l;
@@ -629,10 +629,10 @@ export function openLang() {
 const FAQ: [string, string][] = [
   ['How do I get paid?', 'When the client confirms the job is done, payment goes to your Mobile Money within minutes.'],
   ['Is it free to post a job?', 'Yes. Regular profiles can post unlimited personal jobs. Business pages are free too.'],
-  ['What’s the difference between Regular and Business?', 'Your Regular profile is you: find work and hire for personal jobs. A business page recruits for a company — vacancies, internships, courses and contracts.'],
+  ['What’s the difference between Regular and Business?', 'Your Regular profile is you: find work and hire for personal jobs. A business page recruits for a company: vacancies, internships, courses and contracts.'],
   ['How do company contracts work?', 'Verified businesses send a contract in the app; both sides sign and the person appears under Team.'],
   ['How do I verify my business?', 'Add your RCCM and NIU on your business page. Verification usually takes a few minutes.'],
-  ['When can I leave a review?', 'Only after the job is marked done and confirmed — so every review on bolo is from real work.'],
+  ['When can I leave a review?', 'Only after the job is marked done and confirmed, so every review on bolo is from real work.'],
 ];
 export function openHelp() {
   sheet.show(() => {

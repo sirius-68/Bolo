@@ -35,9 +35,9 @@ export function criteria(): Crit[] {
     {
       k: 'id',
       t: db.PR.docs.id === 'review' ? 'Identity verification · being checked' : 'Identity verified',
-      why: 'Mentees share their careers with you — they need to know who you are.',
+      why: 'Mentees share their careers with you. They need to know who you are.',
       ok: db.PR.docs.id === 'verified' || db.PR.docs.id === 'review',
-      fix: () => ((ui.verifyReturn = '/expert-apply'), router.push('/verify-id')),
+      fix: () => router.push('/id-verify'),
       fixLabel: 'Verify ID',
     },
     { k: 'photo', t: 'Real name and profile photo', why: 'Experts are people, not brands.', ok: !!u.name.trim() && !!u.avatar, fix: () => openEdit(), fixLabel: 'Add' },
@@ -53,7 +53,7 @@ export const qualifies = () => criteria().every((c) => c.ok);
 export const QUIZ: [string, string[], number][] = [
   [
     'A mentee asks you to add a job they never had to their CV “to stand out”. What do you do?',
-    ['Add it — everyone does it', 'Help them describe their real experience in a stronger way', 'Refuse to work with them'],
+    ['Add it, everyone does it', 'Help them describe their real experience in a stronger way', 'Refuse to work with them'],
     1,
   ],
   [
@@ -63,7 +63,7 @@ export const QUIZ: [string, string[], number][] = [
   ],
   [
     'A mentee offers to pay you directly by Mobile Money to avoid bolo fees.',
-    ['Accept — it saves them money', 'Keep payments on bolo, where both of you are protected', 'Accept but only once'],
+    ['Accept. It saves them money', 'Keep payments on bolo, where both of you are protected', 'Accept but only once'],
     1,
   ],
   [
@@ -93,7 +93,7 @@ export const CODE = [
 /** The review stages shown on the status screen. */
 export const STAGES: [string, string, string][] = [
   ['submitted', 'Application received', 'We check your answers and documents.'],
-  ['review', 'Expert review', 'A bolo reviewer reads your sample answer — usually 2–3 working days.'],
+  ['review', 'Expert review', 'A bolo reviewer reads your sample answer, usually 2–3 working days.'],
   ['interview', '15-minute video interview', 'A short call about your experience and how you’d help mentees.'],
   ['decision', 'Decision', 'We let you know by notification and email.'],
   ['approved', 'You’re a Career Expert', 'Your expert page goes live in Career.'],
@@ -115,7 +115,7 @@ export function submitApplication() {
         if (db.EXPERT.status !== 'review') return;
         db.EXPERT.status = 'interview';
         bump();
-        toast('Your expert application passed review — pick an interview time');
+        toast('Your expert application passed review. Pick an interview time');
       });
     });
   }

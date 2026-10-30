@@ -99,7 +99,7 @@ export function answerApplicant(oid: string, pid: string, st: 'acc' | 'dec') {
   const o = db.OPPS.find((x) => x.id === oid)!;
   (o.st = o.st || {})[pid] = st;
   if (st === 'dec') o.joined = Math.max(0, o.joined - 1);
-  toast(st === 'acc' ? `${P(pid).name} accepted — we’ve let them know` : `${P(pid).name} declined`);
+  toast(st === 'acc' ? `${P(pid).name} accepted. We’ve let them know` : `${P(pid).name} declined`);
   if (!isW()) bizLog(st === 'acc' ? 'checkc' : 'x', `${st === 'acc' ? 'Accepted' : 'Declined'} <b>${P(pid).name}</b> for <b>${o.title}</b>`);
   bump();
 }
@@ -185,7 +185,7 @@ export function mentorGroup(m: Mentorship, asMentor: boolean) {
         ...(asMentor
           ? [{ f: 'them' as const, t: `${P(mem[0])?.name.split(' ')[0] || 'A mentee'}: Hello ${db.user.name ? db.user.name.split(' ')[0] : ''}! Excited to start 🙏`, at: nowT() }]
           : [
-              { f: 'them' as const, t: `${mentor}: Welcome to the group! 👋 Introduce yourself — what do you want to get out of this mentorship?`, at: nowT() },
+              { f: 'them' as const, t: `${mentor}: Welcome to the group! 👋 Introduce yourself, what do you want to get out of this mentorship?`, at: nowT() },
               { f: 'them' as const, t: `${mentor}: First session is this week. I’ll share the link here.`, at: nowT() },
             ]),
       ],
@@ -348,7 +348,7 @@ export function requestDM(mid: string) {
     t.time = nowT();
     t.unread = (t.unread || 0) + 1;
     db.NOTIFS_W.unshift({ id: uid('dm'), g: 'Today', type: 'accept', who: m.by, time: 'now', text: 'accepted your request to message them privately.' });
-    toast(`✅ ${o.name.split(' ')[0]} accepted — you can message them now`);
+    toast(`✅ ${o.name.split(' ')[0]} accepted. You can message them now`);
   });
 }
 /** Is messaging this person blocked by a group rule? */
@@ -401,7 +401,7 @@ export function launchAd(a: { t: [string, string, string, string]; head: string;
   adsOf().unshift(ad);
   startAdTicker();
   bizLog('rocket', `Launched ad <b>${ad.head}</b> · ${ad.reach.toLocaleString('en-US')} people`);
-  toast(`🚀 Ad is live — reaching ${ad.reach.toLocaleString('en-US')} people`);
+  toast(`🚀 Ad is live, reaching ${ad.reach.toLocaleString('en-US')} people`);
   bump();
 }
 export const adPct = (ad: Ad) => Math.min(100, Math.round((ad.reached / ad.reach) * 100));

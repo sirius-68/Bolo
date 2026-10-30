@@ -97,7 +97,7 @@ export function openAttach(id: string) {
       <OptRow
         icon="image"
         title="Photo"
-        sub="Show the problem — a leak, a socket, a stain"
+        sub="Show the problem: a leak, a socket, a stain"
         onPress={() =>
           afterSheet(async () => {
             const p = await pickImage();
@@ -273,8 +273,8 @@ export function openCompose() {
     <View>
       <SheetTitle>Start something new</SheetTitle>
       <OptRow icon="chat" title="New message" sub="Chat privately with someone" onPress={() => afterSheet(openNewChat)} />
-      <OptRow icon="follow" bg={C.lav} title="New group" sub="Bring people together — a team, a class, a crew" onPress={() => openNewGroup()} />
-      <OptRow icon="cap" bg={C.orange} title="New mentorship group" sub="Teach or mentor — free or paid" onPress={() => afterSheet(openMentorForm)} />
+      <OptRow icon="follow" bg={C.lav} title="New group" sub="Bring people together: a team, a class, a crew" onPress={() => openNewGroup()} />
+      <OptRow icon="cap" bg={C.orange} title="New mentorship group" sub="Teach or mentor, free or paid" onPress={() => afterSheet(openMentorForm)} />
     </View>
   ));
 }
@@ -412,7 +412,7 @@ export function openRules(gid: string, fromMenu = false) {
             ) : null,
           )
         ) : (
-          <Txt s={14}>No special rules — be kind.</Txt>
+          <Txt s={14}>No special rules. Be kind.</Txt>
         )}
       </View>
       <Btn

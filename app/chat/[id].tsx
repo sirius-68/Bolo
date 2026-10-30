@@ -130,7 +130,7 @@ export default function Chat() {
           <View style={{ alignItems: 'center', gap: 8, paddingVertical: 30, transform: [{ scaleY: -1 }] }}>
             <Avatar pic={p.photo} size={64} square={!!p.biz || grp} />
             <Txt s={14} c={C.muted} center>
-              Say hi to {fname(p.name)} — ask about prices or availability.
+              Say hi to {fname(p.name)}. Ask about prices or availability.
             </Txt>
           </View>
         }
@@ -274,7 +274,7 @@ function Bubble({ id, r, hiring }: { id: string; r: Row; hiring: boolean }) {
             <View style={[S.row, { gap: 6, marginTop: 4 }]}>
               <Icon name={m.state === 'acc' ? 'check' : 'x'} size={14} color={m.state === 'acc' ? C.mint : C.errSoft} />
               <Txt s={12} w={7} c={m.state === 'acc' ? C.mint : C.errSoft}>
-                {m.state === 'acc' ? 'Accepted — job booked' : 'Declined'}
+                {m.state === 'acc' ? 'Accepted, job booked' : 'Declined'}
               </Txt>
             </View>
           ) : !me ? (

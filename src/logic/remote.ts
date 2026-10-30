@@ -25,7 +25,7 @@ export function friendly(e: any): string {
   if (m.includes('sms') || m.includes('phone provider') || m.includes('phone signups are disabled') || m.includes('unsupported phone')) return 'Phone codes aren’t switched on yet. Please use your email for now.';
   if (m.includes('expired') || m.includes('invalid') && m.includes('otp') || m.includes('token has expired or is invalid')) return 'That code is wrong or has expired. Try again or send a new one.';
   if (m.includes('rate limit') || m.includes('too many') || m.includes('security purposes')) return 'Too many attempts. Wait a minute and try again.';
-  if (m.includes('email not confirmed')) return 'Confirm your email first — we sent you a code.';
+  if (m.includes('email not confirmed')) return 'Confirm your email first. We sent you a code.';
   if (m.includes('password') && m.includes('6')) return 'Use a longer password (at least 8 characters).';
   return e?.message || 'Something went wrong. Please try again.';
 }

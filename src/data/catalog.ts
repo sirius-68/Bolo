@@ -100,7 +100,7 @@ export const SERVICES: Record<string, [string, string, string, string?][]> = {
     ['Cooking class', 'XAF 10k', 'Learn ndolé, eru or pastries in one session.'],
   ],
   Hairdresser: [
-    ['Braids', 'XAF 8k – 25k', 'Knotless, cornrows and twists — at home or in the salon.'],
+    ['Braids', 'XAF 8k – 25k', 'Knotless, cornrows and twists, at home or in the salon.'],
     ['Wig install', 'XAF 10k', 'Frontal and closure installs.'],
     ['Home visit', '+ XAF 2k', 'I come to you anywhere in Buea.'],
   ],
@@ -108,9 +108,9 @@ export const SERVICES: Record<string, [string, string, string, string?][]> = {
 CATS.forEach(([c]) => {
   if (!SERVICES[c])
     SERVICES[c] = [
-      [`${c} — one-off job`, 'Ask for a quote', 'Tell me what you need and I’ll send a price.'],
-      [`${c} — hourly`, 'XAF 3k / hr', 'Flexible help, whenever you need it.'],
-      [`${c} — monthly`, 'Ask for a price', 'Part-time or full-time work.'],
+      [`${c}: one-off job`, 'Ask for a quote', 'Tell me what you need and I’ll send a price.'],
+      [`${c}: hourly`, 'XAF 3k / hr', 'Flexible help, whenever you need it.'],
+      [`${c}: monthly`, 'Ask for a price', 'Part-time or full-time work.'],
     ];
 });
 
@@ -166,9 +166,9 @@ export function detectCat(t: string): string | null {
 }
 
 export const OB = [
-  { t: 'Every skill has a place here.', p: 'Tailors, plumbers, electricians, hairdressers, drivers, teachers, designers, developers — get found and booked by people near you.', art: 'toolbox' },
-  { t: 'Need something done? Sorted.', p: 'Say what you need in under a minute. People nearby send offers — compare ratings, prices and past work, then hire and track it live.', art: 'phone' },
-  { t: 'Grow your career. Hire your team.', p: 'Jobs, internships, programs and mentors to grow — and business pages to post vacancies and hire.', art: 'career' },
+  { t: 'Every skill has a place here.', p: 'Tailors, plumbers, electricians, hairdressers, drivers, teachers, designers, developers. Get found and booked by people near you.', art: 'toolbox' },
+  { t: 'Need something done? Sorted.', p: 'Say what you need in under a minute. People nearby send offers. Compare ratings, prices and past work, then hire and track it live.', art: 'phone' },
+  { t: 'Grow your career. Hire your team.', p: 'Jobs, internships, programs and mentors to grow, and business pages to post vacancies and hire.', art: 'career' },
 ];
 
 /* -------------------- skills taxonomy -------------------- */
@@ -193,7 +193,7 @@ export const EX: Record<string, ExSpec> = {
   teach: { l: 'Subjects', t: 'm', o: ['Maths', 'Physics', 'Chemistry', 'Biology', 'English', 'French', 'Computer science', 'Economics', 'Accounting', 'Geography', 'History', 'Literature', 'Music'] },
   teachl: { l: 'Levels you teach', t: 'm', o: ['Nursery', 'Primary', 'Secondary', 'GCE O Level', 'GCE A Level', 'University', 'Adults'] },
   lang: { l: 'Languages you work in', t: 'ml', lv: LANGP, o: ['English', 'French', 'Pidgin', 'Spanish', 'German', 'Chinese', 'Arabic', 'Duala', 'Ewondo', 'Fulfulde'] },
-  drive: { l: 'Licence categories', t: 'm', o: ['A — motorbike', 'B — car', 'C — truck', 'D — bus', 'E — trailer'] },
+  drive: { l: 'Licence categories', t: 'm', o: ['A: motorbike', 'B: car', 'C: truck', 'D: bus', 'E: trailer'] },
   veh: { l: 'Do you have a vehicle?', t: 's', o: ['Own motorbike', 'Own car', 'Own truck', 'No vehicle'] },
   deliv: { l: 'How you deliver', t: 's', o: ['Motorbike (okada)', 'Tricycle', 'Car', 'Bicycle', 'On foot'] },
   cook: { l: 'Cuisines', t: 'm', o: ['Cameroonian', 'Nigerian', 'West African', 'Continental', 'Pastry & baking', 'Grills (soya, fish)', 'Chinese', 'Fast food'] },
@@ -277,7 +277,7 @@ export const SOFT = ['Communication', 'Teamwork', 'Time management', 'Problem so
 /* -------------------- profile -------------------- */
 export const ST_W: [string, string, string, string][] = [
   ['open', 'Available for work', 'Clients nearby can find and hire you', '#7be0a7'],
-  ['busy', 'Busy — open to offers', 'You still get offers, but show lower in search', '#ffb37a'],
+  ['busy', 'Busy, open to offers', 'You still get offers, but show lower in search', '#ffb37a'],
   ['off', 'Not taking jobs', 'Your profile is hidden from search and the map', '#ff9b9b'],
 ];
 export const ST_C: [string, string, string, string][] = [
@@ -439,10 +439,10 @@ export const SALARIES: [string, string, string][] = [
   ['Security guard', 'Security', '45k – 80k'],
 ];
 export const ARTICLES: [string, string, string, string[]][] = [
-  ['How to write a CV that gets calls back', '5 min', 'CV', ['Keep it to one page if you have less than 5 years of experience. Put your strongest skill and your phone number at the top.', 'For every job, write what you achieved, not just what you did: “Fixed plumbing in 40+ homes” beats “Plumber”.', 'Add your languages and any certificates — employers in Cameroon value English–French bilingualism highly.']],
-  ['10 interview questions and how to answer them', '7 min', 'Interviews', ['“Tell me about yourself” — answer in 60 seconds: who you are, what you do best, and why this job.', '“Why should we hire you?” — link one of your achievements to their need.', 'Always prepare one question for them, like “What does success look like in the first 3 months?”']],
-  ['Freelancing on the side: how to start', '6 min', 'Gigs', ['Start with people who already trust you: friends, former colleagues, your church or quarter.', 'Set a clear starting price and stick to it. Use bolo quotes so both sides agree before the work starts.', 'Collect reviews from your first five jobs — they bring the next twenty.']],
-  ['Internship or first job? Getting your foot in the door', '4 min', 'Early career', ['Internships are a real way in: many companies hire their best interns.', 'Treat it like a job — be on time, ask questions, and keep a list of what you learned.', 'Ask for a reference letter before you finish.']],
+  ['How to write a CV that gets calls back', '5 min', 'CV', ['Keep it to one page if you have less than 5 years of experience. Put your strongest skill and your phone number at the top.', 'For every job, write what you achieved, not just what you did: “Fixed plumbing in 40+ homes” beats “Plumber”.', 'Add your languages and any certificates, employers in Cameroon value English–French bilingualism highly.']],
+  ['10 interview questions and how to answer them', '7 min', 'Interviews', ['“Tell me about yourself”. Answer in 60 seconds: who you are, what you do best, and why this job.', '“Why should we hire you?”, link one of your achievements to their need.', 'Always prepare one question for them, like “What does success look like in the first 3 months?”']],
+  ['Freelancing on the side: how to start', '6 min', 'Gigs', ['Start with people who already trust you: friends, former colleagues, your church or quarter.', 'Set a clear starting price and stick to it. Use bolo quotes so both sides agree before the work starts.', 'Collect reviews from your first five jobs. They bring the next twenty.']],
+  ['Internship or first job? Getting your foot in the door', '4 min', 'Early career', ['Internships are a real way in: many companies hire their best interns.', 'Treat it like a job. Be on time, ask questions, and keep a list of what you learned.', 'Ask for a reference letter before you finish.']],
   ['Negotiating your salary without fear', '5 min', 'Pay', ['Check typical pay for your role in Professions & salaries before the conversation.', 'Give a range, not a single number, and start a little above what you want.', 'If the salary is fixed, negotiate transport, training or a review date instead.']],
 ];
 export const PATHS: [string, string, string[], string[], string[]][] = [
@@ -475,7 +475,7 @@ export const STAGE_COL: Record<string, string> = { applied: '#8d8d95', short: '#
 export const RULES: Record<string, [string, string]> = {
   noDM: ['No direct messages to the mentor without permission', 'lock'],
   intro: ['Introduce yourself when you join', 'follow'],
-  respect: ['Be respectful — no spam or selling', 'shield'],
+  respect: ['Be respectful, no spam or selling', 'shield'],
   noLinks: ['No sharing outside links', 'x'],
   camera: ['Cameras on during live sessions', 'video2'],
   onTime: ['Join sessions on time', 'clock'],
@@ -522,7 +522,7 @@ export const JOB_HIST: [string, string, string, string, number][] = [
 export const FOLLOWERS = ['grace', 'kevin', 'joy', 'b_nexa', 'brenda', 'franklin', 'marie', 'claudine', 'b_sma', 'esther', 'lionel', 'sandrine', 'junior', 'vanessa', 'rita', 'moses'];
 export const CO_POSTS: [string, string][] = [
   ['We’re hiring! 🎉 Check our open roles on bolo and apply in minutes.', 'clean'],
-  ['Our team at work this week — proud of everyone who made this project happen.', 'electric'],
+  ['Our team at work this week. Proud of everyone who made this project happen.', 'electric'],
   ['Thank you to our new interns for a great first month 🙏', 'mech'],
   ['Open day this Saturday: come meet the team and learn about our programs.', 'plumb'],
 ];

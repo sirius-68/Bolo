@@ -47,7 +47,7 @@ export function MyCV({ modern }: { modern?: boolean }) {
       {s.map((e) => (
         <T key={e.n}>
           • <T b>{e.n}</T>
-          {exSummary(e) ? ' — ' + exSummary(e) : ''}
+          {exSummary(e) ? ': ' + exSummary(e) : ''}
         </T>
       ))}
       {cv ? (
@@ -80,7 +80,7 @@ export function MyCV({ modern }: { modern?: boolean }) {
       ) : cv?.noExp ? (
         <>
           <H>Experience</H>
-          <T>No formal experience yet — eager to learn and start.</T>
+          <T>No formal experience yet, eager to learn and start.</T>
         </>
       ) : null}
       <H>Education</H>
@@ -155,7 +155,7 @@ export function myCvHtml() {
   return `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Helvetica,Arial,sans-serif;max-width:720px;margin:28px auto;color:#111;padding:0 20px}h2{margin:0}h4{text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:#3d5af1;margin:18px 0 6px}p,li{font-size:14px;line-height:1.5}small{color:#555}.h{border-bottom:3px solid #3d5af1;padding-bottom:12px}</style></head><body>
   <div class="h"><h2>${esc(u.name || 'Your name')}</h2><p>${esc(u.cv?.prof || (s[0]?.n || 'Professional') + ' · ' + myLevel() + ' · ' + u.years + ' years')}</p><small>${[db.PR.ct.phone ? showPhone(db.PR.ct.phone) : '', db.PR.ct.email, myCity()].filter(Boolean).map(esc).join(' · ')}</small></div>
   <h4>Profile</h4><p>${esc(u.bio || `${s[0]?.n || 'Professional'} with ${u.years} years of experience, based in ${myCity()}.`)}</p>
-  <h4>Skills</h4><ul>${s.map((e) => `<li><b>${esc(e.n)}</b>${exSummary(e) ? ' — ' + esc(exSummary(e)) : ''}</li>`).join('')}</ul>
+  <h4>Skills</h4><ul>${s.map((e) => `<li><b>${esc(e.n)}</b>${exSummary(e) ? ': ' + esc(exSummary(e)) : ''}</li>`).join('')}</ul>
   ${db.PR.exp.length ? `<h4>Experience</h4>${db.PR.exp.map((e) => `<p><b>${esc(e.role)} · ${esc(e.org)}</b><br><small>${e.from} – ${e.to || 'present'}</small>${e.desc ? '<br>' + esc(e.desc) : ''}</p>`).join('')}` : ''}
   <h4>Education</h4><p>${esc(db.PR.edu.level)}${db.PR.edu.courses.length ? ' · ' + db.PR.edu.courses.map((c) => esc(c.name)).join(', ') : ''}</p>
   <h4>Languages</h4><p>${db.PR.langs.map(([l, v]) => `${esc(l)} (${v})`).join(' · ')}</p></body></html>`;

@@ -38,7 +38,7 @@ export default function Selfie() {
       <Btn
         testID="selfie-btn"
         icon={ok ? 'check' : 'cam'}
-        title={ok ? 'Looks good — continue' : 'Take selfie'}
+        title={ok ? 'Looks good, continue' : 'Take selfie'}
         style={{ marginTop: 24 }}
         onPress={async () => {
           if (ok) {

@@ -182,7 +182,7 @@ export function OppSheet({ id }: { id: string }) {
         )
       ) : forIndividuals ? (
         <Note icon="user" style={{ marginTop: 16 }}>
-          Internships are for individuals — switch to your Regular profile to apply.
+          Internships are for individuals. Switch to your Regular profile to apply.
         </Note>
       ) : (
         <View style={{ marginTop: 16, gap: 8 }}>
@@ -378,7 +378,7 @@ export function MentorSheet({ id }: { id: string }) {
           <View style={{ padding: 14, borderRadius: 16, backgroundColor: 'rgba(47,179,109,.14)', flexDirection: 'row', gap: 8, alignItems: 'center' }}>
             <Icon name={m.joinedMe === 'req' ? 'clock' : 'check'} size={18} color={C.mint} />
             <Txt s={14} w={7} c={C.mint} style={{ flex: 1 }}>
-              {m.joinedMe === 'req' ? `Request sent — waiting for ${o.name.split(' ')[0]}` : 'You’re in! First session this week'}
+              {m.joinedMe === 'req' ? `Request sent, waiting for ${o.name.split(' ')[0]}` : 'You’re in! First session this week'}
             </Txt>
           </View>
           {m.joinedMe === 'yes' ? <Btn variant="dark" icon="chat" title="Open the group chat" onPress={() => afterSheet(() => openChat('g_' + m.id))} /> : null}
@@ -387,7 +387,7 @@ export function MentorSheet({ id }: { id: string }) {
         <Btn variant="yellow" icon="follow" title="Add employees to this mentorship" style={{ marginTop: 18 }} onPress={() => openEmpEnroll('mentor', m.id)} />
       ) : !isW() ? (
         <Note icon="user" style={{ marginTop: 16 }}>
-          1-to-1 mentorships are for individuals — switch to your Regular profile to request one.
+          1-to-1 mentorships are for individuals. Switch to your Regular profile to request one.
         </Note>
       ) : (
         <Btn variant="yellow" style={{ marginTop: 18 }} disabled={m.joined >= m.seats} title={m.joined >= m.seats ? 'Full' : m.format === '1-to-1' ? 'Request a mentor' : 'Join mentorship'} onPress={() => joinMentor(m.id)} />
@@ -539,7 +539,7 @@ function EmpEnroll({ kind, id, st }: { kind: 'course' | 'mentor' | 'opp'; id: st
           );
         })
       ) : (
-        <Note icon="follow">Nobody is on your team yet. Add employees by name or phone below — they’ll get an invite by SMS.</Note>
+        <Note icon="follow">Nobody is on your team yet. Add employees by name or phone below. They’ll get an invite by SMS.</Note>
       )}
       {st.extra.map((e, i) => (
         <View key={e + i} style={[S.row, { gap: 12, padding: 10, borderRadius: 14, backgroundColor: 'rgba(61,90,241,.16)' }]}>
@@ -560,7 +560,7 @@ function EmpEnroll({ kind, id, st }: { kind: 'course' | 'mentor' | 'opp'; id: st
         </View>
       ))}
       <View style={[S.row, { gap: 8 }]}>
-        <Input value={st.q} onChangeText={(v) => ((st.q = v), re())} placeholder="Add employee — name or phone" style={{ flex: 1, height: 48, minHeight: 48 }} onSubmit={add} />
+        <Input value={st.q} onChangeText={(v) => ((st.q = v), re())} placeholder="Add employee: name or phone" style={{ flex: 1, height: 48, minHeight: 48 }} onSubmit={add} />
         <Pressable onPress={add} style={{ height: 48, paddingHorizontal: 16, borderRadius: R.md, backgroundColor: C.s3, justifyContent: 'center' }}>
           <Txt s={13} w={7}>
             Add
@@ -640,7 +640,7 @@ function CourseSheet({ id }: { id: string }) {
           {c.emp ? <StatusPill kind="acc" text={`${c.emp} employee${c.emp > 1 ? 's' : ''} enrolled · ${bizName(curBiz())}`} /> : null}
           <Btn variant="yellow" icon="follow" title={c.emp ? 'Enrol more employees' : 'Enrol employees'} onPress={() => openEmpEnroll('course', c.id)} />
           <Txt s={12} c={C.muted} center>
-            Businesses enrol their team — not the business itself.
+            Businesses enrol their team, not the business itself.
           </Txt>
         </View>
       ) : e ? (
@@ -759,7 +759,7 @@ function openAnnounce(cid: string) {
       return (
         <View style={{ gap: 12 }}>
           <SheetTitle sub={`Posted to the class group and sent to all ${(c.people || []).length} students.`}>Announcement</SheetTitle>
-          <Input multiline value={v} onChangeText={setV} placeholder="e.g. Lesson 2 is tomorrow at 6pm — link below" autoFocus />
+          <Input multiline value={v} onChangeText={setV} placeholder="e.g. Lesson 2 is tomorrow at 6pm, link below" autoFocus />
           <Btn
             variant="yellow"
             icon="send"
@@ -786,7 +786,7 @@ function CVSheet() {
   const [busy, setBusy] = useState(false);
   return (
     <View style={{ gap: 12 }}>
-      <SheetTitle sub="Built from your profile — update your profile and the CV updates too.">My CV</SheetTitle>
+      <SheetTitle sub="Built from your profile. Update your profile and the CV updates too.">My CV</SheetTitle>
       <Chips>
         {['Classic', 'Modern'].map((x) => (
           <Chip
@@ -844,7 +844,7 @@ function CVSheet() {
 export function openSalaries() {
   sheet.show(() => (
     <View style={{ gap: 8 }}>
-      <SheetTitle sub="Typical monthly pay in Buea, Douala and Yaoundé, in XAF. Estimates only — real offers vary by employer and experience.">Professions and salaries</SheetTitle>
+      <SheetTitle sub="Typical monthly pay in Buea, Douala and Yaoundé, in XAF. Estimates only, real offers vary by employer and experience.">Professions and salaries</SheetTitle>
       {SALARIES.map(([p, c, r]) => {
         const n = db.POSTS.filter((x) => x.kind === 'request' && x.cat === c && !x.mine).length;
         return (
@@ -928,7 +928,7 @@ function openArticle(i: number) {
 export function openPaths() {
   sheet.show(() => (
     <View style={{ gap: 8 }}>
-      <SheetTitle sub="Pick a direction — we’ll show the steps, courses and programs to get there.">Career change</SheetTitle>
+      <SheetTitle sub="Pick a direction. We’ll show the steps, courses and programs to get there.">Career change</SheetTitle>
       {PATHS.map(([t, i], k) => (
         <Pressable key={t} onPress={() => openPath(k)} style={({ pressed }) => [S.row, { gap: 12, padding: 12, borderRadius: 14, backgroundColor: pressed ? C.s3 : C.s2 }]}>
           <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: C.s3, alignItems: 'center', justifyContent: 'center' }}>

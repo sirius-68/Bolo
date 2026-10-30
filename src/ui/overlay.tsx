@@ -21,7 +21,7 @@ import { C, R, tx } from './theme';
 import { AlertIll, Btn } from './kit';
 
 /* =========================================================================
-   Bottom sheet — one slot, like the prototype's bx(): showing new content
+   Bottom sheet, one slot, like the prototype's bx(): showing new content
    replaces what's there. Content is a render function so it re-renders
    whenever the data model changes.
    ========================================================================= */
@@ -131,7 +131,7 @@ function SheetHost() {
 }
 
 /* =========================================================================
-   Picker — a list chooser that can open on top of a sheet.
+   Picker, a list chooser that can open on top of a sheet.
    ========================================================================= */
 type PickState = { title: string; options: { v: string; sub?: string }[]; value?: string; onPick: (v: string) => void; search?: boolean } | null;
 let pickState: PickState = null;

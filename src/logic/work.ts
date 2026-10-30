@@ -110,8 +110,8 @@ function simulateOffers(job: Post) {
         price: asBiz ? job.budget! : `XAF ${price.toLocaleString('en-US')}`,
         when: job.when === 'Flexible' ? 'Tomorrow, 10:00' : job.when!,
         msg: asBiz
-          ? ['I’m very interested in this role and can start quickly.', 'I have done this kind of work for years — happy to interview.', 'I live nearby and I’m available full-time.'][i]
-          : ['I can do this — I’ve done many jobs like it nearby.', 'Available at that time. I’ll bring my own tools.', 'I’m close by and can come quickly.'][i],
+          ? ['I’m very interested in this role and can start quickly.', 'I have done this kind of work for years, happy to interview.', 'I live nearby and I’m available full-time.'][i]
+          : ['I can do this, I’ve done many jobs like it nearby.', 'Available at that time. I’ll bring my own tools.', 'I’m close by and can come quickly.'][i],
         stage: asBiz ? 'applied' : undefined,
       });
       (asBiz ? db.NOTIFS_C : db.NOTIFS_W).unshift({ id: uid('no'), g: 'Today', type: 'newoffer', who: id, job: job.id, time: 'now' });
@@ -191,7 +191,7 @@ export function applyVac(id: string, msg: string, cv: CvFile | null) {
   later(db.user.pro.regular ? 3500 : 7000, () => {
     const o = db.myOffers[id];
     if (!o) return;
-    o.stage = 'Shortlisted — interview soon';
+    o.stage = 'Shortlisted, interview soon';
     o.state = 'acc';
     db.NOTIFS_W.unshift({ id: uid('ap'), g: 'Today', type: 'accept', who: po.client, time: 'now', text: `shortlisted you for “${po.title}”. Expect an interview invite.` });
     if (isW()) toast(`🎉 ${P(po.client!).name} shortlisted you!`);
@@ -222,7 +222,7 @@ export function setStage(jobId: string, i: number, st: string) {
 export function declineApp(jobId: string, i: number) {
   const po = postById(jobId)!;
   const o = po.offerList!.splice(i, 1)[0];
-  toast(`${P(o.by).name} declined — we’ll let them know kindly`);
+  toast(`${P(o.by).name} declined. We’ll let them know kindly`);
   bump();
 }
 export const stageLabel = (k: string) => STAGES.find((s) => s[0] === k)?.[1] || 'Applied';
@@ -251,7 +251,7 @@ export function sendContract(c: ContractDraft) {
     add(b.team, c.person);
     db.NOTIFS_C.unshift({ id: uid('kc'), g: 'Today', type: 'accept', who: c.person, time: 'now', text: `signed the contract for “${c.role}”. Welcome to the team!` });
     b.events.unshift({ icon: 'checkc', text: `<b>${P(c.person).name}</b> signed the contract and joined your team`, at: nowT() });
-    if (!isW() && db.BIZ.active === b.id) toast(`✍️ ${P(c.person).name} signed — they’re on your team`);
+    if (!isW() && db.BIZ.active === b.id) toast(`✍️ ${P(c.person).name} signed. They’re on your team`);
   });
 }
 export function endContract(id: string) {
@@ -344,7 +344,7 @@ export function wArrive(id: string) {
   cancel(timers[b.id]);
   b.eta = 0;
   setState(b, 'working');
-  toast('Job started — good luck!');
+  toast('Job started, good luck!');
 }
 export function wDone(id: string) {
   const b = bk(id)!;
@@ -391,7 +391,7 @@ export function liveInfo(b: Booking): [string, string, string] {
       booked: [W ? `Job with ${f} · ${b.when}` : `${f} starts ${b.when}`, b.title, 'sched'],
       onway: [W ? `On your way to ${f}` : `${f} is on the way`, `${b.eta} min away · ${b.title}`, ''],
       working: [W ? 'Job in progress' : `${f} is working`, b.title, ''],
-      done: [W ? `Waiting for ${f} to confirm` : `${f} says it’s done — confirm`, b.title, 'done'],
+      done: [W ? `Waiting for ${f} to confirm` : `${f} says it’s done, confirm`, b.title, 'done'],
       confirmed: [W ? `${b.price} paid · rate ${f}` : `Rate ${f}`, 'How did it go?', 'done'],
     } as Record<string, [string, string, string]>
   )[b.state];
@@ -498,14 +498,14 @@ export function reply(id: string, t: string) {
     const m = db.MENTORSHIPS.find((x) => x.id === p.mentorship);
     const mem = th.members || [];
     const who = /session|when|link|slides/.test(lo) && m ? fname(mOwner(m).name) : P(mem[th.msgs.length % Math.max(1, mem.length)])?.name.split(' ')[0] || 'Member';
-    const txt = /when|session/.test(lo) ? 'Thursday at 6pm on Google Meet. I’ll post the link an hour before.' : /slides/.test(lo) ? 'Yes — I’ll share them right after the session 👍' : /thank/.test(lo) ? 'Thank you too! See you next week.' : /hello|hi\b/.test(lo) ? 'Welcome! 😊' : 'Great point 👌';
+    const txt = /when|session/.test(lo) ? 'Thursday at 6pm on Google Meet. I’ll post the link an hour before.' : /slides/.test(lo) ? 'Yes, I’ll share them right after the session 👍' : /thank/.test(lo) ? 'Thank you too! See you next week.' : /hello|hi\b/.test(lo) ? 'Welcome! 😊' : 'Great point 👌';
     settleReply(id, () => th.msgs.push({ f: 'them', t: `${who}: ${txt}`, at: nowT() }), 2000);
     return;
   }
   if (p.client) {
     settleReply(id, () => {
       let r: string;
-      if (/quote|price|cost/.test(lo)) r = 'Sounds good — send me a quote and I’ll confirm.';
+      if (/quote|price|cost/.test(lo)) r = 'Sounds good. Send me a quote and I’ll confirm.';
       else if (/tomorrow|today|come|time|when/.test(lo)) r = 'That time works for me. Call when you reach the gate.';
       else if (/way|🛵/.test(lo)) r = 'Great, I’m home. See you soon!';
       else if (/thank/.test(lo)) r = 'Thank you too! 🙏';

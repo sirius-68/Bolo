@@ -55,7 +55,7 @@ export function TabHeader({ hello = true, reels }: { hello?: boolean; reels?: bo
           </View>
         </View>
       </Pressable>
-      {reels ? <IconBtn name="play" ring label="Reels — videos of work" onPress={() => router.push('/reels')} /> : null}
+      {reels ? <IconBtn name="play" ring label="Reels, videos of work" onPress={() => router.push('/reels')} /> : null}
       <IconBtn name="chat" ring count={m} label="Messages" onPress={() => router.push('/inbox')} />
       <IconBtn name="bell" ring count={n} label="Notifications" onPress={() => router.push('/notifs')} />
     </View>
@@ -100,6 +100,7 @@ export function SearchBar({ value, onChange, placeholder, onFilter, filters }: {
 }
 
 const liveList = () => myBookings().filter((b) => b.state !== 'confirmed' || !b.reviewed);
+export const hasLive = () => liveList().length > 0;
 const openLive = (b: any, fromSheet?: boolean) => {
   const go = () => (b.state === 'confirmed' ? openReview(trOther(b), b.id) : openTrack(b.id));
   if (fromSheet) afterSheet(go);
@@ -140,7 +141,7 @@ export function LiveBubble({ style }: { style?: any }) {
 export function openLiveSheet() {
   sheet.show(() => (
     <View>
-      <SheetTitle sub="Jobs happening now — tap one to follow it.">Live now</SheetTitle>
+      <SheetTitle sub="Jobs happening now. Tap one to follow it.">Live now</SheetTitle>
       <LiveCards fromSheet />
     </View>
   ));
@@ -167,9 +168,18 @@ export function LivePop() {
     const k = fresh[fresh.length - 1];
     setCur({ id: k.split(':')[0], key: k });
     a.setValue(0);
-    Animated.spring(a, { toValue: 1, useNativeDriver: true, speed: 14, bounciness: 7 }).start();
+    // Soft bubble: grows out of the top with a little wobble…
+    Animated.spring(a, { toValue: 1, useNativeDriver: true, speed: 9, bounciness: 13 }).start();
     clearTimeout(timer.current);
-    timer.current = setTimeout(() => Animated.timing(a, { toValue: 2, duration: 420, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(() => setCur(null)), 3600);
+    // …then puffs up slightly and shrinks back into the bubble.
+    timer.current = setTimeout(
+      () =>
+        Animated.sequence([
+          Animated.timing(a, { toValue: 1.15, duration: 140, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.timing(a, { toValue: 2, duration: 340, easing: Easing.in(Easing.back(1.4)), useNativeDriver: true }),
+        ]).start(() => setCur(null)),
+      3600,
+    );
   }, [keys.join('|')]);
   useEffect(() => () => clearTimeout(timer.current), []);
   const b = cur ? db.BOOKINGS.find((x) => x.id === cur.id) : null;
@@ -186,11 +196,11 @@ export function LivePop() {
         left: 14,
         right: 14,
         alignItems: 'center',
-        opacity: a.interpolate({ inputRange: [0, 0.6, 1, 1.7, 2], outputRange: [0, 1, 1, 0.6, 0] }),
+        opacity: a.interpolate({ inputRange: [0, 0.35, 1, 1.15, 1.8, 2], outputRange: [0, 1, 1, 1, 0.5, 0] }),
         transform: [
-          { translateY: a.interpolate({ inputRange: [0, 1, 2], outputRange: [-40, 0, -6] }) },
-          { scaleX: a.interpolate({ inputRange: [0, 1, 2], outputRange: [0.4, 1, 0.18] }) },
-          { scaleY: a.interpolate({ inputRange: [0, 1, 2], outputRange: [0.6, 1, 0.5] }) },
+          { translateY: a.interpolate({ inputRange: [0, 1, 1.15, 2], outputRange: [-18, 0, 0, -10] }) },
+          { scaleX: a.interpolate({ inputRange: [0, 1, 1.15, 2], outputRange: [0.25, 1, 1.03, 0.16] }) },
+          { scaleY: a.interpolate({ inputRange: [0, 1, 1.15, 2], outputRange: [0.35, 1, 1.07, 0.45] }) },
         ],
       }}
     >

@@ -226,7 +226,7 @@ function BizHome() {
               Create your first internship
             </Txt>
             <Txt s={12} c={C.muted}>
-              Train young talent — it shows in Career for everyone
+              Train young talent. It shows in Career for everyone
             </Txt>
           </View>
           <Icon name="chev" size={20} color={C.muted} />
@@ -246,7 +246,7 @@ function BizHome() {
             b.team.slice(0, 6).map((id, i) => <Avatar key={id} pic={P(id).photo} size={36} style={{ marginLeft: i ? -10 : 0, borderWidth: 2, borderColor: C.s1 }} />)
           ) : (
             <Txt s={13} c={C.muted}>
-              Nobody yet — hire from a vacancy with a company contract.
+              Nobody yet, hire from a vacancy with a company contract.
             </Txt>
           )}
         </View>
@@ -254,7 +254,7 @@ function BizHome() {
           {[
             [b.team.length, 'Team'],
             [wait.length, 'Awaiting signature'],
-            [payroll ? xaf(payroll) : '—', 'Payroll / month'],
+            [payroll ? xaf(payroll) : 'None', 'Payroll / month'],
           ].map(([v, l]) => (
             <View key={l as string} style={{ flex: 1 }}>
               <Txt s={15} w={8}>

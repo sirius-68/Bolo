@@ -97,7 +97,7 @@ export function SkillCombo({ taken, onPick, placeholder, autoFocus }: { taken: s
           setOpen(true);
         }}
         icon="search"
-        placeholder={placeholder || 'Search skills — e.g. Plumbing, Python, Accounting'}
+        placeholder={placeholder || 'Search skills: e.g. Plumbing, Python, Accounting'}
         autoFocus={autoFocus}
         autoCapitalize="none"
         right={
@@ -136,7 +136,7 @@ export function SkillCombo({ taken, onPick, placeholder, autoFocus }: { taken: s
             </View>
             <View style={{ flex: 1 }}>
               <Txt s={14} w={7}>
-                {ql ? `Add “${q.trim()}”` : 'Other — not in the list'}
+                {ql ? `Add “${q.trim()}”` : 'Other: not in the list'}
               </Txt>
               <Txt s={12} c={C.muted}>
                 {ql ? 'Use it as your own skill and describe it' : 'Add your own skill and describe it'}
@@ -348,7 +348,7 @@ export function SkillCard({ e, onChange, onChangeSkill, main }: { e: SkillEntry;
             {e.custom ? e.n || 'Your own skill' : e.n}
           </Txt>
           <Txt s={12} c={C.muted}>
-            {e.custom ? e.a || 'Not in our list — tell us about it' : e.a}
+            {e.custom ? e.a || 'Not in our list, tell us about it' : e.a}
           </Txt>
         </View>
         <Pressable onPress={onChangeSkill} hitSlop={8}>
@@ -483,7 +483,7 @@ export function LanguagesEditor({ langs, onChange }: { langs: [string, string][]
           value={v}
           onChangeText={setV}
           onSubmitEditing={() => add()}
-          placeholder="Add a language — type to search"
+          placeholder="Add a language: type to search"
           placeholderTextColor={C.faint}
           style={[tx(14, 6), { flex: 1, height: 48, borderRadius: R.md, backgroundColor: C.s2, paddingHorizontal: 14 }]}
         />

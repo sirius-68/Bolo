@@ -226,7 +226,7 @@ export default function BizOnboarding() {
           {b.name} is live 🎉
         </Txt>
         <Txt s={14} c={C.muted} center style={{ marginTop: 6, maxWidth: 320 }}>
-          Your business page is ready. {b.rccm && b.niu ? 'We’re verifying your documents — usually a few minutes.' : 'Verify any time from your dashboard to unlock company contracts.'}
+          Your business page is ready. {b.rccm && b.niu ? 'We’re verifying your documents, usually a few minutes.' : 'Verify any time from your dashboard to unlock company contracts.'}
         </Txt>
         <View style={{ gap: 12, marginTop: 24, alignSelf: 'stretch' }}>
           {[

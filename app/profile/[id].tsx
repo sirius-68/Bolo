@@ -83,13 +83,17 @@ export default function Profile() {
   const main =
     kind === 'worker' ? (
       w ? (
-        <Btn variant="white" style={{ flex: 1 }} title={st === 'booked' ? 'Booked ✓' : st === 'requested' ? 'Requested ✓' : `Hire ${f}`} onPress={() => openHire(id)} testID="profile-hire" />
+        <Btn variant="yellow" style={{ flex: 1 }} title={st === 'booked' ? 'Booked ✓' : st === 'requested' ? 'Requested ✓' : `Hire ${f}`} onPress={() => openHire(id)} testID="profile-hire" />
       ) : (
-        <Btn variant="white" style={{ flex: 1 }} title="Invite to apply" onPress={inviteToVacancy} />
+        <Btn variant="yellow" style={{ flex: 1 }} title="Invite to apply" onPress={inviteToVacancy} />
       )
     ) : (
       <Btn variant="yellow" style={{ flex: 1 }} title={`Message ${f}`} onPress={() => openChat(id)} />
     );
+  const person = kind !== 'company';
+  const wTabs = ['About', 'Services', ...(kind === 'client' || openRoles.length ? ['Jobs'] : []), 'Posts', 'Reviews', 'Schedule', 'CV'];
+  const tabs2 = person ? wTabs : tabs;
+  const t2 = tabs2.includes(tab) ? tab : 'About';
   return (
     <Page
       header={
@@ -107,32 +111,32 @@ export default function Profile() {
         />
       }
     >
-      <View style={{ marginTop: 10, padding: 16, borderRadius: 26, backgroundColor: kind === 'worker' ? C.yellow : C.s1, borderWidth: kind === 'worker' ? 0 : 1, borderColor: C.line }}>
+      <View style={{ marginTop: 10, padding: 18, borderRadius: 26, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }}>
         <View style={[S.row, { gap: 14 }]}>
-          <Avatar pic={p.photo} square={kind === 'company'} size={72} />
+          <Avatar pic={p.photo} square={kind === 'company'} size={76} ring={person && (p as any).pro ? C.yellow : undefined} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <View style={[S.row, { gap: 6 }]}>
-              <Txt s={20} w={8} c={kind === 'worker' ? '#000' : C.text} lines={2} style={{ flexShrink: 1 }}>
+              <Txt s={21} w={8} lines={2} style={{ flexShrink: 1 }}>
                 {p.name}
               </Txt>
               {p.verified ? <Verified /> : null}
             </View>
-            <View style={[S.row, { gap: 6, flexWrap: 'wrap', marginTop: 2 }]}>
+            <View style={[S.row, { gap: 6, flexWrap: 'wrap', marginTop: 3 }]}>
               {kind === 'company' ? <CoTag /> : null}
-              <Txt s={12} c={kind === 'worker' ? '#333' : C.muted}>
-                {kind === 'company' ? `${b?.sector || p.sector || ''} · ${p.area}` : kind === 'client' ? `Hires on bolo · ${p.area}` : `${p.role} · ${p.years} years`}
+              <Txt s={13} c={C.muted}>
+                {kind === 'company' ? `${b?.sector || p.sector || ''} · ${p.area}` : p.role && kind === 'worker' ? `${p.role} · ${p.years} years` : 'Hires on bolo'}
               </Txt>
-              <Rate r={p.rate} c={kind === 'worker' ? '#000' : undefined} />
+              <Rate r={p.rate} />
             </View>
           </View>
         </View>
-        <View style={{ flexDirection: 'row', marginTop: 14 }}>
-          {stats.map(([v, l]) => (
-            <View key={l} style={{ flex: 1 }}>
-              <Txt s={18} w={8} c={kind === 'worker' ? '#000' : C.text}>
+        <View style={{ flexDirection: 'row', marginTop: 18, paddingVertical: 12, borderRadius: 18, backgroundColor: C.s2 }}>
+          {stats.map(([v, l], i) => (
+            <View key={l} style={{ flex: 1, alignItems: 'center', borderLeftWidth: i ? 1 : 0, borderColor: C.line }}>
+              <Txt s={18} w={8}>
                 {v}
               </Txt>
-              <Txt s={11} c={kind === 'worker' ? '#333' : C.muted}>
+              <Txt s={11} c={C.muted}>
                 {l}
               </Txt>
             </View>
@@ -140,20 +144,18 @@ export default function Profile() {
         </View>
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
           {main}
-          <Btn variant={kind === 'worker' ? 'dark' : 'ghost'} title={following ? 'Following' : 'Follow'} onPress={() => follow(id)} style={{ flex: 1 }} />
-          {kind === 'worker' ? <IconBtn name="chat" bg="#000" label={`Message ${f}`} onPress={() => openChat(id)} /> : null}
+          <Btn variant="ghost" title={following ? 'Following' : 'Follow'} onPress={() => follow(id)} style={{ flex: 1, borderColor: C.s3 }} />
+          {kind === 'worker' ? <IconBtn name="chat" bg={C.s2} label={`Message ${f}`} onPress={() => openChat(id)} /> : null}
         </View>
       </View>
-      <View style={[S.row, { gap: 6, marginTop: 12, paddingHorizontal: 16 }]}>
+      <View style={[S.row, { gap: 6, marginTop: 12, paddingHorizontal: 18 }]}>
         <Icon name="pin" size={15} color={C.muted} />
         <Txt s={13} c={C.muted}>
           {p.area} · {kind === 'company' ? `${b?.size || ''} people` : p.dist}
         </Txt>
       </View>
-      <PTabs style={{ marginTop: 16 }} items={tabs.map((x) => [x, x] as [string, string])} value={t} onChange={setTab} />
-      <View style={{ marginTop: 12, gap: 12 }}>
-        {kind === 'worker' ? <WorkerTab id={id} t={t} /> : kind === 'client' ? <ClientTab id={id} t={t} /> : <CompanyTab id={id} t={t} />}
-      </View>
+      <PTabs style={{ marginTop: 16 }} items={tabs2.map((x) => [x, x] as [string, string])} value={t2} onChange={setTab} />
+      <View style={{ marginTop: 12, gap: 12 }}>{person ? <PersonTab id={id} t={t2} kind={kind} /> : <CompanyTab id={id} t={t2} />}</View>
     </Page>
   );
 }
@@ -185,13 +187,44 @@ function Cred({ icon, t, s }: { icon: string; t: string; s: string }) {
     </View>
   );
 }
+/** Friendly empty state used by every profile tab. */
+function EmptyTab({ icon, title, text, action, onAction }: { icon: string; title: string; text: string; action?: string; onAction?: () => void }) {
+  return (
+    <View style={{ alignItems: 'center', paddingVertical: 28, paddingHorizontal: 20, borderRadius: 22, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }}>
+      <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name={icon} size={24} color={C.yellow} />
+      </View>
+      <Txt s={16} w={8} center style={{ marginTop: 12 }}>
+        {title}
+      </Txt>
+      <Txt s={13} c={C.muted} center style={{ marginTop: 4 }}>
+        {text}
+      </Txt>
+      {action ? <Btn small variant="dark" title={action} onPress={onAction} style={{ marginTop: 14 }} /> : null}
+    </View>
+  );
+}
+function Stars({ n, size = 14 }: { n: number; size?: number }) {
+  return (
+    <View style={[S.row, { gap: 2 }]}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Icon key={i} name="star" size={size} color={i <= Math.round(n) ? C.yellow : C.s3} />
+      ))}
+    </View>
+  );
+}
 function ReviewGate({ id }: { id: string }) {
   const r = reviewable(id);
   if (!r)
     return (
-      <Txt s={12} c={C.muted}>
-        🔒 Only people who completed a job with {fname(P(id).name)} on bolo can leave a review.
-      </Txt>
+      <View style={[S.row, { gap: 10, padding: 12, borderRadius: 16, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }]}>
+        <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="lock" size={16} color={C.lav} />
+        </View>
+        <Txt s={12} c={C.muted} style={{ flex: 1 }}>
+          Only people who completed a job with {fname(P(id).name)} on bolo can leave a review.
+        </Txt>
+      </View>
     );
   return (
     <Pressable onPress={() => openReview(id, r.bid.startsWith('k') ? null : r.bid)} style={[S.row, { gap: 12, padding: 14, borderRadius: 18, backgroundColor: C.yellow }]}>
@@ -208,160 +241,217 @@ function ReviewGate({ id }: { id: string }) {
     </Pressable>
   );
 }
-function ReviewList({ id, sample }: { id: string; sample: [string, string, number, string][] }) {
-  const mine: Review[] = db.REVIEWS[id] || [];
+type RV = { pic: any; name: string; time: string; stars: number; text: string; tags?: string[] };
+function ReviewCard({ r }: { r: RV }) {
   return (
-    <>
-      {mine.map((r, i) => (
-        <Card key={'r' + i}>
-          <View style={[S.row, { gap: 10 }]}>
-            <Avatar pic={r.photo} size={32} />
-            <Txt s={14} w={8} style={{ flex: 1 }}>
-              {r.name}
-            </Txt>
-            <Txt s={11} c={C.faint}>
-              {r.time}
-            </Txt>
-          </View>
-          <Txt s={13} c={C.yellow}>
-            {'★'.repeat(r.stars)}
-            {'☆'.repeat(5 - r.stars)}
+    <View style={{ padding: 16, borderRadius: 20, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, gap: 10 }}>
+      <View style={[S.row, { gap: 10 }]}>
+        <Avatar pic={r.pic} size={36} />
+        <View style={{ flex: 1 }}>
+          <Txt s={14} w={8}>
+            {r.name}
           </Txt>
-          {r.tags.length ? (
-            <Txt s={12} c={C.lav}>
-              {r.tags.join(' · ')}
-            </Txt>
-          ) : null}
-          {r.text ? <Txt s={13}>{r.text}</Txt> : null}
-        </Card>
-      ))}
-      {sample.map(([c, t, s, x]) => (
-        <Card key={c}>
-          <View style={[S.row, { gap: 10 }]}>
-            <Avatar pic={P(c).photo} size={32} />
-            <Txt s={14} w={8} style={{ flex: 1 }}>
-              {P(c).name}
-            </Txt>
-            <Txt s={11} c={C.faint}>
-              {t}
-            </Txt>
-          </View>
-          <Txt s={13} c={C.yellow}>
-            {'★'.repeat(s)}
-            {'☆'.repeat(5 - s)}
+          <Txt s={11} c={C.faint}>
+            {r.time}
           </Txt>
-          <Txt s={13}>{x}</Txt>
-        </Card>
-      ))}
-    </>
+        </View>
+        <Stars n={r.stars} size={13} />
+      </View>
+      {r.tags?.length ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+          {r.tags.map((x) => (
+            <View key={x} style={{ paddingHorizontal: 10, height: 26, borderRadius: 13, backgroundColor: C.s2, justifyContent: 'center' }}>
+              <Txt s={11} w={7} c={C.lav}>
+                {x}
+              </Txt>
+            </View>
+          ))}
+        </View>
+      ) : null}
+      {r.text ? (
+        <Txt s={14} c="#d9d9de">
+          {r.text}
+        </Txt>
+      ) : null}
+    </View>
   );
 }
 
-function WorkerTab({ id, t }: { id: string; t: string }) {
+/** Every person's profile has the same tabs; tabs with nothing yet show a helpful empty state. */
+function PersonTab({ id, t, kind }: { id: string; t: string; kind: string }) {
   const p = P(id);
   const f = fname(p.name);
+  const worker = kind === 'worker';
   const [day, setDay] = useState(0);
   const [slot, setSlot] = useState<string | null>(null);
+
   if (t === 'About') {
-    const a = aboutOf(id);
+    const a = worker ? aboutOf(id) : null;
     return (
       <>
-        <Card title="About me">
+        <Card title="About">
           <Txt s={14} c="#d9d9de">
-            {a.bio}
+            {a ? a.bio : `${p.name} has posted ${p.jobs} jobs on bolo and hired ${p.hires || 0} people around ${p.area}. Usually replies within an hour.`}
           </Txt>
         </Card>
-        <Card title="Specialties">
-          {a.spec.map((s) => (
-            <View key={s} style={[S.row, { gap: 8 }]}>
-              <Icon name="check" size={16} color={C.mint} />
-              <Txt s={14}>{s}</Txt>
-            </View>
-          ))}
-        </Card>
-        <Card title="Credentials">
-          {a.cred.map(([tt, s]) => (
-            <Cred key={tt} icon="cap" t={tt} s={s} />
-          ))}
+        {a ? (
+          <Card title="Specialties">
+            {a.spec.map((x) => (
+              <View key={x} style={[S.row, { gap: 10 }]}>
+                <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(123,224,167,.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon name="check" size={13} color={C.mint} />
+                </View>
+                <Txt s={14} style={{ flex: 1 }}>
+                  {x}
+                </Txt>
+              </View>
+            ))}
+          </Card>
+        ) : null}
+        <Card title="Trust and verification">
+          {p.verified ? <Cred icon="idcard" t="Identity verified" s="Checked by bolo" /> : null}
+          <Cred icon="phone" t="Phone verified" s="Confirmed when they joined" />
+          {worker ? <Cred icon="checkc" t={`${p.jobs} jobs completed`} s="Paid and confirmed on bolo" /> : <Cred icon="money" t="Pays on time" s={`${p.hires || 0} completed payments`} />}
+          <Cred icon="calcheck" t={`Member for ${p.years} year${p.years > 1 ? 's' : ''}`} s="Active on bolo" />
         </Card>
       </>
     );
   }
-  if (t === 'Services')
+
+  if (t === 'Services') {
+    const L = worker ? SERVICES[p.role] || SERVICES.Plumber : [];
+    if (!L.length) return <EmptyTab icon="wrench" title="No services listed" text={`${f} hasn’t listed any services with prices yet.`} action={`Message ${f}`} onAction={() => openChat(id)} />;
     return (
       <>
-        {(SERVICES[p.role] || SERVICES.Plumber).map(([n, pr, d, img]) => (
-          <View key={n} style={[S.row, { gap: 12, padding: 12, borderRadius: 20, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, alignItems: 'flex-start' }]}>
+        {L.map(([n, pr, d, img]) => (
+          <View key={n} style={{ borderRadius: 22, overflow: 'hidden', backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }}>
             {img ? (
-              <Pict pic={img} style={{ width: 64, height: 64, borderRadius: 14 }} />
+              <Pict pic={img} style={{ width: '100%', height: 132 }} />
             ) : (
-              <View style={{ width: 64, height: 64, borderRadius: 14, backgroundColor: C.blue, alignItems: 'center', justifyContent: 'center' }}>
-                <Icon name={catIcon(p.role)} size={26} color="#fff" />
+              <View style={{ height: 84, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name={catIcon(p.role)} size={30} color={C.yellow} />
               </View>
             )}
-            <View style={{ flex: 1 }}>
-              <Txt s={15} w={8}>
+            <View style={{ padding: 14, gap: 4 }}>
+              <Txt s={16} w={8}>
                 {n}
               </Txt>
-              <Txt s={13} w={8} c={C.yellow}>
-                {pr}
-              </Txt>
-              <Txt s={12} c={C.muted}>
+              <Txt s={13} c={C.muted}>
                 {d}
               </Txt>
-              {isW() ? <Btn small variant="dark" title="Request" style={{ alignSelf: 'flex-start', marginTop: 8 }} onPress={() => openHire(id)} /> : null}
+              <View style={[S.rowB, { marginTop: 10 }]}>
+                <View>
+                  <Txt s={11} c={C.faint}>
+                    Price
+                  </Txt>
+                  <Txt s={17} w={8} c={C.yellow}>
+                    {pr}
+                  </Txt>
+                </View>
+                {isW() ? <Btn small variant="yellow" title="Request" onPress={() => openHire(id)} /> : null}
+              </View>
             </View>
           </View>
         ))}
       </>
     );
-  if (t === 'Posts')
+  }
+
+  if (t === 'Jobs') {
+    const js = db.POSTS.filter((x) => x.kind === 'request' && x.client === id);
+    return js.length ? (
+      <>
+        {js.map((po) => (
+          <ReqPost key={po.id} po={po} />
+        ))}
+      </>
+    ) : (
+      <EmptyTab icon="job" title="No open jobs" text={`${f} doesn’t have any open jobs right now.`} />
+    );
+  }
+
+  if (t === 'Posts') {
+    const reels = REELS.map((r, i) => [r, i] as const).filter(([r]) => r.by === id);
+    const posts = db.POSTS.filter((x) => x.by === id && x.kind !== 'request');
+    if (!reels.length && !posts.length) return <EmptyTab icon="image" title="No posts yet" text={`When ${f} shares photos or videos of their work, they’ll show here.`} />;
     return (
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-        {REELS.map((r, i) => (r.by === id ? <ReelThumb key={i} r={r} i={i} width={'48%' as any} onPress={() => router.push(`/reels?i=${i}` as any)} /> : null))}
-        {db.POSTS.filter((x) => x.by === id).map((x) => (
-          <Pressable key={x.id} style={{ width: '48%', aspectRatio: 3 / 4.6, borderRadius: 22, overflow: 'hidden', backgroundColor: C.lav, padding: 12, justifyContent: 'flex-end' }} onPress={() => (x.img || x.src ? openMedia((x.img || x.src)!) : null)}>
+        {reels.map(([r, i]) => (
+          <ReelThumb key={'r' + i} r={r} i={i} width={'48.5%' as any} onPress={() => router.push(`/reels?i=${i}` as any)} />
+        ))}
+        {posts.map((x) => (
+          <Pressable key={x.id} style={{ width: '48.5%', aspectRatio: 3 / 4, borderRadius: 20, overflow: 'hidden', backgroundColor: C.s2, padding: 12, justifyContent: 'flex-end' }} onPress={() => (x.img || x.src ? openMedia((x.img || x.src)!) : null)}>
             {x.img || x.src ? <Pict pic={(x.img || x.src)!} style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }} /> : null}
-            <Txt s={12} w={7} c={x.img || x.src ? '#fff' : '#000'} lines={3}>
+            {x.img || x.src ? <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 80, backgroundColor: 'rgba(0,0,0,.45)' }} /> : null}
+            <Txt s={12} w={7} lines={3}>
               {x.text}
             </Txt>
           </Pressable>
         ))}
-        {!REELS.some((r) => r.by === id) && !db.POSTS.some((x) => x.by === id) ? <Empty title="No posts yet" /> : null}
       </View>
     );
-  if (t === 'Reviews')
+  }
+
+  if (t === 'Reviews') {
+    const mine: Review[] = db.REVIEWS[id] || [];
+    const sample: [string, string, number, string][] = worker
+      ? SAMPLE_REV
+      : [
+          ['edward', '1 week ago', 5, 'Clear instructions and paid right away.'],
+          ['grace', '3 weeks ago', 5, 'Lovely to work with. Everything was ready when I arrived.'],
+        ];
+    const all: RV[] = [...mine.map((r) => ({ pic: r.photo, name: r.name, time: r.time, stars: r.stars, text: r.text, tags: r.tags })), ...sample.map(([c, tm, n, x]) => ({ pic: P(c).photo, name: P(c).name, time: tm, stars: n, text: x }))];
+    const dist = [0.82, 0.12, 0.04, 0.01, 0.01];
     return (
       <>
-        <Card>
-          <View style={[S.row, { gap: 14 }]}>
-            <Txt s={40} w={8}>
+        <View style={[S.row, { gap: 18, padding: 18, borderRadius: 22, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }]}>
+          <View style={{ alignItems: 'center', minWidth: 84 }}>
+            <Txt s={42} w={8}>
               {p.rate}
             </Txt>
-            <View>
-              <Txt s={16} c={C.yellow}>
-                ★★★★★
-              </Txt>
-              <Txt s={12} c={C.muted}>
-                Based on {p.reviews} reviews{(db.REVIEWS[id] || []).length ? ` · ${(db.REVIEWS[id] || []).length} new` : ''}
-              </Txt>
-            </View>
+            <Stars n={Number(p.rate)} size={12} />
+            <Txt s={11} c={C.muted} style={{ marginTop: 4 }}>
+              {p.reviews} reviews
+            </Txt>
           </View>
-        </Card>
+          <View style={{ flex: 1, gap: 5 }}>
+            {dist.map((d, i) => (
+              <View key={i} style={[S.row, { gap: 8 }]}>
+                <Txt s={11} c={C.muted} style={{ width: 8 }}>
+                  {5 - i}
+                </Txt>
+                <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: C.s3 }}>
+                  <View style={{ width: `${d * 100}%`, height: 6, borderRadius: 3, backgroundColor: C.yellow }} />
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
         <ReviewGate id={id} />
-        <ReviewList id={id} sample={SAMPLE_REV} />
+        {all.map((r, i) => (
+          <ReviewCard key={i} r={r} />
+        ))}
       </>
     );
-  if (t === 'CV')
+  }
+
+  if (t === 'CV') {
+    if (!worker) return <EmptyTab icon="file" title="No CV yet" text={`${f} hasn’t added work history to bolo yet.`} />;
     return (
       <>
         <PersonCV id={id} />
-        <Txt s={12} c={C.muted} center>
-          Generated from {f}’s bolo profile and job history.
-        </Txt>
+        <View style={[S.row, { gap: 8, justifyContent: 'center' }]}>
+          <Icon name="sparkle" size={14} color={C.muted} />
+          <Txt s={12} c={C.muted}>
+            Built from {f}’s bolo profile and job history
+          </Txt>
+        </View>
       </>
     );
+  }
+
   // Schedule
+  if (!worker) return <EmptyTab icon="calplus" title="No booking times" text={`${f} doesn’t take bookings on bolo yet. Send a message to arrange a time.`} action={`Message ${f}`} onAction={() => openChat(id)} />;
   const d0 = new Date();
   const N = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const SL = ['8:00', '9:30', '11:00', '12:30', '14:00', '15:30', '17:00', '18:30'];
@@ -373,88 +463,69 @@ function WorkerTab({ id, t }: { id: string; t: string }) {
   const label = (i: number) => (i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : `${N[days[i].getDay()]} ${days[i].getDate()}`);
   return (
     <>
-      <View style={{ flexDirection: 'row', gap: 6 }}>
-        {days.map((d, i) => {
-          const off = d.getDay() === 0;
-          const on = i === day;
-          return (
-            <Pressable key={i} disabled={off} accessibilityState={{ selected: on, disabled: off }} onPress={() => (setDay(i), setSlot(null))} style={{ flex: 1, paddingVertical: 10, borderRadius: 14, alignItems: 'center', backgroundColor: on ? C.yellow : C.s1, opacity: off ? 0.35 : 1 }}>
-              <Txt s={11} c={on ? '#000' : C.muted}>
-                {N[d.getDay()]}
-              </Txt>
-              <Txt s={16} w={8} c={on ? '#000' : C.text}>
-                {d.getDate()}
-              </Txt>
-            </Pressable>
-          );
-        })}
+      <View style={{ padding: 14, borderRadius: 22, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, gap: 14 }}>
+        <View style={S.rowB}>
+          <Txt s={16} w={8}>
+            Pick a day
+          </Txt>
+          <Txt s={12} c={C.muted}>
+            {days[0].toLocaleString('en', { month: 'long' })}
+          </Txt>
+        </View>
+        <View style={{ flexDirection: 'row', gap: 6 }}>
+          {days.map((d, i) => {
+            const off = d.getDay() === 0;
+            const on = i === day;
+            return (
+              <Pressable key={i} disabled={off} accessibilityState={{ selected: on, disabled: off }} onPress={() => (setDay(i), setSlot(null))} style={{ flex: 1, paddingVertical: 10, borderRadius: 14, alignItems: 'center', backgroundColor: on ? C.yellow : C.s2, opacity: off ? 0.35 : 1 }}>
+                <Txt s={11} c={on ? '#000' : C.muted}>
+                  {N[d.getDay()]}
+                </Txt>
+                <Txt s={16} w={8} c={on ? '#000' : C.text}>
+                  {d.getDate()}
+                </Txt>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Txt s={16} w={8}>
+          Available times
+        </Txt>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {SL.map((x, i) => {
+            const busy = (i + day) % 3 === 0;
+            const on = slot === x;
+            return (
+              <Pressable key={x} disabled={busy} onPress={() => setSlot(x)} style={{ width: '23%', flexGrow: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.blue : C.s2, borderWidth: 1, borderColor: on ? C.lav : 'transparent', opacity: busy ? 0.35 : 1 }}>
+                <Txt s={13} w={7} style={busy ? { textDecorationLine: 'line-through' } : undefined}>
+                  {x}
+                </Txt>
+              </Pressable>
+            );
+          })}
+        </View>
+        <View style={[S.row, { gap: 14 }]}>
+          <View style={[S.row, { gap: 6 }]}>
+            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.s2, borderWidth: 1, borderColor: C.s3 }} />
+            <Txt s={11} c={C.muted}>
+              Free
+            </Txt>
+          </View>
+          <View style={[S.row, { gap: 6, opacity: 0.5 }]}>
+            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.s3 }} />
+            <Txt s={11} c={C.muted}>
+              Booked
+            </Txt>
+          </View>
+        </View>
       </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {SL.map((s, i) => {
-          const busy = (i + day) % 3 === 0;
-          const on = slot === s;
-          return (
-            <Pressable key={s} disabled={busy} onPress={() => setSlot(s)} style={{ width: '23%', height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.blue : C.s1, borderWidth: 1, borderColor: on ? C.blue : C.line, opacity: busy ? 0.35 : 1 }}>
-              <Txt s={13} w={7} style={busy ? { textDecorationLine: 'line-through' } : undefined}>
-                {s}
-              </Txt>
-            </Pressable>
-          );
-        })}
-      </View>
-      <Txt s={12} c={C.muted}>
-        Crossed-out times are already booked.
-      </Txt>
       {isW() ? (
-        <Btn variant="yellow" disabled={!slot} title={slot ? `Book ${label(day)} at ${slot}` : 'Select a time slot'} onPress={() => openHire(id, { when: `${label(day)}, ${slot}` })} />
+        <Btn variant="yellow" disabled={!slot} title={slot ? `Book ${label(day)} at ${slot}` : 'Select a time'} onPress={() => openHire(id, { when: `${label(day)}, ${slot}` })} />
       ) : (
-        <Txt s={12} c={C.muted}>
+        <Txt s={12} c={C.muted} center>
           To book {f} for your company, invite them to apply to a vacancy.
         </Txt>
       )}
-    </>
-  );
-}
-function ClientTab({ id, t }: { id: string; t: string }) {
-  const p = P(id);
-  const f = fname(p.name);
-  if (t === 'About')
-    return (
-      <>
-        <Card title="About">
-          <Txt s={14} c="#d9d9de">
-            {p.name} has posted {p.jobs} jobs on bolo and hired {p.hires || 0} people around {p.area}. Usually replies within an hour.
-          </Txt>
-        </Card>
-        <Card title="Trust">
-          <Cred icon="shield" t="Phone verified" s="Confirmed when they joined" />
-          <Cred icon="shield" t="Pays on time" s={`${p.hires || 0} completed payments`} />
-          <Cred icon="shield" t={`Member for ${p.years} year${p.years > 1 ? 's' : ''}`} s="Active on bolo" />
-        </Card>
-      </>
-    );
-  if (t === 'Jobs') {
-    const js = db.POSTS.filter((x) => x.kind === 'request' && x.client === id);
-    return js.length ? (
-      <>
-        {js.map((po) => (
-          <ReqPost key={po.id} po={po} />
-        ))}
-      </>
-    ) : (
-      <Empty title="No open jobs" text={`${f} doesn’t have any open jobs right now.`} />
-    );
-  }
-  return (
-    <>
-      <ReviewGate id={id} />
-      <ReviewList
-        id={id}
-        sample={[
-          ['edward', '1 week ago', 5, 'Clear instructions and paid right away.'],
-          ['grace', '3 weeks ago', 5, 'Lovely to work with. Everything was ready when I arrived.'],
-        ]}
-      />
     </>
   );
 }

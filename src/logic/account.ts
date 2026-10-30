@@ -130,7 +130,7 @@ export function payPro(kind: 'regular' | 'business', done: () => void) {
 }
 export function cancelPro(kind: 'regular' | 'business') {
   db.user.pro[kind] = false;
-  toast('Plan cancelled — you keep it until the end of the month');
+  toast('Plan cancelled. You keep it until the end of the month');
   bump();
 }
 

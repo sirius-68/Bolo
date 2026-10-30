@@ -14,10 +14,10 @@ import { openService } from './profile';
 
 /** The yellow “+” button. Regular and Business get different options. */
 const need = (
-  <OptRow key="need" testID="cr-job" icon="job" title="I need something done" sub="Post a job — a repair, a tailor, a tutor. People nearby send offers." onPress={() => afterSheet(() => router.push('/post-job'))} />
+  <OptRow key="need" testID="cr-job" icon="job" title="I need something done" sub="Post a job: a repair, a tailor, a tutor. People nearby send offers." onPress={() => afterSheet(() => router.push('/post-job'))} />
 );
 const offer = (
-  <OptRow key="offer" testID="cr-service" icon="wrench" bg={C.mint} title="Offer a service" sub="List what you do with a price — people near you can book it" onPress={() => afterSheet(() => openService())} />
+  <OptRow key="offer" testID="cr-service" icon="wrench" bg={C.mint} title="Offer a service" sub="List what you do with a price. People near you can book it" onPress={() => afterSheet(() => openService())} />
 );
 
 /** The actions the floating + offers, ordered by what this person came for. */
@@ -56,7 +56,7 @@ function CreateSheet() {
         {db.user.intents.includes("find") ? [offer, need] : [need, offer]}
         <OptRow icon="post" bg={C.orange} title="Share your work" sub="Photos of a job you’re proud of" onPress={() => go(() => router.push('/new-post'))} />
         <OptRow icon="clock" bg={C.lav} title="Set availability" sub="Let people book your free slots today" onPress={() => go(openAvailability)} />
-        <OptRow icon="follow" bg={C.mint} title="Offer a mentorship" sub="Share what you know — free or paid" onPress={() => go(openMentorForm)} />
+        <OptRow icon="follow" bg={C.mint} title="Offer a mentorship" sub="Share what you know, free or paid" onPress={() => go(openMentorForm)} />
         <OptRow
           icon="cap"
           bg="#fff"
@@ -77,9 +77,9 @@ function CreateSheet() {
     <View>
       <SheetTitle sub="Everything you create shows with your company name and logo.">Create for {bizName(curBiz())}</SheetTitle>
       <OptRow icon="job" title="Post a vacancy" sub="Full-time, part-time or contract roles under your company" onPress={() => go(() => router.push('/post-job'))} />
-      <OptRow icon="cap" bg={C.lav} title="Create an internship" sub="Train young talent — it shows in Career" onPress={() => go(() => openOppForm('Internship'))} />
+      <OptRow icon="cap" bg={C.lav} title="Create an internship" sub="Train young talent. It shows in Career" onPress={() => go(() => openOppForm('Internship'))} />
       <OptRow icon="sparkle" bg={C.orange} title="Create a program" sub="Apprenticeship, graduate program or training people can join" onPress={() => go(() => openOppForm('Training program'))} />
-      <OptRow icon="file" bg={C.mint} title="Create a course" sub="Teach a skill — free or paid, online or in person" onPress={() => go(() => openOppForm('Course'))} />
+      <OptRow icon="file" bg={C.mint} title="Create a course" sub="Teach a skill, free or paid, online or in person" onPress={() => go(() => openOppForm('Course'))} />
       <OptRow icon="follow" bg={C.pink} title="Offer a mentorship" sub="Group mentoring led by your company" onPress={() => go(openMentorForm)} />
       <OptRow icon="post" bg="#fff" title="Post a company update" sub="News, photos, events" onPress={() => go(() => router.push('/new-post'))} />
     </View>
@@ -95,7 +95,7 @@ function Availability() {
   const [day, setDay] = useState('Today');
   return (
     <View style={{ gap: 14 }}>
-      <SheetTitle sub="Your free slots show in the feed. People nearby can book one in a tap — you confirm in chat.">Set availability</SheetTitle>
+      <SheetTitle sub="Your free slots show in the feed. People nearby can book one in a tap. You confirm in chat.">Set availability</SheetTitle>
       <View>
         <Label>When</Label>
         <Chips>

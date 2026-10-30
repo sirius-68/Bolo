@@ -105,7 +105,7 @@ function JobSheet({ id, initialStage }: { id: string; initialStage?: string }) {
         <View style={{ marginTop: 16, gap: 10 }}>
           <Note icon="storefront">
             {db.user.bizOnly
-              ? 'Business accounts recruit — they can’t apply for jobs. To apply or send offers, use a separate Regular account.'
+              ? 'Business accounts recruit. They can’t apply for jobs. To apply or send offers, use a separate Regular account.'
               : po.biz
                 ? 'You’re viewing this as a business. Switch to your Regular profile to apply for roles.'
                 : 'Personal jobs are for Regular profiles. Switch to your Regular profile to send an offer.'}
@@ -346,7 +346,7 @@ function OfferForm({ po }: { po: Post }) {
           <View style={[S.row, { gap: 6 }]}>
             <Icon name={off.state === 'acc' ? 'check' : 'clock'} size={16} color={off.state === 'acc' ? C.mint : C.muted} />
             <Txt s={13} w={7} c={off.state === 'acc' ? C.mint : C.muted}>
-              {off.state === 'acc' ? 'Offer accepted — job booked' : `Offer sent · waiting for ${f}`}
+              {off.state === 'acc' ? 'Offer accepted, job booked' : `Offer sent · waiting for ${f}`}
             </Txt>
           </View>
           <Txt s={15} w={8}>
@@ -433,7 +433,7 @@ function ApplyForm({ po }: { po: Post }) {
       <CvPicker mode={mode} setMode={setMode} file={file} setFile={setFile} />
       {db.user.pro.regular ? (
         <Note icon="rocket" color={C.yellow}>
-          Priority application — you’ll show at the top of {c.name}’s list.
+          Priority application. You’ll show at the top of {c.name}’s list.
         </Note>
       ) : (
         <Pressable onPress={() => openPro('regular', 'priority')} style={[S.row, { gap: 10, padding: 12, borderRadius: 14, backgroundColor: 'rgba(246,238,92,.1)' }]}>
@@ -493,7 +493,7 @@ function HireSheet({ id, preset }: { id: string; preset?: { when?: string } }) {
               {p.name}
             </Txt>
             <Txt s={13} c={C.muted}>
-              {st === 'booked' ? 'Booked — you can follow the job live' : 'Request sent — waiting for an answer'}
+              {st === 'booked' ? 'Booked. You can follow the job live' : 'Request sent, waiting for an answer'}
             </Txt>
           </View>
         </View>
@@ -596,7 +596,7 @@ function DoneAlert({ id }: { id: string }) {
       />
       <Btn
         variant="ghost"
-        title="Not yet — something’s wrong"
+        title="Not yet, something’s wrong"
         onPress={() => {
           reportIssue(id);
           sheet.close();
@@ -719,7 +719,7 @@ export function openMedia(pic: string) {
 }
 export async function sharePost(name?: string) {
   try {
-    await Share.share({ message: `Check out ${name ? name + ' ' : ''}on bolo — jobs, talent and careers near you. https://bolo.app` });
+    await Share.share({ message: `Check out ${name ? name + ' ' : ''}on bolo, jobs, talent and careers near you. https://bolo.app` });
   } catch {}
 }
 export { tx, myCity, ProTag, trOther, bizLogo, Check };

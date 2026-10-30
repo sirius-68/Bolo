@@ -33,7 +33,7 @@ export default function ExpertStatus() {
       ) : (
         <>
           <Title sm>{E.status === 'interview' ? 'Pick a time for your interview' : 'We’re reviewing your application'}</Title>
-          <Sub>{E.status === 'interview' ? 'Your answers passed review. The last step is a 15-minute video call with a bolo reviewer.' : 'You’ll get a notification at each step. You can close the app — nothing else is needed from you right now.'}</Sub>
+          <Sub>{E.status === 'interview' ? 'Your answers passed review. The last step is a 15-minute video call with a bolo reviewer.' : 'You’ll get a notification at each step. You can close the app. Nothing else is needed from you right now.'}</Sub>
         </>
       )}
 

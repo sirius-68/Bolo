@@ -103,7 +103,7 @@ export default function Track() {
       onway: (
         <>
           <Note icon="lock">Ask {f} for their 4-digit code when you arrive.</Note>
-          <Btn variant="yellow" icon="flag" title="I’ve arrived — start job" onPress={() => wArrive(b.id)} />
+          <Btn variant="yellow" icon="flag" title="I’ve arrived, start job" onPress={() => wArrive(b.id)} />
         </>
       ),
       working: <Btn variant="yellow" icon="checkc" title="Mark job as done" onPress={() => wDone(b.id)} />,
@@ -148,7 +148,7 @@ export default function Track() {
           <Txt s={14} w={8} style={{ letterSpacing: 3 }}>
             {pinOf(b.id)}
           </Txt>{' '}
-          — share it with {f} when they arrive.
+          Share it with {f} when they arrive.
         </Note>
       ),
       working: (

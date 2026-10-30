@@ -40,7 +40,7 @@ export default function PostJob() {
     setTried(true);
     if (!ok) return;
     const job = postJob({ title, text, cat: finalCat || 'Handyman', budget: b, neg, type, openings, when, time, area, urgent, photos });
-    toast(w ? 'Job posted — people nearby will send offers' : `Vacancy published for ${bizName(curBiz())}`);
+    toast(w ? 'Job posted. People nearby will send offers' : `Vacancy published for ${bizName(curBiz())}`);
     if (w) back();
     else resetTo('/home');
     later(450, () => openJob(job.id));
@@ -48,7 +48,7 @@ export default function PostJob() {
   return (
     <Page keyboard header={<TopBar title={w ? 'Post a job' : 'Post a vacancy'} />}>
       <Title sm>{w ? 'What do you need help with?' : `Who are you hiring at ${bizName(curBiz())}?`}</Title>
-      <Sub>{w ? 'Any personal job — a quick fix, a tutor, a driver. People near you send offers; you choose.' : 'Your vacancy shows with your company name and logo. Applicants land in your dashboard.'}</Sub>
+      <Sub>{w ? 'Any personal job: a quick fix, a tutor, a driver. People near you send offers; you choose.' : 'Your vacancy shows with your company name and logo. Applicants land in your dashboard.'}</Sub>
       <View style={{ gap: 18, marginTop: 20 }}>
         <Field label="Job title" error={tried && !ok && 'Give your job a short title (3+ letters)'}>
           <Input icon="job" value={title} onChangeText={setTitle} maxLength={60} placeholder={w ? 'e.g. Kitchen sink is leaking' : 'e.g. Sales representative'} invalid={tried && !ok} testID="pj-title" />
@@ -62,7 +62,7 @@ export default function PostJob() {
             <View style={[S.row, { gap: 6, marginBottom: 8 }]}>
               <Icon name="sparkle" size={14} color={C.lav} />
               <Txt s={12} c={C.lav}>
-                Looks like <Txt s={12} w={8} c={C.lav}>{auto}</Txt> — tap another to change
+                Looks like <Txt s={12} w={8} c={C.lav}>{auto}</Txt>. Tap another to change
               </Txt>
             </View>
           ) : null}

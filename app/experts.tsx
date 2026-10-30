@@ -22,7 +22,7 @@ export default function Experts() {
     <Page>
       <TopBar title="Career experts" />
       <Title sm>Advice from people who’ve done it</Title>
-      <Sub>CV reviews, interview practice, job search and career change — 1-to-1 with checked, rated experts.</Sub>
+      <Sub>CV reviews, interview practice, job search and career change, 1-to-1 with checked, rated experts.</Sub>
 
       <View style={{ gap: 8, marginTop: 20 }}>
         {list.map(([n, r, ph, me]) => (
@@ -51,7 +51,7 @@ export default function Experts() {
                 onPress={() => {
                   if (booked.includes(n)) return;
                   setBooked([...booked, n]);
-                  toast(`Session requested with ${n.split(' ')[0]} — they’ll confirm a time`);
+                  toast(`Session requested with ${n.split(' ')[0]}. They’ll confirm a time`);
                 }}
               />
             )}

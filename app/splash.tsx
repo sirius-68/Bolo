@@ -36,7 +36,7 @@ export default function Splash() {
       </Animated.View>
       <Pict pic="img/logo-yellow" style={{ width: 230, height: 82 }} fit="contain" />
       <Txt s={14} w={6} c={C.muted} center style={{ marginTop: 14 }}>
-        Jobs, talent and careers — right around the corner
+        Jobs, talent and careers right around the corner
       </Txt>
       <View style={{ position: 'absolute', bottom: 48 + ins.bottom, flexDirection: 'row', gap: 6 }}>
         {dots.map((d, i) => (

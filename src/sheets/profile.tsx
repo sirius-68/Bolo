@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -72,7 +73,7 @@ function ServiceForm({ e }: { e: Service & { isNew?: number } }) {
           else L.push(s);
           const added = !db.user.skills.includes(e.skill);
           if (added) db.user.skills.push(e.skill);
-          sheet.close(wasDraft ? `${e.skill} service published` : i >= 0 ? 'Service updated' : `${e.skill} service added${added ? ' — and added to your skills' : ''}`);
+          sheet.close(wasDraft ? `${e.skill} service published` : i >= 0 ? 'Service updated' : `${e.skill} service added${added ? ', and added to your skills' : ''}`);
         }}
       />
       {!e.isNew ? <Btn variant="ghost" title="Delete service" onPress={() => delService(e.id)} /> : null}
@@ -221,7 +222,7 @@ function Quiz({ q }: { q: { skill: string; i: number; score: number; pick: numbe
     return (
       <View>
         <AlertIll icon={ok ? 'verified' : 'x'} bg={ok ? C.ok : C.errSoft} />
-        <SheetTitle center sub={`You got ${q.score} of ${Q.length} right. ${ok ? 'Your skill now shows a verified badge.' : `Review the basics and try again — you need ${Q.length - 1} of ${Q.length}.`}`}>
+        <SheetTitle center sub={`You got ${q.score} of ${Q.length} right. ${ok ? 'Your skill now shows a verified badge.' : `Review the basics and try again. You need ${Q.length - 1} of ${Q.length}.`}`}>
           {ok ? `${q.skill} verified!` : 'Not quite this time'}
         </SheetTitle>
         <Btn variant="yellow" style={{ marginTop: 16 }} title={ok ? 'Done' : 'Try again'} onPress={() => (ok ? sheet.close() : ((q.i = 0), (q.score = 0), (q.pick = null), re()))} />
@@ -469,7 +470,7 @@ function EduForm({ d }: { d: { level: string; courses: { name: string; org: stri
           title="Add to list"
           disabled={!n.trim()}
           onPress={() => {
-            d.courses.push({ name: n.trim(), org: o.trim() || '—', year: y });
+            d.courses.push({ name: n.trim(), org: o.trim() || '', year: y });
             setN('');
             setO('');
             setY('');
@@ -480,7 +481,7 @@ function EduForm({ d }: { d: { level: string; courses: { name: string; org: stri
         variant="yellow"
         title="Save"
         onPress={() => {
-          if (n.trim()) d.courses.push({ name: n.trim(), org: o.trim() || '—', year: y });
+          if (n.trim()) d.courses.push({ name: n.trim(), org: o.trim() || '', year: y });
           db.PR.edu = d;
           sheet.close('Education saved');
         }}
@@ -491,6 +492,8 @@ function EduForm({ d }: { d: { level: string; courses: { name: string; org: stri
 
 /* ---------------- documents & video ---------------- */
 export function openDoc(k: string) {
+  // Identity has its own guided flow; other documents use the simple sheet.
+  if (k === 'id' && db.PR.docs.id !== 'verified') return router.push('/id-verify');
   sheet.show(() => <DocSheet k={k} />);
 }
 function DocSheet({ k }: { k: string }) {
@@ -498,7 +501,7 @@ function DocSheet({ k }: { k: string }) {
   const st = db.PR.docs[k];
   const submit = () => {
     db.PR.docs[k] = 'review';
-    sheet.close(db.demo ? `${t} sent for review` : `${t} sent — we’ll notify you once it’s checked`);
+    sheet.close(db.demo ? `${t} sent for review` : `${t} sent. We’ll notify you once it’s checked`);
     if (db.demo) later(4000, () => {
       db.PR.docs[k] = 'verified';
       toast(`✅ ${t} verified`);
@@ -516,7 +519,7 @@ function DocSheet({ k }: { k: string }) {
     );
   return (
     <View style={{ gap: 12 }}>
-      <SheetTitle sub={`${s}. Take a clear photo — all four corners visible, no glare.`}>{t}</SheetTitle>
+      <SheetTitle sub={`${s}. Take a clear photo, all four corners visible, no glare.`}>{t}</SheetTitle>
       <Pressable
         onPress={async () => {
           const r = await ImagePicker.launchCameraAsync({ quality: 0.7 }).catch(() => null);
@@ -652,7 +655,7 @@ function JobHistory() {
   const L = all.filter((x) => flt === 'All' || (flt === 'Completed' ? x[5] === 'confirmed' : x[5] !== 'confirmed'));
   const earn = done.reduce((a, x) => a + budgetNum(x[3]), 0);
   const rated = done.filter((x) => x[4]);
-  const avg = rated.length ? (rated.reduce((a, x) => a + x[4], 0) / rated.length).toFixed(1) : '—';
+  const avg = rated.length ? (rated.reduce((a, x) => a + x[4], 0) / rated.length).toFixed(1) : 'New';
   return (
     <View style={{ gap: 12 }}>
       <SheetTitle>Job history</SheetTitle>

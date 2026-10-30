@@ -41,7 +41,7 @@ export default function ExpertApply() {
     'Pick at least one topic and one field, and add a short headline',
     'Add your role and at least one proof of experience',
     'Choose a session type and language',
-    quizDone ? `You need ${QUIZ_PASS} of ${QUIZ.length} — check your answers and try again` : 'Answer every question',
+    quizDone ? `You need ${QUIZ_PASS} of ${QUIZ.length}. Check your answers and try again` : 'Answer every question',
     `Write at least ${SAMPLE_MIN} characters`,
     'Agree to every point of the code',
   ][step];
@@ -100,7 +100,7 @@ export default function ExpertApply() {
           'Topics you can help with · up to 3',
           <Chips>
             {EXPERT_AREAS.map((a) => (
-              <Chip key={a} small label={a} on={E.areas.includes(a)} onPress={() => (E.areas.includes(a) || E.areas.length < 3 ? (toggle(E.areas, a), bump()) : toast('Pick up to 3 — the ones you’re strongest at'))} />
+              <Chip key={a} small label={a} on={E.areas.includes(a)} onPress={() => (E.areas.includes(a) || E.areas.length < 3 ? (toggle(E.areas, a), bump()) : toast('Pick up to 3: the ones you’re strongest at'))} />
             ))}
           </Chips>,
         )}
@@ -198,7 +198,7 @@ export default function ExpertApply() {
   if (step === 4)
     body = (
       <View style={{ gap: 14, marginTop: 18 }}>
-        <Note icon="exam">Five situations every expert meets. Choose what you’d do — you need {QUIZ_PASS} of {QUIZ.length}.</Note>
+        <Note icon="exam">Five situations every expert meets. Choose what you’d do. You need {QUIZ_PASS} of {QUIZ.length}.</Note>
         {QUIZ.map(([q, opts, right], i) => (
           <View key={i} style={{ padding: 14, borderRadius: 18, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, gap: 8 }}>
             <Txt s={14} w={8}>
@@ -229,7 +229,7 @@ export default function ExpertApply() {
         ))}
         {quizDone ? (
           <Txt s={13} w={8} c={score >= QUIZ_PASS ? C.mint : C.yellow} center>
-            {score >= QUIZ_PASS ? `${score} of ${QUIZ.length} — passed` : `${score} of ${QUIZ.length} — not yet`}
+            {score >= QUIZ_PASS ? `${score} of ${QUIZ.length}, passed` : `${score} of ${QUIZ.length}, not yet`}
           </Txt>
         ) : null}
       </View>
@@ -246,7 +246,7 @@ export default function ExpertApply() {
           </Txt>
         </View>
         <Field label={`Your answer · ${E.sample.trim().length}/${SAMPLE_MIN}+ characters`} error={tried && E.sample.trim().length < SAMPLE_MIN && `Write at least ${SAMPLE_MIN} characters`}>
-          <Input testID="ex-sample" multiline minHeight={180} value={E.sample} onChangeText={(v) => ((E.sample = v), bump())} maxLength={1500} placeholder="Answer as you would in a real session — specific, kind and practical." />
+          <Input testID="ex-sample" multiline minHeight={180} value={E.sample} onChangeText={(v) => ((E.sample = v), bump())} maxLength={1500} placeholder="Answer as you would in a real session, specific, kind and practical." />
         </Field>
         <Note icon="sparkle">Reviewers look for: questions you’d ask first, 2–3 concrete changes, and an honest next step. No promises of a job.</Note>
       </View>
@@ -283,7 +283,7 @@ export default function ExpertApply() {
       <Title sm style={{ marginTop: 2 }}>
         {STEPS[step]}
       </Title>
-      {step === 0 ? <Sub>Every bolo Career Expert meets these. Fix anything missing here — your answers are saved.</Sub> : null}
+      {step === 0 ? <Sub>Every bolo Career Expert meets these. Fix anything missing here, your answers are saved.</Sub> : null}
       {body}
       <View style={{ flex: 1, minHeight: 20 }} />
       <Btn testID="ex-next" variant="yellow" title={step < STEPS.length - 1 ? 'Continue' : 'Submit application'} onPress={next} style={{ marginTop: 20 }} />

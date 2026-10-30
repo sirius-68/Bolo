@@ -72,7 +72,7 @@ export default function Settings() {
             onPress={() =>
               confirm({
                 title: 'Log out of bolo?',
-                text: db.demo ? 'Demo data on this phone will be reset.' : 'Your account stays saved — log back in any time.',
+                text: db.demo ? 'Demo data on this phone will be reset.' : 'Your account stays saved. Log back in any time.',
                 ok: 'Log out',
                 danger: true,
                 icon: 'logout',

@@ -368,13 +368,13 @@ function bizSample(): Record<string, BizSample> {
 function posts(): Post[] {
   const POSTS: Post[] = [
     { id: 'p1', by: 'fresh', kind: 'image', img: 'img/post-portfolio', text: 'Shipped a new mobile app UI for a telecom client this week. Clean flows, fast top-ups.', tags: ['#UIUX', '#Buea'], time: '12mins ago', likes: 12000, comments: 240 },
-    { id: 'p2', kind: 'request', client: 'c_marie', cat: 'Electrician', title: 'Install 4 sockets + fix a light', text: 'Looking for an electrician in Great Soppo tomorrow morning — 4 sockets to install and one ceiling light to fix.', budget: 'XAF 15k – 25k', when: 'Tomorrow, 9:00', area: 'Great Soppo', offers: 7, time: '25mins ago' },
+    { id: 'p2', kind: 'request', client: 'c_marie', cat: 'Electrician', title: 'Install 4 sockets + fix a light', text: 'Looking for an electrician in Great Soppo tomorrow morning, 4 sockets to install and one ceiling light to fix.', budget: 'XAF 15k – 25k', when: 'Tomorrow, 9:00', area: 'Great Soppo', offers: 7, time: '25mins ago' },
     { id: 'p3', by: 'edward', kind: 'job', img: 'img/svc-faucet', job: 'Faucet Repair', took: '40 min', paid: 'XAF 15,000', stars: 5, text: 'Fixed a leaking kitchen faucet in Molyko today. 40 minutes, no mess. 💧', tags: ['#plumbing', '#Molyko'], time: '1h ago', likes: 860, comments: 41 },
     { id: 'p4', by: 'bertrand', kind: 'avail', text: 'Available for same-day deliveries around Buea until 6pm. Parcels, groceries, documents.', slots: ['Now', '2:00 pm', '4:30 pm'], time: '1h ago', likes: 120, comments: 8 },
     { id: 'p5', by: 'grace', kind: 'art', art: 'clean', text: 'Before & after: full deep clean of a 3-bedroom flat in Bonduma. Kitchen took the longest!', tags: ['#cleaning', '#beforeafter'], time: '3h ago', likes: 1300, comments: 64 },
     { id: 'p6', by: 'samuel', kind: 'job', img: 'img/svc-heater', job: 'Water Heater Installation', took: '3 h', paid: 'XAF 95,000', stars: 5, text: 'New water heater in, old one out. Hot showers are back for the Tabe family.', tags: ['#plumbing'], time: '4h ago', likes: 540, comments: 22 },
-    { id: 'p7', kind: 'request', client: 'c_paul', cat: 'Mechanic', title: 'Car won’t start', text: 'Car won’t start this morning — need a mechanic around Mile 17 this afternoon.', budget: 'Negotiable', when: 'Today, 3:00 pm', area: 'Mile 17', offers: 3, time: '5h ago' },
-    { id: 'p8', by: 'marie', kind: 'art', art: 'electric', text: 'Solar setup finished for a small shop in Bomaka — lights stay on through every power cut now. ⚡', tags: ['#solar', '#electrician'], time: '6h ago', likes: 980, comments: 37 },
+    { id: 'p7', kind: 'request', client: 'c_paul', cat: 'Mechanic', title: 'Car won’t start', text: 'Car won’t start this morning. Need a mechanic around Mile 17 this afternoon.', budget: 'Negotiable', when: 'Today, 3:00 pm', area: 'Mile 17', offers: 3, time: '5h ago' },
+    { id: 'p8', by: 'marie', kind: 'art', art: 'electric', text: 'Solar setup finished for a small shop in Bomaka. Lights stay on through every power cut now. ⚡', tags: ['#solar', '#electrician'], time: '6h ago', likes: 980, comments: 37 },
     { id: 'p9', by: 'paul', kind: 'art', art: 'mech', text: 'Full brake service today. If your car squeals when you stop, don’t wait.', tags: ['#mechanic', '#safety'], time: 'Yesterday', likes: 410, comments: 19 },
     { id: 'p10', kind: 'request', client: 'c_ama', cat: 'Cleaner', title: 'End-of-tenancy clean', text: 'Moving out on Saturday. Need someone for an end-of-tenancy clean of a 2-bedroom in Molyko.', budget: 'XAF 30k', when: 'Sat, 10:00', area: 'Molyko', offers: 5, time: 'Yesterday' },
     { id: 'p11', by: 'samuel', kind: 'job', img: 'img/svc-drain', job: 'Drain Cleaning', took: '1 h 20 min', paid: 'XAF 20,000', stars: 4, text: 'Cleared a stubborn floor drain in a restaurant kitchen. Grease is not your friend.', tags: ['#plumbing', '#drains'], time: '2 days ago', likes: 310, comments: 12 },
@@ -383,7 +383,7 @@ function posts(): Post[] {
   POSTS.splice(6, 0, { id: 'p13', kind: 'request', client: 'c_ngo', cat: 'Plumber', title: 'Weak shower pressure', text: 'Shower pressure has been very weak for a week. Probably a blocked shower head or pipe.', budget: 'XAF 8k – 15k', when: 'Tomorrow, 10:00', area: 'Bonduma', offers: 1, time: '50mins ago' });
   POSTS.splice(10, 0, { id: 'p14', kind: 'request', client: 'c_marie', cat: 'Delivery', title: 'Deliver a birthday cake to Mile 17', text: 'Pick up a cake in Molyko and deliver it to Mile 17 by 5pm. Handle with care! 🎂', budget: 'XAF 2k', when: 'Today, 5:00 pm', area: 'Molyko', offers: 4, time: '2h ago' });
   POSTS.push(
-    { id: 'mj1', kind: 'request', client: 'me', mine: 1, as: 'regular', cat: 'Plumber', title: 'Kitchen sink leaking', text: 'Need a plumber in Molyko this weekend — kitchen sink leaking.', budget: 'XAF 15,000', when: 'Sat, 9:00', area: 'Molyko', time: '2 days ago', type: 'One-off gig', offerList: [
+    { id: 'mj1', kind: 'request', client: 'me', mine: 1, as: 'regular', cat: 'Plumber', title: 'Kitchen sink leaking', text: 'Need a plumber in Molyko this weekend, kitchen sink leaking.', budget: 'XAF 15,000', when: 'Sat, 9:00', area: 'Molyko', time: '2 days ago', type: 'One-off gig', offerList: [
       { by: 'edward', price: 'XAF 15,000', when: 'Sat, 9:00', msg: 'I can fix it in about an hour, parts included.' },
       { by: 'samuel', price: 'XAF 12,000', when: 'Sat, 11:00', msg: 'Available Saturday morning. 6 years of experience.' },
     ] },
@@ -407,7 +407,7 @@ function posts(): Post[] {
   const VAC: Post[] = [
     { id: 'v1', kind: 'request', client: 'b_nexa', biz: 1, cat: 'Developer', title: 'Junior web developer', text: 'Build and maintain client websites with React and Laravel. 1+ year of experience or a strong portfolio. Training and a laptop provided.', budget: 'XAF 180k – 250k / month', when: 'Starts Nov', area: 'Molyko · Hybrid', offers: 14, time: '1h ago', type: 'Full-time', openings: 2 },
     { id: 'v2', kind: 'request', client: 'b_crumbs', biz: 1, cat: 'Cook', title: 'Baker & pastry assistant', text: 'Early mornings (5am – 1pm), bread and pastry production, keeping the kitchen clean. We train you on our recipes.', budget: 'XAF 70k / month', when: 'Starts now', area: 'Bonduma', offers: 6, time: '4h ago', type: 'Full-time', openings: 1 },
-    { id: 'v3', kind: 'request', client: 'b_care', biz: 1, cat: 'Nurse', title: 'Registered nurse — day shifts', text: 'Registered nurse for our general ward and home visits. State diploma required.', budget: 'XAF 150k – 200k / month', when: 'Starts 15 Nov', area: 'Great Soppo', offers: 5, time: 'Yesterday', type: 'Full-time', openings: 2 },
+    { id: 'v3', kind: 'request', client: 'b_care', biz: 1, cat: 'Nurse', title: 'Registered nurse, day shifts', text: 'Registered nurse for our general ward and home visits. State diploma required.', budget: 'XAF 150k – 200k / month', when: 'Starts 15 Nov', area: 'Great Soppo', offers: 5, time: 'Yesterday', type: 'Full-time', openings: 2 },
     { id: 'v4', kind: 'request', client: 'b_mbuild', biz: 1, cat: 'Builder', title: 'Site supervisor (6-month contract)', text: 'Supervise masons and tilers on a 12-flat residential site. 3+ years on site, reading plans.', budget: 'XAF 220k / month', when: 'Starts Dec', area: 'Mile 17', offers: 3, time: '2 days ago', type: 'Contract', openings: 1 },
   ];
   [[2, 0], [7, 1], [13, 2], [20, 3]].forEach(([at, k]) => POSTS.splice(Math.min(at, POSTS.length), 0, VAC[k]));
@@ -487,10 +487,10 @@ export { REELS };
 function notifsC(): Notif[] {
   return [
     { id: 'n1', g: 'Today', type: 'quote', who: 'edward', time: '5m', job: 'Faucet Repair', price: 'XAF 15,000', when: 'Tomorrow, 9:00' },
-    { id: 'n2', g: 'Today', type: 'like', who: ['grace', 'marie', 'yann'], others: 47, time: '12m', snip: 'Need a plumber in Molyko this weekend — kitchen sink leaking.' },
+    { id: 'n2', g: 'Today', type: 'like', who: ['grace', 'marie', 'yann'], others: 47, time: '12m', snip: 'Need a plumber in Molyko this weekend, kitchen sink leaking.' },
     { id: 'n3', g: 'Today', type: 'follow', who: 'marie', time: '16m' },
     { id: 'n4', g: 'Today', type: 'accept', who: 'bertrand', time: '1h', text: 'accepted your delivery request and is on the way.' },
-    { id: 'n5', g: 'Today', type: 'mention', who: 'samuel', time: '2h', read: 1, text: '“@you the new heater is in — check the photos before I leave.”' },
+    { id: 'n5', g: 'Today', type: 'mention', who: 'samuel', time: '2h', read: 1, text: '“@you the new heater is in. Check the photos before I leave.”' },
     { id: 'n6', g: 'Today', type: 'review', who: 'yann', time: '3h', read: 1, stars: 5, text: '“Great client, clear instructions and paid on time.”' },
     { id: 'n7', g: 'Yesterday', type: 'payment', who: 'grace', time: '1d', read: 1, amount: 'XAF 15,000' },
     { id: 'n8', g: 'Yesterday', type: 'reminder', who: 'edward', time: '1d', read: 1, text: 'arrives tomorrow at 9:00 for your Faucet Repair.' },
@@ -509,7 +509,7 @@ function notifsW(): Notif[] {
     { id: 'w5', g: 'Today', type: 'follow', who: 'c_paul', time: '2h' },
     { id: 'w6', g: 'Yesterday', type: 'payment_in', who: 'c_tabe', time: '1d', read: 1, amount: 'XAF 25,000' },
     { id: 'w7', g: 'Yesterday', type: 'review', who: 'c_tabe', time: '1d', read: 1, stars: 5, text: '“On time, tidy and fair price. Will hire again.”' },
-    { id: 'w8', g: 'Yesterday', type: 'reminder', who: 'c_ama', time: '1d', read: 1, text: '— your job is on Saturday at 10:00 (End-of-tenancy clean, Molyko).' },
+    { id: 'w8', g: 'Yesterday', type: 'reminder', who: 'c_ama', time: '1d', read: 1, text: '· your job is on Saturday at 10:00 (End-of-tenancy clean, Molyko).' },
     { id: 'w9', g: 'Earlier', type: 'verified', time: '5d', read: 1 },
   ];
 }
@@ -519,7 +519,7 @@ function threadsC(): Record<string, Thread> {
       { d: 'Yesterday' },
       { f: 'me', t: 'Hi Edward, my kitchen faucet keeps dripping. Are you free this week?', at: '18:40', st: 'read' },
       { f: 'them', t: 'Hey 👋 Yes, I can come by. Is it the tap itself or under the sink?', at: '18:42' },
-      { f: 'me', t: 'The tap itself — it drips all night.', at: '18:45', st: 'read' },
+      { f: 'me', t: 'The tap itself. It drips all night.', at: '18:45', st: 'read' },
       { d: 'Today' },
       { f: 'them', k: 'offer', job: 'Faucet Repair', price: 'XAF 15,000', when: 'Tomorrow, 9:00', dur: 'About 1 hour · parts included', at: '09:12' },
       { f: 'them', t: 'Let me know if that works for you.', at: '09:13' },
@@ -556,7 +556,7 @@ function threadsW(): Record<string, Thread> {
       { d: 'Today' },
       { f: 'me', k: 'offer', job: 'Install 4 sockets + fix a light', price: 'XAF 18,000', when: 'Tomorrow, 9:00', dur: 'Parts included', at: '09:40' },
       { f: 'them', t: 'Hi! Saw your offer. Do you bring the sockets or should I buy them?', at: '09:58' },
-      { f: 'me', t: 'I can bring them — they’re included in the price.', at: '10:00', st: 'read' },
+      { f: 'me', t: 'I can bring them. They’re included in the price.', at: '10:00', st: 'read' },
       { f: 'them', t: 'Perfect 👍 Let me check with my husband and confirm.', at: '10:02' },
     ] },
     c_ama: { job: 'End-of-tenancy clean · Sat, 10:00', time: '09:40', msgs: [
@@ -570,10 +570,10 @@ function threadsW(): Record<string, Thread> {
       { d: 'Today' },
       { f: 'them', t: 'Hello, are you free this afternoon? My car won’t start.', at: '08:12' },
       { f: 'them', k: 'voice', dur: '0:12', at: '08:15' },
-      { f: 'them', k: 'offer', job: 'Car won’t start — diagnosis & fix', price: 'XAF 10,000', when: 'Today, 15:00', dur: 'Price offered by Paul', at: '08:16' },
+      { f: 'them', k: 'offer', job: 'Car won’t start, diagnosis & fix', price: 'XAF 10,000', when: 'Today, 15:00', dur: 'Price offered by Paul', at: '08:16' },
     ] },
     c_tabe: { time: 'Yesterday', msgs: [{ d: 'Yesterday' }, { f: 'them', t: 'Thanks again for fixing the toilet last week!', at: '19:20' }, { f: 'me', t: 'My pleasure, Mr Tabe 🙏', at: '19:31', st: 'read' }] },
-    edward: { on: 1, time: 'Mon', msgs: [{ d: 'Monday' }, { f: 'them', t: 'Hey colleague! I have too many jobs this week — want me to pass you one in Molyko?', at: '12:10' }, { f: 'me', t: 'Yes please, thanks Edward!', at: '12:15', st: 'read' }] },
+    edward: { on: 1, time: 'Mon', msgs: [{ d: 'Monday' }, { f: 'them', t: 'Hey colleague! I have too many jobs this week. Want me to pass you one in Molyko?', at: '12:10' }, { f: 'me', t: 'Yes please, thanks Edward!', at: '12:15', st: 'read' }] },
   };
 }
 

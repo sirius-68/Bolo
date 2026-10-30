@@ -63,7 +63,7 @@ export default function Browse() {
               </Txt>
             </View>
             <Seg items={modes} value={mode} onChange={setMode} />
-            <SearchBar value={q} onChange={setQ} placeholder={mode === 'jobs' ? 'Search jobs — title, company, area…' : mode === 'people' ? 'Search name, skill or area' : 'Search companies or sectors'} onFilter={mode === 'companies' ? undefined : () => openFilters(mode === 'jobs' ? 'jobs' : 'people')} filters={nf} />
+            <SearchBar value={q} onChange={setQ} placeholder={mode === 'jobs' ? 'Search jobs: title, company, area…' : mode === 'people' ? 'Search name, skill or area' : 'Search companies or sectors'} onFilter={mode === 'companies' ? undefined : () => openFilters(mode === 'jobs' ? 'jobs' : 'people')} filters={nf} />
             {mode !== 'companies' ? <CatRail value={cat} onChange={setCat} /> : null}
             <Txt s={13} c={C.muted}>
               {data.length} result{data.length === 1 ? '' : 's'}

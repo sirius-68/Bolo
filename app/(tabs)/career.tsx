@@ -70,17 +70,17 @@ export default function Career() {
         Career
       </Txt>
       <Txt s={13} c={C.muted} style={{ marginTop: 2 }}>
-        {w ? 'Internships, programs, courses and mentors to grow your skills.' : `Programs, courses and mentoring from ${bizName(curBiz())} — and talent to train.`}
+        {w ? 'Internships, programs, courses and mentors to grow your skills.' : `Programs, courses and mentoring from ${bizName(curBiz())}, and talent to train.`}
       </Txt>
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
         {w ? (
           <>
-            <Promo title={db.user.cvDone ? 'Your CV is ready' : 'Create your CV'} text={db.user.cvDone ? 'Update it any time or save it as a PDF' : 'Answer 5 quick steps — we build a professional CV for you'} cta={db.user.cvDone ? 'View my CV' : 'Create my CV'} icon="file" onPress={() => (db.user.cvDone ? openCV() : router.push('/cvflow'))} />
+            <Promo title={db.user.cvDone ? 'Your CV is ready' : 'Create your CV'} text={db.user.cvDone ? 'Update it any time or save it as a PDF' : 'Answer 5 quick steps. We build a professional CV for you'} cta={db.user.cvDone ? 'View my CV' : 'Create my CV'} icon="file" onPress={() => (db.user.cvDone ? openCV() : router.push('/cvflow'))} />
             <Promo alt title={db.user.pro.regular ? 'You’re on Pro' : 'Get hired faster'} text={db.user.pro.regular ? 'Priority applications are on' : 'Priority applications, boosts and more with bolo Pro'} cta={db.user.pro.regular ? 'Manage plan' : 'See Pro'} icon="rocket" onPress={() => openPro('regular')} />
           </>
         ) : (
           <>
-            <Promo title="Create an internship" text="Find and train young talent — it shows here for everyone" cta="Create" icon="cap" onPress={() => openOppForm('Internship')} />
+            <Promo title="Create an internship" text="Find and train young talent. It shows here for everyone" cta="Create" icon="cap" onPress={() => openOppForm('Internship')} />
             <Promo alt title="Run a program or course" text="Apprenticeships, graduate programs, trainings and courses" cta="Create" icon="sparkle" onPress={() => openOppForm('Training program')} />
           </>
         )}
@@ -148,7 +148,7 @@ export default function Career() {
         ))}
       </Rail>
       <Sec title="Mentorship" action="+ Offer" onAction={openMentorForm} />
-      <Sub t="Learn from experienced people and companies — 1-to-1 or in groups" />
+      <Sub t="Learn from experienced people and companies, 1-to-1 or in groups" />
       {mine.length ? (
         <View style={{ gap: 8, marginBottom: 10 }}>
           {mine.map((m) => (
@@ -168,7 +168,7 @@ export default function Career() {
             Become a mentor
           </Txt>
           <Txt s={12} c={C.muted}>
-            {w ? 'Share your experience — free or paid' : 'Mentor young talent as ' + bizName(curBiz())}
+            {w ? 'Share your experience, free or paid' : 'Mentor young talent as ' + bizName(curBiz())}
           </Txt>
         </Pressable>
       </Rail>

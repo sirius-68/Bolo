@@ -25,7 +25,7 @@ export function openContract(pid: string, i: number) {
       sheet.show(() => (
         <View>
           <AlertIll icon="verified" bg={C.lav} />
-          <SheetTitle center sub={b?.verified === 'review' ? 'We’re checking your documents — usually a few minutes. You’ll get a notification when it’s done.' : 'Company contracts are only for verified businesses. Add your RCCM and NIU — verification usually takes a few minutes.'}>
+          <SheetTitle center sub={b?.verified === 'review' ? 'We’re checking your documents, usually a few minutes. You’ll get a notification when it’s done.' : 'Company contracts are only for verified businesses. Add your RCCM and NIU, verification usually takes a few minutes.'}>
             {b?.verified === 'review' ? 'Verification in progress' : 'Verify your business first'}
           </SheetTitle>
           {b?.verified !== 'review' ? <Btn variant="yellow" title="Add documents" style={{ marginTop: 16 }} onPress={() => afterSheet(() => openBizSetup('edit', 3))} /> : null}
@@ -346,7 +346,7 @@ function AdForm({ a }: { a: AdDraft }) {
       <SheetTitle
         sub={
           <Txt s={13} c={C.muted}>
-            You pay only for people reached —{' '}
+            You pay only for people reached:{' '}
             <Txt s={13} w={8}>
               {xaf(adRate())} per 100 people
             </Txt>

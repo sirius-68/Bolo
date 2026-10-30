@@ -66,7 +66,7 @@ export default function Otp() {
     setBusy(true);
     const e = await signIn(c, signup.pwd);
     setBusy(false);
-    if (e) return toast(/confirm/i.test(e) ? 'Not confirmed yet — tap the link in the email first' : e);
+    if (e) return toast(/confirm/i.test(e) ? 'Not confirmed yet. Tap the link in the email first' : e);
     ok();
   };
   const canLink = real && !reset && c.includes('@') && !!signup.pwd;

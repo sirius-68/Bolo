@@ -19,7 +19,7 @@ export default function Welcome() {
           onPress={() => {
             db.demo = false;
             bump();
-            toast('Demo mode off — accounts are real again');
+            toast('Demo mode off. Accounts are real again');
           }}
           style={{ alignSelf: 'center', marginTop: 8, paddingHorizontal: 14, height: 32, borderRadius: 999, backgroundColor: 'rgba(169,182,255,.18)', justifyContent: 'center' }}
         >
@@ -33,9 +33,9 @@ export default function Welcome() {
       <View style={{ alignItems: 'center' }}>
         <Pict pic="img/logo-yellow" style={{ width: 120, height: 43, marginTop: 10 }} fit="contain" />
         <Txt s={28} w={8} center style={{ marginTop: 10, lineHeight: 32 }}>
-          Jobs, talent and careers — near you
+          Jobs, talent and careers near you
         </Txt>
-        <Sub center>Find work, hire skilled people, or recruit for your business — from developers and teachers to plumbers and drivers.</Sub>
+        <Sub center>Find work, hire skilled people, or recruit for your business, from developers and teachers to plumbers and drivers.</Sub>
       </View>
       <View style={{ gap: 12, marginTop: 24 }}>
         <Btn

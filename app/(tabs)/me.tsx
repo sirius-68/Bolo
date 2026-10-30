@@ -162,7 +162,7 @@ function SwitchAndPro() {
               {w ? (firstBiz ? 'Switch to a business page' : 'Hiring for a company?') : 'Back to your Regular profile'}
             </Txt>
             <Txt s={12} c={C.muted}>
-              {w ? (firstBiz ? `${db.BIZ.list.length} business page${db.BIZ.list.length > 1 ? 's' : ''} · post vacancies, internships, courses` : 'Set up a free business page — you keep this profile too') : 'Find work and hire for personal jobs'}
+              {w ? (firstBiz ? `${db.BIZ.list.length} business page${db.BIZ.list.length > 1 ? 's' : ''} · post vacancies, internships, courses` : 'Set up a free business page. You keep this profile too') : 'Find work and hire for personal jobs'}
             </Txt>
           </View>
           <Icon name="chev" size={18} color={C.faint} />
@@ -265,7 +265,7 @@ function MeRegular() {
             {mj.map((po) => (
               <ListRow key={po.id} icon={catIcon(po.cat)} title={po.title!} sub={`${po.when} · ${po.area} · ${(po.offerList || []).length} offer${(po.offerList || []).length === 1 ? '' : 's'}`} pill={po.booked ? 'Booked' : 'Open'} pillKind={po.booked ? 'acc' : 'wait'} onPress={() => openJob(po.id)} />
             ))}
-            {!mj.length ? <Empty title="No jobs posted yet" text="Post a personal job — a fix, a tutor, a driver. People near you send offers." /> : null}
+            {!mj.length ? <Empty title="No jobs posted yet" text="Post a personal job: a fix, a tutor, a driver. People near you send offers." /> : null}
           </View>
         ) : null}
         {tab === 'Posts' ? (
@@ -353,7 +353,7 @@ function ProfilePanel() {
       <H t="Skill verification" />
       <Card>
         <Txt s={13} c={C.muted}>
-          Pass a short test — verified skills get a badge and rank higher.
+          Pass a short test, verified skills get a badge and rank higher.
         </Txt>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
           {db.user.skills.map((s) => (
@@ -490,7 +490,7 @@ function ProfilePanel() {
       ) : (
         <Card>
           <Txt s={14} w={7}>
-            Add your experience and achievements — people will see what you can do
+            Add your experience and achievements. People will see what you can do
           </Txt>
           <Btn small variant="yellow" title="Add" style={{ alignSelf: 'flex-start' }} onPress={() => openExp()} />
         </Card>
@@ -609,7 +609,7 @@ function SavedPanel() {
       ))}
       {db.savedPosts.length ? (
         <Txt s={13} c={C.muted}>
-          {db.savedPosts.length} saved post{db.savedPosts.length > 1 ? 's' : ''} — find them in the feed with the bookmark on.
+          {db.savedPosts.length} saved post{db.savedPosts.length > 1 ? 's' : ''}. Find them in the feed with the bookmark on.
         </Txt>
       ) : null}
     </View>
@@ -686,7 +686,7 @@ function MeBusiness() {
               </Pressable>
             ) : null}
             {b.verified !== 'verified' ? (
-              <Pressable onPress={() => (b.verified === 'review' ? toast('We’re checking your documents — usually a few minutes') : openBizSetup('edit', 3))} style={[S.row, { gap: 12, padding: 14, borderRadius: 20, backgroundColor: 'rgba(255,179,122,.12)', borderWidth: 1, borderColor: 'rgba(255,179,122,.4)' }]}>
+              <Pressable onPress={() => (b.verified === 'review' ? toast('We’re checking your documents, usually a few minutes') : openBizSetup('edit', 3))} style={[S.row, { gap: 12, padding: 14, borderRadius: 20, backgroundColor: 'rgba(255,179,122,.12)', borderWidth: 1, borderColor: 'rgba(255,179,122,.4)' }]}>
                 <Icon name={b.verified === 'review' ? 'timer' : 'verified'} size={22} color={C.orange} />
                 <View style={{ flex: 1 }}>
                   <Txt s={14} w={8}>
@@ -734,7 +734,7 @@ function MeBusiness() {
               const h = (po.offerList || []).filter((x) => x.stage === 'hired').length;
               return <ListRow key={po.id} icon={catIcon(po.cat)} title={po.title!} sub={`${po.type} · ${po.openings || 1} opening${(po.openings || 1) > 1 ? 's' : ''} · ${po.area}`} pill={h ? `${h} hired` : `${n} applicant${n === 1 ? '' : 's'}`} pillKind={h ? 'acc' : 'wait'} onPress={() => openJob(po.id)} />;
             })}
-            {!v.length ? <Empty title="No vacancies yet" text="Post your first role — applicants land here." /> : null}
+            {!v.length ? <Empty title="No vacancies yet" text="Post your first role, applicants land here." /> : null}
           </>
         ) : null}
         {tab === 'Programs' ? (
