@@ -182,6 +182,14 @@ name: Regular account tour
 - takeScreenshot: r18d-chat-sent
 - back
 - back
+- runFlow:
+    when:
+      visible:
+        id: "map-home"
+    commands:
+      - tapOn:
+          id: "map-home"
+      - waitForAnimationToEnd
 - tapOn: "Notifications"
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
