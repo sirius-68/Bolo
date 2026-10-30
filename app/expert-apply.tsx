@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { BackHandler, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { Btn, Check, Chip, Chips, Field, Input, Label, Note, Page, Steps, Stepper, Sub, Title, TopBar, Txt, tap } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
@@ -25,6 +25,14 @@ export default function ExpertApply() {
     setTried(false);
     bump();
   };
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (step === 0) return false;
+      go(step - 1);
+      return true;
+    });
+    return () => sub.remove();
+  });
   const score = QUIZ.filter((q, i) => E.quiz[i] === q[2]).length;
   const quizDone = E.quiz.filter((x) => x != null).length === QUIZ.length;
   const ok = [

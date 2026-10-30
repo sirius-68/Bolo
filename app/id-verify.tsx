@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { BackHandler, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { Btn, Check, Note, Page, Pict, Steps, Sub, Title, TopBar, Txt, tap } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
@@ -36,6 +36,15 @@ export default function IdVerify() {
   const at = needBack || step < 3 ? step : step - 1; // progress position
 
   const go = (s: number) => setStep(s === 3 && !needBack ? 4 : s);
+  // Android back goes to the previous step, not out of the flow.
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (sent || step === 0) return false;
+      setStep(step === 4 && !needBack ? 2 : step - 1);
+      return true;
+    });
+    return () => sub.remove();
+  }, [step, sent, needBack]);
   const shoot = async (set: (v: string) => void, front?: boolean, gallery?: boolean) => {
     tap();
     const p = await pickImage(gallery ? {} : { camera: true, front });
