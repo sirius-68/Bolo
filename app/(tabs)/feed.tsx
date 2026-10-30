@@ -1,14 +1,14 @@
-import React, { useRef } from 'react';
-import { Animated, FlatList, Pressable, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, FlatList, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, ui, REELS, Post } from '../../src/data/db';
-import { Btn, Empty, Txt, tap } from '../../src/ui/kit';
+import { Avatar, Btn, Empty, Txt, tap } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
 import { P, cityLabel, curBiz, bizName, fCount, isW, listJobs, listPeople, matchJob, matchPerson, postVisible, sortJobs, sortPeople } from '../../src/logic/core';
 import { bump, useLive } from '../../src/logic/live';
-import { openBrowse } from '../../src/logic/nav';
+import { openBrowse, openProfile } from '../../src/logic/nav';
 import { notchScale, Rail, SearchBar, Sec, TabHeader } from '../../src/components/common';
 import { MentorCard, PersonRow, PostCard, RecCard, ReelThumb, ReqPost, JobCard } from '../../src/components/cards';
 import { onScrollFab } from '../../src/components/NavBar';
@@ -223,38 +223,98 @@ export default function Feed() {
   );
 }
 
+type Ad = { id: string; who: string; title: string; text: string; cta: string; bg: string; fg: string; sub: string; go: () => void };
+const ADS: Ad[] = [
+  { id: 'njei', who: '', title: 'Njeiforbi is hiring', text: 'Sales reps and delivery riders near you. Apply in minutes.', cta: 'See jobs', bg: C.blue, fg: '#fff', sub: '#e3e7ff', go: () => ((ui.feedView = 'jobs'), (ui.q = ''), bump(), toast('Showing open jobs')) },
+  { id: 'care', who: 'b_care', title: 'CarePlus Clinic needs nurses', text: 'Day shifts in Great Soppo. Interviews this week.', cta: 'Apply', bg: C.mint, fg: '#000', sub: '#1d3b2b', go: () => openProfile('b_care') },
+  { id: 'sma', who: 'b_sma', title: 'Frontend bootcamp, 8 weeks', text: 'Free sponsored places at Silicon Mountain Academy.', cta: 'Join', bg: C.lav, fg: '#000', sub: '#26294a', go: () => openProfile('b_sma') },
+  { id: 'sav', who: 'b_savanna', title: 'Drivers wanted', text: 'Savanna Logistics: licence C, regular routes, monthly pay.', cta: 'See role', bg: C.orange, fg: '#000', sub: '#3b1d0c', go: () => openProfile('b_savanna') },
+  { id: 'volta', who: 'b_volta', title: 'Solar installers wanted', text: 'Volta Solar trains you on the job. Start next month.', cta: 'Apply', bg: C.yellow, fg: '#000', sub: '#3a3815', go: () => openProfile('b_volta') },
+];
+
+/** Sponsored ads from businesses, as a swipeable carousel that moves on by itself. */
 function Promo() {
   const w = isW();
-  return (
-    <View style={[S.row, { gap: 12, marginTop: 16, padding: 16, borderRadius: 22, backgroundColor: C.blue }]}>
-      <View style={{ flex: 1 }}>
-        {w ? (
-          <View style={{ alignSelf: 'flex-start', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, backgroundColor: 'rgba(255,255,255,.25)', marginBottom: 4 }}>
-            <Txt s={10} w={8}>
-              Sponsored
-            </Txt>
-          </View>
-        ) : null}
-        <Txt s={16} w={8}>
-          {w ? 'Njeiforbi is hiring' : `Hiring for ${bizName(curBiz())}?`}
-        </Txt>
-        <Txt s={12} c="#e3e7ff">
-          {w ? 'Sales reps and delivery riders near you. Apply in minutes.' : 'Post a vacancy or create an internship. People near you apply in minutes.'}
-        </Txt>
+  const { width } = useWindowDimensions();
+  const cardW = width - 40;
+  const ref = useRef<ScrollView>(null);
+  const [at, setAt] = useState(0);
+  const held = useRef(false);
+  useEffect(() => {
+    if (!w) return;
+    const t = setInterval(() => {
+      if (held.current) return;
+      setAt((i) => {
+        const n = (i + 1) % ADS.length;
+        ref.current?.scrollTo({ x: n * (cardW + 10), animated: true });
+        return n;
+      });
+    }, 5000);
+    return () => clearInterval(t);
+  }, [w, cardW]);
+  if (!w)
+    return (
+      <View style={[S.row, { gap: 12, marginTop: 16, padding: 16, borderRadius: 22, backgroundColor: C.blue }]}>
+        <View style={{ flex: 1 }}>
+          <Txt s={16} w={8}>
+            {`Hiring for ${bizName(curBiz())}?`}
+          </Txt>
+          <Txt s={12} c="#e3e7ff">
+            Post a vacancy or create an internship. People near you apply in minutes.
+          </Txt>
+        </View>
+        <Btn small variant="yellow" title="Post" onPress={() => router.push('/post-job')} />
       </View>
-      <Btn
-        small
-        variant="yellow"
-        title={w ? 'See jobs' : 'Post'}
-        onPress={() => {
-          if (w) {
-            ui.feedView = 'jobs';
-            ui.q = '';
-            bump();
-            toast('Showing open jobs');
-          } else router.push('/post-job');
+    );
+  return (
+    <View style={{ marginTop: 16 }}>
+      <ScrollView
+        ref={ref}
+        testID="ads-carousel"
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        snapToInterval={cardW + 10}
+        decelerationRate="fast"
+        disableIntervalMomentum
+        style={{ marginHorizontal: -20 }}
+        contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
+        onScrollBeginDrag={() => (held.current = true)}
+        onMomentumScrollEnd={(e) => {
+          setAt(Math.round(e.nativeEvent.contentOffset.x / (cardW + 10)));
+          held.current = false;
         }}
-      />
+      >
+        {ADS.map((a) => (
+          <Pressable key={a.id} accessibilityRole="button" accessibilityLabel={`Sponsored. ${a.title}. ${a.text}`} onPress={() => (tap(), a.go())} style={[S.row, { width: cardW, minHeight: 116, gap: 12, padding: 16, borderRadius: 22, backgroundColor: a.bg }]}>
+            <View style={{ flex: 1 }}>
+              <View style={[S.row, { gap: 8, marginBottom: 6 }]}>
+                {a.who ? <Avatar pic={P(a.who).photo} square size={24} /> : null}
+                <View style={{ paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, backgroundColor: a.fg === '#fff' ? 'rgba(255,255,255,.25)' : 'rgba(0,0,0,.12)' }}>
+                  <Txt s={10} w={8} c={a.fg}>
+                    Sponsored
+                  </Txt>
+                </View>
+              </View>
+              <Txt s={16} w={8} c={a.fg} lines={1}>
+                {a.title}
+              </Txt>
+              <Txt s={12} c={a.sub} lines={2}>
+                {a.text}
+              </Txt>
+            </View>
+            <View style={{ paddingHorizontal: 16, height: 40, borderRadius: 20, backgroundColor: a.bg === C.yellow ? '#000' : a.bg === C.blue ? C.yellow : '#000', justifyContent: 'center' }}>
+              <Txt s={13} w={8} c={a.bg === C.blue ? '#000' : '#fff'}>
+                {a.cta}
+              </Txt>
+            </View>
+          </Pressable>
+        ))}
+      </ScrollView>
+      <View style={[S.row, { justifyContent: 'center', gap: 5, marginTop: 10 }]}>
+        {ADS.map((a, i) => (
+          <View key={a.id} style={{ width: i === at ? 18 : 6, height: 6, borderRadius: 3, backgroundColor: i === at ? C.text : C.s3 }} />
+        ))}
+      </View>
     </View>
   );
 }

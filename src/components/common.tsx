@@ -140,17 +140,17 @@ export function LiveBubble({ style }: { style?: any }) {
 }
 /** Scale of the notch bubble, driven by the Home feed's scrolling (shrinks going down, restores going up). */
 export const notchScale = new Animated.Value(1);
-/** Vertical centre of the camera notch area: the middle of the status bar. */
-export const notchTop = (insTop: number) => Math.max(4, Math.round(insTop / 2 - 18));
+/** Just below the camera notch / status bar. */
+export const notchTop = (insTop: number) => insTop + 2;
 
-/** Live jobs as a small island that sits on the camera notch: faces on the left, the camera in the gap, the count on the right. */
+/** Live jobs as a small floating pill of faces just under the notch. It floats over the screen, so nothing moves around it. */
 export function NotchBubble() {
   useTick();
   const ins = useSafeAreaInsets();
   const L = liveList();
   if (!L.length) return null;
   const label = L.map((b) => liveInfo(b)[0]).join('. ');
-  const moving = L.some((b) => b.state === 'onway' || b.state === 'working');
+  const shown = L.slice(0, 3);
   return (
     <Animated.View pointerEvents="box-none" style={{ position: 'absolute', top: notchTop(ins.top), left: 0, right: 0, alignItems: 'center', transform: [{ scale: notchScale }] }}>
       <Pressable
@@ -158,23 +158,18 @@ export function NotchBubble() {
         accessibilityRole="button"
         accessibilityLabel={`${L.length} live ${L.length === 1 ? 'job' : 'jobs'}: ${label}. Open`}
         onPress={() => (tap(), openLiveSheet())}
-        style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', height: 36, paddingHorizontal: 4, borderRadius: 18, backgroundColor: '#050505', borderWidth: 1, borderColor: '#262629', transform: [{ scale: pressed ? 0.95 : 1 }] })}
+        style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', padding: 4, paddingRight: L.length > 3 ? 10 : 4, borderRadius: 26, backgroundColor: C.s1, borderWidth: 1, borderColor: '#34343a', shadowColor: '#000', shadowOpacity: 0.6, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 16, transform: [{ scale: pressed ? 0.95 : 1 }] })}
       >
-        <View style={{ flexDirection: 'row' }}>
-          {L.slice(0, 2).map((b, i) => (
-            <View key={b.id} style={{ marginLeft: i ? -8 : 0, borderRadius: 15, borderWidth: 2, borderColor: liveBg(liveInfo(b)[2]) }}>
-              <Avatar pic={P(trOther(b)).photo} size={26} />
-            </View>
-          ))}
-        </View>
-        {/* gap for the camera hole */}
-        <View style={{ width: 34 }} />
-        <View style={[S.row, { gap: 5, paddingRight: 8 }]}>
-          <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: moving ? C.ok : C.yellow }} />
-          <Txt s={12} w={8}>
-            {L.length} live
+        {shown.map((b, i) => (
+          <View key={b.id} style={{ marginLeft: i ? -10 : 0, borderRadius: 22, borderWidth: 2.5, borderColor: liveBg(liveInfo(b)[2]) }}>
+            <Avatar pic={P(trOther(b)).photo} size={38} />
+          </View>
+        ))}
+        {L.length > 3 ? (
+          <Txt s={12} w={8} style={{ marginLeft: 6 }}>
+            +{L.length - 3}
           </Txt>
-        </View>
+        ) : null}
       </Pressable>
     </Animated.View>
   );
