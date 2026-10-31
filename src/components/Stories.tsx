@@ -32,7 +32,8 @@ export function showStories(list: Story[], opts: Opts = {}) {
   holdSheets(true);
   subs.forEach((f) => f());
 }
-function closeStories() {
+function closeStories(why = 'close') {
+  console.log('[stories] close:', why);
   const o = state?.opts;
   state = null;
   holdSheets(false);
@@ -66,8 +67,14 @@ function Viewer({ list, opts }: { list: Story[]; opts: Opts }) {
   const held = useRef(false);
   const s = list[i];
 
-  const next = () => (i < list.length - 1 ? setI(i + 1) : left > 0 ? null : closeStories());
+  const next = (why = 'timer') => (i < list.length - 1 ? setI(i + 1) : left > 0 ? null : closeStories(why));
   const prev = () => (i > 0 ? setI(i - 1) : null);
+  // The tap that opened the viewer (or a quick double tap) must not skip the first slide.
+  const shownAt = useRef(Date.now());
+  useEffect(() => {
+    shownAt.current = Date.now();
+  }, [i]);
+  const fresh = () => Date.now() - shownAt.current < 500;
   // A real timer moves to the next slide; the bar only shows progress. (With system animations off,
   // Animated finishes instantly, so it must not decide when a slide ends.)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -83,7 +90,7 @@ function Viewer({ list, opts }: { list: Story[]; opts: Opts }) {
     startedAt.current = Date.now();
     run.current = Animated.timing(prog, { toValue: 1, duration: SLIDE_MS * (1 - from), easing: Easing.linear, useNativeDriver: false });
     run.current.start();
-    timer.current = setTimeout(() => nextRef.current(), SLIDE_MS * (1 - from));
+    timer.current = setTimeout(() => nextRef.current('timer'), SLIDE_MS * (1 - from));
   };
   useEffect(() => {
     pop.setValue(0);
@@ -103,7 +110,7 @@ function Viewer({ list, opts }: { list: Story[]; opts: Opts }) {
   }, [left]);
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (left <= 0) closeStories();
+      if (left <= 0) closeStories('back');
       return true;
     });
     return () => sub.remove();
@@ -120,14 +127,14 @@ function Viewer({ list, opts }: { list: Story[]; opts: Opts }) {
   const sub = s.dark ? 'rgba(0,0,0,.72)' : 'rgba(255,255,255,.86)';
 
   return (
-    <Modal visible transparent statusBarTranslucent animationType="slide" onRequestClose={() => left <= 0 && closeStories()}>
+    <Modal visible transparent statusBarTranslucent animationType="slide" onRequestClose={() => left <= 0 && closeStories('request')}>
       <View style={{ flex: 1, backgroundColor: '#000' }}>
         <View style={{ flex: 1, marginBottom: 70 + ins.bottom, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' }}>
           <LinearGradient colors={s.colors} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
           {/* tap zones: left = back, right = next, hold = pause */}
           <View style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, flexDirection: 'row' }}>
-            <Pressable style={{ flex: 1 }} onPress={prev} onLongPress={() => hold(true)} onPressOut={() => held.current && hold(false)} accessibilityLabel="Previous" />
-            <Pressable style={{ flex: 2 }} onPress={next} onLongPress={() => hold(true)} onPressOut={() => held.current && hold(false)} accessibilityLabel="Next" />
+            <Pressable style={{ flex: 1 }} onPress={() => !fresh() && prev()} onLongPress={() => hold(true)} onPressOut={() => held.current && hold(false)} accessibilityLabel="Previous" />
+            <Pressable style={{ flex: 2 }} onPress={() => !fresh() && next('tap')} onLongPress={() => hold(true)} onPressOut={() => held.current && hold(false)} accessibilityLabel="Next" />
           </View>
           {/* progress */}
           <View pointerEvents="none" style={{ flexDirection: 'row', gap: 5, marginTop: ins.top + 12, marginHorizontal: 16 }}>
@@ -162,7 +169,7 @@ function Viewer({ list, opts }: { list: Story[]; opts: Opts }) {
                 </Txt>
               </View>
             ) : (
-              <Pressable testID="story-close" accessibilityRole="button" accessibilityLabel="Close" onPress={() => (tap(), closeStories())} style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+              <Pressable testID="story-close" accessibilityRole="button" accessibilityLabel="Close" onPress={() => (tap(), closeStories('x'))} style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
                 <Icon name="x" size={20} color="#000" />
               </Pressable>
             )}
@@ -203,7 +210,7 @@ function Viewer({ list, opts }: { list: Story[]; opts: Opts }) {
                 onPress={() => {
                   tap();
                   const go = s.onCta;
-                  closeStories();
+                  closeStories('cta');
                   setTimeout(() => go?.(), 250);
                 }}
                 style={({ pressed }) => ({ marginTop: 20, height: 56, borderRadius: 28, backgroundColor: s.dark ? '#000' : C.yellow, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }] })}
