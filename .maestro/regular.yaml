@@ -97,59 +97,11 @@ name: Regular account tour
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - takeScreenshot: r11-career
-- scroll
-- takeScreenshot: r12-career-2
-- runFlow:
-    when:
-      visible: "Career experts"
-    commands:
-      - tapOn: "Career experts"
-      - waitForAnimationToEnd
-      - takeScreenshot: r12d-experts
-      - scrollUntilVisible:
-          element:
-            id: "become-expert"
-          direction: DOWN
-      - tapOn:
-          id: "become-expert"
-      - waitForAnimationToEnd
-      - takeScreenshot: r12e-expert-apply
-      - runFlow:
-          when:
-            visible: "Verify ID"
-          commands:
-            - tapOn: "Verify ID"
-            - waitForAnimationToEnd
-            - takeScreenshot: r12f-id-verify
-            - tapOn:
-                id: "idv-next"
-            - tapOn:
-                id: "idv-doc-id"
-            - takeScreenshot: r12g-id-document
-            - back
-            - back
-      - back
-      - back
-- tapOn: "Software engineering internship"
-- waitForAnimationToEnd
-- takeScreenshot: r12b-internship-screen
-- back
-- scrollUntilVisible:
-    element: "Break into web development"
-    direction: DOWN
-    optional: true
-- runFlow:
-    when:
-      visible: "Break into web development"
-    commands:
-      - tapOn: "Break into web development"
-      - waitForAnimationToEnd
-      - takeScreenshot: r12c-mentor-screen
-      - back
 # Courses: enrol in the 1-minute test class → welcome → course page → lesson → My learning
 - scrollUntilVisible:
     element: "Quick test class.*"
-    direction: UP
+    direction: DOWN
+    centerElement: true
     optional: true
 - runFlow:
     when:
@@ -195,10 +147,13 @@ name: Regular account tour
       - waitForAnimationToEnd
       - back
       - waitForAnimationToEnd
+      - runFlow: dismiss.yaml
+      - takeScreenshot: r12p-career-continue
       - scrollUntilVisible:
           element:
             id: "career-courses-all"
           direction: DOWN
+          centerElement: true
       - tapOn:
           id: "career-courses-all"
       - waitForAnimationToEnd
@@ -208,11 +163,59 @@ name: Regular account tour
       - takeScreenshot: r12o-my-learning
       - back
       - waitForAnimationToEnd
+- scroll
+- takeScreenshot: r12-career-2
+- runFlow:
+    when:
+      visible: "Career experts"
+    commands:
+      - tapOn: "Career experts"
+      - waitForAnimationToEnd
+      - takeScreenshot: r12d-experts
       - scrollUntilVisible:
           element:
-            id: "career-continue"
-          direction: UP
-      - takeScreenshot: r12p-career-continue
+            id: "become-expert"
+          direction: DOWN
+      - tapOn:
+          id: "become-expert"
+      - waitForAnimationToEnd
+      - takeScreenshot: r12e-expert-apply
+      - runFlow:
+          when:
+            visible: "Verify ID"
+          commands:
+            - tapOn: "Verify ID"
+            - waitForAnimationToEnd
+            - takeScreenshot: r12f-id-verify
+            - tapOn:
+                id: "idv-next"
+            - tapOn:
+                id: "idv-doc-id"
+            - takeScreenshot: r12g-id-document
+            - back
+            - back
+      - back
+      - back
+- runFlow:
+    when:
+      visible: "Software engineering internship"
+    commands:
+      - tapOn: "Software engineering internship"
+      - waitForAnimationToEnd
+      - takeScreenshot: r12b-internship-screen
+      - back
+- scrollUntilVisible:
+    element: "Break into web development"
+    direction: DOWN
+    optional: true
+- runFlow:
+    when:
+      visible: "Break into web development"
+    commands:
+      - tapOn: "Break into web development"
+      - waitForAnimationToEnd
+      - takeScreenshot: r12c-mentor-screen
+      - back
 - tapOn:
     id: "tab-me"
 - waitForAnimationToEnd
