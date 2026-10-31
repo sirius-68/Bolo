@@ -34,10 +34,12 @@ type TxtProps = {
   children?: ReactNode;
   onPress?: () => void;
   selectable?: boolean;
+  testID?: string;
 };
-export function Txt({ s = 14, w = 5, c = C.text, center, lines, style, children, onPress, selectable }: TxtProps) {
+export function Txt({ s = 14, w = 5, c = C.text, center, lines, style, children, onPress, selectable, testID }: TxtProps) {
   return (
     <Text
+      testID={testID}
       onPress={onPress}
       selectable={selectable}
       numberOfLines={lines}

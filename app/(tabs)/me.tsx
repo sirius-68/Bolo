@@ -9,6 +9,7 @@ import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
 import { P, bizLogo, bizName, bizPct, curBiz, isPro, isW, myHandle, myCity, cityLabel, myPhoto, mySkill, myVacancies, myOpps, myCourses, xaf, postById, openJobs, has } from '../../src/logic/core';
 import { bump, useLive } from '../../src/logic/live';
+import { balance, heldTotal } from '../../src/logic/wallet';
 import { followingCount, prItems, prPct, services } from '../../src/logic/account';
 import { openProfile } from '../../src/logic/nav';
 import { ListRow, ReelThumb } from '../../src/components/cards';

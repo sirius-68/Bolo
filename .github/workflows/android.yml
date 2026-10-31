@@ -46,7 +46,6 @@ jobs:
           mkdir -p ci-out
           npx expo install --fix 2>&1 | tee -a ci-out/expo.log
       - name: Typecheck
-        continue-on-error: true
         run: |
           set -o pipefail
           mkdir -p ci-out
