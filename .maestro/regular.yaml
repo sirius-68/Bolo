@@ -40,6 +40,22 @@ name: Regular account tour
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - takeScreenshot: r04-feed
+- runFlow:
+    when:
+      visible:
+        id: "ads-carousel"
+    commands:
+      - tapOn:
+          id: "ads-carousel"
+      - waitForAnimationToEnd
+      - takeScreenshot: r04b-story-ad
+      - extendedWaitUntil:
+          visible:
+            id: "story-close"
+          timeout: 15000
+      - tapOn:
+          id: "story-close"
+      - waitForAnimationToEnd
 - scroll
 - takeScreenshot: r05-feed-scrolled
 - scrollUntilVisible:
