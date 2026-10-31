@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, ui, MyBiz } from '../data/db';
 import { AREAS, CITIES, SIZES, ST_C, ST_W } from '../data/catalog';
-import { AlertIll, Avatar, Btn, Chip, Chips, Field, Input, Label, Note, OptRow, ProTag, SelectBox, SwitchRow, Txt, Verified, StatusPill } from '../ui/kit';
+import { AlertIll, Avatar, Btn, Chip, Chips, Field, Input, Label, Note, OptRow, ProTag, SelectBox, SwitchRow, Txt, Verified, StatusPill, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { afterSheet, pick, sheet, SheetTitle, toast } from '../ui/overlay';
 import { C, S } from '../ui/theme';
@@ -14,7 +14,9 @@ import { setCityManually, gpsCity } from '../logic/here';
 import { resetTo } from '../logic/nav';
 import { LogoPicker } from '../components/business';
 import { pickImage } from '../logic/media';
-import { PhoneInput } from '../components/auth';
+import { PhoneInput, intlPhone } from '../components/auth';
+import { PAY_METHODS, KIND_LABEL, payOf } from '../data/payments';
+import { COUNTRIES, countryByIso, flag, showPhone } from '../data/countries';
 
 /* ---------------- Pro plans ---------------- */
 export function openPro(kind?: 'regular' | 'business', why?: string) {
@@ -123,14 +125,14 @@ function ProSheet({ kind, why }: { kind: 'regular' | 'business'; why?: string })
           <View style={[S.row, { gap: 8, marginTop: 12 }]}>
             <Icon name="coins" size={16} color={C.yellow} />
             <Txt s={12} c={C.muted} style={{ flex: 1 }}>
-              Pay with MTN MoMo or Orange Money · cancel any time
+              Pay with {defaultPay()} · cancel any time
             </Txt>
           </View>
           <Btn
             variant="yellow"
             style={{ marginTop: 14 }}
             loading={busy}
-            title={busy ? 'Waiting for Mobile Money approval…' : `Start ${R ? 'Pro' : 'Business Pro'} · ${xaf(bill === 'month' ? price : yr)}`}
+            title={busy ? 'Waiting for payment approval…' : `Start ${R ? 'Pro' : 'Business Pro'} · ${xaf(bill === 'month' ? price : yr)}`}
             onPress={() => {
               setBusy(true);
               payPro(kind, () => sheet.close());
@@ -382,7 +384,7 @@ function BizSetup({ st }: { st: BzState }) {
         <SheetTitle>Location & contact</SheetTitle>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Field label="City" style={{ flex: 1 }}>
-            <SelectBox value={b.city} onPress={() => pick('City', CITIES.map(([c, r]) => ({ v: c, sub: r })), b.city, (v) => (set('city', v), re()), true)} />
+            <SelectBox value={b.city} placeholder="Choose a city" onPress={() => openCities((v) => (set('city', v), re()), b.city)} />
           </Field>
           <Field label="Neighbourhood" style={{ flex: 1 }}>
             <Input value={b.area} onChangeText={(v) => (set('area', v), re())} />
@@ -510,63 +512,150 @@ export function openStatus() {
 export function openPayments() {
   sheet.show(() => <Payments />);
 }
+/** The person's default way to pay, e.g. "MTN MoMo ••• 456". */
+export const defaultPay = () => {
+  const d = db.PREF.momo.find((m) => m[2]) || db.PREF.momo[0];
+  return d ? `${d[0]} ${d[1].includes('•') ? '•••' + d[1].split('•').pop() : ''}`.trim() : 'Add a payment method';
+};
+function PayBadge({ name, size = 38 }: { name: string; size?: number }) {
+  const m = payOf(name);
+  return (
+    <View style={{ width: size, height: size, borderRadius: 10, backgroundColor: m.color, alignItems: 'center', justifyContent: 'center', borderWidth: m.color === '#ffffff' ? 1 : 0, borderColor: C.line }}>
+      {m.tag ? (
+        <Txt s={m.tag.length > 3 ? 9 : 11} w={8} c={m.fg}>
+          {m.tag}
+        </Txt>
+      ) : (
+        <Icon name="coins" size={16} color={m.fg} />
+      )}
+    </View>
+  );
+}
 function Payments() {
   const [, f] = useState(0);
-  const [net, setNet] = useState('MTN MoMo');
-  const [num, setNum] = useState('');
+  const [adding, setAdding] = useState<string | null>(null);
+  const [a, setA] = useState('');
+  const [b2, setB2] = useState('');
+  const [c2, setC2] = useState('');
+  const re = () => f((x) => x + 1);
+  const m = adding ? payOf(adding) : null;
+  const ok = !m ? false : m.kind === 'mobile' ? isPhone(a) : m.kind === 'card' ? digits(a).length >= 12 && /^\d{2}\/?\d{2}$/.test(b2.replace(/\s/g, '')) && digits(c2).length >= 3 : m.kind === 'wallet' ? m.name !== 'PayPal' || isEmail(a) : a.trim().length > 1 && digits(b2).length >= 6;
+  const save = () => {
+    if (!m || !ok) return;
+    const tail = m.kind === 'mobile' ? showPhone(intlPhone(a)).replace(/\d(?=\d{3})/g, '•').replace(/•+/, '••• ') : m.kind === 'card' ? '••• ' + digits(a).slice(-4) : m.kind === 'bank' ? `${a.trim()} ••• ${digits(b2).slice(-4)}` : m.name === 'PayPal' ? a.trim() : 'This phone';
+    if (!db.PREF.momo.length) db.PREF.momo.push([m.name, tail, 1]);
+    else db.PREF.momo.push([m.name, tail, 0]);
+    setAdding(null);
+    setA('');
+    setB2('');
+    setC2('');
+    bump();
+    toast(`${m.name} added`);
+  };
   return (
     <View style={{ gap: 8 }}>
-      <SheetTitle sub="Pay for jobs and receive payouts with Mobile Money.">Payments</SheetTitle>
+      <SheetTitle sub="Pay for jobs, courses and ads, and receive payouts, the way that suits you.">Payments</SheetTitle>
       {db.PREF.momo.map(([n, no, d], i) => (
-        <View key={n + no} style={[S.row, { gap: 12, padding: 12, borderRadius: 14, backgroundColor: C.s2 }]}>
-          <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: n.startsWith('MTN') ? C.yellow : C.orange, alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="coins" size={18} color="#000" />
-          </View>
+        <View key={n + no + i} style={[S.row, { gap: 12, padding: 12, borderRadius: 14, backgroundColor: C.s2 }]}>
+          <PayBadge name={n} />
           <View style={{ flex: 1 }}>
             <Txt s={14} w={8}>
               {n}
             </Txt>
             <Txt s={12} c={C.muted}>
-              {no}
+              {KIND_LABEL[payOf(n).kind]} · {no}
             </Txt>
           </View>
           {d ? (
             <StatusPill kind="acc" text="Default" />
           ) : (
-            <Btn
-              small
-              variant="dark"
-              title="Make default"
-              onPress={() => {
-                db.PREF.momo.forEach((m) => (m[2] = 0));
-                db.PREF.momo[i][2] = 1;
-                bump();
-                f((x) => x + 1);
-              }}
-            />
+            <View style={[S.row, { gap: 6 }]}>
+              <Btn small variant="dark" title="Default" onPress={() => (db.PREF.momo.forEach((x) => (x[2] = 0)), (db.PREF.momo[i][2] = 1), bump(), re())} />
+              <Pressable accessibilityLabel={`Remove ${n}`} hitSlop={8} onPress={() => (db.PREF.momo.splice(i, 1), bump(), re())}>
+                <Icon name="x" size={18} color={C.muted} />
+              </Pressable>
+            </View>
           )}
         </View>
       ))}
-      <Label>Add a number</Label>
-      <Chips>
-        {['MTN MoMo', 'Orange Money'].map((x) => (
-          <Chip key={x} small label={x} on={net === x} onPress={() => setNet(x)} />
-        ))}
-      </Chips>
-      <Input prefix="+237" keyboardType="phone-pad" value={num} onChangeText={setNum} placeholder="6XX XX XX XX" />
-      <Btn
-        variant="yellow"
-        title="Add payment method"
-        disabled={digits(num).length < 9}
-        onPress={() => {
-          const v = digits(num);
-          db.PREF.momo.push([net, v.slice(0, 3) + ' ••• ' + v.slice(-3), 0]);
-          setNum('');
-          bump();
-          toast('Payment method added');
-        }}
-      />
+      {!m ? (
+        <>
+          <Label>Add a way to pay</Label>
+          {(['mobile', 'card', 'wallet', 'bank'] as const).map((k) => (
+            <View key={k} style={{ marginBottom: 6 }}>
+              <Txt s={12} w={7} c={C.muted} style={{ marginBottom: 6, marginLeft: 4 }}>
+                {KIND_LABEL[k]}
+              </Txt>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {PAY_METHODS.filter((x) => x.kind === k).map((x) => (
+                  <Pressable key={x.name} testID={`pay-${x.name}`} accessibilityRole="button" onPress={() => (tap(), setAdding(x.name))} style={[S.row, { gap: 8, paddingLeft: 4, paddingRight: 12, height: 40, borderRadius: 20, backgroundColor: C.s2, borderWidth: 1, borderColor: C.line }]}>
+                    <PayBadge name={x.name} size={30} />
+                    <Txt s={13} w={7}>
+                      {x.name}
+                    </Txt>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ))}
+        </>
+      ) : (
+        <View style={{ gap: 10, padding: 14, borderRadius: 18, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, marginTop: 6 }}>
+          <View style={[S.row, { gap: 10 }]}>
+            <PayBadge name={m.name} />
+            <View style={{ flex: 1 }}>
+              <Txt s={15} w={8}>
+                Add {m.name}
+              </Txt>
+              {m.where ? (
+                <Txt s={11} c={C.muted} lines={1}>
+                  {m.where}
+                </Txt>
+              ) : null}
+            </View>
+            <Pressable hitSlop={8} onPress={() => setAdding(null)}>
+              <Icon name="x" size={18} color={C.muted} />
+            </Pressable>
+          </View>
+          {m.kind === 'mobile' ? <PhoneInput value={a} onChange={setA} /> : null}
+          {m.kind === 'card' ? (
+            <>
+              <Input value={a} onChangeText={(v) => setA(digits(v).slice(0, 19).replace(/(\d{4})(?=\d)/g, '$1 '))} icon="money" keyboardType="number-pad" placeholder="Card number" />
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Input style={{ flex: 1 }} value={b2} onChangeText={(v) => setB2(digits(v).slice(0, 4).replace(/(\d{2})(?=\d)/, '$1/'))} keyboardType="number-pad" placeholder="MM/YY" />
+                <Input style={{ flex: 1 }} value={c2} onChangeText={(v) => setC2(digits(v).slice(0, 4))} keyboardType="number-pad" placeholder="CVC" secure />
+              </View>
+            </>
+          ) : null}
+          {m.kind === 'wallet' ? m.name === 'PayPal' ? <Input value={a} onChangeText={setA} icon="mail" keyboardType="email-address" placeholder="PayPal email" /> : <Note icon="lock">You’ll confirm with {m.name} on this phone when you pay.</Note> : null}
+          {m.kind === 'bank' ? (
+            <>
+              <Input value={a} onChangeText={setA} icon="city" placeholder="Bank name" autoCapitalize="words" />
+              <Input value={b2} onChangeText={setB2} keyboardType="number-pad" placeholder="Account number or IBAN" />
+            </>
+          ) : null}
+          <Btn variant="yellow" title={`Save ${m.name}`} disabled={!ok} onPress={save} />
+          <Txt s={11} c={C.faint}>
+            Card and account details are sent straight to our payment partner. bolo never stores full card numbers.
+          </Txt>
+        </View>
+      )}
     </View>
+  );
+}
+
+/** Pick any country in the world. */
+export function pickCountry(title: string, value: string, onPick: (name: string, iso: string) => void, extra: string[] = []) {
+  pick(
+    title,
+    [...extra, ...COUNTRIES.map((k) => `${flag(k.iso)}  ${k.name}`)],
+    value ? (COUNTRIES.find((k) => k.name === value) ? `${flag(COUNTRIES.find((k) => k.name === value)!.iso)}  ${value}` : value) : undefined,
+    (v) => {
+      if (extra.includes(v)) return onPick(v, '');
+      const k = COUNTRIES.find((x) => `${flag(x.iso)}  ${x.name}` === v);
+      if (k) onPick(k.name, k.iso);
+    },
+    true,
   );
 }
 export function openPrivacy() {
@@ -703,16 +792,38 @@ export function openCities(onPick?: (c: string) => void, current?: string) {
 function CitySheet({ onPick, current }: { onPick?: (c: string) => void; current: string }) {
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
+  const [iso, setIso] = useState((db.user.country || 'CM').toUpperCase());
+  const ctry = countryByIso(iso) || countryByIso('CM')!;
   const done = (c: string, auto = false) => {
     sheet.close();
     if (onPick) return onPick(c);
     if (!auto) setCityManually(c);
     toast('Location: ' + c);
   };
-  const sugg = CITIES.map(([c]) => c).filter((c) => !q || c.toLowerCase().includes(q.trim().toLowerCase()));
+  // Suggestions are Cameroonian cities; elsewhere people type their city.
+  const sugg = (iso === 'CM' ? CITIES.map(([c]) => c) : []).filter((c) => !q || c.toLowerCase().includes(q.trim().toLowerCase()));
   return (
     <View style={{ gap: 14 }}>
       <SheetTitle sub={current ? `Now: ${current}` : 'Used for the map, distances and what’s near you.'}>Your location</SheetTitle>
+      <Pressable
+        testID="city-country"
+        accessibilityRole="button"
+        onPress={() => pickCountry('Country', ctry.name, (_, k) => k && (setIso(k), (db.user.country = k), bump()))}
+        style={[S.rowB, { height: 54, paddingHorizontal: 16, borderRadius: 16, backgroundColor: C.s2 }]}
+      >
+        <View style={[S.row, { gap: 10 }]}>
+          <Txt s={20}>{flag(ctry.iso)}</Txt>
+          <View>
+            <Txt s={11} c={C.muted}>
+              Country
+            </Txt>
+            <Txt s={15} w={7}>
+              {ctry.name}
+            </Txt>
+          </View>
+        </View>
+        <Icon name="down" size={16} color={C.muted} />
+      </Pressable>
       <Btn
         testID="city-gps"
         title="Use my current location"

@@ -12,6 +12,7 @@ import { syncContacts } from '../src/logic/account';
 import { bump, later } from '../src/logic/live';
 import { openCV } from '../src/sheets/career';
 import { PhoneInput } from '../src/components/auth';
+import { openCities, pickCountry } from '../src/sheets/account';
 
 type Edu = { lv: string; name: string; org: string; year: string };
 type Exp = { role: string; org: string; from: number; to: number | null; desc: string };
@@ -135,13 +136,13 @@ export default function CVFlow() {
           <PhoneInput value={c.phone || ''} onChange={(v) => ((c.phone = v), re())} invalid={phoneBad} />
         </Field>
         <Field label="City of residence">
-          <SelectBox value={c.city} onPress={() => pick('City', CITIES.map(([n, r]) => ({ v: n, sub: r })), c.city, (v) => ((c.city = v), re()), true)} />
+          <SelectBox value={c.city} placeholder="Choose a city" onPress={() => openCities((v) => ((c.city = v), re()), c.city)} />
         </Field>
         <Field label="Citizenship">
-          <SelectBox value={c.cit} onPress={() => pick('Citizenship', ['Cameroon', 'Nigeria', 'Chad', 'Central African Republic', 'Gabon', 'Equatorial Guinea', 'Congo', 'Other'], c.cit, (v) => ((c.cit = v), re()))} />
+          <SelectBox value={c.cit} onPress={() => pickCountry('Citizenship', c.cit, (v) => ((c.cit = v), re()))} />
         </Field>
         <Field label="Work permit">
-          <SelectBox value={c.permit} onPress={() => pick('Work permit', ['Cameroon', 'CEMAC countries', 'Nigeria', 'Not required', 'Other'], c.permit, (v) => ((c.permit = v), re()))} />
+          <SelectBox value={c.permit} onPress={() => pickCountry('Allowed to work in', c.permit, (v) => ((c.permit = v), re()), ['Not required', 'Several countries'])} />
         </Field>
         <Btn variant="yellow" title="Save and continue" disabled={!c.first.trim() || mailBad || phoneBad || !okDate} onPress={() => setStep(2)} />
       </View>

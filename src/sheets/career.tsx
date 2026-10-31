@@ -17,6 +17,7 @@ import { openProfile, openCourses, resetTo } from '../logic/nav';
 import { MyCV, myCvHtml } from '../components/cv';
 import { ListRow, OppCard } from '../components/cards';
 import { openChat, RulePicker } from './chat';
+import { defaultPay } from './account';
 import { openJob } from './work';
 import { openPro, bizOnlyPrompt } from './account';
 
@@ -571,7 +572,7 @@ function EmpEnroll({ kind, id, st }: { kind: 'course' | 'mentor' | 'opp'; id: st
         <View style={[S.row, { gap: 10, padding: 12, borderRadius: 14, backgroundColor: C.s2 }]}>
           <Icon name="coins" size={18} color={C.yellow} />
           <Txt s={13} style={{ flex: 1 }}>
-            {n} × {xaf(price)} = <Txt s={13} w={8}>{xaf(n * price)}</Txt> · Mobile Money
+            {n} × {xaf(price)} = <Txt s={13} w={8}>{xaf(n * price)}</Txt> · {defaultPay()}
           </Txt>
         </View>
       ) : null}
@@ -658,7 +659,7 @@ function CourseSheet({ id }: { id: string }) {
           variant="yellow"
           style={{ marginTop: 16 }}
           loading={busy}
-          title={busy ? (c.price ? 'Waiting for Mobile Money approval…' : 'Enrolling…') : c.price ? 'Enroll · pay with Mobile Money' : 'Enroll for free'}
+          title={busy ? (c.price ? 'Waiting for payment approval…' : 'Enrolling…') : c.price ? `Enroll · pay with ${defaultPay()}` : 'Enroll for free'}
           onPress={() => {
             setBusy(true);
             enroll(id, () => setBusy(false));

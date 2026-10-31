@@ -14,7 +14,7 @@ import { invite } from '../logic/account';
 import { adRate, adTargets, adHead, launchAd } from '../logic/career';
 import { openChat } from './chat';
 import { openJob } from './work';
-import { openBizSetup, openPro } from './account';
+import { defaultPay, openBizSetup, openPro } from './account';
 import { router } from 'expo-router';
 
 /* ---------------- company contracts ---------------- */
@@ -457,13 +457,13 @@ function AdForm({ a }: { a: AdDraft }) {
           <Txt s={13} w={8}>
             {xaf(cost)}
           </Txt>{' '}
-          · MTN MoMo or Orange Money · unused reach is refunded
+          · {defaultPay()} · unused reach is refunded
         </Txt>
       </View>
       <Btn
         variant="yellow"
         loading={busy}
-        title={busy ? 'Waiting for Mobile Money approval…' : `Pay ${xaf(cost)} & launch`}
+        title={busy ? 'Waiting for payment approval…' : `Pay ${xaf(cost)} & launch`}
         disabled={!a.areas.length}
         onPress={() => {
           setBusy(true);

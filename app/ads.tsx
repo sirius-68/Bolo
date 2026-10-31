@@ -141,7 +141,7 @@ function openBoostAd(id: string) {
           <Btn
             variant="yellow"
             loading={busy}
-            title={busy ? 'Waiting for Mobile Money approval…' : `Pay ${xaf((n / 100) * adRate())}`}
+            title={busy ? 'Waiting for payment approval…' : `Pay ${xaf((n / 100) * adRate())}`}
             onPress={() => {
               setBusy(true);
               setTimeout(() => {

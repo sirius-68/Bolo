@@ -81,7 +81,7 @@ export default function Chat() {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior="padding" keyboardVerticalOffset={0}>
       <View style={[S.row, { gap: 10, paddingTop: ins.top + 6, paddingHorizontal: 12, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: C.line, backgroundColor: C.bg }]}>
         <IconBtn name="back" label="Back" onPress={goBack} />
-        <Pressable accessibilityRole="button" accessibilityLabel={grp ? 'Group info' : `${p.name}’s profile`} onPress={() => (grp ? openChatMenu(id) : openProfile(id))} style={[S.row, { gap: 10, flex: 1, minWidth: 0 }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={grp ? 'Group info' : `${p.name}’s profile`} onPress={() => (grp ? router.push(`/group/${id}` as any) : openProfile(id))} style={[S.row, { gap: 10, flex: 1, minWidth: 0 }]}>
           <Avatar pic={p.photo} square={!!p.biz || grp} size={42} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <View style={[S.row, { gap: 4 }]}>

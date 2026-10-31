@@ -9,7 +9,7 @@ import { Icon } from '../ui/Icon';
 import { afterSheet, pick, sheet, SheetTitle, toast, confirm } from '../ui/overlay';
 import { C, R, S } from '../ui/theme';
 import { P, budgetNum, cityLabel, digits, isEmail, isPhone, isW, myCity, mySkill, has } from '../logic/core';
-import { openCities } from './account';
+import { defaultPay, openCities } from './account';
 import { services, syncContacts, toggleFollow } from '../logic/account';
 import { bump, later } from '../logic/live';
 import { openProfile } from '../logic/nav';
@@ -164,14 +164,14 @@ function Boost({ id }: { id: string }) {
       <View style={[S.row, { gap: 8, marginTop: 12 }]}>
         <Icon name="coins" size={16} color={C.yellow} />
         <Txt s={12} c={C.muted}>
-          Pay with MTN MoMo or Orange Money
+          Pay with {defaultPay()} · change in Settings → Payments
         </Txt>
       </View>
       <Btn
         variant="yellow"
         style={{ marginTop: 14 }}
         loading={busy}
-        title={busy ? 'Waiting for Mobile Money approval…' : free && d === 1 ? 'Use a free boost' : `Pay XAF ${cost.toLocaleString('en-US')}`}
+        title={busy ? 'Waiting for payment approval…' : free && d === 1 ? 'Use a free boost' : `Pay XAF ${cost.toLocaleString('en-US')}`}
         onPress={() => {
           setBusy(true);
           later(free && d === 1 ? 400 : 1400, () => {

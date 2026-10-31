@@ -10,7 +10,7 @@ import { C, S } from '../src/ui/theme';
 import { bizLogo, bizName, curBiz, isPro, isW, cityLabel, myPhoto } from '../src/logic/core';
 import { useLive } from '../src/logic/live';
 import { logout } from '../src/logic/account';
-import { openAccounts, openBizSetup, openCities, openEdit, openHelp, openLang, openNotifSettings, openPayments, openPrivacy, openPro } from '../src/sheets/account';
+import { defaultPay, openAccounts, openBizSetup, openCities, openEdit, openHelp, openLang, openNotifSettings, openPayments, openPrivacy, openPro } from '../src/sheets/account';
 import { openDoc } from '../src/sheets/profile';
 
 export default function Settings() {
@@ -40,7 +40,7 @@ export default function Settings() {
       <G t="Account" />
       <Box>
         <OptRow icon="rocket" bg={C.lav} title={isPro() ? `bolo ${w ? 'Pro' : 'Business Pro'} · active` : `Upgrade to ${w ? 'Pro' : 'Business Pro'}`} sub={w ? 'Get jobs faster, premium CV, profile boosts' : 'Cheaper ads, more businesses, featured company'} onPress={() => openPro()} />
-        <OptRow icon="money" title="Payments" sub="Mobile Money and payouts" onPress={openPayments} />
+        <OptRow icon="money" title="Payments" sub={defaultPay()} onPress={openPayments} />
         {b ? <OptRow icon="storefront" bg="#fff" title="Business page" sub="Details, logo, RCCM & NIU" onPress={() => openBizSetup('edit', 1)} /> : <OptRow icon="edit" bg="#fff" title="Edit profile" sub="Name, bio, contact" onPress={openEdit} />}
         {b ? <OptRow icon="rocket" bg={C.orange} title="Ads manager" sub="Promote vacancies, programs and courses" onPress={() => router.push('/ads')} /> : null}
       </Box>

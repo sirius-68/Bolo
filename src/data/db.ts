@@ -99,6 +99,7 @@ export type Thread = {
   members?: string[];
   rulesOk?: number;
   course?: number;
+  muted?: number;
 };
 export type Notif = {
   id: string;
