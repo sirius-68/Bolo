@@ -27,12 +27,14 @@ type Opts = { closeAfter?: number; onClose?: () => void; label?: string };
 let state: { list: Story[]; opts: Opts } | null = null;
 const subs = new Set<() => void>();
 export function showStories(list: Story[], opts: Opts = {}) {
+  console.log('[stories] show', list.length, subs.size);
   if (!list.length) return;
   state = { list, opts };
   holdSheets(true);
   subs.forEach((f) => f());
 }
 function closeStories(_why = 'close') {
+  console.log('[stories] close', _why);
   const o = state?.opts;
   state = null;
   holdSheets(false);
@@ -51,6 +53,7 @@ export function StoryHost() {
       subs.delete(force);
     };
   }, []);
+  console.log('[stories] host render', !!state);
   if (!state) return null;
   return <Viewer key={state.list.map((s) => s.key).join('|')} list={state.list} opts={state.opts} />;
 }
@@ -92,6 +95,7 @@ function Viewer({ list, opts }: { list: Story[]; opts: Opts }) {
     timer.current = setTimeout(() => nextRef.current('timer'), SLIDE_MS * (1 - from));
   };
   useEffect(() => {
+    console.log('[stories] viewer slide', i);
     pop.setValue(0);
     Animated.spring(pop, { toValue: 1, useNativeDriver: true, speed: 10, bounciness: 9 }).start();
     start();
