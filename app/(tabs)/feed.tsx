@@ -11,9 +11,8 @@ import { P, has, fname, myPhoto, postById, cityLabel, curBiz, bizName, fCount, i
 import { bump, useLive } from '../../src/logic/live';
 import { openBrowse, openProfile } from '../../src/logic/nav';
 import { notchScale, Rail, SearchBar, Sec, TabHeader } from '../../src/components/common';
-import { StatusRow } from '../../src/components/StatusRow';
 import { follow } from '../../src/logic/work';
-import { MentorCard, PersonRow, PostCard, RecCard, ReelThumb, ReqPost, JobCard } from '../../src/components/cards';
+import { PersonRow, PostCard, RecCard, ReelThumb, ReqPost, JobCard } from '../../src/components/cards';
 import { onScrollFab } from '../../src/components/NavBar';
 import { openFilters, resetFilters } from '../../src/sheets/filters';
 import { openService } from '../../src/sheets/profile';
@@ -22,11 +21,11 @@ import { openOpp } from '../../src/sheets/career';
 import { services } from '../../src/logic/account';
 import { toast } from '../../src/ui/overlay';
 
-type FV = 'all' | 'feed' | 'jobs' | 'people' | 'mentors';
+type FV = 'all' | 'feed' | 'jobs' | 'people';
 /** Height of the header row (avatar, name, icons) the bubble starts below. */
 const HEADER_ROW = 60;
 const BUBBLE_SPACE = 54;
-type Item = { k: string; po?: Post; id?: string; pair?: string[]; sp?: 'compose' | 'reels' | 'follow'; from?: number };
+type Item = { k: string; po?: Post; id?: string; sp?: 'compose' | 'reels' | 'follow'; from?: number };
 
 export default function Feed() {
   useLive();
@@ -36,20 +35,19 @@ export default function Feed() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const lastY = useRef(0);
   const small = useRef(false);
-  // Businesses don't take jobs, so they get Talent / Mentors instead of Jobs.
+  // Four simple doors. Businesses don't take jobs, so they get Talent instead of Jobs and People.
+  // Mentorship lives in Career (one place for it), not here.
   const views: [FV, string][] = w
     ? [
-        ['all', 'All'],
+        ['all', 'For you'],
         ['feed', 'Feed'],
         ['jobs', 'Jobs'],
         ['people', 'People'],
-        ['mentors', 'Mentors'],
       ]
     : [
-        ['all', 'All'],
+        ['all', 'For you'],
         ['feed', 'Feed'],
         ['people', 'Talent'],
-        ['mentors', 'Mentors'],
       ];
   if (!views.some((x) => x[0] === ui.feedView)) ui.feedView = 'all';
   const v = ui.feedView as FV;
@@ -60,15 +58,11 @@ export default function Feed() {
     bump();
     list.current?.scrollToOffset({ offset: 0, animated: false });
   };
-  const mentors = db.MENTORSHIPS.filter((m) => (!q || (m.title + ' ' + m.field + ' ' + m.desc).toLowerCase().includes(q)) && (!cat || m.field === cat));
 
   let items: Item[];
   if (v === 'jobs') items = sortJobs(listJobs().filter((p) => matchJob(p, q, cat))).map((po) => ({ k: po.id, po }));
   else if (v === 'people') items = sortPeople(listPeople().filter((id) => matchPerson(id, q, cat))).map((id) => ({ k: id, id }));
-  else if (v === 'mentors') {
-    items = [];
-    for (let i = 0; i < mentors.length; i += 2) items.push({ k: 'm' + mentors[i].id, pair: mentors.slice(i, i + 2).map((m) => m.id) });
-  } else if (v === 'feed') {
+  else if (v === 'feed') {
     // Only work people share (no job requests), people you follow first, like a social feed.
     const W = db.POSTS.filter(postVisible)
       .filter((p) => p.kind !== 'request' && (!q || (p.text || '').toLowerCase().includes(q) || (P(p.by || '')?.name || '').toLowerCase().includes(q)) && (!cat || P(p.by || '')?.role === cat))
@@ -86,22 +80,23 @@ export default function Feed() {
   } else {
     let L = db.POSTS.filter(postVisible).filter((p) => (p.kind === 'request' ? matchJob(p, q, cat) : !q || (p.text || '').toLowerCase().includes(q) || (P(p.by || '')?.name || '').toLowerCase().includes(q)));
     if (cat) L = L.filter((p) => (p.kind === 'request' ? p.cat === cat : P(p.by || '')?.role === cat));
-    if (!w) L = L.slice().sort((a, b) => (b.mine || 0) - (a.mine || 0));
+    // For you = things you can act on now: jobs and gigs to take, people free to hire. Showcase posts live in Feed.
+    if (w) L = L.filter((p) => p.kind === 'request' || p.kind === 'avail');
+    else L = L.slice().sort((a, b) => (b.mine || 0) - (a.mine || 0));
     items = L.map((po) => ({ k: po.id, po }));
   }
 
   const people = listPeople().filter((id) => matchPerson(id, q, cat));
   const jobs = listJobs().filter((p) => matchJob(p, q, cat));
   const nf = fCount();
-  const noun = v === 'jobs' ? ['job', 'jobs'] : v === 'people' ? (w ? ['person', 'people'] : ['candidate', 'candidates']) : ['mentorship', 'mentorships'];
-  const count = v === 'mentors' ? mentors.length : items.length;
+  const noun = v === 'jobs' ? ['job', 'jobs'] : w ? ['person', 'people'] : ['candidate', 'candidates'];
+  const count = items.length;
   const findOnly = w && db.user.intents.includes('find') && !db.user.intents.includes('hire');
   const hireOnly = w && db.user.intents.includes('hire') && !db.user.intents.includes('find');
 
   const header = (
     <View style={{ paddingTop: ins.top }}>
       <TabHeader />
-      <StatusRow />
       {!db.demo && !(db.PREF as any).sampleSeen ? (
         <View testID="early-note" style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, padding: 12, borderRadius: 16, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }}>
           <Icon name="sparkle" size={18} color={C.lav} />
@@ -120,8 +115,8 @@ export default function Feed() {
             ui.q = t;
             bump();
           }}
-          placeholder={v === 'feed' ? 'Search posts and people' : v === 'jobs' ? 'Search jobs: title, company, area…' : v === 'people' ? 'Search people: name, skill, area…' : v === 'mentors' ? 'Search mentors or topics' : 'Search developers, tutors, plumbers…'}
-          onFilter={v === 'mentors' || v === 'feed' ? undefined : () => openFilters(v === 'jobs' || (v === 'all' && findOnly) ? 'jobs' : 'people')}
+          placeholder={v === 'feed' ? 'Search posts and people' : v === 'jobs' ? 'Search jobs: title, company, area…' : v === 'people' ? 'Search people: name, skill, area…' : findOnly ? 'Search jobs near you' : 'Search plumbers, tailors, tutors…'}
+          onFilter={v === 'feed' ? undefined : () => openFilters(v === 'jobs' || (v === 'all' && findOnly) ? 'jobs' : 'people')}
           filters={nf}
         />
       </View>
@@ -129,7 +124,7 @@ export default function Feed() {
       <View style={{ flexDirection: 'row', gap: 6, marginTop: 14, padding: 4, borderRadius: 14, backgroundColor: C.s1 }}>
         {views.map(([k, l]) => (
           <Pressable key={k} accessibilityRole="tab" accessibilityState={{ selected: v === k }} onPress={() => (tap(), setV(k))} style={{ flex: 1, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: v === k ? C.blue : 'transparent' }}>
-            <Txt s={views.length > 4 ? 12 : 13} w={v === k ? 8 : 6} lines={1}>
+            <Txt s={13} w={v === k ? 8 : 6} lines={1}>
               {l}
             </Txt>
           </Pressable>
@@ -137,7 +132,7 @@ export default function Feed() {
       </View>
       {v === 'all' ? (
         <>
-          <Promo />
+          {/* 1. What matters most for this person, 2. sponsored (after organic, like Indeed), 3. what's happening near them now */}
           <Sec title={findOnly ? 'Jobs for you' : w ? 'Recommended for you' : 'Talent near you'} action="See all" onAction={() => openBrowse(findOnly ? 'jobs' : 'people')} />
           {findOnly ? (
             <Rail>
@@ -152,19 +147,14 @@ export default function Feed() {
               ))}
             </Rail>
           )}
-          <Sec title="Work in action" action="Watch all" onAction={() => router.push('/reels?i=0' as any)} />
-          <Rail>
-            {REELS.map((r, i) => (
-              <ReelThumb key={i} r={r} i={i} onPress={() => router.push(`/reels?i=${i}` as any)} />
-            ))}
-          </Rail>
-          <Sec title={q || cat ? `${items.length} result${items.length === 1 ? '' : 's'}` : 'Recent posts'} />
+          <Promo />
+          <Sec title={q || cat ? `${items.length} result${items.length === 1 ? '' : 's'}` : w ? 'Near you now' : 'Recent posts'} />
         </>
       ) : v === 'feed' ? (
         <View style={{ height: 14 }} />
       ) : (
         <Txt s={13} w={6} c={C.muted} style={{ marginTop: 16, marginBottom: 10 }}>
-          {count} {noun[count === 1 ? 0 : 1]} {q ? `for “${ui.q.trim()}”` : v === 'mentors' ? 'on bolo' : 'near you'}
+          {count} {noun[count === 1 ? 0 : 1]} {q ? `for “${ui.q.trim()}”` : 'near you'}
         </Txt>
       )}
     </View>
@@ -185,15 +175,6 @@ export default function Feed() {
         </View>
       );
     if (item.sp === 'follow') return <FollowSuggest />;
-    if (item.pair)
-      return (
-        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
-          {item.pair.map((id) => {
-            const m = db.MENTORSHIPS.find((x) => x.id === id)!;
-            return <MentorCard key={id} m={m} width="48%" />;
-          })}
-        </View>
-      );
     if (item.id)
       return (
         <View style={{ marginBottom: 10 }}>

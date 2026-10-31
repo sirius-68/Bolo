@@ -169,7 +169,7 @@ export default function Career() {
           </Pressable>
         ) : null}
       </Rail>
-      <Sec title="Mentorship" action="+ Offer" onAction={openMentorForm} />
+      <Sec testID="career-mentors-all" title="Mentorship" action="All" onAction={() => router.push('/mentors' as any)} />
       <Sub t="Learn from experienced people and companies, 1-to-1 or in groups" />
       {mine.length ? (
         <View style={{ gap: 8, marginBottom: 10 }}>

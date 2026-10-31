@@ -40,37 +40,6 @@ name: Regular account tour
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - takeScreenshot: r04-feed
-# Statuses: open one from someone you follow, then the Add to status sheet
-- runFlow:
-    when:
-      visible:
-        id: "status-edward"
-    commands:
-      - retry:
-          maxRetries: 3
-          commands:
-            - tapOn:
-                id: "status-edward"
-                waitToSettleTimeoutMs: 500
-            - extendedWaitUntil:
-                visible:
-                  id: "story-close"
-                timeout: 4000
-      - takeScreenshot: r04d-status
-      - tapOn:
-          id: "story-close"
-      - runFlow: dismiss.yaml
-- runFlow:
-    when:
-      visible:
-        id: "status-add"
-    commands:
-      - tapOn:
-          id: "status-add"
-      - waitForAnimationToEnd
-      - takeScreenshot: r04e-add-status
-      - back
-      - waitForAnimationToEnd
 # The demo booking asks to confirm a finished job shortly after login: wait for it and close it first
 - extendedWaitUntil:
     visible: "Not yet, something’s wrong"
@@ -131,8 +100,8 @@ name: Regular account tour
       - waitForAnimationToEnd
       - takeScreenshot: r07b-worker-profile
       - back
-- tapOn: "Mentors"
-- takeScreenshot: r08-feed-mentors
+- tapOn: "For you"
+- takeScreenshot: r08-feed-foryou
 - tapOn:
     id: "tab-home"
 - waitForAnimationToEnd
@@ -285,6 +254,17 @@ name: Regular account tour
       - waitForAnimationToEnd
       - takeScreenshot: r12c-mentor-screen
       - back
+- runFlow:
+    when:
+      visible:
+        id: "career-mentors-all"
+    commands:
+      - tapOn:
+          id: "career-mentors-all"
+      - waitForAnimationToEnd
+      - takeScreenshot: r12r-mentors
+      - back
+      - waitForAnimationToEnd
 - tapOn:
     id: "tab-me"
 - waitForAnimationToEnd

@@ -5,13 +5,12 @@ import { bump } from './live';
 import { showStories, Story } from '../components/Stories';
 import { openPayments } from '../sheets/account';
 
-export const WHATS_NEW_ID = '2026-10-31d';
+export const WHATS_NEW_ID = '2026-10-31e';
 
 /** Slides added in the latest update. */
-const LATEST = ['status', 'feed', 'teach'];
+const LATEST = ['feed', 'teach'];
 
 export const WHATS_NEW: Story[] = [
-  { key: 'status', colors: ['#ff8a3d', '#c2410c'], icon: 'cam', chip: 'New on Home', title: 'Statuses', text: 'See what people and companies you follow are up to: new work, free slots, open jobs. Tap your photo at the top to add your own for 24 hours.' },
   { key: 'feed', colors: ['#3d5af1', '#1b2a9b'], icon: 'feed', chip: 'New tab', title: 'Your work feed', text: 'Home → Feed shows only the work people share, people you follow first, with Work in action videos along the way.' },
   { key: 'teach', colors: ['#7c5cff', '#3b1fa8'], icon: 'cap', chip: 'For everyone', title: 'Teach a course', text: 'Tailor, plumber, developer, baker: anyone can now run a course with live classes and get paid to their wallet.', cta: 'Start teaching', onCta: () => router.push('/teach' as any) },
   { key: 'wallet', colors: ['#2fbf7a', '#0f6e45'], icon: 'shield', chip: 'Safe payments', title: 'Your bolo wallet', text: 'Add money from mobile money, card or bank. When you hire, the price waits in escrow and is released only when you confirm the job is done.', cta: 'Open my wallet', onCta: () => router.push('/wallet' as any) },
