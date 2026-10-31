@@ -40,7 +40,13 @@ name: Regular account tour
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - takeScreenshot: r04-feed
+# The demo booking asks to confirm a finished job shortly after login: wait for it and close it first
+- extendedWaitUntil:
+    visible: "Not yet, something’s wrong"
+    timeout: 12000
+    optional: true
 - runFlow: dismiss.yaml
+- waitForAnimationToEnd
 - runFlow:
     when:
       visible:
