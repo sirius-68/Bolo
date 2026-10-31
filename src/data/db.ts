@@ -819,7 +819,7 @@ export function setDb(d: DB) {
 
 /** UI state that should not be persisted. */
 export const ui = {
-  feedView: 'all' as 'all' | 'jobs' | 'people' | 'mentors',
+  feedView: 'all' as 'all' | 'feed' | 'jobs' | 'people' | 'mentors',
   meTab: 'Profile',
   ntTab: 'All',
   ibTab: 'All',
