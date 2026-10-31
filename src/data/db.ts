@@ -815,6 +815,8 @@ export const ui = {
   appStarted: false,
   /** set when ID verification was opened from inside the app (not sign-up): finish returns there */
   verifyReturn: '' as string,
+  /** opened the app already logged in (an existing user, e.g. after an update) */
+  returning: false,
   cvT: 'Classic',
   proBill: 'month' as 'month' | 'year',
   justJoined: false,

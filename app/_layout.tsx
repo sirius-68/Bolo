@@ -51,6 +51,7 @@ export default function Root() {
         else db.loggedIn = false; // session expired or revoked → log in again
       }
       if (db.loggedIn) {
+        ui.returning = true;
         ui.appStarted = true;
         resumeSims();
         if (db.BIZ.list.some((b) => (b.ads || []).some((a) => a.status === 'active'))) startAdTicker();

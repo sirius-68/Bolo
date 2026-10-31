@@ -1,6 +1,6 @@
 /* "What's new" stories, shown once after an update. Add a slide here with every release. */
 import { router } from 'expo-router';
-import { db } from '../data/db';
+import { db, ui } from '../data/db';
 import { bump } from './live';
 import { showStories, Story } from '../components/Stories';
 import { openPayments } from '../sheets/account';
@@ -20,6 +20,8 @@ export function maybeShowWhatsNew() {
   if ((db.PREF as any).seenNew === WHATS_NEW_ID) return;
   (db.PREF as any).seenNew = WHATS_NEW_ID;
   bump();
+  // Only for people updating the app; a fresh install has nothing "new" to compare with.
+  if (!ui.returning) return;
   showStories(WHATS_NEW, { label: 'What’s new on bolo' });
 }
 export const openWhatsNew = () => showStories(WHATS_NEW, { label: 'What’s new on bolo' });
