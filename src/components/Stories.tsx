@@ -66,7 +66,9 @@ function Viewer({ list, opts }: { list: Story[]; opts: Opts }) {
   const held = useRef(false);
   const s = list[i];
 
-  const next = (why = 'timer') => (i < list.length - 1 ? setI(i + 1) : left > 0 ? null : closeStories(why));
+  // The last slide with a button (Apply, Join, See job…) waits for the person instead of closing on its own:
+  // they opened it on purpose and need time to decide. A tap still moves on / closes.
+  const next = (why = 'timer') => (i < list.length - 1 ? setI(i + 1) : left > 0 || (why === 'timer' && s.cta) ? null : closeStories(why));
   const prev = () => (i > 0 ? setI(i - 1) : null);
   // The tap that opened the viewer (or a quick double tap) must not skip the first slide.
   const shownAt = useRef(Date.now());
