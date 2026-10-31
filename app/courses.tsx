@@ -99,8 +99,11 @@ function MyLearning({ list, onExplore, bottom }: { list: Course[]; onExplore: ()
       <View style={[S.row, { gap: 14, padding: 18, borderRadius: 26, backgroundColor: C.lav }]}>
         <View style={{ flex: 1 }}>
           <Txt s={22} w={8} c="#000">
-            {pct >= 100 ? 'All done, ' : 'Keep going, '}
-            {fname(me().name)}!
+            {(() => {
+              const n = fname(me().name || '');
+              const who = n && n !== 'You' ? `, ${n}` : '';
+              return `${pct >= 100 ? 'All done' : 'Keep going'}${who}!`;
+            })()}
           </Txt>
           <Txt s={13} c="#26294a" style={{ marginTop: 2 }}>
             {finished} of {total} lessons finished
