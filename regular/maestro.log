@@ -1,0 +1,61 @@
+Anonymous analytics enabled. To opt out, set MAESTRO_CLI_NO_ANALYTICS environment variable to any value before running Maestro.
+
+Running on test
+ > Flow Regular account tour
+Launch app "cm.bolo.app" with clear state... COMPLETED
+Run dismiss.yaml...
+  Run flow when "isn't responding" is visible...
+  Run flow when "isn't responding" is visible... SKIPPED
+  Run flow when "Not yet, something’s wrong" is visible...
+  Run flow when "Not yet, something’s wrong" is visible... SKIPPED
+  Run flow when id: story-close is visible...
+  Run flow when id: story-close is visible... SKIPPED
+Run dismiss.yaml... COMPLETED
+Assert that id: skip is visible... COMPLETED
+Take screenshot r01-onboard... COMPLETED
+Tap on id: skip... COMPLETED
+Tap on id: demo... COMPLETED
+Take screenshot r02-welcome... COMPLETED
+Tap on id: have-account... COMPLETED
+Tap on id: li-contact... COMPLETED
+Input text 677123456... COMPLETED
+Hide Keyboard... COMPLETED
+Tap on id: li-pwd... COMPLETED
+Input text password123... COMPLETED
+Hide Keyboard... COMPLETED
+Take screenshot r03-login... COMPLETED
+Tap on id: li-submit... COMPLETED
+Assert that id: tab-feed is visible... COMPLETED
+Assert that (Optional) id: story-close is visible... WARNED
+
+
+ Warning: Assertion is false: id: story-close is visible
+Take screenshot r03b-whatsnew... COMPLETED
+Wait for animation to end... COMPLETED
+Run dismiss.yaml...
+  Run flow when "isn't responding" is visible...
+  Run flow when "isn't responding" is visible... SKIPPED
+  Run flow when "Not yet, something’s wrong" is visible...
+  Run flow when "Not yet, something’s wrong" is visible... SKIPPED
+  Run flow when id: story-close is visible...
+  Run flow when id: story-close is visible... SKIPPED
+Run dismiss.yaml... COMPLETED
+Take screenshot r04-feed... COMPLETED
+Run flow when id: status-edward is visible...
+  Tap on id: status-edward... COMPLETED
+  Assert that id: story-close is visible... FAILED
+Run flow when id: status-edward is visible... FAILED
+
+Assertion is false: id: story-close is visible
+
+Assertion 'id: story-close is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state
+- This could be a real regression that needs to be addressed
+
+==== Debug output (logs & screenshots) ====
+
+/home/runner/.maestro/tests/2026-10-31_112008
+exit=1
