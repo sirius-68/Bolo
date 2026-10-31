@@ -27,14 +27,12 @@ type Opts = { closeAfter?: number; onClose?: () => void; label?: string };
 let state: { list: Story[]; opts: Opts } | null = null;
 const subs = new Set<() => void>();
 export function showStories(list: Story[], opts: Opts = {}) {
-  console.log('[stories] show', list.length, subs.size);
   if (!list.length) return;
   state = { list, opts };
   holdSheets(true);
   subs.forEach((f) => f());
 }
 function closeStories(_why = 'close') {
-  console.log('[stories] close', _why);
   const o = state?.opts;
   state = null;
   holdSheets(false);
@@ -53,7 +51,6 @@ export function StoryHost() {
       subs.delete(force);
     };
   }, []);
-  console.log('[stories] host render', !!state);
   if (!state) return null;
   return <Viewer key={state.list.map((s) => s.key).join('|')} list={state.list} opts={state.opts} />;
 }
@@ -90,12 +87,11 @@ function Viewer({ list, opts }: { list: Story[]; opts: Opts }) {
     prog.setValue(from);
     doneMs.current = SLIDE_MS * from;
     startedAt.current = Date.now();
-    run.current = Animated.timing(prog, { toValue: 1, duration: SLIDE_MS * (1 - from), easing: Easing.linear, useNativeDriver: false });
+    run.current = Animated.timing(prog, { toValue: 1, duration: SLIDE_MS * (1 - from), easing: Easing.linear, useNativeDriver: true });
     run.current.start();
     timer.current = setTimeout(() => nextRef.current('timer'), SLIDE_MS * (1 - from));
   };
   useEffect(() => {
-    console.log('[stories] viewer slide', i);
     pop.setValue(0);
     Animated.spring(pop, { toValue: 1, useNativeDriver: true, speed: 10, bounciness: 9 }).start();
     start();
@@ -143,7 +139,7 @@ function Viewer({ list, opts }: { list: Story[]; opts: Opts }) {
           <View pointerEvents="none" style={{ flexDirection: 'row', gap: 5, marginTop: ins.top + 12, marginHorizontal: 16 }}>
             {list.map((x, k) => (
               <View key={x.key} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,.3)', overflow: 'hidden' }}>
-                <Animated.View style={{ height: 4, backgroundColor: '#fff', width: k < i ? '100%' : k > i ? '0%' : prog.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }} />
+                <Animated.View style={{ height: 4, width: '100%', backgroundColor: '#fff', transformOrigin: 'left', transform: [{ scaleX: k < i ? 1 : k > i ? 0 : prog }] }} />
               </View>
             ))}
           </View>
