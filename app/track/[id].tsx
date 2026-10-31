@@ -16,7 +16,10 @@ import { openHire, openReview } from '../../src/sheets/work';
 import { RouteMap } from '../../src/components/LiveMap';
 import { hasMapbox } from '../../src/lib/mapbox';
 import { coordOf } from '../../src/data/geo';
-import { db } from '../../src/data/db';
+import { db, Booking } from '../../src/data/db';
+import { bookingAmt } from '../../src/logic/wallet';
+import { openEscrowInfo, openFund } from '../../src/sheets/wallet';
+import { xaf } from '../../src/logic/core';
 
 const STEPS: [string, string, string][] = [
   ['booked', 'Booked', 'calcheck'],
@@ -111,7 +114,7 @@ export default function Track() {
       confirmed: (
         <>
           <Note icon="coins" color={C.mint}>
-            {b.price} added to your balance
+            {b.price} added to your wallet
           </Note>
           {!b.reviewed ? <Btn variant="yellow" icon="star" title={`Rate ${f}`} onPress={() => openReview(oid, b.id)} /> : null}
         </>
@@ -283,8 +286,38 @@ export default function Track() {
             </View>
           ))}
         </View>
-        <View style={{ gap: 10 }}>{act}</View>
+        <EscrowCard b={b} W={W} f={f} />
+        <View style={{ gap: 10 }}>{b.escrow === 'unfunded' && !W ? <Btn testID="tk-fund" variant="yellow" icon="lock" title={`Pay ${b.price} into escrow`} onPress={() => openFund(b.id)} /> : act}</View>
       </ScrollView>
     </View>
+  );
+}
+
+/** Where the money is: held by bolo until the client confirms. */
+function EscrowCard({ b, W, f }: { b: Booking; W: boolean; f: string }) {
+  const amt = xaf(bookingAmt(b));
+  const [bg, icon, title, sub] =
+    b.escrow === 'unfunded'
+      ? [C.yellow, 'warn', 'Waiting for payment', W ? `${f} still has to pay ${amt} into escrow.` : `${f} starts once you pay ${amt} into escrow.`]
+      : b.escrow === 'released' || b.state === 'confirmed'
+        ? [C.mint, 'checkc', W ? `${amt} paid to you` : `${amt} paid to ${f}`, W ? 'Released from escrow to your wallet.' : 'Released from escrow when you confirmed.']
+        : b.escrow === 'refunded'
+          ? [C.s3, 'back', 'Refunded', `${amt} went back to the wallet.`]
+          : [C.lav, 'lock', `${amt} held in escrow`, W ? `Paid in by ${f}. It’s yours when they confirm the job is done.` : `${f} is paid only after you confirm the job is done.`];
+  return (
+    <Pressable accessibilityRole="button" onPress={openEscrowInfo} style={[S.row, { gap: 12, marginBottom: 12, padding: 14, borderRadius: 20, backgroundColor: C.s1, borderWidth: 1, borderColor: b.escrow === 'unfunded' ? C.yellow : C.line }]}>
+      <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name={icon} size={18} color="#000" />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Txt s={14} w={8}>
+          {title}
+        </Txt>
+        <Txt s={12} c={C.muted}>
+          {sub}
+        </Txt>
+      </View>
+      <Icon name="help" size={18} color={C.faint} />
+    </Pressable>
   );
 }

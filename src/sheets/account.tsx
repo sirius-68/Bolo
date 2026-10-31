@@ -517,7 +517,7 @@ export const defaultPay = () => {
   const d = db.PREF.momo.find((m) => m[2]) || db.PREF.momo[0];
   return d ? `${d[0]} ${d[1].includes('•') ? '•••' + d[1].split('•').pop() : ''}`.trim() : 'Add a payment method';
 };
-function PayBadge({ name, size = 38 }: { name: string; size?: number }) {
+export function PayBadge({ name, size = 38 }: { name: string; size?: number }) {
   const m = payOf(name);
   return (
     <View style={{ width: size, height: size, borderRadius: 10, backgroundColor: m.color, alignItems: 'center', justifyContent: 'center', borderWidth: m.color === '#ffffff' ? 1 : 0, borderColor: C.line }}>

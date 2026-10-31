@@ -554,6 +554,12 @@ function HireSheet({ id, preset }: { id: string; preset?: { when?: string } }) {
       <Field label="Your price" hint={`${f} can accept it or reply with their own quote.`}>
         <Input value={price} onChangeText={(v) => setPrice(digits(v))} prefix="XAF" keyboardType="number-pad" placeholder="e.g. 15,000" />
       </Field>
+      <View style={[S.row, { gap: 10, padding: 12, borderRadius: 14, backgroundColor: 'rgba(169,182,255,.12)' }]}>
+        <Icon name="shield" size={18} color={C.lav} />
+        <Txt s={12} c={C.lav} style={{ flex: 1 }}>
+          When {f} accepts, the price is paid from your wallet into escrow. {f} gets it only after you confirm the job is done.
+        </Txt>
+      </View>
       <Btn
         testID="send-hire"
         variant="yellow"
@@ -583,12 +589,12 @@ function DoneAlert({ id }: { id: string }) {
   return (
     <View style={{ gap: 10 }}>
       <AlertIll icon="flag" bg={C.ok} color="#fff" />
-      <SheetTitle center sub={`Is everything okay with “${b.title}”? Confirming releases ${b.price} to ${f}.`}>
+      <SheetTitle center sub={`Is everything okay with “${b.title}”? Confirming releases ${b.price} from escrow to ${f}.`}>
         {f} says the job is done
       </SheetTitle>
       <Btn
         variant="yellow"
-        title="Yes, confirm & pay"
+        title="Yes, release payment"
         style={{ marginTop: 8 }}
         onPress={() => {
           if (confirmDone(id)) afterSheet(() => openReview(b.worker, b.id), 500);

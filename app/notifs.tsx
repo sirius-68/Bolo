@@ -44,7 +44,7 @@ export default function Notifs() {
       quote: () => openChat(who),
       newjob: () => n.job && openJob(n.job),
       newoffer: () => n.job && openJob(n.job),
-      payment_in: () => toast(`${n.amount} added to your balance`),
+      payment_in: () => router.push('/wallet' as any),
       accept: () => openChat(who),
       reminder: () => openChat(who),
       mention: () => openComments('m'),
@@ -308,7 +308,7 @@ function Row({ n, sel, onPress, onLong }: { n: Notif; sel: string[] | null; onPr
       if (b && n.type === 'jobdone')
         extra =
           b.state === 'done'
-            ? acts(<Pill key="c" title="Confirm & pay" onPress={() => confirmDone(b.id)} />, <Pill key="v" kind="outline" title="View job" onPress={() => openTrack(b.id)} />)
+            ? acts(<Pill key="c" title="Confirm & release" onPress={() => confirmDone(b.id)} />, <Pill key="v" kind="outline" title="View job" onPress={() => openTrack(b.id)} />)
             : b.state === 'confirmed'
               ? done('check', `Confirmed · ${b.price} paid`)
               : done('wrench', 'Issue reported · back in progress');

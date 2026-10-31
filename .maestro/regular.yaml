@@ -234,6 +234,36 @@ name: Regular account tour
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - takeScreenshot: r13-me
+# Wallet: add money with escrow explained
+- runFlow:
+    when:
+      visible:
+        id: "me-wallet"
+    commands:
+      - tapOn:
+          id: "me-wallet"
+      - waitForAnimationToEnd
+      - takeScreenshot: r13b-wallet
+      - tapOn:
+          id: "wallet-add"
+      - waitForAnimationToEnd
+      - tapOn:
+          id: "tu-q-10000"
+      - takeScreenshot: r13c-topup
+      - tapOn:
+          id: "tu-go"
+      - takeScreenshot: r13d-topup-approve
+      - extendedWaitUntil:
+          visible:
+            id: "tu-done"
+          timeout: 10000
+      - takeScreenshot: r13e-topup-done
+      - tapOn:
+          id: "tu-close"
+      - waitForAnimationToEnd
+      - takeScreenshot: r13f-wallet-after
+      - back
+      - waitForAnimationToEnd
 - scroll
 - takeScreenshot: r14-me-2
 - scrollUntilVisible:

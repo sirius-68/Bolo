@@ -168,6 +168,20 @@ function SwitchAndPro() {
           <Icon name="chev" size={18} color={C.faint} />
         </Pressable>
       ) : null}
+      <Pressable testID="me-wallet" accessibilityRole="button" onPress={() => (tap(), router.push('/wallet' as any))} style={({ pressed }) => [S.row, { gap: 12, padding: 12, borderRadius: 18, backgroundColor: pressed ? C.s2 : C.s1, borderWidth: 1, borderColor: C.line }]}>
+        <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: C.mint, alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="coins" size={20} color="#000" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Txt s={14} w={8}>
+            Wallet · {xaf(balance())}
+          </Txt>
+          <Txt s={12} c={C.muted}>
+            {heldTotal() ? `${xaf(heldTotal())} held in escrow · add money or withdraw` : 'Add money, withdraw, pay safely with escrow'}
+          </Txt>
+        </View>
+        <Icon name="chev" size={18} color={C.faint} />
+      </Pressable>
       <Pressable accessibilityRole="button" onPress={() => openPro()} style={({ pressed }) => [S.row, { gap: 12, padding: 12, borderRadius: 18, backgroundColor: pressed ? C.s2 : C.s1, borderWidth: 1, borderColor: C.line }]}>
         <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="rocket" size={20} color="#000" />

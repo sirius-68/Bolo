@@ -17,6 +17,8 @@ import { db, ui } from '../src/data/db';
 import { resumeSims } from '../src/logic/work';
 import { on } from '../src/logic/events';
 import { showDoneAlert } from '../src/sheets/work';
+import { openFund } from '../src/sheets/wallet';
+import { ensureWallet } from '../src/logic/wallet';
 import { startAdTicker } from '../src/logic/career';
 import { hasSession, pull, startSync } from '../src/logic/remote';
 import { locate } from '../src/logic/here';
@@ -41,6 +43,7 @@ export default function Root() {
       // Test course (starts 1 minute after enrolling) and timers for classes you've joined.
       ensureQuickCourse();
       ensureAdJobs();
+      ensureWallet();
       db.myLearning.forEach((cid) => {
         const c = db.COURSES.find((x) => x.id === cid);
         if (c && !ensureClassTime(c)) scheduleClass(c);
@@ -59,7 +62,9 @@ export default function Root() {
       }
       setReady(true);
     });
-    return on('doneAlert', (id: string) => showDoneAlert(id));
+    const a = on('doneAlert', (id: string) => showDoneAlert(id));
+    const b = on('fundAlert', (id: string) => openFund(id));
+    return () => (a(), b());
   }, []);
 
   useEffect(() => {

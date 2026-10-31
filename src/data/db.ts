@@ -134,6 +134,10 @@ export type Booking = {
   as?: 'regular' | 'business';
   reviewed?: number;
   simRunning?: number;
+  /** escrow: the client's money for this job. unfunded = booked but not paid in yet */
+  escrow?: 'unfunded' | 'held' | 'released' | 'refunded';
+  amt?: number;
+  paidOut?: number;
 };
 export type Opp = {
   id: string;
@@ -767,8 +771,8 @@ export function makeDb() {
     ORDER_C,
     ORDER_W,
     BOOKINGS: [
-      { id: 'b1', worker: 'yann', client: 'me', title: 'Install 2 ceiling lights', when: 'Today, 15:00', price: 'XAF 20,000', area: 'Molyko', state: 'onway', eta: 7, eta0: 12, log: { booked: 'Mon 17:40', onway: '' }, as: 'regular' },
-      { id: 'b2', worker: 'me', client: 'c_ama', title: 'End-of-tenancy clean', when: 'Sat, 10:00', price: 'XAF 30,000', area: 'Molyko', state: 'booked', eta: 8, eta0: 8, log: { booked: 'Yesterday' }, as: 'regular' },
+      { id: 'b1', worker: 'yann', client: 'me', title: 'Install 2 ceiling lights', when: 'Today, 15:00', price: 'XAF 20,000', area: 'Molyko', state: 'onway', eta: 7, eta0: 12, log: { booked: 'Mon 17:40', onway: '' }, as: 'regular', escrow: 'held', amt: 20000 },
+      { id: 'b2', worker: 'me', client: 'c_ama', title: 'End-of-tenancy clean', when: 'Sat, 10:00', price: 'XAF 30,000', area: 'Molyko', state: 'booked', eta: 8, eta0: 8, log: { booked: 'Yesterday' }, as: 'regular', escrow: 'held', amt: 30000 },
     ] as Booking[],
     OPPS: opps(),
     COURSES: courses(),
@@ -793,6 +797,16 @@ export function makeDb() {
     DMREQ: {} as Record<string, 'pending' | 'ok'>,
     mutedG: [] as string[],
     stats: { nextId: 1 },
+    /** bolo wallet: available balance (XAF) and history, newest first */
+    WALLET: {
+      bal: 17000,
+      tx: [
+        { id: 'tx4', kind: 'hold', amt: 20000, title: 'Install 2 ceiling lights', who: 'yann', booking: 'b1', at: 'Today, 09:12' },
+        { id: 'tx3', kind: 'topup', amt: 35000, title: 'Added from MTN MoMo', method: 'MTN MoMo', at: 'Yesterday, 18:40' },
+        { id: 'tx2', kind: 'earn', amt: 12000, title: 'Fix kitchen tap', who: 'c_marie', at: 'Mon, 14:05' },
+        { id: 'tx1', kind: 'withdraw', amt: 10000, title: 'To MTN MoMo', method: 'MTN MoMo', at: 'Sun, 11:20' },
+      ] as import('../logic/wallet').Tx[],
+    },
   };
 }
 export type DB = ReturnType<typeof makeDb>;

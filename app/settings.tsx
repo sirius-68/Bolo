@@ -7,7 +7,8 @@ import { Avatar, OptRow, Page, TopBar, Txt } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { confirm, toast } from '../src/ui/overlay';
 import { C, S } from '../src/ui/theme';
-import { bizLogo, bizName, curBiz, isPro, isW, cityLabel, myPhoto } from '../src/logic/core';
+import { bizLogo, bizName, curBiz, isPro, isW, cityLabel, myPhoto, xaf } from '../src/logic/core';
+import { balance } from '../src/logic/wallet';
 import { useLive } from '../src/logic/live';
 import { logout } from '../src/logic/account';
 import { openWhatsNew } from '../src/logic/whatsnew';
@@ -42,7 +43,8 @@ export default function Settings() {
       <Box>
         <OptRow icon="rocket" bg={C.lav} title={isPro() ? `bolo ${w ? 'Pro' : 'Business Pro'} · active` : `Upgrade to ${w ? 'Pro' : 'Business Pro'}`} sub={w ? 'Get jobs faster, premium CV, profile boosts' : 'Cheaper ads, more businesses, featured company'} onPress={() => openPro()} />
         <OptRow icon="sparkle" bg={C.lav} title="What’s new" sub="The latest updates to bolo" onPress={openWhatsNew} />
-        <OptRow icon="money" title="Payments" sub={defaultPay()} onPress={openPayments} />
+        <OptRow icon="coins" bg={C.yellow} title="Wallet" sub={`${xaf(balance())} available · escrow`} onPress={() => router.push('/wallet' as any)} />
+        <OptRow icon="money" title="Payment methods" sub={defaultPay()} onPress={openPayments} />
         {b ? <OptRow icon="storefront" bg="#fff" title="Business page" sub="Details, logo, RCCM & NIU" onPress={() => openBizSetup('edit', 1)} /> : <OptRow icon="edit" bg="#fff" title="Edit profile" sub="Name, bio, contact" onPress={openEdit} />}
         {b ? <OptRow icon="rocket" bg={C.orange} title="Ads manager" sub="Promote vacancies, programs and courses" onPress={() => router.push('/ads')} /> : null}
       </Box>

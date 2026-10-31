@@ -4,6 +4,7 @@ import { SERVICES, STAGES } from '../data/catalog';
 import { toast, undoBar } from '../ui/overlay';
 import { bump, later, every, cancel } from './live';
 import { emit } from './events';
+import { bookingAmt, earnFor, holdFor, refundFor, releaseFor } from './wallet';
 import {
   P, isW, thread, nowT, fname, first, xaf, budgetNum, WORKERS, mySkill, myCity, cityLabel, hiringSide, THREADS, ORDER, NOTIFS, curBiz, bizName, postById, add, toggle, has, mOwner,
 } from './core';
@@ -280,9 +281,25 @@ const timers: Record<string, any> = {};
 export function createBooking(o: Omit<Booking, 'id' | 'state' | 'eta' | 'eta0' | 'log'>) {
   const b: Booking = { id: uid('b'), state: 'booked', eta: 8, eta0: 8, log: { booked: nowT() }, ...o };
   db.BOOKINGS.unshift(b);
-  if (b.client === 'me') runSim(b, 6000);
+  if (b.client === 'me') {
+    // The price goes into escrow right away; the worker only sets off once it's there.
+    if (holdFor(b)) {
+      runSim(b, 6000);
+      later(900, () => toast(`${xaf(bookingAmt(b))} held safely in escrow`));
+    } else if (ui.appStarted) later(700, () => emit('fundAlert', b.id));
+  } else b.escrow = 'held'; // the client paid into escrow before you start
   bump();
   return b;
+}
+/** Pay an unfunded booking from the wallet; the job can start. */
+export function fundBooking(id: string) {
+  const b = bk(id);
+  if (!b || b.escrow !== 'unfunded') return false;
+  if (!holdFor(b)) return false;
+  runSim(b, 6000);
+  toast(`${xaf(bookingAmt(b))} paid into escrow. ${P(b.worker).name} can set off`);
+  bump();
+  return true;
 }
 /** Simulates the worker's side for the person who hired. */
 export function runSim(b: Booking, delay = 5000) {
@@ -325,6 +342,8 @@ export function setState(b: Booking, s: Booking['state']) {
       if (ui.appStarted && myBookings().includes(b)) emit('doneAlert', b.id);
     }
   }
+  if (b.client === 'me' && s === 'confirmed') releaseFor(b);
+  if (b.worker === 'me' && s === 'confirmed') earnFor(b);
   if (b.worker === 'me' && s === 'confirmed') db.NOTIFS_W.unshift({ id, g: 'Today', type: 'payment_in', who: b.client, time: 'now', amount: b.price });
   bump();
 }
@@ -352,14 +371,14 @@ export function wDone(id: string) {
   toast(`${P(b.client).name} has been asked to confirm`);
   timers[b.id] = later(4500, () => {
     setState(b, 'confirmed');
-    if (isW()) toast(`✅ ${P(b.client).name} confirmed · ${b.price} paid to you`);
+    if (isW()) toast(`✅ ${P(b.client).name} confirmed · ${b.price} added to your wallet`);
   });
 }
 export function confirmDone(id: string) {
   const b = bk(id);
   if (!b || b.state !== 'done') return false;
   setState(b, 'confirmed');
-  toast(`Payment of ${b.price} sent to ${P(b.worker).name}`);
+  toast(`${xaf(bookingAmt(b))} released from escrow to ${P(b.worker).name}`);
   return true;
 }
 export function reportIssue(id: string) {
@@ -374,14 +393,16 @@ export function cancelBooking(id: string) {
   if (i < 0) return;
   const b = db.BOOKINGS[i];
   cancel(timers[b.id]);
+  const back = b.escrow === 'held';
+  refundFor(b);
   db.BOOKINGS.splice(i, 1);
   db.hired = db.hired.filter((x) => x !== b.worker);
-  toast('Booking cancelled');
+  toast(back ? `Booking cancelled · ${xaf(bookingAmt(b))} back in your wallet` : 'Booking cancelled');
   bump();
 }
 /** Resume simulations after the app restarts. */
 export function resumeSims() {
-  db.BOOKINGS.filter((b) => b.client === 'me' && b.state !== 'done' && b.state !== 'confirmed').forEach((b) => runSim(b, 4000));
+  db.BOOKINGS.filter((b) => b.client === 'me' && b.state !== 'done' && b.state !== 'confirmed' && b.escrow !== 'unfunded').forEach((b) => runSim(b, 4000));
 }
 export function liveInfo(b: Booking): [string, string, string] {
   const f = fname(P(trOther(b)).name);

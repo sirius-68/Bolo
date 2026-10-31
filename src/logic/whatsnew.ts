@@ -5,12 +5,13 @@ import { bump } from './live';
 import { showStories, Story } from '../components/Stories';
 import { openPayments } from '../sheets/account';
 
-export const WHATS_NEW_ID = '2026-10-31b';
+export const WHATS_NEW_ID = '2026-10-31c';
 
 /** Slides added in the latest update. */
-const LATEST = ['learn', 'adjob'];
+const LATEST = ['wallet', 'learn', 'adjob'];
 
 export const WHATS_NEW: Story[] = [
+  { key: 'wallet', colors: ['#2fbf7a', '#0f6e45'], icon: 'shield', chip: 'Safe payments', title: 'Your bolo wallet', text: 'Add money from mobile money, card or bank. When you hire, the price waits in escrow and is released only when you confirm the job is done.', cta: 'Open my wallet', onCta: () => router.push('/wallet' as any) },
   { key: 'learn', colors: ['#7c5cff', '#3b1fa8'], icon: 'cap', chip: 'New for you', title: 'My learning', text: 'All your courses in one place, with your progress, the next live class and one tap to continue your lesson.', cta: 'Open My learning', onCta: () => router.push('/courses?tab=mine' as any) },
   { key: 'adjob', colors: ['#3d5af1', '#1b2a9b'], icon: 'job', chip: 'Jobs', title: 'Ads lead to the job', text: 'Tap Apply or See job on any ad and you land on the job itself, ready to apply.' },
   { key: 'group', colors: ['#3d5af1', '#1b2a9b'], icon: 'follow', chip: 'Messages', title: 'Group pages', text: 'Tap a group’s name in a chat to see its members, photos, files, links and invite link. Mute or leave in one tap.', cta: 'Open messages', onCta: () => router.push('/inbox') },
