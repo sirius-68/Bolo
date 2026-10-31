@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar, Pict, Txt, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { C, S } from '../ui/theme';
+import { holdSheets } from '../ui/overlay';
 
 /** One full-screen story slide (used for "What's new" and for story ads). */
 export type Story = {
@@ -27,11 +28,13 @@ const subs = new Set<() => void>();
 export function showStories(list: Story[], opts: Opts = {}) {
   if (!list.length) return;
   state = { list, opts };
+  holdSheets(true);
   subs.forEach((f) => f());
 }
 function closeStories() {
   const o = state?.opts;
   state = null;
+  holdSheets(false);
   subs.forEach((f) => f());
   o?.onClose?.();
 }

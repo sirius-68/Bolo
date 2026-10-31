@@ -31,8 +31,26 @@ let sheetState: SheetState = { render: null, opts: {}, key: 0 };
 const sheetSubs = new Set<() => void>();
 const emitSheet = () => sheetSubs.forEach((f) => f());
 
+/** While a full-screen story is open, sheets wait until it closes (so nothing covers an ad or What's new). */
+let held: { render: () => ReactNode; opts: SheetOpts } | null = null;
+let gate = false;
+export function holdSheets(on: boolean) {
+  gate = on;
+  if (!on) setTimeout(flushHeld, 600);
+}
+// A held sheet waits for any sheet the story opened (e.g. the job behind an ad) to close first.
+function flushHeld() {
+  if (!held || gate || sheetState.render) return;
+  const h = held;
+  held = null;
+  sheet.show(h.render, h.opts);
+}
 export const sheet = {
   show(render: () => ReactNode, opts: SheetOpts = {}) {
+    if (gate) {
+      held = { render, opts };
+      return;
+    }
     const wasOpen = !!sheetState.render;
     sheetState = { render, opts, key: wasOpen ? sheetState.key : sheetState.key + 1 };
     emitSheet();
@@ -43,6 +61,7 @@ export const sheet = {
     emitSheet();
     cb?.();
     if (msg) toast(msg);
+    if (held) setTimeout(flushHeld, 500);
   },
   isOpen: () => !!sheetState.render,
   is: (tag: string) => !!sheetState.render && sheetState.opts.tag === tag,
