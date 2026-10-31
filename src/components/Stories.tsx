@@ -68,17 +68,31 @@ function Viewer({ list, opts }: { list: Story[]; opts: Opts }) {
 
   const next = () => (i < list.length - 1 ? setI(i + 1) : left > 0 ? null : closeStories());
   const prev = () => (i > 0 ? setI(i - 1) : null);
+  // A real timer moves to the next slide; the bar only shows progress. (With system animations off,
+  // Animated finishes instantly, so it must not decide when a slide ends.)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startedAt = useRef(0);
+  const doneMs = useRef(0);
+  const nextRef = useRef(next);
+  nextRef.current = next;
   const start = (from = 0) => {
     run.current?.stop();
+    if (timer.current) clearTimeout(timer.current);
     prog.setValue(from);
+    doneMs.current = SLIDE_MS * from;
+    startedAt.current = Date.now();
     run.current = Animated.timing(prog, { toValue: 1, duration: SLIDE_MS * (1 - from), easing: Easing.linear, useNativeDriver: false });
-    run.current.start(({ finished }) => finished && next());
+    run.current.start();
+    timer.current = setTimeout(() => nextRef.current(), SLIDE_MS * (1 - from));
   };
   useEffect(() => {
     pop.setValue(0);
     Animated.spring(pop, { toValue: 1, useNativeDriver: true, speed: 10, bounciness: 9 }).start();
     start();
-    return () => run.current?.stop();
+    return () => {
+      run.current?.stop();
+      if (timer.current) clearTimeout(timer.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i]);
   // Ads: the close button appears only after the paid seconds.
@@ -96,8 +110,11 @@ function Viewer({ list, opts }: { list: Story[]; opts: Opts }) {
   }, [left]);
   const hold = (on: boolean) => {
     held.current = on;
-    if (on) run.current?.stop();
-    else prog.stopAnimation((v) => start(v));
+    if (on) {
+      run.current?.stop();
+      if (timer.current) clearTimeout(timer.current);
+      doneMs.current += Date.now() - startedAt.current;
+    } else start(Math.min(0.99, doneMs.current / SLIDE_MS));
   };
   const fg = s.dark ? '#000' : '#fff';
   const sub = s.dark ? 'rgba(0,0,0,.72)' : 'rgba(255,255,255,.86)';
