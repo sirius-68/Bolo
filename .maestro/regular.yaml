@@ -48,11 +48,15 @@ name: Regular account tour
     commands:
       - tapOn:
           id: "status-edward"
-      - waitForAnimationToEnd
+      # A status plays for 6.5 s and closes itself: capture it right away
+      - extendedWaitUntil:
+          visible:
+            id: "story-close"
+          timeout: 3000
       - takeScreenshot: r04d-status
       - tapOn:
           id: "story-close"
-      - waitForAnimationToEnd
+      - runFlow: dismiss.yaml
 - runFlow:
     when:
       visible:
