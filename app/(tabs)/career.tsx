@@ -4,7 +4,9 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../../src/data/db';
 import { COURSE_CATS, EXPERTS } from '../../src/data/catalog';
-import { Avatar, ProTag, Txt, tap } from '../../src/ui/kit';
+import { Course } from '../../src/data/db';
+import { classWhen, coursePct, isLive, lessonsOf } from '../../src/logic/career';
+import { Avatar, Bar, ProTag, Txt, tap } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
 import { bizName, curBiz, isW } from '../../src/logic/core';
@@ -27,6 +29,7 @@ export default function Career() {
   const mine = db.MENTORSHIPS.filter((m) => m.mine && !m.plain && (w ? !m.asBiz : m.asBiz === db.BIZ.active));
   const others = db.MENTORSHIPS.filter((m) => !m.mine);
   const learning = db.myLearning.map((id) => db.COURSES.find((c) => c.id === id)).filter(Boolean) as typeof db.COURSES;
+  const courses = db.COURSES.filter((c) => !db.myLearning.includes(c.id) && (w ? !c.mine : true)).slice(0, 10);
   const myOpps = db.OPPS.filter((o) => (w ? o.applied : o.mine && o.biz === db.BIZ.active));
 
   const Promo = ({ title, text, cta, icon, alt, onPress, pro }: { title: string; text: string; cta: string; icon: string; alt?: boolean; onPress: () => void; pro?: boolean }) => (
@@ -85,11 +88,7 @@ export default function Career() {
           </>
         )}
       </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 }}>
-        <Tile icon="mapt" label="Professions and salaries" onPress={openSalaries} />
-        <Tile icon="file" label="Career articles" onPress={openArticles} />
-        <Tile wide icon="arrow" label="Career change" onPress={openPaths} />
-      </View>
+      {w && learning.length ? <ContinueLearning list={learning} /> : null}
       {w ? (
         <Pressable accessibilityRole="button" onPress={openExperts} style={{ marginTop: 12, padding: 16, borderRadius: 22, backgroundColor: C.blue }}>
           <Txt s={16} w={8}>
@@ -112,9 +111,9 @@ export default function Career() {
           </View>
         </Pressable>
       ) : null}
-      {myOpps.length || learning.length ? (
+      {myOpps.length ? (
         <>
-          <Sec title={w ? 'My applications & learning' : 'Your programs'} />
+          <Sec title={w ? 'My applications' : 'Your programs'} />
           <View style={{ gap: 8 }}>
             {myOpps.map((o) => (
               <ListRow
@@ -127,9 +126,6 @@ export default function Career() {
                 onPress={() => openOpp(o.id)}
               />
             ))}
-            {w
-              ? learning.map((c) => <ListRow key={c.id} pic={c.prov.logo} square title={c.title} sub={`${c.prov.n} · ${c.dur}`} pill="Enrolled" pillKind="acc" onPress={() => router.push(`/course/${c.id}` as any)} />)
-              : null}
           </View>
         </>
       ) : null}
@@ -145,6 +141,13 @@ export default function Career() {
       <Rail>
         {progs.map((o) => (
           <OppCard key={o.id} o={o} />
+        ))}
+      </Rail>
+      <Sec testID="career-courses-all" title="Courses" action="All" onAction={() => openCourses(null, 'explore')} />
+      <Sub t="Short courses with live classes and a certificate" />
+      <Rail>
+        {courses.map((c) => (
+          <CourseCard key={c.id} c={c} />
         ))}
       </Rail>
       <Sec title="Mentorship" action="+ Offer" onAction={openMentorForm} />
@@ -191,17 +194,98 @@ export default function Career() {
           );
         })}
       </Rail>
-      <Sec title="Courses" action="All" onAction={() => openCourses()} />
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {COURSE_CATS.map(([c, i]) => (
-          <Pressable key={c} accessibilityRole="button" onPress={() => openCourses(c)} style={({ pressed }) => ({ flexBasis: '31%', flexGrow: 1, padding: 12, gap: 6, borderRadius: 16, alignItems: 'center', backgroundColor: pressed ? C.s2 : C.s1, borderWidth: 1, borderColor: C.line })}>
-            <Icon name={i} size={22} color={C.yellow} />
-            <Txt s={12} w={7} center>
-              {c}
-            </Txt>
-          </Pressable>
-        ))}
+      <Sec title="Career tools" />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+        <Tile icon="mapt" label="Professions and salaries" onPress={openSalaries} />
+        <Tile icon="file" label="Career articles" onPress={openArticles} />
+        <Tile wide icon="arrow" label="Career change" onPress={openPaths} />
       </View>
     </ScrollView>
+  );
+}
+
+const TONES: [string, string][] = [
+  [C.blue, '#fff'],
+  [C.orange, '#000'],
+  [C.lav, '#000'],
+  [C.mint, '#000'],
+  [C.yellow, '#000'],
+  [C.pink, '#000'],
+];
+const toneOf = (c: Course) => TONES[Math.max(0, COURSE_CATS.findIndex((x) => x[0] === c.cat)) % TONES.length];
+const catIcon = (cat: string) => COURSE_CATS.find((x) => x[0] === cat)?.[1] || 'cap';
+
+/** The course you're in the middle of, one tap from your next lesson. */
+function ContinueLearning({ list }: { list: Course[] }) {
+  const c = list.find((x) => coursePct(x) < 100) || list[0];
+  const L = lessonsOf(c);
+  const d = Math.min(c.done || 0, L.length);
+  const pct = coursePct(c);
+  const live = isLive(c);
+  return (
+    <View style={{ marginTop: 12 }}>
+      <Pressable testID="career-continue" accessibilityRole="button" onPress={() => (tap(), router.push(`/course/${c.id}` as any))} style={({ pressed }) => ({ padding: 16, borderRadius: 24, backgroundColor: C.blue, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+        <View style={S.rowB}>
+          <Txt s={12} w={8} c="#e3e7ff">
+            {live ? '🔴 LIVE CLASS NOW' : pct >= 100 ? 'COMPLETED' : 'CONTINUE LEARNING'}
+          </Txt>
+          <Txt s={12} w={8} c="#e3e7ff">
+            {pct}%
+          </Txt>
+        </View>
+        <View style={[S.row, { gap: 12, marginTop: 8 }]}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Txt s={17} w={8} lines={2}>
+              {c.title}
+            </Txt>
+            <Txt s={12} c="#e3e7ff" lines={1} style={{ marginTop: 2 }}>
+              {pct >= 100 ? 'Certificate earned' : `Lesson ${Math.min(d + 1, L.length)} of ${L.length}: ${L[Math.min(d, L.length - 1)]}`}
+            </Txt>
+          </View>
+          <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name={live ? 'video' : 'playfill'} size={20} color="#000" />
+          </View>
+        </View>
+        <Bar pct={pct} h={5} color={C.yellow} bg="rgba(255,255,255,.22)" style={{ marginTop: 12 }} />
+        {!live && c.startAt && pct < 100 ? (
+          <Txt s={11} c="#e3e7ff" style={{ marginTop: 8 }}>
+            Next live class · {classWhen(c.startAt)}
+          </Txt>
+        ) : null}
+      </Pressable>
+      {list.length > 1 ? (
+        <Pressable accessibilityRole="button" onPress={() => (tap(), openCourses(null, 'mine'))} style={[S.rowB, { marginTop: 8, paddingHorizontal: 14, height: 44, borderRadius: 16, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }]}>
+          <Txt s={13} w={7}>
+            My learning · {list.length} courses
+          </Txt>
+          <Icon name="chev" size={16} color={C.muted} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+function CourseCard({ c }: { c: Course }) {
+  const [bg, fg] = toneOf(c);
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={c.title} onPress={() => (tap(), openCourse(c.id))} style={({ pressed }) => ({ width: 168, height: 190, padding: 14, borderRadius: 22, backgroundColor: bg, justifyContent: 'space-between', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
+      <View style={S.rowB}>
+        <View style={{ width: 38, height: 38, borderRadius: 13, backgroundColor: fg === '#fff' ? 'rgba(255,255,255,.2)' : 'rgba(0,0,0,.1)', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name={catIcon(c.cat)} size={19} color={fg} />
+        </View>
+        <View style={{ paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: fg === '#fff' ? '#fff' : '#000', justifyContent: 'center' }}>
+          <Txt s={11} w={8} c={fg === '#fff' ? '#000' : '#fff'}>
+            {c.price ? 'XAF ' + Math.round(c.price / 1000) + 'k' : 'Free'}
+          </Txt>
+        </View>
+      </View>
+      <View>
+        <Txt s={15} w={8} c={fg} lines={3}>
+          {c.title}
+        </Txt>
+        <Txt s={11} w={7} c={fg} style={{ opacity: 0.7, marginTop: 4 }} lines={1}>
+          {c.prov.n}
+        </Txt>
+      </View>
+    </Pressable>
   );
 }

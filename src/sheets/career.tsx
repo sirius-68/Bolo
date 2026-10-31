@@ -595,6 +595,9 @@ function EmpEnroll({ kind, id, st }: { kind: 'course' | 'mentor' | 'opp'; id: st
 
 /* ======================= courses ======================= */
 export function openCourse(id: string) {
+  // Learners who are enrolled go straight to their course page.
+  const c = db.COURSES.find((x) => x.id === id);
+  if (c && isW() && !c.mine && db.myLearning.includes(id)) return router.push(`/course/${id}` as any);
   sheet.show(() => <CourseSheet id={id} />, { tag: 'course:' + id, full: true });
 }
 function CourseSheet({ id }: { id: string }) {
@@ -618,7 +621,9 @@ function CourseSheet({ id }: { id: string }) {
           <Txt s={14}>{s}</Txt>
         </View>
       ))}
-      <View style={[S.row, { gap: 10, marginTop: 12, flexWrap: 'wrap' }]}>
+      <H4 t="Included" />
+      <Facts items={[['video', 'Live classes'], ['chat', 'Class group'], ['cert', 'Certificate'], ['clock', 'Learn at your pace']]} />
+      <View style={[S.row, { gap: 10, marginTop: 16, flexWrap: 'wrap' }]}>
         <Txt s={24} w={8} c={C.yellow}>
           {c.price ? xaf(c.price) : 'Free'}
         </Txt>
@@ -645,19 +650,7 @@ function CourseSheet({ id }: { id: string }) {
           </Txt>
         </View>
       ) : e ? (
-        <View style={{ marginTop: 16, gap: 10 }}>
-          <View style={{ padding: 14, borderRadius: 16, backgroundColor: 'rgba(47,179,109,.14)', flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-            <Icon name="check" size={18} color={C.mint} />
-            <Txt s={14} w={7} c={C.mint} style={{ flex: 1 }}>
-              You’re enrolled
-            </Txt>
-            <Txt s={13} w={8}>
-              {c.quick ? 'Starts in 1 minute' : 'Starts next Monday'}
-            </Txt>
-          </View>
-          <Btn testID="course-open" variant="yellow" icon="cap" title="Open course page" onPress={() => afterSheet(() => router.push(`/course/${c.id}` as any))} />
-          <Btn testID="course-group" variant="dark" icon="follow" title="Join the class group" onPress={() => afterSheet(() => openChat(learnerGroup(c)))} />
-        </View>
+        <Btn testID="course-open" variant="yellow" icon="cap" style={{ marginTop: 16 }} title="Open course page" onPress={() => afterSheet(() => router.push(`/course/${c.id}` as any))} />
       ) : (
         <Btn
           variant="yellow"
@@ -666,7 +659,8 @@ function CourseSheet({ id }: { id: string }) {
           title={busy ? (c.price ? 'Waiting for payment approval…' : 'Enrolling…') : c.price ? `Enroll · pay with ${defaultPay()}` : 'Enroll for free'}
           onPress={() => {
             setBusy(true);
-            enroll(id, () => setBusy(false));
+            // Enrolled → straight to the course page (lessons, live class, class group).
+            enroll(id, () => (setBusy(false), afterSheet(() => router.push(`/course/${id}` as any))));
           }}
         />
       )}

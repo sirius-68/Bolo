@@ -1,5 +1,5 @@
 /* Career: internships & programs, courses, mentorships, groups, ads. */
-import { db, ui, uid, Course, Mentorship, Opp, Ad } from '../data/db';
+import { db, ui, uid, Course, Mentorship, Opp, Ad, makeDb, NJEI_JOB } from '../data/db';
 import { toast } from '../ui/overlay';
 import { logoPic } from '../ui/kit';
 import { bump, later, every } from './live';
@@ -109,7 +109,7 @@ export function enroll(id: string, done: () => void) {
   const c = db.COURSES.find((x) => x.id === id)!;
   later(c.price ? 1300 : 500, () => {
     if (!db.myLearning.includes(id)) db.myLearning.push(id);
-    c.startAt = c.quick ? Date.now() + 60_000 : nextMonday();
+    c.startAt = c.quick ? Date.now() + 60_000 : nextClassAt();
     c.done = c.done || 0;
     learnerGroup(c);
     scheduleClass(c);
@@ -117,7 +117,7 @@ export function enroll(id: string, done: () => void) {
     done();
   });
 }
-const nextMonday = () => {
+export const nextClassAt = () => {
   const d = new Date();
   d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7));
   d.setHours(18, 0, 0, 0);
@@ -168,8 +168,48 @@ export function ensureQuickCourse() {
   if (db.COURSES.some((x) => x.id === 'c_quick')) return;
   db.COURSES.unshift({ id: 'c_quick', quick: 1, title: 'Quick test class: starts 1 minute after you enrol', prov: { n: 'bolo Academy', logo: logoPic('bA', '#f6ee5c', '#000') }, cat: 'Business', lv: 'Beginner', dur: '15 minutes', type: 'Skill', fmt: 'Online', reg: '', price: 0, old: 0, prof: '', skills: ['How bolo courses work', 'Joining a live class', 'Using your class group'], mo: 0 });
 }
+/** Courses enrolled before class times existed get the next Monday class. */
+export function ensureClassTime(c: Course) {
+  if (c.quick || (c.startAt && c.startAt + 90 * 60_000 > Date.now())) return false;
+  c.startAt = nextClassAt();
+  scheduleClass(c);
+  return true;
+}
+/** Leave a course: it disappears from My learning (the class group stays in Messages until you leave it). */
+export function leaveCourse(id: string) {
+  db.myLearning = db.myLearning.filter((x) => x !== id);
+  const c = db.COURSES.find((x) => x.id === id);
+  if (c) c.done = 0;
+  toast('You left the course');
+  bump();
+}
+const two = (n: number) => String(n).padStart(2, '0');
+/** "2d 4h", "3h 05m" or "04:59" until a time. */
+export function timeLeft(ms: number) {
+  if (ms <= 0) return 'now';
+  const s = Math.floor(ms / 1000);
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return d ? `${d}d ${h}h` : h ? `${h}h ${two(m)}m` : `${two(m)}:${two(s % 60)}`;
+}
+export const classWhen = (t: number) => new Date(t).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+/** A live class runs for 90 minutes from its start. */
+export const isLive = (c: Course, now = Date.now()) => !!c.startAt && now >= c.startAt && now < c.startAt + 90 * 60_000;
+/** Learner progress, 0–100. */
+export const coursePct = (c: Course) => Math.round((Math.min(c.done || 0, lessonsOf(c).length) / lessonsOf(c).length) * 100);
+/** Minutes for each lesson (stable per course). */
+export const lessonMin = (c: Course, i: number) => 12 + ((c.id.length * 7 + i * 11) % 24);
+/** The job behind the Njeiforbi ad, for installs saved before it existed. */
+export function ensureAdJobs() {
+  if (db.P.b_njei && db.POSTS.some((p) => p.id === 'v_njei')) return;
+  const f = makeDb();
+  db.BIZ_SAMPLE.b_njei = db.BIZ_SAMPLE.b_njei || f.BIZ_SAMPLE.b_njei;
+  db.P.b_njei = db.P.b_njei || f.P.b_njei;
+  if (!db.POSTS.some((p) => p.id === 'v_njei')) db.POSTS.splice(1, 0, { ...NJEI_JOB });
+}
 /** Lessons shown on the course page, made from what the course teaches. */
-export const lessonsOf = (c: Course) => [...c.skills.map((s, i) => `Lesson ${i + 1} · ${s}`), `Final project and certificate`];
+export const lessonsOf = (c: Course) => [...c.skills, 'Final project and certificate'];
 export function enrollPeople(c: Course, ids: string[]) {
   c.people = c.people || [];
   ids.forEach((id) => {

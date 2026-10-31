@@ -352,6 +352,9 @@ function people(): Record<string, Person> {
   return P;
 }
 
+/** The job behind the Njeiforbi ad on Home. */
+export const NJEI_JOB: Post = { id: 'v_njei', kind: 'request', client: 'b_njei', biz: 1, cat: 'Sales', title: 'Sales reps and delivery riders', text: 'Visit shops in your area, take orders and deliver by motorbike. Training in the first week, fuel paid, commission on every order. A motorbike licence is a plus for riders.', budget: 'XAF 90k – 120k / month', when: 'Starts now', area: 'Molyko', offers: 6, time: '3h ago', type: 'Full-time', openings: 6 } as Post;
+
 function bizSample(): Record<string, BizSample> {
   const B: Record<string, [string, string, string, string, string, string, string, string, number, number, number, string, number, string]> = {
     b_nexa: ['Nexa Digital', 'IT & Software', '11–50', 'Molyko', 'NX', '#3d5af1', '#fff', 'A product studio building websites, mobile apps and payment tools for businesses across Cameroon.', 4.8, 6, 41, '62', 5200, 'nexadigital.cm'],
@@ -365,6 +368,7 @@ function bizSample(): Record<string, BizSample> {
     b_volta: ['Volta Solar', 'Home repairs', '11–50', 'Bomaka', 'VS', '#f6ee5c', '#000', 'Solar kits and installation for homes, schools and clinics.', 4.8, 3, 38, '77', 2800, 'voltasolar.cm'],
     b_savanna: ['Savanna Logistics', 'Logistics & Warehouse', '200+', 'Mutengene', 'SL', '#f47b3b', '#000', 'Trucking and warehousing between Douala, Buea and Limbe.', 4.5, 5, 240, '88', 4100, 'savanna.cm'],
     b_mbonde: ['Mbonde Hotel & Suites', 'Hospitality & Food', '51–200', 'Great Soppo', 'MH', '#a9b6ff', '#000', 'A 60-room hotel with restaurant and conference hall at the foot of Mount Cameroon.', 4.7, 4, 92, '310', 7400, 'mbondehotel.cm'],
+    b_njei: ['Njeiforbi', 'Marketing & Sales', '51–200', 'Molyko', 'NJ', '#3d5af1', '#fff', 'Drinks and groceries distribution to shops and supermarkets across Fako.', 4.7, 3, 64, '58', 3500, 'njeiforbi.cm'],
     b_ucode: ['UCode Africa', 'IT & Software', '11–50', 'Molyko', 'UC', '#2a2a2e', '#7be0a7', 'Software outsourcing for clients in Europe and Africa. Remote-friendly.', 4.9, 3, 30, '45', 9100, 'ucode.africa'],
   };
   const out: Record<string, BizSample> = {};
@@ -450,6 +454,7 @@ function posts(): Post[] {
       openings,
     }),
   );
+  POSTS.splice(Math.min(1, POSTS.length), 0, { ...NJEI_JOB });
   const areaOf: Record<string, string> = { c_marie: 'Great Soppo', c_paul: 'Mile 17', c_ngo: 'Bonduma', c_tabe: 'Molyko', c_ama: 'Molyko' };
   const MORE_REQ: [string, string, string, string, string, string][] = [
     ['c_marie', 'Teacher', 'French lessons for my daughter', 'Class 5 pupil, twice a week after school. Molyko.', 'XAF 25k / month', 'Part-time'],

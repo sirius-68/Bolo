@@ -21,7 +21,7 @@ import { startAdTicker } from '../src/logic/career';
 import { hasSession, pull, startSync } from '../src/logic/remote';
 import { locate } from '../src/logic/here';
 import { StoryHost } from '../src/components/Stories';
-import { ensureQuickCourse, scheduleClass } from '../src/logic/career';
+import { ensureAdJobs, ensureClassTime, ensureQuickCourse, scheduleClass } from '../src/logic/career';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -40,9 +40,10 @@ export default function Root() {
       locate(false);
       // Test course (starts 1 minute after enrolling) and timers for classes you've joined.
       ensureQuickCourse();
+      ensureAdJobs();
       db.myLearning.forEach((cid) => {
         const c = db.COURSES.find((x) => x.id === cid);
-        if (c) scheduleClass(c);
+        if (c && !ensureClassTime(c)) scheduleClass(c);
       });
       // Copies saved before real accounts existed are demo sessions.
       if (db.loggedIn && !db.uid) db.demo = true;

@@ -331,14 +331,14 @@ export function CatRail({ value, onChange }: { value: string | null; onChange: (
 }
 
 /** “Recommended  See all” section header. */
-export function Sec({ title, action, onAction, style }: { title: string; action?: string; onAction?: () => void; style?: any }) {
+export function Sec({ title, action, onAction, style, testID }: { title: string; action?: string; onAction?: () => void; style?: any; testID?: string }) {
   return (
     <View style={[S.rowB, { marginTop: 22, marginBottom: 10 }, style]}>
       <Txt s={18} w={8}>
         {title}
       </Txt>
       {action ? (
-        <Pressable hitSlop={8} onPress={onAction}>
+        <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={`${action}: ${title}`} hitSlop={8} onPress={onAction}>
           <Txt s={13} w={7} c={C.lav}>
             {action}
           </Txt>

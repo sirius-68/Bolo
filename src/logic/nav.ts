@@ -25,8 +25,9 @@ export function openTrack(id: string) {
 export function openBrowse(mode: 'people' | 'jobs' | 'companies') {
   router.push(`/browse?mode=${mode}` as any);
 }
-export function openCourses(cat?: string | null) {
-  router.push((cat ? `/courses?cat=${encodeURIComponent(cat)}` : '/courses') as any);
+export function openCourses(cat?: string | null, tab?: 'mine' | 'explore') {
+  const q = [cat ? `cat=${encodeURIComponent(cat)}` : '', tab ? `tab=${tab}` : ''].filter(Boolean).join('&');
+  router.push(('/courses' + (q ? '?' + q : '')) as any);
 }
 export function openMe(tab?: string) {
   if (tab) ui.meTab = tab;

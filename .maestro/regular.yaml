@@ -49,12 +49,12 @@ name: Regular account tour
           id: "ads-carousel"
       - waitForAnimationToEnd
       - takeScreenshot: r04b-story-ad
-      - extendedWaitUntil:
-          visible:
-            id: "story-close"
-          timeout: 15000
+      # The ad's button opens the real job (or program) page
       - tapOn:
-          id: "story-close"
+          id: "story-cta"
+      - waitForAnimationToEnd
+      - takeScreenshot: r04c-ad-job
+      - back
       - waitForAnimationToEnd
 - scroll
 - takeScreenshot: r05-feed-scrolled
@@ -144,6 +144,73 @@ name: Regular account tour
       - waitForAnimationToEnd
       - takeScreenshot: r12c-mentor-screen
       - back
+# Courses: enrol in the 1-minute test class → welcome → course page → lesson → My learning
+- scrollUntilVisible:
+    element: "Quick test class.*"
+    direction: UP
+    optional: true
+- runFlow:
+    when:
+      visible: "Quick test class.*"
+    commands:
+      - tapOn: "Quick test class.*"
+      - waitForAnimationToEnd
+      - takeScreenshot: r12h-course-sheet
+      - scrollUntilVisible:
+          element: "Enroll for free"
+          direction: DOWN
+      - tapOn: "Enroll for free"
+      - extendedWaitUntil:
+          visible:
+            id: "cw-next"
+          timeout: 10000
+      - takeScreenshot: r12i-course-welcome
+      - tapOn:
+          id: "cw-next"
+      - waitForAnimationToEnd
+      - takeScreenshot: r12j-course-welcome-2
+      - tapOn:
+          id: "cw-next"
+      - waitForAnimationToEnd
+      - tapOn:
+          id: "cw-next"
+      - extendedWaitUntil:
+          visible:
+            id: "course-continue"
+          timeout: 8000
+      - takeScreenshot: r12k-course-page
+      - scrollUntilVisible:
+          element:
+            id: "lesson-0"
+          direction: DOWN
+      - takeScreenshot: r12l-course-lessons
+      - tapOn:
+          id: "lesson-0"
+      - waitForAnimationToEnd
+      - takeScreenshot: r12m-lesson
+      - tapOn:
+          id: "lesson-done"
+      - waitForAnimationToEnd
+      - back
+      - waitForAnimationToEnd
+      - scrollUntilVisible:
+          element:
+            id: "career-courses-all"
+          direction: DOWN
+      - tapOn:
+          id: "career-courses-all"
+      - waitForAnimationToEnd
+      - takeScreenshot: r12n-courses-explore
+      - tapOn: "My learning.*"
+      - waitForAnimationToEnd
+      - takeScreenshot: r12o-my-learning
+      - back
+      - waitForAnimationToEnd
+      - scrollUntilVisible:
+          element:
+            id: "career-continue"
+          direction: UP
+      - takeScreenshot: r12p-career-continue
 - tapOn:
     id: "tab-me"
 - waitForAnimationToEnd
