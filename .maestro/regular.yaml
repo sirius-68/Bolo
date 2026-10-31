@@ -52,9 +52,16 @@ name: Regular account tour
       visible:
         id: "ads-carousel"
     commands:
-      - tapOn:
-          id: "ads-carousel"
-      - waitForAnimationToEnd
+      # The carousel slides by itself; a tap mid-slide only stops it, so try again
+      - retry:
+          maxRetries: 3
+          commands:
+            - tapOn:
+                id: "ads-carousel"
+            - extendedWaitUntil:
+                visible:
+                  id: "story-cta"
+                timeout: 4000
       - takeScreenshot: r04b-story-ad
       # The ad's button opens the real job (or program) page
       - tapOn:
