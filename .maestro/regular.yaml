@@ -46,15 +46,16 @@ name: Regular account tour
       visible:
         id: "status-edward"
     commands:
-      - tapOn:
-          id: "status-edward"
-          # the progress bar keeps moving, so don't wait for the screen to settle
-          waitToSettleTimeoutMs: 500
-      # A status plays for 6.5 s and closes itself: capture it right away
-      - extendedWaitUntil:
-          visible:
-            id: "story-close"
-          timeout: 10000
+      - retry:
+          maxRetries: 3
+          commands:
+            - tapOn:
+                id: "status-edward"
+                waitToSettleTimeoutMs: 500
+            - extendedWaitUntil:
+                visible:
+                  id: "story-close"
+                timeout: 4000
       - takeScreenshot: r04d-status
       - tapOn:
           id: "story-close"
