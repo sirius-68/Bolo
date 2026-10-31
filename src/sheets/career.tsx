@@ -200,8 +200,9 @@ export function OppSheet({ id }: { id: string }) {
 
 type OF = OppForm & { lv: string };
 export function openOppForm(kind?: string) {
-  if (isW()) {
-    bizOnlyPrompt('create internships, programs and courses');
+  // Anyone can teach a course; internships and programs come from business pages.
+  if (isW() && kind !== 'Course') {
+    bizOnlyPrompt('create internships and programs');
     return;
   }
   const f: OF = { kind: kind || 'Internship', title: '', cat: '', desc: '', dur: '3 months', start: '', mode: 'On-site', paid: kind === 'Training program' ? 'Free' : kind === 'Course' ? 'Fee' : 'Paid', amount: '', seats: 5, deadline: '', lv: 'Beginner' };
@@ -212,22 +213,24 @@ function OppFormSheet({ f }: { f: OF }) {
   const re = () => force((x) => x + 1);
   const course = f.kind === 'Course';
   const fee = /Training|Course/.test(f.kind);
+  const tutor = isW();
+  const by = tutor ? db.user.name || 'you' : bizName(curBiz());
   const paidOpts = fee ? ['Free', 'Fee'] : ['Paid', 'Unpaid'];
   if (!paidOpts.includes(f.paid)) f.paid = paidOpts[fee ? 1 : 0];
   const set = (k: keyof OF, v: any) => ((f as any)[k] = v);
   return (
     <View style={{ gap: 14 }}>
-      <SheetTitle sub={course ? `Published by ${bizName(curBiz())} in Career → Courses, where anyone can enroll or businesses can enrol their team.` : `Published by ${bizName(curBiz())} in Career, where anyone can apply or join.`}>
+      <SheetTitle sub={course ? `Published by ${by} in Career → Courses. Students enrol and join your class group; fees go to your wallet.` : `Published by ${by} in Career, where anyone can apply or join.`}>
         New {f.kind.toLowerCase()}
       </SheetTitle>
-      <View>
+      {tutor ? null : <View>
         <Label>Type</Label>
         <Chips>
           {OPP_KINDS.map((k) => (
             <Chip key={k} small label={k} on={f.kind === k} onPress={() => (set('kind', k), re())} />
           ))}
         </Chips>
-      </View>
+      </View>}
       <Field label="Title">
         <Input value={f.title} onChangeText={(v) => (set('title', v), re())} maxLength={60} placeholder={course ? 'e.g. Excel for small businesses' : f.kind === 'Internship' ? 'e.g. Marketing internship' : 'e.g. Customer service training'} />
       </Field>
@@ -293,7 +296,8 @@ function OppFormSheet({ f }: { f: OF }) {
         onPress={() => {
           const kind = publishOpp({ ...f, start: toISO(f.start), deadline: toISO(f.deadline) });
           sheet.close();
-          if (kind) {
+          if (tutor) setTimeout(() => router.push('/teach' as any), 300);
+          else if (kind) {
             ui.meTab = 'Programs';
             resetTo('/me');
           }

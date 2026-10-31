@@ -11,7 +11,7 @@ import { bizLogo, bizName, curBiz, fname, greet, isPro, isW, cityLabel, myPhoto,
 import { liveInfo, myBookings, pctOf, trOther } from '../logic/work';
 import { bump, useTick } from '../logic/live';
 import { afterSheet, sheet, SheetTitle } from '../ui/overlay';
-import { openTrack } from '../logic/nav';
+import { openMe, openTrack } from '../logic/nav';
 import { openAccounts, openCities } from '../sheets/account';
 import { openReview } from '../sheets/work';
 
@@ -24,9 +24,12 @@ export function TabHeader({ hello = true, reels }: { hello?: boolean; reels?: bo
   const place = w || !b ? cityLabel() : b.city;
   return (
     <View style={[S.row, { gap: 10, paddingTop: 8, paddingBottom: 6 }]}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Switch profile" onPress={() => (tap(), openAccounts())} style={[S.row, { gap: 10, flex: 1, minWidth: 0 }]}>
-        <Avatar pic={w || !b ? myPhoto() : bizLogo(b)} square={!w && !!b} size={46} />
-        <View style={{ flex: 1, minWidth: 0 }}>
+      <View style={[S.row, { gap: 10, flex: 1, minWidth: 0 }]}>
+        {/* Avatar opens your profile (what people expect); the name and ▾ switch between Regular and business pages. */}
+        <Pressable testID="hdr-avatar" accessibilityRole="button" accessibilityLabel="Your profile" onPress={() => (tap(), openMe())}>
+          <Avatar pic={w || !b ? myPhoto() : bizLogo(b)} square={!w && !!b} size={46} />
+        </Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Switch profile" onPress={() => (tap(), openAccounts())} style={{ flex: 1, minWidth: 0 }}>
           <View style={[S.row, { gap: 4 }]}>
             <Txt s={15} w={8} lines={1} style={{ flexShrink: 1 }}>
               {w || !b ? (hello ? `Hi ${fname(db.user.name) || 'there'} 👋` : db.user.name || 'My profile') : bizName(b)}
@@ -53,8 +56,8 @@ export function TabHeader({ hello = true, reels }: { hello?: boolean; reels?: bo
               </Txt>
             </Pressable>
           </View>
-        </View>
-      </Pressable>
+        </Pressable>
+      </View>
       {reels ? <IconBtn name="play" ring label="Reels, videos of work" onPress={() => router.push('/reels')} /> : null}
       <IconBtn name="chat" ring count={m} label="Messages" onPress={() => router.push('/inbox')} />
       <IconBtn name="bell" ring count={n} label="Notifications" onPress={() => router.push('/notifs')} />

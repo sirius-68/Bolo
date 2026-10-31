@@ -18,7 +18,8 @@ export type Story = {
   text: string;
   cta?: string;
   onCta?: () => void;
-  sponsor?: { name: string; pic: any };
+  /** header: who posted it. sub defaults to "Sponsored"; round = a person (not a company logo) */
+  sponsor?: { name: string; pic: any; sub?: string; round?: boolean };
   dark?: boolean; // dark text on a light background
 };
 type Opts = { closeAfter?: number; onClose?: () => void; label?: string };
@@ -122,13 +123,13 @@ function Viewer({ list, opts }: { list: Story[]; opts: Opts }) {
           <View style={[S.rowB, { marginTop: 14, marginHorizontal: 16 }]} pointerEvents="box-none">
             {s.sponsor ? (
               <View style={[S.row, { gap: 8 }]} pointerEvents="none">
-                <Avatar pic={s.sponsor.pic} square size={30} />
+                <Avatar pic={s.sponsor.pic} square={!s.sponsor.round} size={30} />
                 <View>
                   <Txt s={13} w={8} c={fg}>
                     {s.sponsor.name}
                   </Txt>
                   <Txt s={11} c={sub}>
-                    Sponsored
+                    {s.sponsor.sub || 'Sponsored'}
                   </Txt>
                 </View>
               </View>

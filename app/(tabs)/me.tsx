@@ -10,6 +10,7 @@ import { C, S } from '../../src/ui/theme';
 import { P, bizLogo, bizName, bizPct, curBiz, isPro, isW, myHandle, myCity, cityLabel, myPhoto, mySkill, myVacancies, myOpps, myCourses, xaf, postById, openJobs, has } from '../../src/logic/core';
 import { bump, useLive } from '../../src/logic/live';
 import { balance, heldTotal } from '../../src/logic/wallet';
+import { tutorCourses } from '../../src/logic/career';
 import { followingCount, prItems, prPct, services } from '../../src/logic/account';
 import { openProfile } from '../../src/logic/nav';
 import { ListRow, ReelThumb } from '../../src/components/cards';
@@ -164,6 +165,22 @@ function SwitchAndPro() {
             </Txt>
             <Txt s={12} c={C.muted}>
               {w ? (firstBiz ? `${db.BIZ.list.length} business page${db.BIZ.list.length > 1 ? 's' : ''} · post vacancies, internships, courses` : 'Set up a free business page. You keep this profile too') : 'Find work and hire for personal jobs'}
+            </Txt>
+          </View>
+          <Icon name="chev" size={18} color={C.faint} />
+        </Pressable>
+      ) : null}
+      {w && tutorCourses().length ? (
+        <Pressable testID="me-teach" accessibilityRole="button" onPress={() => (tap(), router.push('/teach' as any))} style={({ pressed }) => [S.row, { gap: 12, padding: 12, borderRadius: 18, backgroundColor: pressed ? C.s2 : C.s1, borderWidth: 1, borderColor: C.line }]}>
+          <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: C.lav, alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="cap" size={20} color="#000" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Txt s={14} w={8}>
+              Your courses · {tutorCourses().length}
+            </Txt>
+            <Txt s={12} c={C.muted}>
+              {tutorCourses().reduce((n, c) => n + (c.people || []).length, 0)} students · manage classes and announcements
             </Txt>
           </View>
           <Icon name="chev" size={18} color={C.faint} />

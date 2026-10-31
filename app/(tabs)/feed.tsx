@@ -7,10 +7,12 @@ import { Avatar, Btn, Empty, Txt, tap } from '../../src/ui/kit';
 import { showStories } from '../../src/components/Stories';
 import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
-import { P, postById, cityLabel, curBiz, bizName, fCount, isW, listJobs, listPeople, matchJob, matchPerson, postVisible, sortJobs, sortPeople } from '../../src/logic/core';
+import { P, has, fname, myPhoto, postById, cityLabel, curBiz, bizName, fCount, isW, listJobs, listPeople, matchJob, matchPerson, postVisible, sortJobs, sortPeople } from '../../src/logic/core';
 import { bump, useLive } from '../../src/logic/live';
 import { openBrowse, openProfile } from '../../src/logic/nav';
 import { notchScale, Rail, SearchBar, Sec, TabHeader } from '../../src/components/common';
+import { StatusRow } from '../../src/components/StatusRow';
+import { follow } from '../../src/logic/work';
 import { MentorCard, PersonRow, PostCard, RecCard, ReelThumb, ReqPost, JobCard } from '../../src/components/cards';
 import { onScrollFab } from '../../src/components/NavBar';
 import { openFilters, resetFilters } from '../../src/sheets/filters';
@@ -20,11 +22,11 @@ import { openOpp } from '../../src/sheets/career';
 import { services } from '../../src/logic/account';
 import { toast } from '../../src/ui/overlay';
 
-type FV = 'all' | 'jobs' | 'people' | 'mentors';
+type FV = 'all' | 'feed' | 'jobs' | 'people' | 'mentors';
 /** Height of the header row (avatar, name, icons) the bubble starts below. */
 const HEADER_ROW = 60;
 const BUBBLE_SPACE = 54;
-type Item = { k: string; po?: Post; id?: string; pair?: string[] };
+type Item = { k: string; po?: Post; id?: string; pair?: string[]; sp?: 'compose' | 'reels' | 'follow'; from?: number };
 
 export default function Feed() {
   useLive();
@@ -38,12 +40,14 @@ export default function Feed() {
   const views: [FV, string][] = w
     ? [
         ['all', 'All'],
+        ['feed', 'Feed'],
         ['jobs', 'Jobs'],
         ['people', 'People'],
         ['mentors', 'Mentors'],
       ]
     : [
         ['all', 'All'],
+        ['feed', 'Feed'],
         ['people', 'Talent'],
         ['mentors', 'Mentors'],
       ];
@@ -64,6 +68,21 @@ export default function Feed() {
   else if (v === 'mentors') {
     items = [];
     for (let i = 0; i < mentors.length; i += 2) items.push({ k: 'm' + mentors[i].id, pair: mentors.slice(i, i + 2).map((m) => m.id) });
+  } else if (v === 'feed') {
+    // Only work people share (no job requests), people you follow first, like a social feed.
+    const W = db.POSTS.filter(postVisible)
+      .filter((p) => p.kind !== 'request' && (!q || (p.text || '').toLowerCase().includes(q) || (P(p.by || '')?.name || '').toLowerCase().includes(q)) && (!cat || P(p.by || '')?.role === cat))
+      .map((p, i) => ({ p, i, f: p.by === 'me' ? 2 : has(db.followed, p.by || '') ? 1 : 0 }))
+      .sort((a, b) => b.f - a.f || a.i - b.i)
+      .map((x) => x.p);
+    items = [{ k: 'compose', sp: 'compose' }];
+    W.forEach((po, i) => {
+      items.push({ k: po.id, po });
+      if (i === 2) items.push({ k: 'reels1', sp: 'reels', from: 0 });
+      if (i === 6) items.push({ k: 'follow', sp: 'follow' });
+      if (i === 11) items.push({ k: 'reels2', sp: 'reels', from: 3 });
+    });
+    if (W.length && W.length <= 2) items.push({ k: 'reels1', sp: 'reels', from: 0 });
   } else {
     let L = db.POSTS.filter(postVisible).filter((p) => (p.kind === 'request' ? matchJob(p, q, cat) : !q || (p.text || '').toLowerCase().includes(q) || (P(p.by || '')?.name || '').toLowerCase().includes(q)));
     if (cat) L = L.filter((p) => (p.kind === 'request' ? p.cat === cat : P(p.by || '')?.role === cat));
@@ -82,9 +101,7 @@ export default function Feed() {
   const header = (
     <View style={{ paddingTop: ins.top }}>
       <TabHeader />
-      <Txt s={28} w={8} style={{ marginTop: 14, lineHeight: 32 }}>
-        {w ? (findOnly ? 'Find work and\nclients near you' : hireOnly ? 'What do you need\ndone today?' : 'Get hired. Get help.\nRight near you.') : `Find talent for\n${bizName(curBiz())}`}
-      </Txt>
+      <StatusRow />
       {!db.demo && !(db.PREF as any).sampleSeen ? (
         <View testID="early-note" style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, padding: 12, borderRadius: 16, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }}>
           <Icon name="sparkle" size={18} color={C.lav} />
@@ -96,15 +113,15 @@ export default function Feed() {
           </Pressable>
         </View>
       ) : null}
-      <View style={{ marginTop: 16 }}>
+      <View style={{ marginTop: 14 }}>
         <SearchBar
           value={ui.q}
           onChange={(t) => {
             ui.q = t;
             bump();
           }}
-          placeholder={v === 'jobs' ? 'Search jobs: title, company, area…' : v === 'people' ? 'Search people: name, skill, area…' : v === 'mentors' ? 'Search mentors or topics' : 'Search developers, tutors, plumbers…'}
-          onFilter={v === 'mentors' ? undefined : () => openFilters(v === 'jobs' || (v === 'all' && findOnly) ? 'jobs' : 'people')}
+          placeholder={v === 'feed' ? 'Search posts and people' : v === 'jobs' ? 'Search jobs: title, company, area…' : v === 'people' ? 'Search people: name, skill, area…' : v === 'mentors' ? 'Search mentors or topics' : 'Search developers, tutors, plumbers…'}
+          onFilter={v === 'mentors' || v === 'feed' ? undefined : () => openFilters(v === 'jobs' || (v === 'all' && findOnly) ? 'jobs' : 'people')}
           filters={nf}
         />
       </View>
@@ -112,7 +129,7 @@ export default function Feed() {
       <View style={{ flexDirection: 'row', gap: 6, marginTop: 14, padding: 4, borderRadius: 14, backgroundColor: C.s1 }}>
         {views.map(([k, l]) => (
           <Pressable key={k} accessibilityRole="tab" accessibilityState={{ selected: v === k }} onPress={() => (tap(), setV(k))} style={{ flex: 1, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: v === k ? C.blue : 'transparent' }}>
-            <Txt s={13} w={v === k ? 8 : 6}>
+            <Txt s={views.length > 4 ? 12 : 13} w={v === k ? 8 : 6} lines={1}>
               {l}
             </Txt>
           </Pressable>
@@ -143,6 +160,8 @@ export default function Feed() {
           </Rail>
           <Sec title={q || cat ? `${items.length} result${items.length === 1 ? '' : 's'}` : 'Recent posts'} />
         </>
+      ) : v === 'feed' ? (
+        <View style={{ height: 14 }} />
       ) : (
         <Txt s={13} w={6} c={C.muted} style={{ marginTop: 16, marginBottom: 10 }}>
           {count} {noun[count === 1 ? 0 : 1]} {q ? `for “${ui.q.trim()}”` : v === 'mentors' ? 'on bolo' : 'near you'}
@@ -152,6 +171,20 @@ export default function Feed() {
   );
 
   const render = ({ item }: { item: Item }) => {
+    if (item.sp === 'compose') return <Composer />;
+    if (item.sp === 'reels')
+      return (
+        <View style={{ marginBottom: 18 }}>
+          <Sec title={item.from ? 'More work in action' : 'Work in action'} action="Watch all" onAction={() => router.push(`/reels?i=${item.from || 0}` as any)} style={{ marginTop: 4 }} />
+          <Rail>
+            {[...REELS.slice(item.from || 0), ...REELS.slice(0, item.from || 0)].map((r) => {
+              const i = REELS.indexOf(r);
+              return <ReelThumb key={i} r={r} i={i} onPress={() => router.push(`/reels?i=${i}` as any)} />;
+            })}
+          </Rail>
+        </View>
+      );
+    if (item.sp === 'follow') return <FollowSuggest />;
     if (item.pair)
       return (
         <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
@@ -366,4 +399,52 @@ function setFeedJobs() {
   ui.feedView = 'jobs';
   ui.q = '';
   bump();
+}
+
+/** "Share your work" bar at the top of the Feed, like a social app's composer. */
+function Composer() {
+  return (
+    <Pressable testID="feed-compose" accessibilityRole="button" accessibilityLabel="Share your work" onPress={() => (tap(), router.push('/new-post'))} style={({ pressed }) => [S.row, { gap: 12, marginBottom: 16, padding: 10, borderRadius: 22, backgroundColor: pressed ? C.s2 : C.s1, borderWidth: 1, borderColor: C.line }]}>
+      <Avatar pic={myPhoto()} size={40} />
+      <Txt s={14} c={C.muted} style={{ flex: 1 }}>
+        {isW() ? 'Share your work…' : 'Share a company update…'}
+      </Txt>
+      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name="image" size={18} color={C.yellow} />
+      </View>
+    </Pressable>
+  );
+}
+/** People worth following, shown between posts. */
+function FollowSuggest() {
+  const L = listPeople().filter((id) => !has(db.followed, id)).slice(0, 8);
+  if (!L.length) return null;
+  return (
+    <View style={{ marginBottom: 18 }}>
+      <Sec title="People to follow" action="See all" onAction={() => openBrowse('people')} style={{ marginTop: 4 }} />
+      <Rail>
+        {L.map((id) => {
+          const p = P(id);
+          return (
+            <View key={id} style={{ width: 140, padding: 12, borderRadius: 20, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, alignItems: 'center', gap: 4 }}>
+              <Pressable accessibilityRole="button" onPress={() => openProfile(id)} style={{ alignItems: 'center', gap: 4 }}>
+                <Avatar pic={p.photo} size={56} />
+                <Txt s={14} w={8} lines={1}>
+                  {fname(p.name)}
+                </Txt>
+                <Txt s={11} c={C.muted} lines={1}>
+                  {p.role}
+                </Txt>
+              </Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel={`Follow ${p.name}`} onPress={() => (tap(), follow(id))} style={{ marginTop: 6, alignSelf: 'stretch', height: 34, borderRadius: 17, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
+                <Txt s={13} w={8} c="#000">
+                  Follow
+                </Txt>
+              </Pressable>
+            </View>
+          );
+        })}
+      </Rail>
+    </View>
+  );
 }

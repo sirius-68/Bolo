@@ -69,7 +69,7 @@ export default function Reels() {
             </Pressable>
           ))}
         </View>
-        <View style={{ width: 44 }} />
+        <IconBtn testID="reels-share" name="plus" label="Share your work" bg="rgba(0,0,0,.4)" onPress={() => router.push('/new-post')} />
       </View>
     </View>
   );

@@ -28,6 +28,7 @@ export default function Career() {
   const cos = Object.keys(db.BIZ_SAMPLE).sort((a, b) => db.POSTS.filter((p) => p.client === b).length - db.POSTS.filter((p) => p.client === a).length);
   const mine = db.MENTORSHIPS.filter((m) => m.mine && !m.plain && (w ? !m.asBiz : m.asBiz === db.BIZ.active));
   const others = db.MENTORSHIPS.filter((m) => !m.mine);
+  const joined = others.filter((m) => m.joinedMe === 'yes' || m.joinedMe === 'req');
   const learning = db.myLearning.map((id) => db.COURSES.find((c) => c.id === id)).filter(Boolean) as typeof db.COURSES;
   const courses = db.COURSES.filter((c) => !db.myLearning.includes(c.id) && (w ? !c.mine : true)).slice(0, 10);
   const myOpps = db.OPPS.filter((o) => (w ? o.applied : o.mine && o.biz === db.BIZ.active));
@@ -111,9 +112,9 @@ export default function Career() {
           </View>
         </Pressable>
       ) : null}
-      {myOpps.length ? (
+      {myOpps.length || (w && joined.length) ? (
         <>
-          <Sec title={w ? 'My applications' : 'Your programs'} />
+          <Sec title={w ? 'My applications & mentors' : 'Your programs'} />
           <View style={{ gap: 8 }}>
             {myOpps.map((o) => (
               <ListRow
@@ -126,6 +127,11 @@ export default function Career() {
                 onPress={() => openOpp(o.id)}
               />
             ))}
+            {w
+              ? joined.map((m) => (
+                  <ListRow key={m.id} icon="follow" title={m.title} sub={`Mentorship · ${m.format} · ${m.dur}`} pill={m.joinedMe === 'yes' ? 'Mentee' : 'Requested'} pillKind={m.joinedMe === 'yes' ? 'acc' : 'wait'} onPress={() => openMentor(m.id)} />
+                ))
+              : null}
           </View>
         </>
       ) : null}
@@ -149,6 +155,19 @@ export default function Career() {
         {courses.map((c) => (
           <CourseCard key={c.id} c={c} />
         ))}
+        {w ? (
+          <Pressable testID="career-teach" accessibilityRole="button" onPress={() => (tap(), router.push('/teach' as any))} style={{ width: 168, height: 190, padding: 16, borderRadius: 22, borderWidth: 1, borderStyle: 'dashed', borderColor: C.s3, justifyContent: 'center', gap: 8 }}>
+            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.lav, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="cap" size={20} color="#000" />
+            </View>
+            <Txt s={15} w={8}>
+              Teach a course
+            </Txt>
+            <Txt s={12} c={C.muted}>
+              Share your skill and get paid
+            </Txt>
+          </Pressable>
+        ) : null}
       </Rail>
       <Sec title="Mentorship" action="+ Offer" onAction={openMentorForm} />
       <Sub t="Learn from experienced people and companies, 1-to-1 or in groups" />

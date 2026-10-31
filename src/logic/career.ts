@@ -3,7 +3,7 @@ import { db, ui, uid, Course, Mentorship, Opp, Ad, makeDb, NJEI_JOB } from '../d
 import { toast } from '../ui/overlay';
 import { logoPic } from '../ui/kit';
 import { bump, later, every } from './live';
-import { P, isW, curBiz, bizName, bizLogo, WORKERS, nowT, mOwner, THREADS, ORDER, thread, fname, xaf, myCity } from './core';
+import { P, isW, curBiz, bizName, bizLogo, WORKERS, nowT, mOwner, THREADS, ORDER, thread, fname, xaf, myCity, myPhoto } from './core';
 import { bizLog } from './work';
 
 /* ---------------- internships & programs ---------------- */
@@ -15,24 +15,26 @@ const fmtD = (d: string) => {
 export function publishOpp(f: OppForm): 'opp' | 'course' {
   const b = curBiz()!;
   const amt = +String(f.amount).replace(/\D/g, '') || 0;
+  // A Regular profile teaching in their own name (tutor), or a business page.
+  const tutor = isW();
   if (f.kind === 'Course') {
     const catMap: Record<string, string> = { Developer: 'Development', Designer: 'Design', Accountant: 'Finance', Sales: 'Marketing', Teacher: 'Teaching', Nurse: 'Health', Writer: 'Languages' };
     const c: Course = {
       id: uid('cu'),
       mine: 1,
-      biz: db.BIZ.active!,
+      biz: tutor ? undefined : db.BIZ.active!,
       title: f.title.trim(),
-      prov: { n: bizName(b), logo: bizLogo(b) },
+      prov: tutor ? { n: db.user.name || 'bolo tutor', logo: myPhoto() } : { n: bizName(b), logo: bizLogo(b) },
       cat: catMap[f.cat] || (/(Plumb|Electric|Builder|Mechanic)/.test(f.cat) ? 'Trades' : 'Business'),
       lv: f.lv || 'Beginner',
       dur: f.dur,
       type: 'Skill',
       fmt: f.mode === 'Online' ? 'Online' : 'Offline',
-      reg: f.mode === 'Online' ? '' : b.city || 'Buea',
+      reg: f.mode === 'Online' ? '' : tutor ? myCity() : b.city || 'Buea',
       price: f.paid === 'Free' ? 0 : amt,
       old: 0,
       prof: '',
-      skills: [],
+      skills: f.desc.trim() ? f.desc.split(/[\n,.;]/).map((x) => x.trim()).filter((x) => x.length > 2).slice(0, 5) : [],
       mo: 0,
       seats: f.seats,
       enrolled: 0,
@@ -40,13 +42,13 @@ export function publishOpp(f: OppForm): 'opp' | 'course' {
       prog: {},
     };
     db.COURSES.unshift(c);
-    bizLog('cap', `Published course <b>${c.title}</b>`);
+    if (!tutor) bizLog('cap', `Published course <b>${c.title}</b>`);
     toast('Course published in Career → Courses');
     const pool = WORKERS().sort(() => Math.random() - 0.5);
     ([[pool.slice(0, 3), 5000], [pool.slice(3, 5), 11000], [pool.slice(5, 6), 17000]] as [string[], number][]).forEach(([ids, t]) =>
       later(t, () => {
         enrollPeople(c, ids);
-        if (!isW()) toast(`${ids.length} new student${ids.length > 1 ? 's' : ''} in “${c.title}”`);
+        if (tutor || !isW()) toast(`${ids.length} new student${ids.length > 1 ? 's' : ''} in “${c.title}”`);
       }),
     );
     bump();
@@ -196,6 +198,8 @@ export function timeLeft(ms: number) {
 export const classWhen = (t: number) => new Date(t).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 /** A live class runs for 90 minutes from its start. */
 export const isLive = (c: Course, now = Date.now()) => !!c.startAt && now >= c.startAt && now < c.startAt + 90 * 60_000;
+/** Courses you teach as a Regular profile (tutor). */
+export const tutorCourses = () => db.COURSES.filter((c) => c.mine && !c.biz);
 /** Learner progress, 0–100. */
 export const coursePct = (c: Course) => Math.round((Math.min(c.done || 0, lessonsOf(c).length) / lessonsOf(c).length) * 100);
 /** Minutes for each lesson (stable per course). */

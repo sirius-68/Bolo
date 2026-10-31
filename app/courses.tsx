@@ -51,7 +51,7 @@ export default function Courses() {
           <Txt s={22} w={8} style={{ flex: 1 }}>
             Courses
           </Txt>
-          {!w ? <IconBtn name="plus" bg={C.yellow} color="#000" label="Create a course" onPress={() => openOppForm('Course')} /> : null}
+          <IconBtn testID="courses-create" name="plus" bg={C.yellow} color="#000" label={w ? 'Teach a course' : 'Create a course'} onPress={() => (w ? router.push('/teach' as any) : openOppForm('Course'))} />
         </View>
         {w ? (
           <PTabs

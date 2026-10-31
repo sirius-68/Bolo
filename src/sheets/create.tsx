@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
+import { openAddStatus } from '../components/StatusRow';
 import { router } from 'expo-router';
 import { db, ui, uid } from '../data/db';
 import { Btn, Chip, Chips, Label, OptRow, ProTag, Txt } from '../ui/kit';
@@ -29,7 +30,9 @@ export function createActions(): CreateAction[] {
     return [
       ...(db.user.intents.includes('find') ? [offer, need] : [need, offer]),
       { k: 'work', icon: 'post', bg: C.orange, label: 'Share your work', run: () => router.push('/new-post') },
+      { k: 'status', icon: 'cam', bg: C.blue, label: 'Add to status', run: () => openAddStatus() },
       { k: 'avail', icon: 'clock', bg: C.lav, label: 'Set availability', run: () => openAvailability() },
+      { k: 'teach', icon: 'cap', bg: '#fff', label: 'Teach a course', run: () => router.push('/teach' as any) },
       { k: 'mentor', icon: 'follow', bg: C.pink, label: 'Offer a mentorship', run: () => openMentorForm() },
     ];
   }
@@ -40,6 +43,7 @@ export function createActions(): CreateAction[] {
     { k: 'course', icon: 'file', bg: C.mint, label: 'Create a course', run: () => openOppForm('Course') },
     { k: 'mentor', icon: 'follow', bg: C.pink, label: 'Offer a mentorship', run: () => openMentorForm() },
     { k: 'update', icon: 'post', bg: '#fff', label: 'Company update', run: () => router.push('/new-post') },
+    { k: 'status', icon: 'cam', bg: C.blue, label: 'Add to status', run: () => openAddStatus() },
   ];
 }
 

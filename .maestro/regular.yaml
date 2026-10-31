@@ -40,6 +40,30 @@ name: Regular account tour
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - takeScreenshot: r04-feed
+# Statuses: open one from someone you follow, then the Add to status sheet
+- runFlow:
+    when:
+      visible:
+        id: "status-edward"
+    commands:
+      - tapOn:
+          id: "status-edward"
+      - waitForAnimationToEnd
+      - takeScreenshot: r04d-status
+      - tapOn:
+          id: "story-close"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible:
+        id: "status-add"
+    commands:
+      - tapOn:
+          id: "status-add"
+      - waitForAnimationToEnd
+      - takeScreenshot: r04e-add-status
+      - back
+      - waitForAnimationToEnd
 # The demo booking asks to confirm a finished job shortly after login: wait for it and close it first
 - extendedWaitUntil:
     visible: "Not yet, something’s wrong"
@@ -80,6 +104,15 @@ name: Regular account tour
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - takeScreenshot: r06-feed-jobs
+- tapOn: "Feed"
+- waitForAnimationToEnd
+- takeScreenshot: r06b-feed-tab
+- scroll
+- scroll
+- takeScreenshot: r06c-feed-tab-2
+- scrollUntilVisible:
+    element: "Jobs"
+    direction: UP
 - runFlow: dismiss.yaml
 - tapOn: "People"
 - takeScreenshot: r07-feed-people
@@ -176,6 +209,22 @@ name: Regular account tour
       - takeScreenshot: r12o-my-learning
       - back
       - waitForAnimationToEnd
+      - scrollUntilVisible:
+          element:
+            id: "career-teach"
+          direction: RIGHT
+          optional: true
+      - runFlow:
+          when:
+            visible:
+              id: "career-teach"
+          commands:
+            - tapOn:
+                id: "career-teach"
+            - waitForAnimationToEnd
+            - takeScreenshot: r12q-teach
+            - back
+            - waitForAnimationToEnd
 - scroll
 - takeScreenshot: r12-career-2
 - runFlow:
