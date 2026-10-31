@@ -109,10 +109,67 @@ export function enroll(id: string, done: () => void) {
   const c = db.COURSES.find((x) => x.id === id)!;
   later(c.price ? 1300 : 500, () => {
     if (!db.myLearning.includes(id)) db.myLearning.push(id);
+    c.startAt = c.quick ? Date.now() + 60_000 : nextMonday();
+    c.done = c.done || 0;
+    learnerGroup(c);
+    scheduleClass(c);
     toast(`You’re enrolled in “${c.title}”`);
     done();
   });
 }
+const nextMonday = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7));
+  d.setHours(18, 0, 0, 0);
+  return d.getTime();
+};
+/** The learner's class group for a course they joined: the trainer posts lesson links and announcements here. */
+export function learnerGroup(c: Course) {
+  const gid = 'gl_' + c.id;
+  if (!db.P[gid]) db.P[gid] = { name: `${c.title} · Class`, group: 1, client: 1, role: 'Class group', photo: c.prov.logo, pin: c.prov.logo, area: '', dist: '', rate: 5, years: 1, jobs: 0, reviews: '0', followers: 0 } as any;
+  const T = db.THREADS_W;
+  if (!T[gid]) {
+    const mem = WORKERS().slice(2, 9);
+    T[gid] = {
+      time: nowT(),
+      group: 1,
+      course: 1,
+      members: mem,
+      unread: 1,
+      msgs: [
+        { d: 'Today' },
+        { sys: `You joined the class group for “${c.title}”` },
+        { f: 'them', t: `${c.prov.n}: Welcome to the class! 👋 Introduce yourself and tell us what you want to learn.`, at: nowT() },
+        { f: 'them', t: `${c.prov.n}: The first class starts ${c.quick ? 'in about a minute' : 'next Monday at 18:00'}. The link will appear here.`, at: nowT() },
+      ],
+    };
+    if (!db.ORDER_W.includes(gid)) db.ORDER_W.unshift(gid);
+  }
+  return gid;
+}
+/** When the class starts: a message in the class group, a notification and a pop-up. */
+export function scheduleClass(c: Course) {
+  if (!c.startAt) return;
+  const ms = c.startAt - Date.now();
+  if (ms <= 0 || ms > 6 * 3600_000) return; // only time it while the app is likely open
+  later(ms, () => {
+    const gid = learnerGroup(c);
+    const th = db.THREADS_W[gid];
+    th.msgs.push({ sys: '🔴 Class is live now' }, { f: 'them', t: `${c.prov.n}: We’re starting! Tap “Join class” on the course page or here: bolo.app/live/${c.id}`, at: nowT() });
+    th.unread = (th.unread || 0) + 1;
+    th.time = nowT();
+    db.NOTIFS_W.unshift({ id: uid('n'), g: 'Today', type: 'reminder', who: gid, time: 'now', text: `· your class “${c.title}” is starting now. Join from the course page.` } as any);
+    toast(`“${c.title}” is starting now`);
+    bump();
+  });
+}
+/** Test course: starts 1 minute after you enrol. */
+export function ensureQuickCourse() {
+  if (db.COURSES.some((x) => x.id === 'c_quick')) return;
+  db.COURSES.unshift({ id: 'c_quick', quick: 1, title: 'Quick test class: starts 1 minute after you enrol', prov: { n: 'bolo Academy', logo: logoPic('bA', '#f6ee5c', '#000') }, cat: 'Business', lv: 'Beginner', dur: '15 minutes', type: 'Skill', fmt: 'Online', reg: '', price: 0, old: 0, prof: '', skills: ['How bolo courses work', 'Joining a live class', 'Using your class group'], mo: 0 });
+}
+/** Lessons shown on the course page, made from what the course teaches. */
+export const lessonsOf = (c: Course) => [...c.skills.map((s, i) => `Lesson ${i + 1} · ${s}`), `Final project and certificate`];
 export function enrollPeople(c: Course, ids: string[]) {
   c.people = c.people || [];
   ids.forEach((id) => {
@@ -396,8 +453,13 @@ export function adTargets(): [string, string, string, string][] {
   ];
 }
 export const adHead = (t: [string, string, string, string]) => (t[0] === 'page' ? `Work with ${bizName(curBiz())}` : t[0] === 'course' ? `New course: ${t[2]}` : t[0] === 'opp' ? `Apply now: ${t[2]}` : `We’re hiring: ${t[2]}`);
-export function launchAd(a: { t: [string, string, string, string]; head: string; text: string; areas: string[]; fields: string[]; reach: number; days: number }) {
-  const ad: Ad = { id: uid('ad'), t: a.t, head: a.head || adHead(a.t), text: a.text, areas: a.areas, fields: a.fields, reach: a.reach, days: a.days, reached: 0, clicks: 0, apps: 0, status: 'active', paid: (a.reach / 100) * adRate(), start: nowT() };
+/** Story ads: extra per 100 people reached, plus a price for every second people must watch before they can close it. */
+export const STORY_EXTRA = 150;
+export const SEC_RATE = 40;
+export const MAX_SKIP = 10;
+export const adCost = (reach: number, fmt: 'card' | 'story' = 'card', skip = 0) => Math.round((reach / 100) * (adRate() + (fmt === 'story' ? STORY_EXTRA + Math.min(MAX_SKIP, skip) * SEC_RATE : 0)));
+export function launchAd(a: { t: [string, string, string, string]; head: string; text: string; areas: string[]; fields: string[]; reach: number; days: number; fmt?: 'card' | 'story'; skip?: number }) {
+  const ad: Ad = { id: uid('ad'), t: a.t, head: a.head || adHead(a.t), text: a.text, areas: a.areas, fields: a.fields, reach: a.reach, days: a.days, reached: 0, clicks: 0, apps: 0, status: 'active', paid: adCost(a.reach, a.fmt, a.skip), start: nowT(), fmt: a.fmt || 'card', skip: a.fmt === 'story' ? a.skip || 0 : 0 };
   adsOf().unshift(ad);
   startAdTicker();
   bizLog('rocket', `Launched ad <b>${ad.head}</b> · ${ad.reach.toLocaleString('en-US')} people`);

@@ -10,6 +10,7 @@ import { useTick } from '../logic/live';
 import { isW } from '../logic/core';
 import { prItems } from '../logic/account';
 import { CreateFab } from './CreateFab';
+import { maybeShowWhatsNew } from '../logic/whatsnew';
 import { setToastOffset } from '../ui/overlay';
 import { LivePop, NotchBubble } from './common';
 
@@ -30,6 +31,9 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
   const todo = isW() ? prItems().filter((x) => !x[1]).length : 0;
   useEffect(() => {
     setToastOffset(NAV_H + 22);
+    // After an update, show what's new once (not during the automated tour's first seconds).
+    const t = setTimeout(maybeShowWhatsNew, 1800);
+    return () => clearTimeout(t);
   }, []);
   const W = isW();
   // Regular: Home (feed) first, Map in the middle. Business: Home is the dashboard.

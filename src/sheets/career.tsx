@@ -11,7 +11,7 @@ import { afterSheet, pick, sheet, SheetTitle, toast } from '../ui/overlay';
 import { C, R, S } from '../ui/theme';
 import { P, isW, xaf, oppBiz, mOwner, curBiz, bizName, bizLogo, has, postById, fname, digits } from '../logic/core';
 import { saveToggle } from '../logic/work';
-import { announce, answerApplicant, answerMentee, courseGroup, enroll, enrolEmployees, joinMentor, joinOpp, publishMentor, publishOpp, removeStudent, setProgress, OppForm } from '../logic/career';
+import { announce, answerApplicant, answerMentee, courseGroup, enroll, learnerGroup, enrolEmployees, joinMentor, joinOpp, publishMentor, publishOpp, removeStudent, setProgress, OppForm } from '../logic/career';
 import { bump } from '../logic/live';
 import { openProfile, openCourses, resetTo } from '../logic/nav';
 import { MyCV, myCvHtml } from '../components/cv';
@@ -645,14 +645,18 @@ function CourseSheet({ id }: { id: string }) {
           </Txt>
         </View>
       ) : e ? (
-        <View style={{ marginTop: 16, padding: 14, borderRadius: 16, backgroundColor: 'rgba(47,179,109,.14)', flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-          <Icon name="check" size={18} color={C.mint} />
-          <Txt s={14} w={7} c={C.mint} style={{ flex: 1 }}>
-            You’re enrolled
-          </Txt>
-          <Txt s={13} w={8}>
-            Starts next Monday
-          </Txt>
+        <View style={{ marginTop: 16, gap: 10 }}>
+          <View style={{ padding: 14, borderRadius: 16, backgroundColor: 'rgba(47,179,109,.14)', flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            <Icon name="check" size={18} color={C.mint} />
+            <Txt s={14} w={7} c={C.mint} style={{ flex: 1 }}>
+              You’re enrolled
+            </Txt>
+            <Txt s={13} w={8}>
+              {c.quick ? 'Starts in 1 minute' : 'Starts next Monday'}
+            </Txt>
+          </View>
+          <Btn testID="course-open" variant="yellow" icon="cap" title="Open course page" onPress={() => afterSheet(() => router.push(`/course/${c.id}` as any))} />
+          <Btn testID="course-group" variant="dark" icon="follow" title="Join the class group" onPress={() => afterSheet(() => openChat(learnerGroup(c)))} />
         </View>
       ) : (
         <Btn

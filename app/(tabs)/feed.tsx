@@ -3,7 +3,8 @@ import { Animated, FlatList, Pressable, ScrollView, View, useWindowDimensions } 
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, ui, REELS, Post } from '../../src/data/db';
-import { Avatar, Btn, Empty, Txt, tap } from '../../src/ui/kit';
+import { Avatar, Btn, Empty, Txt, logoPic, tap } from '../../src/ui/kit';
+import { showStories } from '../../src/components/Stories';
 import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
 import { P, cityLabel, curBiz, bizName, fCount, isW, listJobs, listPeople, matchJob, matchPerson, postVisible, sortJobs, sortPeople } from '../../src/logic/core';
@@ -223,14 +224,19 @@ export default function Feed() {
   );
 }
 
-type Ad = { id: string; who: string; title: string; text: string; cta: string; bg: string; fg: string; sub: string; go: () => void };
+type Ad = { id: string; who: string; title: string; text: string; cta: string; bg: string; fg: string; sub: string; go: () => void; grad: [string, string]; icon: string; skip: number };
 const ADS: Ad[] = [
-  { id: 'njei', who: '', title: 'Njeiforbi is hiring', text: 'Sales reps and delivery riders near you. Apply in minutes.', cta: 'See jobs', bg: C.blue, fg: '#fff', sub: '#e3e7ff', go: () => ((ui.feedView = 'jobs'), (ui.q = ''), bump(), toast('Showing open jobs')) },
-  { id: 'care', who: 'b_care', title: 'CarePlus Clinic needs nurses', text: 'Day shifts in Great Soppo. Interviews this week.', cta: 'Apply', bg: C.mint, fg: '#000', sub: '#1d3b2b', go: () => openProfile('b_care') },
-  { id: 'sma', who: 'b_sma', title: 'Frontend bootcamp, 8 weeks', text: 'Free sponsored places at Silicon Mountain Academy.', cta: 'Join', bg: C.lav, fg: '#000', sub: '#26294a', go: () => openProfile('b_sma') },
-  { id: 'sav', who: 'b_savanna', title: 'Drivers wanted', text: 'Savanna Logistics: licence C, regular routes, monthly pay.', cta: 'See role', bg: C.orange, fg: '#000', sub: '#3b1d0c', go: () => openProfile('b_savanna') },
-  { id: 'volta', who: 'b_volta', title: 'Solar installers wanted', text: 'Volta Solar trains you on the job. Start next month.', cta: 'Apply', bg: C.yellow, fg: '#000', sub: '#3a3815', go: () => openProfile('b_volta') },
+  { id: 'njei', who: '', title: 'Njeiforbi is hiring', text: 'Sales reps and delivery riders near you. Apply in minutes.', cta: 'See jobs', bg: C.blue, fg: '#fff', sub: '#e3e7ff', grad: ['#3d5af1', '#1b2a9b'], icon: 'job', skip: 5, go: () => ((ui.feedView = 'jobs'), (ui.q = ''), bump(), toast('Showing open jobs')) },
+  { id: 'care', who: 'b_care', title: 'CarePlus Clinic needs nurses', text: 'Day shifts in Great Soppo. Interviews this week.', cta: 'Apply', bg: C.mint, fg: '#000', sub: '#1d3b2b', grad: ['#2fbf7a', '#0f6e45'], icon: 'cat-health', skip: 3, go: () => openProfile('b_care') },
+  { id: 'sma', who: 'b_sma', title: 'Frontend bootcamp, 8 weeks', text: 'Free sponsored places at Silicon Mountain Academy.', cta: 'Join', bg: C.lav, fg: '#000', sub: '#26294a', grad: ['#7c5cff', '#3b1fa8'], icon: 'cap', skip: 0, go: () => openProfile('b_sma') },
+  { id: 'sav', who: 'b_savanna', title: 'Drivers wanted', text: 'Savanna Logistics: licence C, regular routes, monthly pay.', cta: 'See role', bg: C.orange, fg: '#000', sub: '#3b1d0c', grad: ['#ff8a3d', '#c2410c'], icon: 'cat-driver', skip: 5, go: () => openProfile('b_savanna') },
+  { id: 'volta', who: 'b_volta', title: 'Solar installers wanted', text: 'Volta Solar trains you on the job. Start next month.', cta: 'Apply', bg: C.yellow, fg: '#000', sub: '#3a3815', grad: ['#f6ee5c', '#e3c400'], icon: 'cat-electrician', skip: 3, go: () => openProfile('b_volta') },
 ];
+
+/** Opens an ad full screen, story style. The close button appears after the seconds the business paid for. */
+function openAd(a: Ad) {
+  showStories([{ key: a.id, colors: a.grad, icon: a.icon, sponsor: a.who ? { name: P(a.who).name, pic: P(a.who).photo } : { name: 'Njeiforbi', pic: logoPic('NJ', '#3d5af1', '#fff') }, chip: 'Sponsored', title: a.title, text: a.text, cta: a.cta, onCta: a.go, dark: a.bg === C.yellow }], { closeAfter: a.skip });
+}
 
 /** Sponsored ads from businesses, as a swipeable carousel that moves on by itself. */
 function Promo() {
@@ -285,7 +291,7 @@ function Promo() {
         }}
       >
         {ADS.map((a) => (
-          <Pressable key={a.id} accessibilityRole="button" accessibilityLabel={`Sponsored. ${a.title}. ${a.text}`} onPress={() => (tap(), a.go())} style={[S.row, { width: cardW, minHeight: 116, gap: 12, padding: 16, borderRadius: 22, backgroundColor: a.bg }]}>
+          <Pressable key={a.id} accessibilityRole="button" accessibilityLabel={`Sponsored. ${a.title}. ${a.text}`} onPress={() => (tap(), openAd(a))} style={[S.row, { width: cardW, minHeight: 116, gap: 12, padding: 16, borderRadius: 22, backgroundColor: a.bg }]}>
             <View style={{ flex: 1 }}>
               <View style={[S.row, { gap: 8, marginBottom: 6 }]}>
                 {a.who ? <Avatar pic={P(a.who).photo} square size={24} /> : null}

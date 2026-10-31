@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FlatList, Pressable, ScrollView, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, Course } from '../src/data/db';
 import { COURSE_CATS } from '../src/data/catalog';
@@ -101,7 +101,7 @@ function CourseRow({ c }: { c: Course }) {
   const d = c.old ? Math.round((1 - c.price / c.old) * 100) : 0;
   const mine = db.myLearning.includes(c.id);
   return (
-    <Pressable onPress={() => openCourse(c.id)} style={({ pressed }) => ({ padding: 14, borderRadius: 20, backgroundColor: pressed ? C.s2 : C.s1, borderWidth: 1, borderColor: C.line, gap: 8 })}>
+    <Pressable onPress={() => (mine ? router.push(`/course/${c.id}` as any) : openCourse(c.id))} style={({ pressed }) => ({ padding: 14, borderRadius: 20, backgroundColor: pressed ? C.s2 : C.s1, borderWidth: 1, borderColor: C.line, gap: 8 })}>
       <View style={[S.row, { gap: 10 }]}>
         <Avatar pic={c.prov.logo} square size={36} />
         <Txt s={12} c={C.muted} style={{ flex: 1 }} lines={1}>

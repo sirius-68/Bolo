@@ -128,7 +128,7 @@ export default function Career() {
               />
             ))}
             {w
-              ? learning.map((c) => <ListRow key={c.id} pic={c.prov.logo} square title={c.title} sub={`${c.prov.n} · ${c.dur}`} pill="Enrolled" pillKind="acc" onPress={() => openCourse(c.id)} />)
+              ? learning.map((c) => <ListRow key={c.id} pic={c.prov.logo} square title={c.title} sub={`${c.prov.n} · ${c.dur}`} pill="Enrolled" pillKind="acc" onPress={() => router.push(`/course/${c.id}` as any)} />)
               : null}
           </View>
         </>

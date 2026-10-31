@@ -20,6 +20,8 @@ import { showDoneAlert } from '../src/sheets/work';
 import { startAdTicker } from '../src/logic/career';
 import { hasSession, pull, startSync } from '../src/logic/remote';
 import { locate } from '../src/logic/here';
+import { StoryHost } from '../src/components/Stories';
+import { ensureQuickCourse, scheduleClass } from '../src/logic/career';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -36,6 +38,12 @@ export default function Root() {
       startSync();
       // Refresh position and city quietly when location is already allowed (never prompts here).
       locate(false);
+      // Test course (starts 1 minute after enrolling) and timers for classes you've joined.
+      ensureQuickCourse();
+      db.myLearning.forEach((cid) => {
+        const c = db.COURSES.find((x) => x.id === cid);
+        if (c) scheduleClass(c);
+      });
       // Copies saved before real accounts existed are demo sessions.
       if (db.loggedIn && !db.uid) db.demo = true;
       if (db.loggedIn && !db.demo) {
@@ -74,6 +82,7 @@ export default function Root() {
         <Stack.Screen name="splash" options={{ animation: 'none' }} />
       </Stack>
       <Overlays />
+      <StoryHost />
     </SafeAreaProvider>
   );
 }

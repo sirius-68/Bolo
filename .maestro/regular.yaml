@@ -31,6 +31,12 @@ name: Regular account tour
     visible:
       id: "tab-feed"
     timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: "story-close"
+    timeout: 6000
+    optional: true
+- takeScreenshot: r03b-whatsnew
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - takeScreenshot: r04-feed

@@ -11,7 +11,8 @@ import { C, S } from '../ui/theme';
 import { P, cityLabel, curBiz, bizName, bizLogo, myVacancies, postById, isEmail, isPhone, xaf } from '../logic/core';
 import { endContract, sendContract, ContractDraft } from '../logic/work';
 import { invite } from '../logic/account';
-import { adRate, adTargets, adHead, launchAd } from '../logic/career';
+import { adCost, adRate, adTargets, adHead, launchAd, MAX_SKIP, SEC_RATE, STORY_EXTRA } from '../logic/career';
+import { showStories, Story } from '../components/Stories';
 import { openChat } from './chat';
 import { openJob } from './work';
 import { defaultPay, openBizSetup, openPro } from './account';
@@ -322,10 +323,10 @@ function InviteForm() {
 }
 
 /* ---------------- ads ---------------- */
-type AdDraft = { t: [string, string, string, string]; head: string; text: string; areas: string[]; fields: string[]; reach: number; days: number };
+type AdDraft = { t: [string, string, string, string]; head: string; text: string; areas: string[]; fields: string[]; reach: number; days: number; fmt: 'card' | 'story'; skip: number };
 export function openAdCreate() {
   const T = adTargets();
-  const a: AdDraft = { t: T[0], head: '', text: '', areas: [curBiz()?.city || cityLabel() || 'Near my business'], fields: [], reach: 1000, days: 7 };
+  const a: AdDraft = { t: T[0], head: '', text: '', areas: [curBiz()?.city || cityLabel() || 'Near my business'], fields: [], reach: 1000, days: 7, fmt: 'story', skip: 5 };
   sheet.show(() => <AdForm a={a} />, { full: true });
 }
 const REACH = [500, 1000, 2000, 5000, 10000, 20000];
@@ -335,7 +336,8 @@ function AdForm({ a }: { a: AdDraft }) {
   const re = () => f((x) => x + 1);
   const b = curBiz()!;
   const T = adTargets();
-  const cost = (a.reach / 100) * adRate();
+  const cost = adCost(a.reach, a.fmt, a.skip);
+  const story = (): Story => ({ key: 'preview', colors: ['#3d5af1', '#1b2a9b'], icon: a.t[0] === 'course' ? 'cap' : a.t[0] === 'page' ? 'storefront' : 'job', sponsor: { name: bizName(b), pic: bizLogo(b) }, chip: 'Sponsored', title: a.head || adHead(a.t), text: a.text || 'Tap to see details and apply on bolo.', cta: a.t[0] === 'page' ? 'Visit page' : a.t[0] === 'course' ? 'Enroll' : 'Apply now' });
   const tog = (L: string[], v: string) => {
     const i = L.indexOf(v);
     i >= 0 ? L.splice(i, 1) : L.push(v);
@@ -416,6 +418,44 @@ function AdForm({ a }: { a: AdDraft }) {
         </View>
       </View>
       <View>
+        <Label>Format</Label>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {(
+            [
+              ['story', 'Full-screen story', 'Opens like a story, big and bold'],
+              ['card', 'Card in the feed', 'Shows between posts'],
+            ] as const
+          ).map(([k, t, d]) => (
+            <Pressable key={k} testID={`ad-fmt-${k}`} onPress={() => ((a.fmt = k), re())} style={{ flex: 1, padding: 12, borderRadius: 14, backgroundColor: a.fmt === k ? 'rgba(61,90,241,.18)' : C.s2, borderWidth: 1, borderColor: a.fmt === k ? C.blue : 'transparent' }}>
+              <Txt s={14} w={8}>
+                {t}
+              </Txt>
+              <Txt s={11} c={C.muted}>
+                {d}
+              </Txt>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+      {a.fmt === 'story' ? (
+        <View>
+          <Label right={<Txt s={13} w={8}>{a.skip ? `${a.skip} s` : 'Right away'}</Txt>}>People can close it after</Label>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+            {Array.from({ length: MAX_SKIP + 1 }, (_, n) => n).map((n) => (
+              <Pressable key={n} testID={`ad-skip-${n}`} onPress={() => ((a.skip = n), re())} style={{ width: 44, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: a.skip === n ? C.yellow : C.s2 }}>
+                <Txt s={13} w={8} c={a.skip === n ? '#000' : C.text}>
+                  {n}s
+                </Txt>
+              </Pressable>
+            ))}
+          </View>
+          <Txt s={12} c={C.muted} style={{ marginTop: 6 }}>
+            Each second people must watch costs {xaf(SEC_RATE)} per 100 people reached ({xaf((a.reach / 100) * SEC_RATE)} per second for {a.reach.toLocaleString('en')} people). Story format adds {xaf(STORY_EXTRA)} per 100.
+          </Txt>
+          <Btn small variant="dark" icon="play" title="Preview full screen" style={{ alignSelf: 'flex-start', marginTop: 10 }} onPress={() => showStories([story()], { closeAfter: a.skip })} />
+        </View>
+      ) : null}
+      <View>
         <Label>Where</Label>
         <Chips>
           {[curBiz()?.city || cityLabel() || 'Near my business', 'Within 25 km', 'Within 100 km', 'Whole country'].map((c) => (
@@ -468,7 +508,7 @@ function AdForm({ a }: { a: AdDraft }) {
         onPress={() => {
           setBusy(true);
           setTimeout(() => {
-            launchAd({ t: a.t, head: a.head || adHead(a.t), text: a.text, areas: a.areas, fields: a.fields, reach: a.reach, days: a.days });
+            launchAd({ t: a.t, head: a.head || adHead(a.t), text: a.text, areas: a.areas, fields: a.fields, reach: a.reach, days: a.days, fmt: a.fmt, skip: a.skip });
             sheet.close();
             router.push('/ads');
           }, 1300);

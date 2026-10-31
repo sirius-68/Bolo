@@ -178,6 +178,11 @@ export type Course = {
   people?: string[];
   prog?: Record<string, number>;
   emp?: number;
+  /** timestamp of the next live class for learners; quick = test course that starts 1 minute after enrolling */
+  startAt?: number;
+  quick?: number;
+  /** lessons the learner has finished */
+  done?: number;
 };
 export type Mentorship = {
   id: string;
@@ -245,6 +250,9 @@ export type Ad = {
   status: 'active' | 'paused' | 'done';
   paid: number;
   start: string;
+  /** 'story' = full-screen ad; skip = seconds before it can be closed (0–10) */
+  fmt?: 'card' | 'story';
+  skip?: number;
 };
 export type MyBiz = {
   id: string;
