@@ -52,6 +52,11 @@ name: Regular account tour
       visible:
         id: "ads-carousel"
     commands:
+      - scrollUntilVisible:
+          element:
+            id: "ads-carousel"
+          direction: DOWN
+          centerElement: true
       # The carousel slides by itself; a tap mid-slide only stops it, so try again
       - retry:
           maxRetries: 3
