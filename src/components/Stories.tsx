@@ -32,8 +32,7 @@ export function showStories(list: Story[], opts: Opts = {}) {
   holdSheets(true);
   subs.forEach((f) => f());
 }
-function closeStories(why = 'close') {
-  console.log('[stories] close:', why);
+function closeStories(_why = 'close') {
   const o = state?.opts;
   state = null;
   holdSheets(false);

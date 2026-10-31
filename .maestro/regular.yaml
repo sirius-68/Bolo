@@ -48,6 +48,8 @@ name: Regular account tour
     commands:
       - tapOn:
           id: "status-edward"
+          # the progress bar keeps moving, so don't wait for the screen to settle
+          waitToSettleTimeoutMs: 500
       # A status plays for 6.5 s and closes itself: capture it right away
       - extendedWaitUntil:
           visible:
