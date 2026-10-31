@@ -1,0 +1,142 @@
+Anonymous analytics enabled. To opt out, set MAESTRO_CLI_NO_ANALYTICS environment variable to any value before running Maestro.
+
+Running on test
+ > Flow Regular account tour
+Launch app "cm.bolo.app" with clear state... COMPLETED
+Run dismiss.yaml...
+  Run flow when "isn't responding" is visible...
+  Run flow when "isn't responding" is visible... SKIPPED
+  Run flow when "Not yet, something’s wrong" is visible...
+  Run flow when "Not yet, something’s wrong" is visible... SKIPPED
+  Run flow when id: story-close is visible...
+  Run flow when id: story-close is visible... SKIPPED
+Run dismiss.yaml... COMPLETED
+Assert that id: skip is visible... COMPLETED
+Take screenshot r01-onboard... COMPLETED
+Tap on id: skip... COMPLETED
+Tap on id: demo... COMPLETED
+Take screenshot r02-welcome... COMPLETED
+Tap on id: have-account... COMPLETED
+Tap on id: li-contact... COMPLETED
+Input text 677123456... COMPLETED
+Hide Keyboard... COMPLETED
+Tap on id: li-pwd... COMPLETED
+Input text password123... COMPLETED
+Hide Keyboard... COMPLETED
+Take screenshot r03-login... COMPLETED
+Tap on id: li-submit... COMPLETED
+Assert that id: tab-feed is visible... COMPLETED
+Assert that (Optional) id: story-close is visible... WARNED
+
+
+ Warning: Assertion is false: id: story-close is visible
+Take screenshot r03b-whatsnew... COMPLETED
+Wait for animation to end... COMPLETED
+Run dismiss.yaml...
+  Run flow when "isn't responding" is visible...
+  Run flow when "isn't responding" is visible... SKIPPED
+  Run flow when "Not yet, something’s wrong" is visible...
+    Press back... COMPLETED
+  Run flow when "Not yet, something’s wrong" is visible... COMPLETED
+  Run flow when id: story-close is visible...
+  Run flow when id: story-close is visible... SKIPPED
+Run dismiss.yaml... COMPLETED
+Take screenshot r04-feed... COMPLETED
+Run flow when id: status-edward is visible...
+  Tap on id: status-edward... COMPLETED
+  Wait for animation to end... COMPLETED
+  Take screenshot r04d-status... COMPLETED
+  Tap on id: story-close... FAILED
+Run flow when id: status-edward is visible... FAILED
+
+Element not found: Id matching regex: story-close
+
+Element with Id matching regex: story-close not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state.
+- This could be a real regression that needs to be addressed.
+
+==== Debug output (logs & screenshots) ====
+
+/home/runner/.maestro/tests/2026-10-31_101403
+2026-10-31T10:16:05.195819026Z Thread-5 ERROR Unable to write to stream /home/runner/.maestro/tests/2026-10-31_101403/maestro.log for appender File
+org.apache.logging.log4j.core.appender.AppenderLoggingException: Error writing to stream /home/runner/.maestro/tests/2026-10-31_101403/maestro.log
+	at org.apache.logging.log4j.core.appender.OutputStreamManager.writeToDestination(OutputStreamManager.java:265)
+	at org.apache.logging.log4j.core.appender.FileManager.writeToDestination(FileManager.java:335)
+	at org.apache.logging.log4j.core.appender.OutputStreamManager.flushBuffer(OutputStreamManager.java:296)
+	at org.apache.logging.log4j.core.appender.OutputStreamManager.flush(OutputStreamManager.java:307)
+	at org.apache.logging.log4j.core.appender.AbstractOutputStreamAppender.directEncodeEvent(AbstractOutputStreamAppender.java:229)
+	at org.apache.logging.log4j.core.appender.AbstractOutputStreamAppender.tryAppend(AbstractOutputStreamAppender.java:220)
+	at org.apache.logging.log4j.core.appender.AbstractOutputStreamAppender.append(AbstractOutputStreamAppender.java:211)
+	at org.apache.logging.log4j.core.config.AppenderControl.tryCallAppender(AppenderControl.java:160)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppender0(AppenderControl.java:133)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppenderPreventRecursion(AppenderControl.java:124)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppender(AppenderControl.java:88)
+	at org.apache.logging.log4j.core.config.LoggerConfig.callAppenders(LoggerConfig.java:711)
+	at org.apache.logging.log4j.core.config.LoggerConfig.processLogEvent(LoggerConfig.java:669)
+	at org.apache.logging.log4j.core.config.LoggerConfig.log(LoggerConfig.java:645)
+	at org.apache.logging.log4j.core.config.LoggerConfig.logParent(LoggerConfig.java:702)
+	at org.apache.logging.log4j.core.config.LoggerConfig.processLogEvent(LoggerConfig.java:671)
+	at org.apache.logging.log4j.core.config.LoggerConfig.log(LoggerConfig.java:645)
+	at org.apache.logging.log4j.core.config.LoggerConfig.log(LoggerConfig.java:589)
+	at org.apache.logging.log4j.core.config.DefaultReliabilityStrategy.log(DefaultReliabilityStrategy.java:73)
+	at org.apache.logging.log4j.core.Logger.log(Logger.java:187)
+	at org.apache.logging.log4j.spi.AbstractLogger.tryLogMessage(AbstractLogger.java:2970)
+	at org.apache.logging.log4j.spi.AbstractLogger.logMessageTrackRecursion(AbstractLogger.java:2922)
+	at org.apache.logging.log4j.spi.AbstractLogger.logMessageSafely(AbstractLogger.java:2904)
+	at org.apache.logging.log4j.spi.AbstractLogger.logMessage(AbstractLogger.java:2653)
+	at org.apache.logging.log4j.spi.AbstractLogger.logIfEnabled(AbstractLogger.java:2393)
+	at org.apache.logging.slf4j.Log4jLogger.info(Log4jLogger.java:173)
+	at maestro.drivers.AndroidDriver.close(AndroidDriver.kt:180)
+	at maestro.Maestro.close(Maestro.kt:606)
+	at maestro.cli.session.MaestroSessionManager$MaestroSession.close(MaestroSessionManager.kt:471)
+	at maestro.cli.session.MaestroSessionManager.newSession$lambda$2(MaestroSessionManager.kt:129)
+	at kotlin.concurrent.ThreadsKt$thread$thread$1.run(Thread.kt:30)
+Caused by: java.io.IOException: Stream Closed
+	at java.base/java.io.FileOutputStream.writeBytes(Native Method)
+	at java.base/java.io.FileOutputStream.write(FileOutputStream.java:349)
+	at org.apache.logging.log4j.core.appender.OutputStreamManager.writeToDestination(OutputStreamManager.java:263)
+	... 30 more
+
+2026-10-31T10:16:05.197165472Z Thread-5 ERROR An exception occurred processing Appender File
+org.apache.logging.log4j.core.appender.AppenderLoggingException: Error writing to stream /home/runner/.maestro/tests/2026-10-31_101403/maestro.log
+	at org.apache.logging.log4j.core.appender.OutputStreamManager.writeToDestination(OutputStreamManager.java:265)
+	at org.apache.logging.log4j.core.appender.FileManager.writeToDestination(FileManager.java:335)
+	at org.apache.logging.log4j.core.appender.OutputStreamManager.flushBuffer(OutputStreamManager.java:296)
+	at org.apache.logging.log4j.core.appender.OutputStreamManager.flush(OutputStreamManager.java:307)
+	at org.apache.logging.log4j.core.appender.AbstractOutputStreamAppender.directEncodeEvent(AbstractOutputStreamAppender.java:229)
+	at org.apache.logging.log4j.core.appender.AbstractOutputStreamAppender.tryAppend(AbstractOutputStreamAppender.java:220)
+	at org.apache.logging.log4j.core.appender.AbstractOutputStreamAppender.append(AbstractOutputStreamAppender.java:211)
+	at org.apache.logging.log4j.core.config.AppenderControl.tryCallAppender(AppenderControl.java:160)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppender0(AppenderControl.java:133)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppenderPreventRecursion(AppenderControl.java:124)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppender(AppenderControl.java:88)
+	at org.apache.logging.log4j.core.config.LoggerConfig.callAppenders(LoggerConfig.java:711)
+	at org.apache.logging.log4j.core.config.LoggerConfig.processLogEvent(LoggerConfig.java:669)
+	at org.apache.logging.log4j.core.config.LoggerConfig.log(LoggerConfig.java:645)
+	at org.apache.logging.log4j.core.config.LoggerConfig.logParent(LoggerConfig.java:702)
+	at org.apache.logging.log4j.core.config.LoggerConfig.processLogEvent(LoggerConfig.java:671)
+	at org.apache.logging.log4j.core.config.LoggerConfig.log(LoggerConfig.java:645)
+	at org.apache.logging.log4j.core.config.LoggerConfig.log(LoggerConfig.java:589)
+	at org.apache.logging.log4j.core.config.DefaultReliabilityStrategy.log(DefaultReliabilityStrategy.java:73)
+	at org.apache.logging.log4j.core.Logger.log(Logger.java:187)
+	at org.apache.logging.log4j.spi.AbstractLogger.tryLogMessage(AbstractLogger.java:2970)
+	at org.apache.logging.log4j.spi.AbstractLogger.logMessageTrackRecursion(AbstractLogger.java:2922)
+	at org.apache.logging.log4j.spi.AbstractLogger.logMessageSafely(AbstractLogger.java:2904)
+	at org.apache.logging.log4j.spi.AbstractLogger.logMessage(AbstractLogger.java:2653)
+	at org.apache.logging.log4j.spi.AbstractLogger.logIfEnabled(AbstractLogger.java:2393)
+	at org.apache.logging.slf4j.Log4jLogger.info(Log4jLogger.java:173)
+	at maestro.drivers.AndroidDriver.close(AndroidDriver.kt:180)
+	at maestro.Maestro.close(Maestro.kt:606)
+	at maestro.cli.session.MaestroSessionManager$MaestroSession.close(MaestroSessionManager.kt:471)
+	at maestro.cli.session.MaestroSessionManager.newSession$lambda$2(MaestroSessionManager.kt:129)
+	at kotlin.concurrent.ThreadsKt$thread$thread$1.run(Thread.kt:30)
+Caused by: java.io.IOException: Stream Closed
+	at java.base/java.io.FileOutputStream.writeBytes(Native Method)
+	at java.base/java.io.FileOutputStream.write(FileOutputStream.java:349)
+	at org.apache.logging.log4j.core.appender.OutputStreamManager.writeToDestination(OutputStreamManager.java:263)
+	... 30 more
+
+exit=1
