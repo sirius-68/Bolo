@@ -60,6 +60,7 @@ function Room({ c }: { c: Course }) {
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [pen, setPen] = useState(PENS[2]);
   const nextId = useRef(10);
+  const chatRef = useRef<FlatList<ChatM>>(null);
   const pulse = useRef(new Animated.Value(0)).current;
   const teacher = host ? 'me' : 'host';
   const teacherName = host ? 'You' : c.prov.n;
@@ -343,7 +344,8 @@ function Room({ c }: { c: Course }) {
             data={chat}
             keyExtractor={(m) => String(m.id)}
             contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 8, gap: 10 }}
-            ref={(r) => r && setTimeout(() => r.scrollToEnd({ animated: false }), 0)}
+            ref={chatRef}
+            onContentSizeChange={() => chatRef.current?.scrollToEnd({ animated: true })}
             renderItem={({ item: m }) => {
               const nm = m.who === 'me' ? 'You' : m.who === 'host' ? c.prov.n : fname(P(m.who)?.name || '');
               const pic = m.who === 'me' ? myPhoto() : m.who === 'host' ? c.prov.logo : P(m.who)?.photo || '';

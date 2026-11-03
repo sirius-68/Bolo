@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { db } from '../src/data/db';
 import { CATS, PJ_AREAS, detectCat, catIcon } from '../src/data/catalog';
-import { Btn, Check, Chip, Chips, Field, Fine, Input, Label, Page, Pict, SelectBox, Stepper, Sub, SwitchRow, Title, TopBar, Txt } from '../src/ui/kit';
+import { Btn, Check, Chip, Chips, Field, Fine, Input, Label, OptRow, Page, Pict, SelectBox, Stepper, Sub, SwitchRow, Title, TopBar, Txt } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { pick, toast } from '../src/ui/overlay';
 import { C, R, S } from '../src/ui/theme';
 import { bizName, cityLabel, curBiz, digits, isW } from '../src/logic/core';
 import { postJob } from '../src/logic/work';
-import { pickImages } from '../src/logic/media';
+import { MAX_PHOTO_MB, pickImages, takePhoto } from '../src/logic/media';
+import { afterSheet, sheet, SheetTitle } from '../src/ui/overlay';
 import { later } from '../src/logic/live';
 import { back, resetTo } from '../src/logic/nav';
 import { openJob } from '../src/sheets/work';
@@ -86,13 +87,14 @@ export default function PostJob() {
             {photos.length < 3 ? (
               <Pressable
                 accessibilityLabel="Add photos"
-                onPress={async () => {
-                  const L = await pickImages(3 - photos.length);
-                  if (L.length) setPhotos([...photos, ...L].slice(0, 3));
-                }}
+                testID="pj-add-photo"
+                onPress={() => addPhotos(3 - photos.length, (L) => setPhotos((cur) => [...cur, ...L].slice(0, 3)))}
                 style={{ width: 84, height: 84, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', borderColor: C.s3, alignItems: 'center', justifyContent: 'center' }}
               >
                 <Icon name="camera" size={22} color={C.muted} />
+                <Txt s={10} c={C.muted} style={{ marginTop: 4 }}>
+                  Add
+                </Txt>
               </Pressable>
             ) : null}
           </View>
@@ -148,3 +150,28 @@ export default function PostJob() {
   );
 }
 export { R };
+
+/** Add photos: take one with the camera (preview, then use or retake) or choose from the gallery. */
+function addPhotos(room: number, add: (L: string[]) => void) {
+  sheet.show(() => (
+    <View style={{ gap: 6 }}>
+      <SheetTitle sub={`Up to ${room} more · JPG, PNG, WebP or HEIC · max ${MAX_PHOTO_MB} MB each`}>Add photos</SheetTitle>
+      <OptRow testID="ph-camera" icon="camera" bg={C.yellow} title="Take a photo" sub="Use your camera now" onPress={() => afterSheet(() => shoot(add))} />
+      <OptRow testID="ph-gallery" icon="image" bg={C.lav} title="Choose from gallery" sub="Pick photos you already have" onPress={() => afterSheet(async () => { const L = await pickImages(room); if (L.length) add(L); })} />
+    </View>
+  ));
+}
+async function shoot(add: (L: string[]) => void) {
+  const p = await takePhoto();
+  if (!p) return;
+  sheet.show(() => (
+    <View style={{ gap: 12 }}>
+      <SheetTitle>Use this photo?</SheetTitle>
+      <Pict pic={p} style={{ width: '100%', aspectRatio: 1, borderRadius: 18 }} />
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <Btn variant="dark" icon="camera" title="Retake" style={{ flex: 1 }} onPress={() => afterSheet(() => shoot(add))} />
+        <Btn testID="ph-use" variant="yellow" icon="check" title="Use photo" style={{ flex: 1 }} onPress={() => (add([p]), sheet.close())} />
+      </View>
+    </View>
+  ));
+}
