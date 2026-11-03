@@ -193,6 +193,8 @@ export type Course = {
   /** timestamp of the next live class for learners; quick = test course that starts 1 minute after enrolling */
   startAt?: number;
   quick?: number;
+  /** demo course that is always live, for trying the live class */
+  live?: number;
   /** lessons the learner has finished */
   done?: number;
 };

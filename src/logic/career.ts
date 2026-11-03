@@ -172,6 +172,34 @@ export function scheduleClass(c: Course) {
     bump();
   });
 }
+/** The always-live demo course: its class started 5 minutes ago whenever you look. */
+export function keepLive(c: Course) {
+  if (c.startAt && Date.now() - c.startAt < 80 * 60_000 && Date.now() >= c.startAt) return false;
+  c.startAt = Date.now() - 5 * 60_000;
+  return true;
+}
+export const LIVE_ID = 'c_live';
+export function ensureLiveCourse() {
+  let c = db.COURSES.find((x) => x.id === LIVE_ID);
+  if (!c) {
+    c = { id: LIVE_ID, live: 1, title: 'Live demo class: join any time', prov: { n: 'bolo Academy', logo: logoPic('bA', '#e11d48', '#fff') }, cat: 'Business', lv: 'Beginner', dur: '1 hour', type: 'Skill', fmt: 'Online', reg: '', price: 0, old: 0, prof: '', skills: ['Getting the most from a live class', 'Whiteboard, chat and Q&A', 'Recordings and timestamps'], mo: 0 } as Course;
+    db.COURSES.unshift(c);
+  }
+  keepLive(c);
+  return c;
+}
+/** Join the demo live class straight away (enrols you if needed, no payment). */
+export function joinLiveDemo() {
+  const c = ensureLiveCourse();
+  if (!db.myLearning.includes(c.id)) {
+    db.myLearning.push(c.id);
+    c.done = c.done || 0;
+    learnerGroup(c);
+  }
+  keepLive(c);
+  bump();
+  return c;
+}
 /** Test course: starts 1 minute after you enrol. */
 export function ensureQuickCourse() {
   if (db.COURSES.some((x) => x.id === 'c_quick')) return;
@@ -181,6 +209,7 @@ export function ensureQuickCourse() {
 }
 /** Courses enrolled before class times existed get the next Monday class. */
 export function ensureClassTime(c: Course) {
+  if (c.live) return keepLive(c);
   if (c.quick || (c.startAt && c.startAt + 90 * 60_000 > Date.now())) return false;
   c.startAt = nextClassAt();
   scheduleClass(c);

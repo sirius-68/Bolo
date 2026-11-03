@@ -216,6 +216,45 @@ name: Regular account tour
       - takeScreenshot: r11g-cv-after-edit-back
       - back
       - waitForAnimationToEnd
+# Always-live demo class: as a student, then as the teacher
+- runFlow:
+    when:
+      visible:
+        id: "live-demo-join"
+    commands:
+      - tapOn:
+          id: "live-demo-join"
+          waitToSettleTimeoutMs: 500
+      - extendedWaitUntil:
+          visible:
+            id: "live-end"
+          timeout: 8000
+      - takeScreenshot: r11h-live-student
+      - tapOn:
+          id: "live-end"
+          waitToSettleTimeoutMs: 500
+      - tapOn: "Leave"
+      - tapOn:
+          id: "live-demo-teach"
+          waitToSettleTimeoutMs: 500
+      - extendedWaitUntil:
+          visible:
+            id: "live-rec"
+          timeout: 8000
+      - tapOn:
+          id: "live-rec"
+          waitToSettleTimeoutMs: 500
+      - tapOn:
+          id: "live-stage-board"
+          waitToSettleTimeoutMs: 500
+      - swipe:
+          start: 30%,30%
+          end: 70%,40%
+      - takeScreenshot: r11i-live-teacher
+      - tapOn:
+          id: "live-end"
+          waitToSettleTimeoutMs: 500
+      - tapOn: "End class"
 # Courses: enrol in the 1-minute test class → welcome → course page → lesson → My learning
 - scrollUntilVisible:
     element: "Quick test class.*"

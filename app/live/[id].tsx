@@ -24,7 +24,7 @@ const nowHM = () => new Date().toLocaleTimeString('en-GB', { hour: '2-digit', mi
 /** Live class (mobile). Teacher = the course is yours: board pen, record, mute all, hands, end class.
     Student: watch, raise hand, chat and ask questions. Audio/video streams connect when the video service is on. */
 export default function LiveClass() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, as } = useLocalSearchParams<{ id: string; as?: string }>();
   const c = db.COURSES.find((x) => x.id === id);
   const ins = useSafeAreaInsets();
   if (!c)
@@ -33,13 +33,14 @@ export default function LiveClass() {
         <Empty title="Class not found" />
       </View>
     );
-  return <Room c={c} />;
+  // as=host: try the teacher's view of the demo class
+  return <Room c={c} asHost={as === 'host'} />;
 }
 
-function Room({ c }: { c: Course }) {
+function Room({ c, asHost }: { c: Course; asHost?: boolean }) {
   const ins = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const host = !!c.mine;
+  const host = !!c.mine || !!asHost;
   const people = useMemo(() => classPeople(c), [c.id]);
   const lesson = lessonsOf(c)[Math.min(c.done || 0, lessonsOf(c).length - 1)];
   const t0 = useRef(c.startAt && Date.now() >= c.startAt && Date.now() - c.startAt < 90 * 60_000 ? c.startAt : Date.now()).current;

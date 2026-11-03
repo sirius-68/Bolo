@@ -23,7 +23,7 @@ import { startAdTicker } from '../src/logic/career';
 import { hasSession, pull, startSync } from '../src/logic/remote';
 import { locate } from '../src/logic/here';
 import { StoryHost } from '../src/components/Stories';
-import { ensureAdJobs, ensureClassTime, ensureQuickCourse, scheduleClass } from '../src/logic/career';
+import { ensureAdJobs, ensureClassTime, ensureLiveCourse, ensureQuickCourse, scheduleClass } from '../src/logic/career';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -42,6 +42,7 @@ export default function Root() {
       locate(false);
       // Test course (starts 1 minute after enrolling) and timers for classes you've joined.
       ensureQuickCourse();
+      ensureLiveCourse();
       ensureAdJobs();
       ensureWallet();
       // Old bug: tapping Edit cleared cvDone, so leaving the editor left the CV unreachable. Restore it.

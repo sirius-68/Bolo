@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../../src/data/db';
 import { COURSE_CATS, EXPERTS } from '../../src/data/catalog';
 import { Course } from '../../src/data/db';
-import { classWhen, coursePct, isLive, lessonsOf } from '../../src/logic/career';
+import { LIVE_ID, classWhen, coursePct, isLive, joinLiveDemo, lessonsOf } from '../../src/logic/career';
 import { Avatar, Bar, ProTag, Txt, tap } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
@@ -91,6 +91,7 @@ export default function Career() {
           </>
         )}
       </View>
+      {w ? <LiveNow /> : null}
       {w && learning.length ? <ContinueLearning list={learning} /> : null}
       {w ? (
         <Pressable accessibilityRole="button" onPress={openExperts} style={{ marginTop: 12, padding: 16, borderRadius: 22, backgroundColor: C.blue }}>
@@ -354,5 +355,44 @@ function ProCard({ on, onPress }: { on: boolean; onPress: () => void }) {
         </View>
       </View>
     </Pressable>
+  );
+}
+
+/** Always-live demo class: join as a student, or try the teacher's view. */
+function LiveNow() {
+  return (
+    <View testID="career-live" style={{ marginTop: 12, padding: 14, borderRadius: 22, backgroundColor: C.s1, borderWidth: 1.5, borderColor: '#e11d48' }}>
+      <View style={[S.row, { gap: 10 }]}>
+        <View style={[S.row, { gap: 5, paddingHorizontal: 8, height: 22, borderRadius: 6, backgroundColor: '#e11d48' }]}>
+          <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: '#fff' }} />
+          <Txt s={11} w={8}>
+            LIVE NOW
+          </Txt>
+        </View>
+        <Txt s={12} c={C.muted} style={{ flex: 1 }} lines={1}>
+          bolo Academy · free · join any time
+        </Txt>
+      </View>
+      <Txt s={16} w={8} style={{ marginTop: 8 }}>
+        Live demo class
+      </Txt>
+      <Txt s={12} c={C.muted}>
+        Try the live classroom: video, whiteboard, chat, Q&A and raise hand.
+      </Txt>
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+        <Pressable testID="live-demo-join" accessibilityRole="button" onPress={() => (tap(), joinLiveDemo(), router.push(`/live/${LIVE_ID}` as any))} style={({ pressed }) => [S.row, { flex: 1, gap: 6, height: 44, borderRadius: 22, backgroundColor: C.yellow, justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
+          <Icon name="video" size={16} color="#000" />
+          <Txt s={14} w={8} c="#000">
+            Join as student
+          </Txt>
+        </Pressable>
+        <Pressable testID="live-demo-teach" accessibilityRole="button" onPress={() => (tap(), joinLiveDemo(), router.push(`/live/${LIVE_ID}?as=host` as any))} style={({ pressed }) => [S.row, { flex: 1, gap: 6, height: 44, borderRadius: 22, backgroundColor: C.s2, justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
+          <Icon name="cap" size={16} color={C.text} />
+          <Txt s={14} w={8}>
+            Teach it
+          </Txt>
+        </Pressable>
+      </View>
+    </View>
   );
 }
