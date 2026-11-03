@@ -86,9 +86,38 @@ name: Regular account tour
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - takeScreenshot: r06-feed-jobs
+# Share a job (system share sheet), then back
+- runFlow:
+    when:
+      visible:
+        id: "share-job-.*"
+    commands:
+      - tapOn:
+          id: "share-job-.*"
+      - waitForAnimationToEnd
+      - takeScreenshot: r06f-share-job
+      - back
+      - waitForAnimationToEnd
 - tapOn: "Feed"
 - waitForAnimationToEnd
 - takeScreenshot: r06b-feed-tab
+# Comment on a post: the count goes up
+- runFlow:
+    when:
+      visible: "Comments"
+    commands:
+      - tapOn: "Comments"
+      - waitForAnimationToEnd
+      - tapOn:
+          id: "cmt-input"
+      - inputText: "Looks great"
+      - tapOn:
+          id: "cmt-send"
+      - hideKeyboard
+      - takeScreenshot: r06d-comment
+      - back
+      - waitForAnimationToEnd
+      - takeScreenshot: r06e-comment-count
 - scroll
 - scroll
 - takeScreenshot: r06c-feed-tab-2
@@ -173,6 +202,73 @@ name: Regular account tour
       - tapOn:
           id: "lesson-done"
       - waitForAnimationToEnd
+      # Recordings → player → ask at a timestamp
+      - tapOn: "Recordings"
+      - takeScreenshot: r12s-recordings
+      - tapOn:
+          id: "rec-c_quick-r0"
+          waitToSettleTimeoutMs: 500
+      - extendedWaitUntil:
+          visible:
+            id: "watch-ask"
+          timeout: 10000
+      - takeScreenshot: r12t-watch
+      - tapOn:
+          id: "watch-ask"
+          waitToSettleTimeoutMs: 500
+      - tapOn:
+          id: "ask-text"
+          waitToSettleTimeoutMs: 500
+      - inputText: "Can someone explain this part?"
+      - takeScreenshot: r12u-ask
+      - tapOn:
+          id: "ask-send"
+          waitToSettleTimeoutMs: 500
+      - back
+      # Rate the course
+      - tapOn: "Reviews"
+      - tapOn:
+          id: "star-5"
+      - tapOn:
+          id: "review-submit"
+      - takeScreenshot: r12v-review
+      # Live class (the test class goes live 1 minute after enrolling)
+      - swipe:
+          start: 50%,35%
+          end: 50%,90%
+      - swipe:
+          start: 50%,35%
+          end: 50%,90%
+      - extendedWaitUntil:
+          visible:
+            id: "course-join-class"
+          timeout: 70000
+          optional: true
+      - runFlow:
+          when:
+            visible:
+              id: "course-join-class"
+          commands:
+            - tapOn:
+                id: "course-join-class"
+                waitToSettleTimeoutMs: 500
+            - extendedWaitUntil:
+                visible:
+                  id: "live-end"
+                timeout: 8000
+            - takeScreenshot: r12w-live
+            - tapOn:
+                id: "live-stage-board"
+                waitToSettleTimeoutMs: 500
+            - takeScreenshot: r12x-board
+            - tapOn:
+                id: "live-hand"
+                waitToSettleTimeoutMs: 500
+            - takeScreenshot: r12y-hand
+            - tapOn:
+                id: "live-end"
+                waitToSettleTimeoutMs: 500
+            - tapOn: "Leave"
       - back
       - waitForAnimationToEnd
       - runFlow: dismiss.yaml

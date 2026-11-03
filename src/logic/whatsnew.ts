@@ -5,12 +5,16 @@ import { bump } from './live';
 import { showStories, Story } from '../components/Stories';
 import { openPayments } from '../sheets/account';
 
-export const WHATS_NEW_ID = '2026-10-31e';
+export const WHATS_NEW_ID = '2026-11-03';
 
 /** Slides added in the latest update. */
-const LATEST = ['feed', 'teach'];
+const LATEST = ['live', 'cvpro', 'rate', 'jobshare'];
 
 export const WHATS_NEW: Story[] = [
+  { key: 'live', colors: ['#e11d48', '#7f1d3a'], icon: 'video', chip: 'Courses', title: 'Live classes and recordings', text: 'Join live classes with a whiteboard, chat, Q&A and raise hand. Every class is recorded: watch again and ask about the exact moment you’re watching.', cta: 'My learning', onCta: () => router.push('/courses?tab=mine' as any) },
+  { key: 'cvpro', colors: ['#6d4cff', '#14206e'], icon: 'file', chip: 'Pro', title: 'New CV designs', text: 'Five professional CV templates, Classic and Modern. Preview any of them with your own details; save as PDF with Pro.' },
+  { key: 'rate', colors: ['#f6ee5c', '#e3c400'], icon: 'star', chip: 'Courses', title: 'Rate your courses', text: 'Give your course 1 to 5 stars and a short review. Ratings help everyone pick good courses.', dark: true },
+  { key: 'jobshare', colors: ['#2fbf7a', '#0f6e45'], icon: 'share', chip: 'Jobs', title: 'Share jobs, find them faster', text: 'Share any job with friends in one tap. New filters for jobs and people, and a clearer notifications page.' },
   { key: 'feed', colors: ['#3d5af1', '#1b2a9b'], icon: 'feed', chip: 'New tab', title: 'Your work feed', text: 'Home → Feed shows only the work people share, people you follow first, with Work in action videos along the way.' },
   { key: 'teach', colors: ['#7c5cff', '#3b1fa8'], icon: 'cap', chip: 'For everyone', title: 'Teach a course', text: 'Tailor, plumber, developer, baker: anyone can now run a course with live classes and get paid to their wallet.', cta: 'Start teaching', onCta: () => router.push('/teach' as any) },
   { key: 'wallet', colors: ['#2fbf7a', '#0f6e45'], icon: 'shield', chip: 'Safe payments', title: 'Your bolo wallet', text: 'Add money from mobile money, card or bank. When you hire, the price waits in escrow and is released only when you confirm the job is done.', cta: 'Open my wallet', onCta: () => router.push('/wallet' as any) },

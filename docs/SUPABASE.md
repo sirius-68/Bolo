@@ -67,3 +67,18 @@ Table Editor → `profiles` → set `pro_regular` or `pro_business` to `true`.
 - `src/logic/remote.ts` — sign-up / log-in / codes / password reset, and syncing the profile and business pages (debounced, only changed data is sent; photos are uploaded to `avatars/<user id>/`)
 - Everything else (jobs, chats, bookings, career) is still sample data on the phone. It moves to Supabase in the next phases.
 - **Demo mode**: on the welcome screen, “Explore the demo” runs the app fully offline with sample data and the code `1234` — useful for showing the app and for automated tests.
+
+
+## Activity tables — comments, notifications, courses, ratings, job photos
+
+Run [`supabase/migrations/0002_activity.sql`](../supabase/migrations/0002_activity.sql) after 0001 (SQL Editor → New query → paste → Run; safe to re-run).
+
+| Table / object | Rule enforced by the database |
+|---|---|
+| `posts`, `comments` | Anyone signed in can comment; only the author deletes it. The count comes from `post_comment_counts` (computed, never stored). |
+| `notifications` | Created **only by triggers** through `bolo_notify()`. One row per (recipient, event) — no duplicates. Each person reads, marks read and deletes only their own. Respects `notification_prefs`. |
+| `courses`, `course_enrollments` | Students enrol themselves (not in their own course); the owner approves/rejects. Triggers notify the owner of new enrolments and the student of the decision. |
+| `course_reviews` | Only an **active enrolled student** can insert or edit a review; 1–5 stars; one per student per course; owner is notified. Averages in `course_ratings`. |
+| storage `job-photos` | JPG/PNG/WebP/HEIC, max 10 MB, each user writes only to their own folder. |
+
+The app already behaves the same way on the phone (src/logic/notify.ts, comments.ts, reviews.ts). It switches to these tables when jobs and courses move to Supabase.
