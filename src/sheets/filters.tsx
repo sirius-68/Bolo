@@ -157,8 +157,8 @@ export function activeFilters(mode: 'jobs' | 'people'): [string, () => void][] {
 }
 
 /** Course filters (Courses screen). */
-export type CourseF = { cat: string; lv: string; price: string; fmt: string };
-export const courseF: CourseF = { cat: '', lv: '', price: '', fmt: '' };
+export type CourseF = { cat: string; lv: string; price: string; fmt: string; rate: string };
+export const courseF: CourseF = { cat: '', lv: '', price: '', fmt: '', rate: '' };
 export function openCourseFilters() {
   const t = { ...courseF };
   sheet.show(() => {
@@ -194,8 +194,13 @@ export function openCourseFilters() {
             ['Online', 'Online'],
             ['Offline', 'In person'],
           ])}
+          {row('Rating', 'rate', [
+            ['', 'Any'],
+            ['4', '4★ & up'],
+            ['4.5', '4.5★ & up'],
+          ])}
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Btn variant="ghost" title="Reset" style={{ flex: 1 }} onPress={() => (Object.assign(t, { cat: '', lv: '', price: '', fmt: '' }), re())} />
+            <Btn variant="ghost" title="Reset" style={{ flex: 1 }} onPress={() => (Object.assign(t, { cat: '', lv: '', price: '', fmt: '', rate: '' }), re())} />
             <Btn
               variant="yellow"
               title="Show courses"

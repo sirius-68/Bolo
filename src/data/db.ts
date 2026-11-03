@@ -75,7 +75,10 @@ export type Msg = {
   t?: string;
   at?: string;
   st?: 'sent' | 'read';
-  k?: 'offer' | 'voice' | 'file' | 'img' | 'loc';
+  k?: 'offer' | 'voice' | 'file' | 'img' | 'loc' | 'ts';
+  /** k='ts': a question asked at this second of recording `rec` */
+  ts?: number;
+  rec?: string;
   job?: string;
   price?: string;
   when?: string;

@@ -10,6 +10,9 @@ import { C, S } from '../../src/ui/theme';
 import { bump, useLive } from '../../src/logic/live';
 import { classWhen, ensureClassTime, isLive, learnerGroup, leaveCourse, lessonMin, lessonsOf, timeLeft } from '../../src/logic/career';
 import { openChat } from '../../src/sheets/chat';
+import { recordingsOf } from '../../src/logic/classes';
+import { RecRow } from '../../src/components/RecRow';
+import { CourseReviews } from '../../src/components/Reviews';
 import { openCourse } from '../../src/sheets/career';
 import { afterSheet, confirm, sheet, toast } from '../../src/ui/overlay';
 import { CourseWelcome, needsCourseWelcome } from '../../src/components/CourseWelcome';
@@ -23,7 +26,7 @@ export default function CoursePage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const c = db.COURSES.find((x) => x.id === id);
   const enrolled = !!c && db.myLearning.includes(c.id);
-  const [tab, setTab] = useState<'lessons' | 'about'>('lessons');
+  const [tab, setTab] = useState<'lessons' | 'recs' | 'reviews' | 'about'>('lessons');
   const [now, setNow] = useState(Date.now());
   const [intro, setIntro] = useState(needsCourseWelcome());
   useEffect(() => {
@@ -48,6 +51,7 @@ export default function CoursePage() {
   if (!enrolled) return null;
 
   const lessons = lessonsOf(c);
+  const recs = recordingsOf(c);
   const done = Math.min(c.done || 0, lessons.length);
   const complete = done >= lessons.length;
   const pct = Math.round((done / lessons.length) * 100);
@@ -174,7 +178,7 @@ export default function CoursePage() {
             </Txt>
           </View>
           {live ? (
-            <Btn testID="course-join-class" small variant="yellow" icon="video" title="Join" onPress={() => (tap(), router.push({ pathname: '/call', params: { id: gid, type: 'video' } } as any))} />
+            <Btn testID="course-join-class" small variant="yellow" icon="video" title="Join" onPress={() => (tap(), router.push(`/live/${c.id}` as any))} />
           ) : start ? (
             <View testID="course-countdown" style={{ paddingHorizontal: 10, height: 30, borderRadius: 15, backgroundColor: C.s2, justifyContent: 'center' }}>
               <Txt s={12} w={8} c={C.yellow}>
@@ -212,6 +216,8 @@ export default function CoursePage() {
           style={{ marginTop: 22 }}
           items={[
             ['lessons', 'Lessons', lessons.length],
+            ['recs', 'Recordings', recs.length],
+            ['reviews', 'Reviews'],
             ['about', 'About'],
           ]}
           value={tab}
@@ -260,6 +266,19 @@ export default function CoursePage() {
                 <Icon name={complete ? 'cert' : 'lock'} size={20} color="#000" />
               </View>
             </View>
+          </View>
+        ) : tab === 'recs' ? (
+          <View testID="course-recs" style={{ marginTop: 12, gap: 8 }}>
+            <Txt s={12} c={C.muted}>
+              Every class is recorded. Watch again, save videos, and ask about a moment in the class group.
+            </Txt>
+            {recs.map((r) => (
+              <RecRow key={r.id} r={r} />
+            ))}
+          </View>
+        ) : tab === 'reviews' ? (
+          <View style={{ marginTop: 12 }}>
+            <CourseReviews c={c} />
           </View>
         ) : (
           <View style={{ marginTop: 12, gap: 8 }}>

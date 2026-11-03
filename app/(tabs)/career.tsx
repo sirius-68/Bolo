@@ -1,6 +1,8 @@
 import React from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { RatingBadge } from '../../src/components/Reviews';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../../src/data/db';
 import { COURSE_CATS, EXPERTS } from '../../src/data/catalog';
@@ -80,7 +82,7 @@ export default function Career() {
         {w ? (
           <>
             <Promo title={db.user.cvDone ? 'Your CV is ready' : 'Create your CV'} text={db.user.cvDone ? 'Update it any time or save it as a PDF' : 'Answer 5 quick steps. We build a professional CV for you'} cta={db.user.cvDone ? 'View my CV' : 'Create my CV'} icon="file" onPress={() => (db.user.cvDone ? openCV() : router.push('/cvflow'))} />
-            <Promo alt title={db.user.pro.regular ? 'You’re on Pro' : 'Get hired faster'} text={db.user.pro.regular ? 'Priority applications are on' : 'Priority applications, boosts and more with bolo Pro'} cta={db.user.pro.regular ? 'Manage plan' : 'See Pro'} icon="rocket" onPress={() => openPro('regular')} />
+            <ProCard on={!!db.user.pro.regular} onPress={() => openPro('regular')} />
           </>
         ) : (
           <>
@@ -304,6 +306,52 @@ function CourseCard({ c }: { c: Course }) {
         <Txt s={11} w={7} c={fg} style={{ opacity: 0.7, marginTop: 4 }} lines={1}>
           {c.prov.n}
         </Txt>
+        <View style={{ marginTop: 4 }}>
+          <RatingBadge c={c} color={fg} text={fg} />
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+/** Premium card for bolo Pro: layered gradient, soft light orbs and a frosted glass panel. */
+function ProCard({ on, onPress }: { on: boolean; onPress: () => void }) {
+  return (
+    <Pressable testID="career-pro" accessibilityRole="button" accessibilityLabel={on ? 'bolo Pro is active. Manage plan' : 'Get hired faster with bolo Pro'} onPress={() => (tap(), onPress())} style={({ pressed }) => ({ flex: 1, minHeight: 168, borderRadius: 22, overflow: 'hidden', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+      <LinearGradient colors={['#6d4cff', '#3d5af1', '#14206e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
+      {/* light */}
+      <LinearGradient colors={['rgba(246,164,180,.75)', 'rgba(246,164,180,0)']} style={{ position: 'absolute', width: 150, height: 150, borderRadius: 75, top: -60, right: -50 }} />
+      <LinearGradient colors={['rgba(246,238,92,.55)', 'rgba(246,238,92,0)']} style={{ position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -55, left: -35 }} />
+      {/* glass */}
+      <View style={{ flex: 1, margin: 6, padding: 10, borderRadius: 18, backgroundColor: 'rgba(255,255,255,.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,.28)' }}>
+        <View style={{ position: 'absolute', top: 0, left: 16, right: 16, height: 1, backgroundColor: 'rgba(255,255,255,.55)' }} />
+        <View style={[S.rowB]}>
+          <LinearGradient colors={['#fff7a8', '#f6ee5c', '#e3c400']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ paddingHorizontal: 8, height: 22, borderRadius: 11, justifyContent: 'center' }}>
+            <Txt s={10} w={8} c="#000" style={{ letterSpacing: 1 }}>
+              PRO
+            </Txt>
+          </LinearGradient>
+          <Icon name={on ? 'checkc' : 'rocket'} size={18} color="#fff" />
+        </View>
+        <Txt s={15} w={8} style={{ marginTop: 8 }}>
+          {on ? 'You’re on Pro' : 'Get hired faster'}
+        </Txt>
+        <View style={{ marginTop: 4, gap: 2, flex: 1 }}>
+          {(on ? ['Priority applications on', 'Pro CV templates'] : ['Priority applications', 'Pro CV templates']).map((t) => (
+            <View key={t} style={[S.row, { gap: 4 }]}>
+              <Icon name="check" size={11} color="#cfd6ff" />
+              <Txt s={11} c="#e3e7ff" lines={1}>
+                {t}
+              </Txt>
+            </View>
+          ))}
+        </View>
+        <View style={[S.row, { gap: 6, alignSelf: 'flex-start', marginTop: 8, paddingHorizontal: 12, height: 30, borderRadius: 15, backgroundColor: '#fff' }]}>
+          <Txt s={12} w={8} c="#14206e">
+            {on ? 'Manage plan' : 'See Pro'}
+          </Txt>
+          <Icon name="arrow" size={12} color="#14206e" />
+        </View>
       </View>
     </Pressable>
   );

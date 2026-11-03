@@ -13,10 +13,14 @@ import { bump, useLive } from '../src/logic/live';
 import { classWhen, coursePct, isLive, lessonsOf, timeLeft } from '../src/logic/career';
 import { SearchBar } from '../src/components/common';
 import { CourseWelcome, needsCourseWelcome } from '../src/components/CourseWelcome';
+import { RatingBadge } from '../src/components/Reviews';
+import { RecRow } from '../src/components/RecRow';
+import { myVideos } from '../src/logic/classes';
+import { ratingOf } from '../src/logic/reviews';
 import { openCourse, openOppForm } from '../src/sheets/career';
 import { courseF, openCourseFilters } from '../src/sheets/filters';
 
-const SORTS = ['Relevant', 'Cheapest', 'Biggest discount'] as const;
+const SORTS = ['Relevant', 'Top rated', 'Cheapest', 'Biggest discount'] as const;
 /** Colour per course field, so every course has a recognisable tile. */
 const TONES: [string, string][] = [
   [C.blue, '#fff'],
@@ -86,6 +90,7 @@ function MyLearning({ list, onExplore, bottom }: { list: Course[]; onExplore: ()
       </View>
     );
   const going = list.filter((c) => coursePct(c) < 100);
+  const vids = myVideos();
   const done = list.filter((c) => coursePct(c) >= 100);
   const total = list.reduce((n, c) => n + lessonsOf(c).length, 0);
   const finished = list.reduce((n, c) => n + Math.min(c.done || 0, lessonsOf(c).length), 0);
@@ -135,6 +140,16 @@ function MyLearning({ list, onExplore, bottom }: { list: Course[]; onExplore: ()
         </Pressable>
       ) : null}
 
+      {vids.length ? (
+        <>
+          <Head t="Saved & continue watching" n={vids.length} />
+          <View testID="ml-videos" style={{ gap: 8 }}>
+            {vids.slice(0, 4).map(({ r }) => (
+              <RecRow key={r.id} r={r} />
+            ))}
+          </View>
+        </>
+      ) : null}
       {going.length ? <Head t="In progress" n={going.length} /> : null}
       <View style={{ gap: 10 }}>
         {going.map((c) => (
@@ -229,11 +244,13 @@ function Explore({ bottom }: { bottom: number }) {
       (!courseF.lv || c.lv === courseF.lv) &&
       (!courseF.price || (courseF.price === 'free' ? !c.price : !!c.price)) &&
       (!courseF.fmt || c.fmt === courseF.fmt) &&
+      (!courseF.rate || ratingOf(c).avg >= +courseF.rate) &&
       (!qq || (c.title + ' ' + c.prof + ' ' + c.skills.join(' ') + ' ' + c.prov.n).toLowerCase().includes(qq)),
   );
+  if (sort === 'Top rated') L = L.slice().sort((a, b) => ratingOf(b).avg - ratingOf(a).avg || ratingOf(b).n - ratingOf(a).n);
   if (sort === 'Cheapest') L = L.slice().sort((a, b) => a.price - b.price);
   if (sort === 'Biggest discount') L = L.slice().sort((a, b) => (b.old ? 1 - b.price / b.old : 0) - (a.old ? 1 - a.price / a.old : 0));
-  const nf = (courseF.lv ? 1 : 0) + (courseF.price ? 1 : 0) + (courseF.fmt ? 1 : 0);
+  const nf = (courseF.lv ? 1 : 0) + (courseF.price ? 1 : 0) + (courseF.fmt ? 1 : 0) + (courseF.rate ? 1 : 0);
   const plain = !qq && !courseF.cat && !nf;
   const free = db.COURSES.filter((c) => !c.price && !db.myLearning.includes(c.id) && !c.mine).slice(0, 8);
   return (
@@ -318,6 +335,9 @@ function FeatureCard({ c }: { c: Course }) {
         <Txt s={11} w={7} c={fg} style={{ opacity: 0.7, marginTop: 4 }} lines={1}>
           {lessonsOf(c).length} lessons · {c.dur}
         </Txt>
+        <View style={{ marginTop: 4 }}>
+          <RatingBadge c={c} color={fg} text={fg} />
+        </View>
       </View>
     </Pressable>
   );
@@ -341,6 +361,7 @@ function CourseRow({ c }: { c: Course }) {
         <Txt s={12} c={C.muted}>
           {c.lv === 'Beginner' ? 'From zero' : 'Advanced'} · {c.dur}
         </Txt>
+        <RatingBadge c={c} />
         <View style={[S.row, { gap: 8, marginTop: 2 }]}>
           {mine ? (
             <StatusPill kind="acc" text={`Enrolled · ${coursePct(c)}%`} />

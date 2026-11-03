@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { fmtTs } from '../../src/logic/classes';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, Msg } from '../../src/data/db';
@@ -296,6 +297,32 @@ function Bubble({ id, r, hiring }: { id: string; r: Row; hiring: boolean }) {
             </Txt>
           )}
         </View>
+      </View>
+    );
+  else if (m.k === 'ts')
+    body = (
+      <View style={{ maxWidth: 280, padding: 10, borderRadius: 18, backgroundColor: me ? C.blue : C.s1, gap: 6 }}>
+        <Pressable
+          testID="ts-chip"
+          accessibilityRole="link"
+          accessibilityLabel={`Play the recording from ${fmtTs(m.ts || 0)}`}
+          onPress={() => (tap(), router.push(`/watch/${m.rec}?t=${m.ts || 0}` as any))}
+          style={[S.row, { gap: 6, alignSelf: 'flex-start', paddingHorizontal: 10, height: 30, borderRadius: 15, backgroundColor: me ? 'rgba(255,255,255,.2)' : 'rgba(246,238,92,.16)' }]}
+        >
+          <Icon name="playfill" size={12} color={me ? '#fff' : C.yellow} />
+          <Txt s={13} w={8} c={me ? '#fff' : C.yellow}>
+            {fmtTs(m.ts || 0)}
+          </Txt>
+          <Txt s={11} c={me ? 'rgba(255,255,255,.8)' : C.muted} lines={1} style={{ maxWidth: 150 }}>
+            {m.name}
+          </Txt>
+        </Pressable>
+        <Txt s={14}>
+          <Txt s={14} w={8}>
+            {fmtTs(m.ts || 0)}
+          </Txt>{' '}
+          — {m.t}
+        </Txt>
       </View>
     );
   else if (m.k === 'file')

@@ -1,18 +1,22 @@
-import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { db, ui, Course } from '../data/db';
 import { router } from 'expo-router';
+import { WebView } from 'react-native-webview';
+import { CourseReviews, RatingBadge } from '../components/Reviews';
+import { ratingOf } from '../logic/reviews';
+import { CV_TEMPLATES, CvKind, CvTpl, cvData, cvHtml, tplOf } from '../components/cvTemplates';
 import { ARTICLES, CATS, EXPERTS, OPP_KINDS, PATHS, RULES, SALARIES, catIcon } from '../data/catalog';
-import { OptRow, AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Meta, Note, Pill, ProTag, Rate, SelectBox, StatusPill, Stepper, Steps, Txt, Verified, tap } from '../ui/kit';
+import { OptRow, AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Meta, Note, PTabs, Pill, ProTag, Rate, SelectBox, StatusPill, Stepper, Steps, Txt, Verified, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { afterSheet, pick, sheet, SheetTitle, toast } from '../ui/overlay';
 import { C, R, S } from '../ui/theme';
 import { P, isW, xaf, oppBiz, mOwner, curBiz, bizName, bizLogo, has, postById, fname, digits } from '../logic/core';
 import { saveToggle } from '../logic/work';
 import { announce, answerApplicant, answerMentee, courseGroup, enroll, learnerGroup, enrolEmployees, joinMentor, joinOpp, publishMentor, publishOpp, removeStudent, setProgress, OppForm } from '../logic/career';
-import { bump } from '../logic/live';
+import { bump, useLive } from '../logic/live';
 import { openProfile, openCourses, resetTo } from '../logic/nav';
 import { MyCV, myCvHtml } from '../components/cv';
 import { ListRow, OppCard } from '../components/cards';
@@ -617,6 +621,14 @@ function CourseSheet({ id }: { id: string }) {
       <Txt s={22} w={8} style={{ marginTop: 10, lineHeight: 26 }}>
         {c.title}
       </Txt>
+      {ratingOf(c).n ? (
+        <View style={[S.row, { gap: 6, marginTop: 6 }]}>
+          <RatingBadge c={c} />
+          <Txt s={12} c={C.muted}>
+            from enrolled students
+          </Txt>
+        </View>
+      ) : null}
       <Facts items={[['star', c.lv === 'Beginner' ? 'From zero' : 'Advanced'], ['clock', c.dur], ...(c.prof ? ([['job', `Become a ${c.prof.toLowerCase()}`]] as [string, string][]) : [])]} />
       <H4 t="What you’ll learn" />
       {[...c.skills, `A certificate from ${c.prov.n}`].map((s) => (
@@ -642,6 +654,12 @@ function CourseSheet({ id }: { id: string }) {
         <Txt s={12} c={C.muted}>
           or {xaf(c.mo)} per month
         </Txt>
+      ) : null}
+      {!c.mine && ratingOf(c).n ? (
+        <>
+          <H4 t="Ratings and reviews" />
+          <CourseReviews c={c} />
+        </>
       ) : null}
       {c.mine ? (
         <CourseOwner c={c} />
@@ -693,10 +711,13 @@ function CourseOwner({ c }: { c: Course }) {
           </View>
         ))}
       </View>
-      <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
-        <Btn variant="yellow" icon="follow" title="Class group" disabled={!L.length} style={{ flex: 1 }} onPress={() => afterSheet(() => openChat(courseGroup(c)))} />
+      <Btn testID="course-start-live" variant="yellow" icon="video" title="Start live class" style={{ marginTop: 12 }} onPress={() => afterSheet(() => router.push(`/live/${c.id}` as any))} />
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+        <Btn variant="dark" icon="follow" title="Class group" disabled={!L.length} style={{ flex: 1 }} onPress={() => afterSheet(() => openChat(courseGroup(c)))} />
         <Btn variant="dark" icon="bell" title="Announce" disabled={!L.length} style={{ flex: 1 }} onPress={() => openAnnounce(c.id)} />
       </View>
+      <H4 t="Ratings and reviews" n={ratingOf(c).n} />
+      <CourseReviews c={c} />
       <H4 t="Students" n={L.length} />
       {L.length ? (
         <View style={{ gap: 8 }}>
@@ -785,53 +806,108 @@ export function openCV() {
   sheet.show(() => <CVSheet />, { full: true });
 }
 function CVSheet() {
-  const [t, setT] = useState<string>(ui.cvT);
+  useLive();
+  const { width } = useWindowDimensions();
+  const pro = !!db.user.pro.regular;
+  const [kind, setKind] = useState<CvKind>(tplOf((db.user as any).cvTpl).kind);
+  const [id, setId] = useState<string>(tplOf((db.user as any).cvTpl).id);
+  const [html, setHtml] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const t = tplOf(id);
+  const locked = t.pro && !pro;
+  useEffect(() => {
+    let on = true;
+    setHtml(null);
+    cvData().then((d) => on && setHtml(cvHtml(id, d)));
+    return () => {
+      on = false;
+    };
+  }, [id]);
+  const choose = (x: CvTpl) => {
+    tap();
+    setId(x.id);
+    // Free users can preview every design; saving a Pro design asks for Pro.
+    if (!x.pro || pro) (db.user as any).cvTpl = x.id;
+  };
+  const W = width - 40;
   return (
     <View style={{ gap: 12 }}>
-      <SheetTitle sub="Built from your profile. Update your profile and the CV updates too.">My CV</SheetTitle>
-      <Chips>
-        {['Classic', 'Modern'].map((x) => (
-          <Chip
-            key={x}
-            small
-            label={x === 'Modern' && !db.user.pro.regular ? 'Modern · PRO' : x}
-            on={t === x}
-            onPress={() => {
-              if (x === 'Modern' && !db.user.pro.regular) {
-                openPro('regular', 'cv');
-                return;
-              }
-              ui.cvT = x;
-              setT(x);
-            }}
-          />
-        ))}
-      </Chips>
-      <MyCV modern={t === 'Modern'} />
+      <SheetTitle sub="Built from your profile. Pick a design; your information stays the same in every one.">My CV</SheetTitle>
+      <PTabs items={(['Classic', 'Modern'] as CvKind[]).map((k) => [k, k] as [CvKind, string])} value={kind} onChange={(k) => setKind(k)} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}>
+        {CV_TEMPLATES.filter((x) => x.kind === kind).map((x) => {
+          const on = x.id === id;
+          return (
+            <Pressable key={x.id} testID={`cv-tpl-${x.id}`} accessibilityRole="radio" accessibilityState={{ checked: on }} accessibilityLabel={`${x.name} template${x.pro && !pro ? ', Pro' : ''}`} onPress={() => choose(x)} style={{ width: 118, padding: 8, borderRadius: 16, backgroundColor: on ? 'rgba(61,90,241,.18)' : C.s2, borderWidth: 1.5, borderColor: on ? C.blue : 'transparent' }}>
+              <View style={{ height: 120, borderRadius: 8, backgroundColor: x.swatch[0], overflow: 'hidden', flexDirection: x.id === 'slate' ? 'row' : 'column', padding: x.id === 'slate' ? 0 : 8, gap: 5 }}>
+                {x.id === 'slate' ? (
+                  <>
+                    <View style={{ width: '38%', backgroundColor: x.swatch[1] }} />
+                    <View style={{ flex: 1, padding: 6, gap: 4 }}>
+                      {[70, 90, 60, 85, 50].map((w2, i) => (
+                        <View key={i} style={{ width: `${w2}%`, height: 4, borderRadius: 2, backgroundColor: x.swatch[2] }} />
+                      ))}
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <View style={{ width: x.id === 'centered' ? '70%' : '60%', alignSelf: x.id === 'centered' ? 'center' : 'flex-start', height: 9, borderRadius: 3, backgroundColor: x.swatch[1] }} />
+                    {x.id === 'aura' ? <View style={{ position: 'absolute', right: 8, top: 8, width: 28, height: 28, borderRadius: 14, backgroundColor: x.swatch[2] }} /> : null}
+                    {x.id === 'accent' ? <View style={{ position: 'absolute', left: 8, top: 4, width: 14, height: 5, backgroundColor: x.swatch[1], transform: [{ skewX: '-30deg' }] }} /> : null}
+                    {[90, 70, 95, 60, 80, 50].map((w2, i) => (
+                      <View key={i} style={{ width: `${w2}%`, height: 4, borderRadius: 2, backgroundColor: x.swatch[2], opacity: 0.7, alignSelf: x.id === 'centered' ? 'center' : 'flex-start' }} />
+                    ))}
+                  </>
+                )}
+              </View>
+              <View style={[S.rowB, { marginTop: 6 }]}>
+                <Txt s={12} w={8} lines={1}>
+                  {x.name}
+                </Txt>
+                {x.pro ? <ProTag small /> : null}
+              </View>
+              <Txt s={10} c={C.muted} lines={1}>
+                {x.blurb}
+              </Txt>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+      {/* exact A4 preview: the same page that becomes the PDF */}
+      <View testID="cv-preview" style={{ width: W, height: W * 1.414, borderRadius: 12, overflow: 'hidden', backgroundColor: '#fff' }}>
+        {html ? (
+          <WebView originWhitelist={['*']} source={{ html }} scalesPageToFit setBuiltInZoomControls={false} showsVerticalScrollIndicator={false} style={{ flex: 1, backgroundColor: '#fff' }} nestedScrollEnabled />
+        ) : (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <Txt s={13} c="#666">
+              Preparing your CV…
+            </Txt>
+          </View>
+        )}
+      </View>
+      {locked ? (
+        <View style={[S.row, { gap: 10, padding: 12, borderRadius: 14, backgroundColor: 'rgba(169,182,255,.12)' }]}>
+          <Icon name="lock" size={16} color={C.lav} />
+          <Txt s={12} c={C.lav} style={{ flex: 1 }}>
+            {t.name} is a Pro design. You can preview it; get Pro to save it as a PDF.
+          </Txt>
+        </View>
+      ) : null}
       <View style={{ flexDirection: 'row', gap: 10 }}>
+        <Btn variant="dark" icon="edit" title="Edit CV" style={{ flex: 1 }} testID="cv-edit" onPress={() => afterSheet(() => router.push('/cvflow?edit=1' as any))} />
         <Btn
-          variant="dark"
-          icon="edit"
-          title="Edit CV"
-          style={{ flex: 1 }}
-          onPress={() =>
-            afterSheet(() => {
-              db.user.cvDone = false;
-              router.push('/cvflow');
-            })
-          }
-        />
-        <Btn
+          testID="cv-pdf"
           variant="yellow"
-          icon="download"
-          title="Save PDF"
+          icon={locked ? 'lock' : 'download'}
+          title={locked ? 'Get Pro' : 'Save PDF'}
           loading={busy}
           style={{ flex: 1 }}
           onPress={async () => {
+            if (locked) return openPro('regular', 'cv');
+            if (!html) return;
             setBusy(true);
             try {
-              const { uri } = await Print.printToFileAsync({ html: myCvHtml() });
+              const { uri } = await Print.printToFileAsync({ html, width: 595, height: 842 });
               if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Your CV', UTI: 'com.adobe.pdf' });
               else toast('CV saved');
             } catch {

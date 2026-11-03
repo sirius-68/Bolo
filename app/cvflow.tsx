@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
-import { router } from 'expo-router';
+import React, { useCallback, useRef, useState } from 'react';
+import { BackHandler, Pressable, View } from 'react-native';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { db } from '../src/data/db';
 import { CITIES, EDU, EX, POPULAR, SKILLS, SOFT } from '../src/data/catalog';
 import { Btn, Chip, Chips, Field, Grow, Input, Label, Page, Pict, SelectBox, Steps, TopBar, Txt } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
-import { pick, sheet, SheetTitle, toast } from '../src/ui/overlay';
+import { confirm, pick, sheet, SheetTitle, toast } from '../src/ui/overlay';
 import { C, S } from '../src/ui/theme';
 import { digits, ensureSkillList, isEmail, isPhone, myCity } from '../src/logic/core';
 import { syncContacts } from '../src/logic/account';
@@ -44,16 +44,37 @@ function initial(): CVF {
 const SCHOOLS = ['University of Buea', 'University of Bamenda', 'University of Douala', 'University of Yaoundé I', 'GTHS Buea', 'Catholic University Institute of Buea', 'HIBMAT Buea', 'Saker Baptist College', 'CCAST Bambili'];
 
 export default function CVFlow() {
+  // edit=1: changing an existing CV. Leaving without saving keeps the saved CV and shows it again.
+  const { edit } = useLocalSearchParams<{ edit?: string }>();
+  const editing = !!edit && !!db.user.cvDone;
   const [c] = useState<CVF>(initial);
+  const snap = useRef(JSON.stringify(c));
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<null | 'edu' | 'exp'>(null);
   const [, f] = useState(0);
   const re = () => f((x) => x + 1);
+  const leave = () => {
+    router.back();
+    if (editing) later(320, () => openCV());
+  };
+  const exit = () => {
+    if (JSON.stringify(c) === snap.current) return leave();
+    confirm({ title: 'Discard your changes?', text: editing ? 'Your saved CV stays as it was.' : 'What you entered so far will be lost.', ok: 'Discard', cancel: 'Keep editing', danger: true, icon: 'file', onOk: leave });
+  };
   const back = () => {
     if (form) return setForm(null);
     if (step) return setStep(step - 1);
-    router.back();
+    exit();
   };
+  // The phone's back button follows the same steps as the on-screen back arrow.
+  const backRef = useRef(back);
+  backRef.current = back;
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => (backRef.current(), true));
+      return () => sub.remove();
+    }, []),
+  );
   const finish = () => {
     db.user.name = [c.first, c.last].filter(Boolean).join(' ') || db.user.name;
     db.PR.ct.email = c.email.trim();
@@ -65,11 +86,12 @@ export default function CVFlow() {
     }
     db.PR.exp = c.exp;
     db.user.cvDone = true;
+    snap.current = JSON.stringify(c);
     bump();
     router.back();
     later(350, () => {
       openCV();
-      toast('🎉 Your CV is ready');
+      toast(editing ? 'CV updated' : '🎉 Your CV is ready');
     });
   };
   let body: React.ReactNode = null;
@@ -237,7 +259,7 @@ export default function CVFlow() {
             <Btn variant={c.exp.length ? 'soft' : 'yellow'} title={c.exp.length ? 'Add another' : 'Add a place of work'} onPress={() => setForm('exp')} />
             <Btn
               variant={c.exp.length ? 'yellow' : 'soft'}
-              title={c.exp.length ? 'Create my CV' : 'I have no experience yet'}
+              title={editing ? 'Save changes' : c.exp.length ? 'Create my CV' : 'I have no experience yet'}
               onPress={() => {
                 if (!c.exp.length) c.noExp = true;
                 finish();
@@ -247,7 +269,7 @@ export default function CVFlow() {
         </>
       );
   return (
-    <Page keyboard header={<TopBar title="Create your CV" onBack={back} />} contentStyle={{ flexGrow: 1 }}>
+    <Page keyboard header={<TopBar title={editing ? 'Edit your CV' : 'Create your CV'} onBack={back} />} contentStyle={{ flexGrow: 1 }}>
       <Steps total={5} on={step + 1} />
       {body}
     </Page>

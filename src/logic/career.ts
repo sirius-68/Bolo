@@ -6,6 +6,7 @@ import { bump, later, every } from './live';
 import { P, isW, curBiz, bizName, bizLogo, WORKERS, nowT, mOwner, THREADS, ORDER, thread, fname, xaf, myCity, myPhoto } from './core';
 import { bizLog } from './work';
 import { notify } from './notify';
+import { expectReview } from './reviews';
 
 /* ---------------- internships & programs ---------------- */
 export type OppForm = { kind: string; title: string; cat: string; desc: string; dur: string; start: string; mode: string; paid: string; amount: string; seats: number; deadline: string; lv?: string };
@@ -233,6 +234,7 @@ export function enrollPeople(c: Course, ids: string[]) {
   c.enrolled = c.people.length;
   const gid = courseGroup(c);
   ids.forEach((id) => THREADS_ALL(gid)?.msgs.push({ sys: `${fname(P(id).name)} enrolled and joined` }));
+  if (c.mine && ids[0]) expectReview(c, ids[0]);
   if (c.mine && ids.length)
     notify({ type: 'enrol', cat: 'applicants', who: ids[0], inbox: c.biz ? 'C' : 'W', key: `enrol:${c.id}:${ids.join(',')}`, text: ids.length > 1 ? `and ${ids.length - 1} other${ids.length > 2 ? 's' : ''} enrolled in “${c.title}”` : `enrolled in “${c.title}”`, go: { k: 'course', id: c.id } });
   bump();

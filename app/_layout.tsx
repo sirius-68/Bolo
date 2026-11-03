@@ -44,6 +44,8 @@ export default function Root() {
       ensureQuickCourse();
       ensureAdJobs();
       ensureWallet();
+      // Old bug: tapping Edit cleared cvDone, so leaving the editor left the CV unreachable. Restore it.
+      if (db.user.cv && !db.user.cvDone) db.user.cvDone = true;
       db.myLearning.forEach((cid) => {
         const c = db.COURSES.find((x) => x.id === cid);
         if (c && !ensureClassTime(c)) scheduleClass(c);
