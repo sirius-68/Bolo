@@ -8,6 +8,7 @@ import { Avatar, Btn, Empty, IconBtn, Pict, Txt, Verified, tap } from '../src/ui
 import { Icon } from '../src/ui/Icon';
 import { C, S } from '../src/ui/theme';
 import { P, fname, has, isW, k, kmOf } from '../src/logic/core';
+import { commentCount } from '../src/logic/comments';
 import { useLive } from '../src/logic/live';
 import { follow, hireState, likeReel, saveToggle } from '../src/logic/work';
 import { openProfile } from '../src/logic/nav';
@@ -137,7 +138,7 @@ function ReelPage({ r, n, h, w, active, bottom, top }: { r: Reel; n: number; h: 
           </Pressable>
         </Pressable>
         <Side icon="heart" a11y="Like" on={liked} label={k(r.likes + (liked ? 1 : 0))} onPress={() => likeReel(n)} />
-        <Side icon="comment" a11y="Comments" label={k(r.comments)} onPress={() => openComments('r' + n)} />
+        <Side icon="comment" a11y="Comments" label={k(commentCount('r' + n))} onPress={() => openComments('r' + n)} />
         <Side icon="bookmark" a11y="Save" on={saved} label="Save" onPress={() => saveToggle('saved', r.by, f)} />
         <Side icon="share" a11y="Share" label="Share" onPress={() => sharePost(p.name)} />
       </View>

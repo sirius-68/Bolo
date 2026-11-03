@@ -134,7 +134,7 @@ export default function ExpertApply() {
   if (step === 2)
     body = (
       <>
-        {sec('Years of experience in this field', <Stepper text={`${E.years} years`} onMinus={() => ((E.years = Math.max(3, E.years - 1)), bump())} onPlus={() => ((E.years = Math.min(45, E.years + 1)), bump())} />)}
+        {sec('Years of experience in this field', <Stepper label="Years of experience" value={E.years} min={3} max={45} unit={(n) => `${n} years`} onChange={(n) => ((E.years = n), bump())} />)}
         <View style={{ marginTop: 18 }}>
           <Field label="Current or last role" error={tried && E.role.trim().length < 2 && 'Add your role'}>
             <Input testID="ex-role" value={E.role} onChangeText={(v) => ((E.role = v), bump())} placeholder="e.g. Senior accountant at …" autoCapitalize="words" />

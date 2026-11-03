@@ -667,26 +667,82 @@ export function SwitchRow({ title, sub, value, onChange, style }: { title: strin
   );
 }
 
-export function Stepper({ text, onMinus, onPlus }: { text: string; onMinus: () => void; onPlus: () => void }) {
-  const b = (t: string, f: () => void, l: string) => (
+/** A number with − / + buttons. Tap the number to type it instead; it is checked against min/max before it's saved. */
+export function Stepper({ value, onChange, min = 0, max = 999, step = 1, unit, testID, label = 'Number' }: { value: number; onChange: (n: number) => void; min?: number; max?: number; step?: number; unit?: (n: number) => string; testID?: string; label?: string }) {
+  const [edit, setEdit] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [err, setErr] = useState('');
+  const set = (n: number) => onChange(Math.max(min, Math.min(max, n)));
+  const commit = () => {
+    const n = parseInt(draft.replace(/[^\d-]/g, ''), 10);
+    if (!draft.trim() || isNaN(n)) setErr(`Enter a number from ${min} to ${max}`);
+    else if (n < min || n > max) {
+      setErr(n < min ? `The minimum is ${min}` : `The maximum is ${max}`);
+      set(n);
+    } else {
+      setErr('');
+      set(n);
+    }
+    setEdit(false);
+  };
+  const b = (t: string, f: () => void, l: string, dis: boolean) => (
     <Pressable
       accessibilityLabel={l}
+      accessibilityState={{ disabled: dis }}
+      disabled={dis}
       onPress={() => {
         tap();
+        setErr('');
         f();
       }}
-      style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: C.s3, alignItems: 'center', justifyContent: 'center' }}
+      style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: C.s3, alignItems: 'center', justifyContent: 'center', opacity: dis ? 0.4 : 1 }}
     >
       <Text style={tx(20, 7)}>{t}</Text>
     </Pressable>
   );
   return (
-    <View style={[S.rowB, { height: 54, borderRadius: R.md, backgroundColor: C.s2, paddingHorizontal: 8 }]}>
-      {b('−', onMinus, 'Less')}
-      <Txt s={16} w={8}>
-        {text}
-      </Txt>
-      {b('+', onPlus, 'More')}
+    <View>
+      <View style={[S.rowB, { height: 54, borderRadius: R.md, backgroundColor: C.s2, paddingHorizontal: 8, borderWidth: 1.5, borderColor: err ? C.err : edit ? C.lav : 'transparent' }]}>
+        {b('−', () => set(value - step), 'Less', value <= min)}
+        {edit ? (
+          <TextInput
+            testID={testID ? testID + '-input' : undefined}
+            accessibilityLabel={`${label}, type a number`}
+            autoFocus
+            value={draft}
+            onChangeText={(v) => setDraft(v.replace(/[^\d]/g, '').slice(0, 6))}
+            onBlur={commit}
+            onSubmitEditing={commit}
+            keyboardType="number-pad"
+            returnKeyType="done"
+            selectTextOnFocus
+            style={[tx(18, 8), { flex: 1, textAlign: 'center', paddingVertical: 0 }]}
+          />
+        ) : (
+          <Pressable
+            testID={testID}
+            accessibilityRole="button"
+            accessibilityLabel={`${label}: ${unit ? unit(value) : value}. Tap to type a number`}
+            onPress={() => {
+              setDraft(String(value));
+              setErr('');
+              setEdit(true);
+            }}
+            style={[S.row, { flex: 1, justifyContent: 'center', height: 44, gap: 6 }]}
+          >
+            <Txt s={16} w={8}>
+              {unit ? unit(value) : String(value)}
+            </Txt>
+            <Icon name="edit" size={13} color={C.muted} />
+          </Pressable>
+        )}
+        {b('+', () => set(value + step), 'More', value >= max)}
+      </View>
+      {err ? (
+        <Txt s={12} c={C.err} style={{ marginTop: 6 }}>
+          {err}
+        </Txt>
+      ) : null}
     </View>
   );
 }

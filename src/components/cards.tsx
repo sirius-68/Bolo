@@ -8,7 +8,8 @@ import { C, R, S } from '../ui/theme';
 import { P, isW, k, oppBiz, mOwner, has, WORKERS, fname, myPhoto, meAs } from '../logic/core';
 import { follow, hireState, isSaved, likePost, saveToggle, toggleSave } from '../logic/work';
 import { openProfile } from '../logic/nav';
-import { openJob, openHire, openComments, sharePost, openMedia } from '../sheets/work';
+import { openJob, openHire, openComments, sharePost, openMedia, shareJob } from '../sheets/work';
+import { commentCount } from '../logic/comments';
 import { openOpp, openMentor } from '../sheets/career';
 
 const hireLabel = (id: string) => ({ none: 'Hire', requested: 'Requested', booked: 'Booked ✓' })[hireState(id)];
@@ -127,6 +128,9 @@ export function JobCard({ po, i }: { po: Post; i: number }) {
             </Txt>
           </View>
         </View>
+        <Pressable accessibilityLabel="Share job" hitSlop={6} onPress={() => (tap(), shareJob(po.id))} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,.08)', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="share" size={17} color="#000" />
+        </Pressable>
         <Pressable accessibilityLabel={saved ? 'Unsave job' : 'Save job'} hitSlop={6} onPress={() => saveToggle('savedJobs', po.id, 'Job')} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: saved ? '#000' : 'rgba(0,0,0,.08)', alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="bookmark" size={18} color={saved ? bg : '#000'} />
         </Pressable>
@@ -209,6 +213,9 @@ export function ReqPost({ po }: { po: Post }) {
         </Pressable>
         {po.urgent && !mine ? <StatusPill kind="urg" text="Urgent" /> : null}
         {po.booked ? <StatusPill kind="acc" text="Booked" /> : null}
+        <Pressable testID={`share-job-${po.id}`} accessibilityLabel="Share job" hitSlop={6} onPress={() => (tap(), shareJob(po.id))} style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="share" size={16} color="#fff" />
+        </Pressable>
         {!mine ? (
           <Pressable accessibilityLabel={saved ? 'Unsave job' : 'Save job'} hitSlop={6} onPress={() => saveToggle('savedJobs', po.id, 'Job')} style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: saved ? C.yellow : C.s2, alignItems: 'center', justifyContent: 'center' }}>
             <Icon name="bookmark" size={16} color={saved ? '#000' : '#fff'} />
@@ -384,7 +391,7 @@ export function PostCard({ po }: { po: Post }) {
         <Pressable accessibilityLabel="Comments" onPress={() => openComments(po.id)} style={[S.row, { gap: 6, height: 36, paddingHorizontal: 12, borderRadius: 999, backgroundColor: C.s2 }]}>
           <Icon name="comment" size={18} color="#fff" />
           <Txt s={12} w={7}>
-            {po.comments || 0}
+            {commentCount(po.id)}
           </Txt>
         </Pressable>
         <View style={{ flex: 1 }} />

@@ -116,7 +116,7 @@ export default function PostJob() {
         {!w ? (
           <View>
             <Label>Openings</Label>
-            <Stepper text={`${openings} opening${openings > 1 ? 's' : ''}`} onMinus={() => setOpenings(Math.max(1, openings - 1))} onPlus={() => setOpenings(Math.min(50, openings + 1))} />
+            <Stepper testID="pj-openings" label="Openings" value={openings} min={1} max={50} unit={(n) => `${n} opening${n > 1 ? 's' : ''}`} onChange={setOpenings} />
           </View>
         ) : null}
         <View>

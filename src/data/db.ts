@@ -118,6 +118,11 @@ export type Notif = {
   amount?: string;
   booking?: string;
   state?: 'acc' | 'dec';
+  /** where tapping it goes (see src/logic/notify.ts) */
+  go?: import('../logic/notify').Go;
+  /** event key: the same event is never notified twice */
+  key?: string;
+  cat?: string;
 };
 export type Booking = {
   id: string;
@@ -760,7 +765,7 @@ export function makeDb() {
       submittedAt: '',
       sessions: 0,
     },
-    PREF: { visible: true, phoneAfterHire: true, twoStep: false, lang: 'English', momo: [['MTN MoMo', '677 ••• 456', 1]] as [string, string, number][], notif: [1, 1, 1, 1, 0] },
+    PREF: { visible: true, phoneAfterHire: true, twoStep: false, lang: 'English', momo: [['MTN MoMo', '677 ••• 456', 1]] as [string, string, number][], notif: [1, 1, 1, 1, 0, 1, 1, 1, 1] },
     P,
     BIZ_SAMPLE,
     POSTS: posts(),
@@ -825,7 +830,7 @@ export const ui = {
   ibTab: 'All',
   cat: null as string | null,
   q: '',
-  F: { dist: 0, rate: 0, ver: false, urgent: false, budget: 0, sort: 'best', type: '' },
+  F: { dist: 0, rate: 0, ver: false, urgent: false, budget: 0, sort: 'best', type: '', posted: 0, by: '' as '' | 'company' | 'person', exp: 0 },
   openChat: null as string | null,
   current: '' as string,
   reelFilter: 'all' as 'all' | 'following' | 'near',

@@ -14,7 +14,7 @@ import { notchScale, Rail, SearchBar, Sec, TabHeader } from '../../src/component
 import { follow } from '../../src/logic/work';
 import { PersonRow, PostCard, RecCard, ReelThumb, ReqPost, JobCard } from '../../src/components/cards';
 import { onScrollFab } from '../../src/components/NavBar';
-import { openFilters, resetFilters } from '../../src/sheets/filters';
+import { activeFilters, openFilters, resetFilters } from '../../src/sheets/filters';
 import { openService } from '../../src/sheets/profile';
 import { openJob } from '../../src/sheets/work';
 import { openOpp } from '../../src/sheets/career';
@@ -88,11 +88,13 @@ export default function Feed() {
 
   const people = listPeople().filter((id) => matchPerson(id, q, cat));
   const jobs = listJobs().filter((p) => matchJob(p, q, cat));
-  const nf = fCount();
+  const nf = fCount() + (cat ? 1 : 0);
   const noun = v === 'jobs' ? ['job', 'jobs'] : w ? ['person', 'people'] : ['candidate', 'candidates'];
   const count = items.length;
   const findOnly = w && db.user.intents.includes('find') && !db.user.intents.includes('hire');
   const hireOnly = w && db.user.intents.includes('hire') && !db.user.intents.includes('find');
+  const fMode: 'jobs' | 'people' = v === 'jobs' || (v === 'all' && findOnly) ? 'jobs' : 'people';
+  const actF = activeFilters(fMode);
 
   const header = (
     <View style={{ paddingTop: ins.top }}>
@@ -116,7 +118,7 @@ export default function Feed() {
             bump();
           }}
           placeholder={v === 'feed' ? 'Search posts and people' : v === 'jobs' ? 'Search jobs: title, company, area…' : v === 'people' ? 'Search people: name, skill, area…' : findOnly ? 'Search jobs near you' : 'Search plumbers, tailors, tutors…'}
-          onFilter={v === 'feed' ? undefined : () => openFilters(v === 'jobs' || (v === 'all' && findOnly) ? 'jobs' : 'people')}
+          onFilter={v === 'feed' ? undefined : () => openFilters(fMode)}
           filters={nf}
         />
       </View>
@@ -130,6 +132,23 @@ export default function Feed() {
           </Pressable>
         ))}
       </View>
+      {v !== 'feed' && actF.length ? (
+        <ScrollView testID="active-filters" horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20, marginTop: 12 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
+          {actF.map(([l, off]) => (
+            <Pressable key={l} accessibilityRole="button" accessibilityLabel={`Remove filter ${l}`} onPress={() => (tap(), off())} style={[S.row, { gap: 6, height: 34, paddingLeft: 12, paddingRight: 8, borderRadius: 17, backgroundColor: 'rgba(169,182,255,.16)', borderWidth: 1, borderColor: C.lav }]}>
+              <Txt s={12} w={7} c={C.lav}>
+                {l}
+              </Txt>
+              <Icon name="x" size={13} color={C.lav} />
+            </Pressable>
+          ))}
+          <Pressable accessibilityRole="button" onPress={() => (tap(), resetFilters())} style={{ height: 34, paddingHorizontal: 12, borderRadius: 17, justifyContent: 'center' }}>
+            <Txt s={12} w={8} c={C.muted}>
+              Clear all
+            </Txt>
+          </Pressable>
+        </ScrollView>
+      ) : null}
       {v === 'all' ? (
         <>
           {/* 1. What matters most for this person, 2. sponsored (after organic, like Indeed), 3. what's happening near them now */}

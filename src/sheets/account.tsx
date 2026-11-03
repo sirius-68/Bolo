@@ -758,6 +758,10 @@ const NT_SET: [string, string][] = [
   ['Reminders', 'Before a job starts'],
   ['Applicants', 'New applications to your jobs and programs'],
   ['Tips and news', 'Career tips and product news'],
+  ['Courses and classes', 'Enrolments, new courses, recordings and materials'],
+  ['Mentorship', 'Requests, new mentees and group activity'],
+  ['Comments and follows', 'People reacting to your posts and profile'],
+  ['Account and payments', 'Verification, wallet, Pro and security'],
 ];
 export function openNotifSettings() {
   sheet.show(() => {
@@ -771,7 +775,7 @@ export function openNotifSettings() {
               key={t}
               title={t}
               sub={s}
-              value={!!db.PREF.notif[i]}
+              value={db.PREF.notif[i] !== 0}
               onChange={(v) => {
                 db.PREF.notif[i] = v ? 1 : 0;
                 bump();

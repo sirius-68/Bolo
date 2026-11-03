@@ -503,6 +503,16 @@ export const NT_ICON: Record<string, [string, string]> = {
   onway: ['nav', C.lav],
   arrived: ['wrench', C.yellow],
   jobdone: ['flag', C.ok],
+  message: ['chat', C.lav],
+  comment: ['comment', C.lav],
+  enrol: ['cap', C.mint],
+  course: ['cap', C.yellow],
+  newcourse: ['sparkle', C.yellow],
+  material: ['video', C.lav],
+  live: ['video', '#e11d48'],
+  mentor: ['follow', C.pink],
+  rating: ['star', C.yellow],
+  pro: ['rocket', C.lav],
 };
 export const NT_JOBS = ['quote', 'accept', 'reminder', 'offers', 'payment', 'newjob', 'payment_in', 'newoffer', 'onway', 'arrived', 'jobdone'];
 

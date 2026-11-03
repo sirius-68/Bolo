@@ -63,11 +63,7 @@ export default function Skills() {
               bump();
             }}
           />
-          <Stepper
-            text={`${d.years} year${d.years === 1 ? '' : 's'}`}
-            onMinus={() => ((d.years = Math.max(0, d.years - 1)), (d.level = lvOf(d.years)), bump())}
-            onPlus={() => ((d.years = Math.min(40, d.years + 1)), (d.level = lvOf(d.years)), bump())}
-          />
+          <Stepper label="Years of experience" value={d.years} min={0} max={40} unit={(n) => `${n} year${n === 1 ? '' : 's'}`} onChange={(n) => ((d.years = n), (d.level = lvOf(n)), bump())} />
         </View>,
       )}
       {sec(

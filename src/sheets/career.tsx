@@ -287,7 +287,7 @@ function OppFormSheet({ f }: { f: OF }) {
       </View>
       <View>
         <Label>{course ? 'Places per intake' : 'Places'}</Label>
-        <Stepper text={`${f.seats} place${f.seats > 1 ? 's' : ''}`} onMinus={() => (set('seats', Math.max(1, f.seats - 1)), re())} onPlus={() => (set('seats', Math.min(500, f.seats + 1)), re())} />
+        <Stepper testID="of-seats" label="Places" value={f.seats} min={1} max={500} unit={(n) => `${n} place${n > 1 ? 's' : ''}`} onChange={(n) => (set('seats', n), re())} />
       </View>
       <Btn
         variant="yellow"
@@ -461,7 +461,7 @@ function MentorForm({ f }: { f: MF }) {
           </View>
           <View>
             <Label>{f.format === 'Group' ? 'Places in the group' : 'Mentees at a time'}</Label>
-            <Stepper text={String(f.seats)} onMinus={() => ((f.seats = Math.max(1, f.seats - 1)), re())} onPlus={() => ((f.seats = Math.min(100, f.seats + 1)), re())} />
+            <Stepper testID="mf-seats" label={f.format === 'Group' ? 'Places in the group' : 'Mentees at a time'} value={f.seats} min={1} max={100} unit={(n) => `${n} ${f.format === 'Group' ? (n > 1 ? 'places' : 'place') : n > 1 ? 'mentees' : 'mentee'}`} onChange={(n) => ((f.seats = n), re())} />
           </View>
         </>
       ) : null}

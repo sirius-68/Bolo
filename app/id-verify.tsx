@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BackHandler, Pressable, View } from 'react-native';
+import { notify } from '../src/logic/notify';
 import { router } from 'expo-router';
 import { Btn, Check, Note, Page, Pict, Steps, Sub, Title, TopBar, Txt, tap } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
@@ -60,6 +61,7 @@ export default function IdVerify() {
         if (db.PR.docs.id !== 'review') return;
         db.PR.docs.id = 'verified';
         db.user.verified = true;
+        notify({ type: 'verified', cat: 'account', key: 'verified:id', text: '', go: { k: 'me' } });
         bump();
         toast('Your identity is verified');
       });

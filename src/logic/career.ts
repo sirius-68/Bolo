@@ -5,6 +5,7 @@ import { logoPic } from '../ui/kit';
 import { bump, later, every } from './live';
 import { P, isW, curBiz, bizName, bizLogo, WORKERS, nowT, mOwner, THREADS, ORDER, thread, fname, xaf, myCity, myPhoto } from './core';
 import { bizLog } from './work';
+import { notify } from './notify';
 
 /* ---------------- internships & programs ---------------- */
 export type OppForm = { kind: string; title: string; cat: string; desc: string; dur: string; start: string; mode: string; paid: string; amount: string; seats: number; deadline: string; lv?: string };
@@ -84,6 +85,7 @@ export function publishOpp(f: OppForm): 'opp' | 'course' {
           o.joined++;
           o.people!.push(id);
           if (i === 0 && !isW()) toast(`${P(id).name} ${o.kind === 'Training program' ? 'asked to join' : 'applied to'} “${o.title}”`);
+          notify({ type: 'newoffer', cat: 'applicants', who: id, inbox: 'C', key: `opp:${o.id}:${id}`, text: `${o.kind === 'Training program' ? 'asked to join' : 'applied to'} “${o.title}”`, go: { k: 'opp', id: o.id } });
         }
       }),
     );
@@ -116,6 +118,7 @@ export function enroll(id: string, done: () => void) {
     learnerGroup(c);
     scheduleClass(c);
     toast(`You’re enrolled in “${c.title}”`);
+    notify({ type: 'course', cat: 'learning', key: `enrolled:${c.id}`, text: c.price ? `Payment approved. You’re enrolled in “${c.title}”. Your class group is ready.` : `You’re enrolled in “${c.title}”. Your class group is ready.`, go: { k: 'coursePage', id: c.id } });
     done();
   });
 }
@@ -154,13 +157,16 @@ export function scheduleClass(c: Course) {
   if (!c.startAt) return;
   const ms = c.startAt - Date.now();
   if (ms <= 0 || ms > 6 * 3600_000) return; // only time it while the app is likely open
+  // 10 minutes before: a reminder (skipped for classes that start sooner than that)
+  if (ms > 10 * 60_000)
+    later(ms - 10 * 60_000, () => notify({ type: 'reminder', cat: 'reminders', key: `cls:${c.id}:${c.startAt}:10`, text: `“${c.title}” starts in 10 minutes.`, go: { k: 'coursePage', id: c.id } }));
   later(ms, () => {
     const gid = learnerGroup(c);
     const th = db.THREADS_W[gid];
     th.msgs.push({ sys: '🔴 Class is live now' }, { f: 'them', t: `${c.prov.n}: We’re starting! Tap “Join class” on the course page or here: bolo.app/live/${c.id}`, at: nowT() });
     th.unread = (th.unread || 0) + 1;
     th.time = nowT();
-    db.NOTIFS_W.unshift({ id: uid('n'), g: 'Today', type: 'reminder', who: gid, time: 'now', text: `· your class “${c.title}” is starting now. Join from the course page.` } as any);
+    notify({ type: 'live', cat: 'reminders', key: `cls:${c.id}:${c.startAt}:live`, text: `Your class “${c.title}” is live now. Tap to join.`, go: { k: 'live', id: c.id } });
     toast(`“${c.title}” is starting now`);
     bump();
   });
@@ -168,6 +174,8 @@ export function scheduleClass(c: Course) {
 /** Test course: starts 1 minute after you enrol. */
 export function ensureQuickCourse() {
   if (db.COURSES.some((x) => x.id === 'c_quick')) return;
+  // A new course became available: tell learners (once).
+  later(4000, () => isW() && notify({ type: 'newcourse', cat: 'learning', key: 'newcourse:c_quick', text: 'New course: “Quick test class”. Free, starts 1 minute after you enrol.', go: { k: 'course', id: 'c_quick' } }));
   db.COURSES.unshift({ id: 'c_quick', quick: 1, title: 'Quick test class: starts 1 minute after you enrol', prov: { n: 'bolo Academy', logo: logoPic('bA', '#f6ee5c', '#000') }, cat: 'Business', lv: 'Beginner', dur: '15 minutes', type: 'Skill', fmt: 'Online', reg: '', price: 0, old: 0, prof: '', skills: ['How bolo courses work', 'Joining a live class', 'Using your class group'], mo: 0 });
 }
 /** Courses enrolled before class times existed get the next Monday class. */
@@ -225,6 +233,8 @@ export function enrollPeople(c: Course, ids: string[]) {
   c.enrolled = c.people.length;
   const gid = courseGroup(c);
   ids.forEach((id) => THREADS_ALL(gid)?.msgs.push({ sys: `${fname(P(id).name)} enrolled and joined` }));
+  if (c.mine && ids.length)
+    notify({ type: 'enrol', cat: 'applicants', who: ids[0], inbox: c.biz ? 'C' : 'W', key: `enrol:${c.id}:${ids.join(',')}`, text: ids.length > 1 ? `and ${ids.length - 1} other${ids.length > 2 ? 's' : ''} enrolled in “${c.title}”` : `enrolled in “${c.title}”`, go: { k: 'course', id: c.id } });
   bump();
 }
 export function setProgress(cid: string, pid: string, v: number) {
@@ -304,6 +314,7 @@ export function joinMentor(id: string) {
     m.joinedMe = 'yes';
     m.joined++;
     toast(`🎉 ${mOwner(m).name.split(' ')[0]} accepted you as a mentee`);
+    notify({ type: 'accept', cat: 'mentorship', who: m.by || undefined, key: `mentee:${m.id}`, text: `accepted you as a mentee in “${m.title}”.`, go: { k: 'mentor', id: m.id } });
     later(200, () => {
       mentorGroup(m, false);
       toast(`💬 ${m.format === 'Group' ? 'Mentorship group' : 'Mentor chat'} added to your messages`);
@@ -341,6 +352,7 @@ export function publishMentor(f: MentorForm) {
           m.people!.push(pid);
           m.st![pid] = 'pending';
           if (i === 0) toast(`${P(pid).name} wants you as a mentor`);
+          notify({ type: 'mentor', cat: 'mentorship', who: pid, inbox: m.asBiz ? 'C' : 'W', key: `mreq:${m.id}:${pid}`, text: `asked to join your mentorship “${m.title}”`, go: { k: 'mentor', id: m.id } });
         }
       }),
     );
@@ -356,6 +368,12 @@ export function answerMentee(mid: string, pid: string, st: 'acc' | 'dec') {
     if (th) th.members = (th.members || []).filter((x) => x !== pid);
   }
   toast(st === 'acc' ? `${P(pid).name} accepted as a mentee` : `${P(pid).name} declined`);
+  if (st === 'acc')
+    later(2500, () => {
+      const th = THREADS_ALL('g_' + mid);
+      th?.msgs.push({ sys: `${fname(P(pid).name)} joined the group` });
+      notify({ type: 'mentor', cat: 'mentorship', who: pid, inbox: m.asBiz ? 'C' : 'W', key: `mjoin:${mid}:${pid}`, text: `joined your mentorship group “${m.title}”`, go: { k: 'chat', id: 'g_' + mid } });
+    });
   bump();
 }
 export function createGroup(o: { title: string; desc: string; rules: string[]; color: string; members: string[] }) {
@@ -448,7 +466,7 @@ export function requestDM(mid: string) {
     t.msgs.push({ sys: `${o.name.split(' ')[0]} accepted your message request` });
     t.time = nowT();
     t.unread = (t.unread || 0) + 1;
-    db.NOTIFS_W.unshift({ id: uid('dm'), g: 'Today', type: 'accept', who: m.by, time: 'now', text: 'accepted your request to message them privately.' });
+    notify({ type: 'accept', cat: 'mentorship', who: m.by, key: `dm:${mid}`, text: 'accepted your request to message them privately.', go: { k: 'chat', id: m.by! } });
     toast(`✅ ${o.name.split(' ')[0]} accepted. You can message them now`);
   });
 }

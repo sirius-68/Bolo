@@ -202,7 +202,18 @@ export function aboutOf(id: string) {
 
 /* ---------------- search filters ---------------- */
 export type Filters = typeof ui.F;
-export const fCount = (F: Filters = ui.F) => (F.dist ? 1 : 0) + (F.rate ? 1 : 0) + (F.ver ? 1 : 0) + (F.urgent ? 1 : 0) + (F.budget ? 1 : 0) + (F.sort !== 'best' ? 1 : 0) + (F.type ? 1 : 0);
+export const fCount = (F: Filters = ui.F) => (F.dist ? 1 : 0) + (F.rate ? 1 : 0) + (F.ver ? 1 : 0) + (F.urgent ? 1 : 0) + (F.budget ? 1 : 0) + (F.sort !== 'best' ? 1 : 0) + (F.type ? 1 : 0) + (F.posted ? 1 : 0) + (F.by ? 1 : 0) + (F.exp ? 1 : 0);
+/** "now", "12mins ago", "2h ago", "Yesterday", "3 days ago", "1w" → age in days. */
+export function ageDays(t?: string) {
+  const s = (t || '').toLowerCase();
+  if (!s || /now|min|h ago|^\d+h$/.test(s)) return 0;
+  if (/yesterday/.test(s)) return 1;
+  const d = s.match(/(\d+)\s*(day|d\b)/);
+  if (d) return +d[1];
+  const w = s.match(/(\d+)\s*w/);
+  if (w) return +w[1] * 7;
+  return 30;
+}
 export function matchPerson(id: string, q: string, cat: string | null, F: Filters = ui.F) {
   const p = P(id);
   if (!p) return false;
@@ -211,6 +222,7 @@ export function matchPerson(id: string, q: string, cat: string | null, F: Filter
   if (F.dist && kmOf(p.dist) > F.dist) return false;
   if (F.rate && p.rate < F.rate) return false;
   if (F.ver && !p.verified) return false;
+  if (F.exp && (p.years || 0) < F.exp) return false;
   return true;
 }
 export function matchJob(po: Post, q: string, cat: string | null, F: Filters = ui.F) {
@@ -221,16 +233,21 @@ export function matchJob(po: Post, q: string, cat: string | null, F: Filters = u
   if (F.urgent && !po.urgent) return false;
   if (F.budget && budgetNum(po.budget) < F.budget) return false;
   if (F.type && !(po.type || '').includes(F.type)) return false;
+  if (F.posted && ageDays(po.time) >= F.posted) return false;
+  if (F.by === 'company' && !(po.biz || c?.biz)) return false;
+  if (F.by === 'person' && (po.biz || c?.biz)) return false;
   return true;
 }
 export function sortJobs(L: Post[], F: Filters = ui.F) {
   if (F.sort === 'near') return L.slice().sort((a, b) => kmOf(P(a.client!)?.dist) - kmOf(P(b.client!)?.dist));
   if (F.sort === 'budget') return L.slice().sort((a, b) => budgetNum(b.budget) - budgetNum(a.budget));
+  if (F.sort === 'new') return L.slice().sort((a, b) => ageDays(a.time) - ageDays(b.time));
   return L;
 }
 export function sortPeople(L: string[], F: Filters = ui.F) {
   if (F.sort === 'near') return L.slice().sort((a, b) => kmOf(P(a).dist) - kmOf(P(b).dist));
   if (F.sort === 'rate') return L.slice().sort((a, b) => P(b).rate - P(a).rate);
+  if (F.sort === 'exp') return L.slice().sort((a, b) => (P(b).years || 0) - (P(a).years || 0));
   return L;
 }
 

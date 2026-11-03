@@ -5,6 +5,7 @@ import { toast, undoBar } from '../ui/overlay';
 import { bump, later, every, cancel } from './live';
 import { emit } from './events';
 import { bookingAmt, earnFor, holdFor, refundFor, releaseFor } from './wallet';
+import { notify, readKey } from './notify';
 import {
   P, isW, thread, nowT, fname, first, xaf, budgetNum, WORKERS, mySkill, myCity, cityLabel, hiringSide, THREADS, ORDER, NOTIFS, curBiz, bizName, postById, add, toggle, has, mOwner,
 } from './core';
@@ -115,7 +116,7 @@ function simulateOffers(job: Post) {
           : ['I can do this, I’ve done many jobs like it nearby.', 'Available at that time. I’ll bring my own tools.', 'I’m close by and can come quickly.'][i],
         stage: asBiz ? 'applied' : undefined,
       });
-      (asBiz ? db.NOTIFS_C : db.NOTIFS_W).unshift({ id: uid('no'), g: 'Today', type: 'newoffer', who: id, job: job.id, time: 'now' });
+      notify({ type: 'newoffer', cat: 'applicants', who: id, job: job.id, inbox: asBiz ? 'C' : 'W', key: `offer:${job.id}:${id}`, text: asBiz ? `applied for “${job.title}”` : `sent an offer on “${job.title}”`, go: { k: 'job', id: job.id } });
       if (asBiz) bizLog('follow', `<b>${P(id).name}</b> applied for <b>${job.title}</b>`);
       const viewingRightSide = isW() === !asBiz;
       if (viewingRightSide) toast(`${P(id).name} ${asBiz ? 'applied to' : 'sent an offer on'} “${job.title}”`);
@@ -154,7 +155,7 @@ export function sendOffer(id: string, price: string, whenKey: string, msg: strin
     if (ui.openChat !== po.client) th.unread = (th.unread || 0) + 1;
     th.time = nowT();
     createBooking({ worker: 'me', client: po.client!, title: po.title!, when, price: o.price, area: po.area!, as: 'regular' });
-    db.NOTIFS_W.unshift({ id: uid('wa'), g: 'Today', type: 'accept', who: po.client, time: 'now', text: `accepted your offer for “${po.title}”.` });
+    notify({ type: 'accept', cat: 'jobs', who: po.client, key: `offeracc:${id}`, text: `accepted your offer for “${po.title}”.`, go: { k: 'chat', id: po.client! } });
     if (isW()) toast(`🎉 ${P(po.client!).name} accepted your offer!`);
   });
 }
@@ -194,8 +195,19 @@ export function applyVac(id: string, msg: string, cv: CvFile | null) {
     if (!o) return;
     o.stage = 'Shortlisted, interview soon';
     o.state = 'acc';
-    db.NOTIFS_W.unshift({ id: uid('ap'), g: 'Today', type: 'accept', who: po.client, time: 'now', text: `shortlisted you for “${po.title}”. Expect an interview invite.` });
+    notify({ type: 'accept', cat: 'jobs', who: po.client, key: `app:${id}:short`, text: `shortlisted you for “${po.title}”. Expect an interview invite.`, go: { k: 'job', id } });
     if (isW()) toast(`🎉 ${P(po.client!).name} shortlisted you!`);
+    // Next step of the application: the employer responds with an interview invite in chat.
+    later(9000, () => {
+      const o2 = db.myOffers[id];
+      if (!o2) return;
+      o2.stage = 'Interview invite';
+      const th2 = thread(po.client!);
+      th2.msgs.push({ f: 'them', t: `Hello! Thanks for applying for “${po.title}”. Can you come for an interview tomorrow at 10:00?`, at: nowT() });
+      th2.time = nowT();
+      if (ui.openChat !== po.client) th2.unread = (th2.unread || 0) + 1;
+      notify({ type: 'reminder', cat: 'jobs', who: po.client, key: `app:${id}:interview`, text: `invited you to an interview for “${po.title}”.`, go: { k: 'chat', id: po.client! } });
+    });
   });
 }
 export function withdrawApplication(id: string) {
@@ -250,7 +262,7 @@ export function sendContract(c: ContractDraft) {
     k.status = 'active';
     o.stage = 'hired';
     add(b.team, c.person);
-    db.NOTIFS_C.unshift({ id: uid('kc'), g: 'Today', type: 'accept', who: c.person, time: 'now', text: `signed the contract for “${c.role}”. Welcome to the team!` });
+    notify({ type: 'accept', cat: 'applicants', who: c.person, inbox: 'C', key: `contract:${id}`, text: `signed the contract for “${c.role}”. Welcome to the team!`, go: { k: 'chat', id: c.person } });
     b.events.unshift({ icon: 'checkc', text: `<b>${P(c.person).name}</b> signed the contract and joined your team`, at: nowT() });
     if (!isW() && db.BIZ.active === b.id) toast(`✍️ ${P(c.person).name} signed. They’re on your team`);
   });
@@ -327,24 +339,19 @@ export function runSim(b: Booking, delay = 5000) {
 export function setState(b: Booking, s: Booking['state']) {
   b.state = s;
   b.log[s] = nowT();
-  const id = uid('bk');
-  const N = b.as === 'business' ? db.NOTIFS_C : db.NOTIFS_W;
+  const inbox = b.as === 'business' ? 'C' : 'W';
+  const go = { k: 'track' as const, id: b.id };
   if (b.client === 'me') {
-    const w = P(b.worker);
-    if (s === 'onway') {
-      N.unshift({ id, g: 'Today', type: 'onway', who: b.worker, booking: b.id, time: 'now', text: `is on the way for “${b.title}” · ${b.eta} min` });
-    }
-    if (s === 'working') {
-      N.unshift({ id, g: 'Today', type: 'arrived', who: b.worker, booking: b.id, time: 'now', text: `has arrived and started “${b.title}”.` });
-    }
+    if (s === 'onway') notify({ type: 'onway', cat: 'jobs', who: b.worker, booking: b.id, inbox, go, key: `bk:${b.id}:onway`, text: `is on the way for “${b.title}” · ${b.eta} min` });
+    if (s === 'working') notify({ type: 'arrived', cat: 'jobs', who: b.worker, booking: b.id, inbox, go, key: `bk:${b.id}:working`, text: `has arrived and started “${b.title}”.` });
     if (s === 'done') {
-      N.unshift({ id, g: 'Today', type: 'jobdone', who: b.worker, booking: b.id, time: 'now', text: `marked “${b.title}” as done. Please confirm.` });
+      notify({ type: 'jobdone', cat: 'jobs', who: b.worker, booking: b.id, inbox, go, key: `bk:${b.id}:done:${b.log.done || ''}`, text: `marked “${b.title}” as done. Please confirm.` });
       if (ui.appStarted && myBookings().includes(b)) emit('doneAlert', b.id);
     }
   }
   if (b.client === 'me' && s === 'confirmed') releaseFor(b);
   if (b.worker === 'me' && s === 'confirmed') earnFor(b);
-  if (b.worker === 'me' && s === 'confirmed') db.NOTIFS_W.unshift({ id, g: 'Today', type: 'payment_in', who: b.client, time: 'now', amount: b.price });
+  if (b.worker === 'me' && s === 'confirmed') notify({ type: 'payment_in', cat: 'account', who: b.client, amount: b.price, key: `pay:${b.id}`, text: `paid ${b.price} for “${b.title}”`, go: { k: 'wallet' } });
   bump();
 }
 export function wStart(id: string) {
@@ -447,6 +454,7 @@ export function pushMsg(m: Msg, id: string) {
 }
 export function markChatRead(id: string) {
   const th = THREADS()[id];
+  readKey(`msg:${id}`);
   if (th && th.unread) {
     th.unread = 0;
     bump();
@@ -455,6 +463,7 @@ export function markChatRead(id: string) {
 export function openThread(id: string) {
   const th = thread(id);
   th.unread = 0;
+  readKey(`msg:${id}`);
   if (th.typing && th.next) {
     later(1600, () => {
       th.typing = 0;
@@ -483,9 +492,18 @@ function settleReply(id: string, fn: () => void, wait = 2200) {
     });
     fn();
     th.time = nowT();
-    if (ui.openChat !== id) th.unread = (th.unread || 0) + 1;
+    if (ui.openChat !== id) {
+      th.unread = (th.unread || 0) + 1;
+      // One notification per chat: newer messages update it instead of piling up.
+      const last = th.msgs[th.msgs.length - 1];
+      const p = P(id);
+      if (p && last && (last.f === 'them' || last.k === 'offer'))
+        notify({ type: 'message', cat: 'messages', who: id, key: `msg:${id}`, upsert: true, inbox: db.THREADS_C[id] && !db.THREADS_W[id] ? 'C' : 'W', text: th.unread > 1 ? `sent you ${th.unread} messages` : 'sent you a message', snip: (last.t || (last.k === 'offer' ? `Quote: ${last.job} · ${last.price}` : '')).slice(0, 90), go: { k: 'chat', id } });
+    }
   });
 }
+/** Opening a chat clears its message notification. */
+export const readChatNotif = (id: string) => readKey(`msg:${id}`);
 /** The other side answers (simulated). */
 export function reply(id: string, t: string) {
   const p = P(id);
@@ -706,6 +724,7 @@ export function deleteNotifs(ids: string[]) {
 export const NT_TABS: Record<string, (n: Notif) => boolean> = {
   All: () => true,
   Jobs: (n) => ['quote', 'accept', 'reminder', 'offers', 'payment', 'newjob', 'payment_in', 'newoffer', 'onway', 'arrived', 'jobdone'].includes(n.type),
-  Mentions: (n) => ['mention', 'review'].includes(n.type),
+  Learning: (n) => ['enrol', 'course', 'newcourse', 'material', 'live', 'mentor', 'rating'].includes(n.type) || n.cat === 'learning' || n.cat === 'mentorship',
+  Mentions: (n) => ['mention', 'review', 'comment'].includes(n.type),
 };
 export { xaf, budgetNum };

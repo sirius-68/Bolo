@@ -9,6 +9,7 @@ import { bizName, curBiz, isW, mySkill, cityLabel } from '../src/logic/core';
 import { services } from '../src/logic/account';
 import { bump } from '../src/logic/live';
 import { pickImage } from '../src/logic/media';
+import { expectCommentOn } from '../src/logic/comments';
 import { resetTo } from '../src/logic/nav';
 
 export default function NewPost() {
@@ -74,8 +75,9 @@ export default function NewPost() {
           title="Post"
           disabled={!ok}
           onPress={() => {
+            const nid = uid('np');
             db.POSTS.unshift({
-              id: uid('np'),
+              id: nid,
               by: w ? 'me' : 'me',
               kind: src ? 'photo' : 'text',
               src: src || undefined,
@@ -88,6 +90,7 @@ export default function NewPost() {
               as: w ? 'regular' : 'business',
               biz: w ? null : db.BIZ.active,
             });
+            expectCommentOn(nid);
             ui.feedView = 'all';
             bump();
             toast('Posted to the feed');

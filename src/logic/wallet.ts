@@ -6,6 +6,7 @@ import { db, uid, Booking } from '../data/db';
 import { toast } from '../ui/overlay';
 import { bump, later } from './live';
 import { P, nowT, xaf } from './core';
+import { notify } from './notify';
 
 export type TxKind = 'topup' | 'hold' | 'release' | 'refund' | 'earn' | 'withdraw';
 export type Tx = { id: string; kind: TxKind; amt: number; title: string; who?: string; booking?: string; method?: string; at: string; pending?: number };
@@ -45,6 +46,7 @@ export function topUp(amt: number, method: string, done?: () => void) {
   later(method.startsWith('Bank') ? 4500 : 2600, () => {
     tx.pending = 0;
     db.WALLET.bal += amt;
+    notify({ type: 'payment_in', cat: 'account', key: `tx:${tx.id}`, amount: xaf(amt), text: `${xaf(amt)} added to your wallet from ${method}.`, go: { k: 'wallet' } });
     bump();
     done?.();
   });
@@ -58,6 +60,7 @@ export function withdraw(amt: number, method: string) {
   bump();
   later(5000, () => {
     tx.pending = 0;
+    notify({ type: 'payment', cat: 'account', key: `tx:${tx.id}`, amount: xaf(amt), text: `${xaf(amt)} was sent to ${method}.`, go: { k: 'wallet' } });
     bump();
   });
   return true;

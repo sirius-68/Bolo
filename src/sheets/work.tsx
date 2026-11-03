@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, Share, View } from 'react-native';
+import * as Linking from 'expo-linking';
 import { db, Post, CvFile } from '../data/db';
 import { RV_TAGS_C, RV_TAGS_W, SERVICES, STAGES, STAGE_COL, catIcon } from '../data/catalog';
 import { AlertIll, Avatar, Btn, Check, Chip, Chips, CoTag, Empty, Field, Input, Label, Meta, Note, Pict, Pill, ProTag, Rate, StatusPill, Txt, Verified, tap } from '../ui/kit';
@@ -13,6 +14,8 @@ import {
 import { openProfile, openTrack } from '../logic/nav';
 import { pickDocument } from '../logic/media';
 import { MyCV, PersonCV } from '../components/cv';
+import { addComment, cmtName, commentsOf, deleteComment } from '../logic/comments';
+import { useLive } from '../logic/live';
 import { openChat } from './chat';
 import { openContract } from './business';
 import { openPro, switchRole } from './account';
@@ -64,6 +67,9 @@ function JobSheet({ id, initialStage }: { id: string; initialStage?: string }) {
           <Meta parts={[po.area, po.time]} />
         </View>
         {po.urgent ? <StatusPill kind="urg" text="Urgent" /> : null}
+        <Pressable testID="job-share" accessibilityLabel="Share job" hitSlop={6} onPress={() => shareJob(po.id)} style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="share" size={17} color="#fff" />
+        </Pressable>
       </View>
       <View style={[S.row, { gap: 6, alignSelf: 'flex-start', marginTop: 16, height: 26, paddingHorizontal: 10, borderRadius: 999, backgroundColor: 'rgba(246,238,92,.14)' }]}>
         <Icon name={catIcon(po.cat)} size={14} color={C.yellow} />
@@ -675,45 +681,42 @@ function ReviewSheet({ target, bid }: { target: string; bid: string | null }) {
 /* ====================================================================== */
 /* Comments, media, sharing                                               */
 /* ====================================================================== */
-const SAMPLE_CMT: [string, string, string, string][] = [
-  ['faces/cl_ama', 'Ama K.', 'Great work, booking you next week!', '2m'],
-  ['faces/cl_marie', 'Marie T.', 'How long did it take?', '10m'],
-  ['faces/cl_pauln', 'Paul N.', 'Clean job 👏', '1h'],
-];
-const extra: Record<string, [string, string, string, string][]> = {};
 export function openComments(id: string) {
   sheet.show(() => <Comments id={id} />, { tag: 'cmt:' + id });
 }
 function Comments({ id }: { id: string }) {
+  useLive();
   const [v, setV] = useState('');
-  const [, setN] = useState(0);
-  const L = [...SAMPLE_CMT, ...(extra[id] || [])];
+  const L = commentsOf(id);
   const send = () => {
-    const t = v.trim();
-    if (!t) return;
-    (extra[id] = extra[id] || []).push([myPhoto(), myName(), t, 'now']);
+    if (!v.trim()) return;
+    addComment(id, v);
     setV('');
-    setN((x) => x + 1);
   };
   return (
     <View style={{ gap: 14 }}>
-      <SheetTitle>Comments</SheetTitle>
-      {L.map(([ph, n, t, w], i) => (
-        <View key={i} style={{ flexDirection: 'row', gap: 10 }}>
-          <Avatar pic={ph} size={36} />
+      <SheetTitle sub={L.length ? `${L.length} comment${L.length === 1 ? '' : 's'}` : 'Be the first to comment'}>Comments</SheetTitle>
+      {L.map((c) => (
+        <View key={c.id} style={{ flexDirection: 'row', gap: 10 }}>
+          <Avatar pic={c.by === 'me' ? myPhoto() : P(c.by).photo} size={36} />
           <View style={{ flex: 1 }}>
             <Txt s={13} w={8}>
-              {n} <Txt s={11} c={C.muted}>{w}</Txt>
+              {cmtName(c)} <Txt s={11} c={C.muted}>{c.at}</Txt>
             </Txt>
             <Txt s={14} c="#d9d9de">
-              {t}
+              {c.t}
             </Txt>
           </View>
+          {c.by === 'me' ? (
+            <Pressable testID="cmt-delete" accessibilityLabel="Delete your comment" hitSlop={8} onPress={() => deleteComment(id, c.id)} style={{ padding: 4 }}>
+              <Icon name="trash" size={16} color={C.muted} />
+            </Pressable>
+          ) : null}
         </View>
       ))}
       <View style={[S.row, { gap: 8, marginTop: 4 }]}>
-        <Input value={v} onChangeText={setV} placeholder="Add a comment…" style={{ flex: 1, height: 48, minHeight: 48 }} onSubmit={send} returnKeyType="send" />
-        <Pressable accessibilityLabel="Send" onPress={send} style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
+        <Input testID="cmt-input" value={v} onChangeText={setV} placeholder="Add a comment…" style={{ flex: 1, height: 48, minHeight: 48 }} onSubmit={send} returnKeyType="send" maxLength={500} />
+        <Pressable testID="cmt-send" accessibilityLabel="Send" onPress={send} style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: v.trim() ? C.yellow : C.s3, alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="send" size={20} color="#000" />
         </Pressable>
       </View>
@@ -722,6 +725,19 @@ function Comments({ id }: { id: string }) {
 }
 export function openMedia(pic: string) {
   sheet.show(() => <Pict pic={pic} style={{ width: '100%', aspectRatio: pic.startsWith('scenes/') ? 390 / 700 : 1, borderRadius: 18 }} fit="contain" />);
+}
+/** Share a job: title, company, a short preview and a link that opens this job in bolo. */
+export async function shareJob(id: string) {
+  const po = postById(id);
+  if (!po) return toast('This job is no longer available');
+  const c = po.mine ? null : P(po.client!);
+  const by = po.mine ? (po.as === 'business' ? bizName(curBiz()) : myName()) : c?.name || '';
+  const preview = (po.text || '').replace(/\s+/g, ' ').trim();
+  const link = Linking.createURL(`/job/${id}`);
+  const message = [`${po.title}${by ? ' · ' + by : ''}`, [po.budget, po.type, po.area].filter(Boolean).join(' · '), preview ? (preview.length > 160 ? preview.slice(0, 157) + '…' : preview) : '', `Open in bolo: ${link}`].filter(Boolean).join('\n\n');
+  try {
+    await Share.share({ title: po.title, message });
+  } catch {}
 }
 export async function sharePost(name?: string) {
   try {

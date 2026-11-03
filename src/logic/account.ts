@@ -2,6 +2,7 @@
 import { db, makeDb, setDb, ui, uid, MyBiz, Service } from '../data/db';
 import { CATS, SKILLS, lvOf } from '../data/catalog';
 import { toast } from '../ui/overlay';
+import { notify } from './notify';
 import { bump, cancelAll, later } from './live';
 import { curBiz, bizName, cityLabel, isW, nowT, mySkill, ensureSkillList, add, P } from './core';
 import { resumeSims, bizLog } from './work';
@@ -125,6 +126,7 @@ export function payPro(kind: 'regular' | 'business', done: () => void) {
   later(1400, () => {
     db.user.pro[kind] = true;
     toast(kind === 'regular' ? '🎉 Welcome to bolo Pro' : '🎉 Business Pro is active');
+    notify({ type: 'pro', cat: 'account', key: `pro:${kind}:${new Date().toISOString().slice(0, 7)}`, inbox: kind === 'regular' ? 'W' : 'C', text: kind === 'regular' ? 'bolo Pro is active: priority applications, Pro CV templates and profile boosts.' : 'Business Pro is active: cheaper ads and a featured company page.', go: { k: 'me' } });
     done();
   });
 }

@@ -14,7 +14,47 @@ import { answerQuoteNotif, bk, confirmDone, deleteNotifs, follow, markAllRead, N
 import { openMe, openProfile, openTrack } from '../src/logic/nav';
 import { openComments, openJob } from '../src/sheets/work';
 import { openChat } from '../src/sheets/chat';
+import { openCV, openCourse, openMentor, openOpp } from '../src/sheets/career';
+import { Go } from '../src/logic/notify';
 import { openNotifSettings } from '../src/sheets/account';
+
+/** Opens the screen a notification is about. */
+function goTo(g: Go) {
+  switch (g.k) {
+    case 'job':
+      return postById(g.id) ? openJob(g.id) : toast('This job is no longer available');
+    case 'opp':
+      return openOpp(g.id);
+    case 'course':
+      return openCourse(g.id);
+    case 'coursePage':
+      return router.push(`/course/${g.id}` as any);
+    case 'live':
+      return router.push(`/live/${g.id}` as any);
+    case 'watch':
+      return router.push(`/watch/${g.id}${g.t ? `?t=${g.t}` : ''}` as any);
+    case 'mentor':
+      return openMentor(g.id);
+    case 'chat':
+      return openChat(g.id);
+    case 'profile':
+      return openProfile(g.id);
+    case 'track':
+      return openTrack(g.id);
+    case 'post':
+      return openComments(g.id);
+    case 'wallet':
+      return router.push('/wallet' as any);
+    case 'teach':
+      return router.push('/teach' as any);
+    case 'courses':
+      return router.push('/courses?tab=mine' as any);
+    case 'cv':
+      return openCV();
+    default:
+      return openMe();
+  }
+}
 
 export default function Notifs() {
   useLive();
@@ -34,6 +74,7 @@ export default function Notifs() {
   const open = (n: Notif) => {
     if (sel) return toggle(n.id);
     readNotif(n.id);
+    if (n.go) return goTo(n.go);
     const who = typeof n.who === 'string' ? n.who : '';
     const go: Record<string, () => void> = {
       like: () => openMe(isW() ? 'Posts' : 'Company'),
@@ -287,7 +328,8 @@ function Row({ n, sel, onPress, onLong }: { n: Notif; sel: string[] | null; onPr
       const o = jb?.offerList?.find((x) => x.by === who);
       text = (
         <Txt s={14}>
-          {name} sent an offer on <B>“{jb ? jb.title : 'your job'}”</B>
+          {name} {jb ? (n.text && /applied/.test(n.text) ? 'applied for ' : 'sent an offer on ') : n.text}
+          {jb ? <B>“{jb.title}”</B> : null}
           {T}
         </Txt>
       );
@@ -317,10 +359,19 @@ function Row({ n, sel, onPress, onLong }: { n: Notif; sel: string[] | null; onPr
     default:
       text = (
         <Txt s={14}>
-          {name} {n.text}
+          {name}
+          {name ? ' ' : ''}
+          {n.text}
           {T}
         </Txt>
       );
+      if (n.snip)
+        extra = (
+          <Txt s={12} c={C.muted} lines={2} style={{ marginTop: 4 }}>
+            “{n.snip}”
+          </Txt>
+        );
+      if (!p) pics = <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}><Icon name={ic} size={18} color={col} /></View>;
   }
   return (
     <Pressable
