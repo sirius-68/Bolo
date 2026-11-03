@@ -9,7 +9,7 @@ import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
 import { sheet, SheetTitle } from '../../src/ui/overlay';
 import { useLive } from '../../src/logic/live';
-import { Rec, askAt, courseOfRec, fmtTs, isSavedVideo, progressOf, recById, recordingsOf, saveProgress, toggleSavedVideo } from '../../src/logic/classes';
+import { Rec, askAt, courseOfRec, fmtTs, isSavedVideo, progressOf, recById, recordingsOf, saveProgress, toggleSavedVideo, videoSource } from '../../src/logic/classes';
 
 /** A class recording: plays where you stopped (or at a shared timestamp), lets you ask at the exact moment. */
 export default function Watch() {
@@ -32,7 +32,7 @@ function Player({ r, start, width, top, bottom, fromShare }: { r: Rec; start: nu
   const c = courseOfRec(r)!;
   const [err, setErr] = useState(false);
   const sought = useRef(false);
-  const player = useVideoPlayer(r.src, (p) => {
+  const player = useVideoPlayer(videoSource(r.src), (p) => {
     p.timeUpdateEventInterval = 1;
     p.play();
   });
@@ -81,7 +81,7 @@ function Player({ r, start, width, top, bottom, fromShare }: { r: Rec; start: nu
             <Txt s={14} w={7}>
               Couldn’t load the recording
             </Txt>
-            <Btn small variant="yellow" title="Try again" onPress={() => (setErr(false), player.replace(r.src), player.play())} />
+            <Btn small variant="yellow" title="Try again" onPress={() => (setErr(false), player.replace(videoSource(r.src)), player.play())} />
           </View>
         ) : null}
       </View>

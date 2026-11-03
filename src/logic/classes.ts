@@ -9,13 +9,12 @@ import { courseGroup, learnerGroup, lessonsOf } from './career';
 import { notify } from './notify';
 
 export type Rec = { id: string; cid: string; title: string; lesson: number; dur: number; at: string; src: string; live?: number };
-/** Sample lesson videos until real class recordings are stored (backend phase). */
-const SRC = [
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-];
-const DUR = [653, 596, 15];
+/** A sample lesson video bundled with the app (plays offline) until real class recordings are stored (backend phase). */
+const SRC = ['local:lesson', 'local:lesson', 'local:lesson'];
+const DUR = [180, 180, 180];
+const LESSON = require('../../assets/video/lesson.mp4');
+/** What the video player plays: the bundled file or a remote URL. */
+export const videoSource = (src: string) => (src.startsWith('local:') ? LESSON : src);
 
 const recs = () => (((db as any).RECS = (db as any).RECS || []) as Rec[]);
 const watch = () => (((db as any).WATCH = (db as any).WATCH || {}) as Record<string, { t: number; d: number; at: number }>);

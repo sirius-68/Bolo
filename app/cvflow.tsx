@@ -143,7 +143,7 @@ export default function CVFlow() {
           <Input value={c.last} onChangeText={(v) => ((c.last = v), re())} autoCapitalize="words" />
         </Field>
         <Field label="Name" error={!c.first.trim() && 'Add your first name'}>
-          <Input value={c.first} onChangeText={(v) => ((c.first = v), re())} autoCapitalize="words" invalid={!c.first.trim()} />
+          <Input testID="cv-first" value={c.first} onChangeText={(v) => ((c.first = v), re())} autoCapitalize="words" invalid={!c.first.trim()} />
         </Field>
         <Field label="Gender · optional">
           <SelectBox value={c.gender} placeholder="Gender" onPress={() => pick('Gender', ['Male', 'Female', 'Prefer not to say'], c.gender, (v) => ((c.gender = v), re()))} />

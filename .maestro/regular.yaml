@@ -154,6 +154,63 @@ name: Regular account tour
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - takeScreenshot: r11-career
+# CV: leaving the editor without changes goes back; create a CV; switch templates; Edit → back shows the CV again
+- runFlow:
+    when:
+      visible: "Create my CV"
+    commands:
+      - tapOn: "Create my CV"
+      - waitForAnimationToEnd
+      - back
+      - waitForAnimationToEnd
+      - takeScreenshot: r11b-cv-back
+      - tapOn: "Create my CV"
+      - waitForAnimationToEnd
+      - tapOn: "Continue"
+      - tapOn:
+          id: "cv-first"
+      - inputText: "Eve"
+      - hideKeyboard
+      - scrollUntilVisible:
+          element: "Save and continue"
+          direction: DOWN
+      - tapOn: "Save and continue"
+      - tapOn: "Add later"
+      - scrollUntilVisible:
+          element: "Save and continue"
+          direction: DOWN
+      - tapOn: "Save and continue"
+      - tapOn: "I have no experience yet"
+      - extendedWaitUntil:
+          visible:
+            id: "cv-preview"
+          timeout: 10000
+      - waitForAnimationToEnd
+      - takeScreenshot: r11c-cv-basic
+      - tapOn:
+          id: "cv-tpl-executive"
+      - waitForAnimationToEnd
+      - takeScreenshot: r11d-cv-executive
+      - tapOn: "Modern"
+      - tapOn:
+          id: "cv-tpl-aura"
+      - waitForAnimationToEnd
+      - takeScreenshot: r11e-cv-aura
+      - tapOn:
+          id: "cv-tpl-slate"
+      - waitForAnimationToEnd
+      - takeScreenshot: r11f-cv-slate
+      - tapOn:
+          id: "cv-edit"
+      - waitForAnimationToEnd
+      - back
+      - extendedWaitUntil:
+          visible:
+            id: "cv-preview"
+          timeout: 6000
+      - takeScreenshot: r11g-cv-after-edit-back
+      - back
+      - waitForAnimationToEnd
 # Courses: enrol in the 1-minute test class → welcome → course page → lesson → My learning
 - scrollUntilVisible:
     element: "Quick test class.*"
@@ -227,6 +284,10 @@ name: Regular account tour
       - back
       # Rate the course
       - tapOn: "Reviews"
+      - scrollUntilVisible:
+          element:
+            id: "star-5"
+          direction: DOWN
       - tapOn:
           id: "star-5"
       - tapOn:
