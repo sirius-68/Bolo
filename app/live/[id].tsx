@@ -251,14 +251,14 @@ function Room({ c, asHost }: { c: Course; asHost?: boolean }) {
         ) : (
           <View style={{ flex: 1 }}>
             <Svg width="100%" height="100%">
-              <SvgText x={18} y={36} fill="#111" fontSize={18} fontWeight="bold">
+              <SvgText x={18} y={74} fill="#111" fontSize={18} fontWeight="bold">
                 {lesson.slice(0, 34)}
               </SvgText>
-              <SvgText x={18} y={64} fill="#444" fontSize={13}>
+              <SvgText x={18} y={100} fill="#444" fontSize={13}>
                 1. What it is   2. How to do it   3. Practice
               </SvgText>
               <Line x1={40} y1={SH - 40} x2={width - 80} y2={SH - 40} stroke="#333" strokeWidth={2} />
-              <Line x1={40} y1={SH - 40} x2={40} y2={90} stroke="#333" strokeWidth={2} />
+              <Line x1={40} y1={SH - 40} x2={40} y2={118} stroke="#333" strokeWidth={2} />
               <Path d={`M50 ${SH - 60} Q ${width / 2 - 20} ${90} ${width - 100} ${SH - 70}`} stroke="#e11d48" strokeWidth={3} fill="none" />
               {strokes.map((s, i) => (
                 <Path key={i} d={s.d} stroke={s.c} strokeWidth={s.w} fill="none" strokeLinecap="round" strokeLinejoin="round" />
