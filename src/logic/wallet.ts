@@ -102,6 +102,22 @@ export function earnFor(b: Booking) {
   addTx({ kind: 'earn', amt, title: b.title, who: b.client, booking: b.id });
 }
 
+/* ---------------- escrow for services that aren't jobs (expert sessions) ---------------- */
+/** Take an amount from the wallet and hold it for a booking. False when the balance is too low. */
+export function holdAmount(amt: number, title: string, who?: string, ref?: string) {
+  if (amt > db.WALLET.bal) return false;
+  db.WALLET.bal -= amt;
+  addTx({ kind: 'hold', amt, title, who, booking: ref });
+  return true;
+}
+export function releaseAmount(amt: number, title: string, who?: string, ref?: string) {
+  addTx({ kind: 'release', amt, title, who, booking: ref });
+}
+export function refundAmount(amt: number, title: string, who?: string, ref?: string) {
+  db.WALLET.bal += amt;
+  addTx({ kind: 'refund', amt, title: `Refund · ${title}`, who, booking: ref });
+}
+
 /** Saves from before the wallet existed: open jobs count as already paid into escrow. */
 export function ensureWallet() {
   db.BOOKINGS.forEach((b) => {

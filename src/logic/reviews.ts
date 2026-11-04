@@ -23,7 +23,8 @@ const hash = (s: string) => [...s].reduce((h, c) => (h * 33 + c.charCodeAt(0)) >
 export function reviewsOf(c: Course): CReview[] {
   const S = store();
   if (!S[c.id]) {
-    const n = c.mine || c.quick ? 0 : 2 + (hash(c.id) % 5);
+    // Listings that link to another site get ratings only from bolo members who took them (no made-up ones).
+    const n = c.mine || c.quick || c.url ? 0 : 2 + (hash(c.id) % 5);
     const pool = WORKERS();
     S[c.id] = Array.from({ length: n }, (_, i) => {
       const [stars, text] = TEXTS[(hash(c.id) + i * 2) % TEXTS.length];
@@ -40,10 +41,17 @@ export function ratingOf(c: Course) {
 }
 export const myReview = (c: Course) => reviewsOf(c).find((r) => r.by === 'me');
 /** Only students enrolled in the course can rate it (not its creator). */
-export const canReview = (c: Course) => isW() && !c.mine && db.myLearning.includes(c.id);
+export const canReview = (c: Course) => isW() && !c.mine && (db.myLearning.includes(c.id) || (!!c.url && tookCourse(c.id)));
+/** You opened a linked course and said you took it. */
+export const tookCourse = (id: string) => ((((db as any).TOOK = (db as any).TOOK || []) as string[]).includes(id));
+export function markTook(id: string) {
+  const L = ((db as any).TOOK = (db as any).TOOK || []) as string[];
+  if (!L.includes(id)) L.push(id);
+  bump();
+}
 
 export function submitReview(c: Course, stars: number, text: string): string | null {
-  if (!canReview(c)) return 'Only students enrolled in this course can rate it.';
+  if (!canReview(c)) return 'Only people who took this course can rate it.';
   if (!Number.isInteger(stars) || stars < 1 || stars > 5) return 'Choose 1 to 5 stars.';
   const t = text.trim().slice(0, 600);
   const L = reviewsOf(c);

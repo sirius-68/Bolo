@@ -7,8 +7,8 @@ import { Icon } from '../ui/Icon';
 import { C, S } from '../ui/theme';
 
 /** Shown the first time someone opens Courses or a course page. */
-export const needsCourseWelcome = () => !(db.PREF as any).coursesIntro;
-const markSeen = () => ((db.PREF as any).coursesIntro = 1);
+export const needsCourseWelcome = () => !(db.PREF as any).coursesIntro2;
+const markSeen = () => ((db.PREF as any).coursesIntro2 = 1);
 
 type Slide = { bg: string; kicker: string; a: string; b: string; text: string; tiles: [string, string, string][] };
 const SLIDES: Slide[] = [
@@ -17,7 +17,7 @@ const SLIDES: Slide[] = [
     kicker: 'Welcome to Courses',
     a: 'Learn the skills',
     b: 'that get you hired',
-    text: 'Short, practical courses from trainers and companies near you. Many are free.',
+    text: 'Courses from well-known schools, trainers and companies, picked for jobs. Many are free.',
     tiles: [
       ['cap', C.blue, '#fff'],
       ['cat-tailor', '#000', C.yellow],
@@ -26,26 +26,26 @@ const SLIDES: Slide[] = [
   },
   {
     bg: C.lav,
-    kicker: 'Live, with a real trainer',
-    a: 'Join live classes',
-    b: 'right in the app',
-    text: 'We remind you when class starts. Your class group has the links, files and answers.',
+    kicker: 'Straight to the school',
+    a: 'Tap a course',
+    b: 'to open its website',
+    text: 'You sign up and learn on the school’s own site. Save the ones you like to come back later.',
     tiles: [
-      ['video', '#e11d48', '#fff'],
-      ['chat', '#000', C.lav],
-      ['bell', C.yellow, '#000'],
+      ['globe', C.blue, '#fff'],
+      ['bookmark', '#000', C.yellow],
+      ['lock', C.lav, '#000'],
     ],
   },
   {
     bg: C.mint,
-    kicker: 'Finish and get noticed',
-    a: 'Earn a certificate',
-    b: 'employers can see',
-    text: 'Finish every lesson and the certificate goes on your profile and CV.',
+    kicker: 'Teach something?',
+    a: 'List your course',
+    b: 'in one minute',
+    text: 'Add the link to your course page and we’ll send you learners. Schools with many courses: use bolo on the web.',
     tiles: [
-      ['cert', '#000', C.mint],
-      ['verified', C.blue, '#fff'],
-      ['job', C.orange, '#000'],
+      ['plus', '#000', C.mint],
+      ['cap', C.blue, '#fff'],
+      ['star', C.orange, '#000'],
     ],
   },
 ];

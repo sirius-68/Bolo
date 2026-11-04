@@ -48,9 +48,13 @@ function goTo(g: Go) {
     case 'teach':
       return router.push('/teach' as any);
     case 'courses':
-      return router.push('/courses?tab=mine' as any);
+      return router.push('/courses?tab=saved' as any);
     case 'cv':
       return openCV();
+    case 'expert':
+      return router.push(`/expert/${g.id}` as any);
+    case 'experts':
+      return router.push('/experts' as any);
     default:
       return openMe();
   }

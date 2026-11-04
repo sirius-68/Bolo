@@ -2,13 +2,13 @@ import React from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { RatingBadge } from '../../src/components/Reviews';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../../src/data/db';
-import { COURSE_CATS, EXPERTS } from '../../src/data/catalog';
-import { Course } from '../../src/data/db';
-import { LIVE_ID, classWhen, coursePct, isLive, joinLiveDemo, lessonsOf } from '../../src/logic/career';
-import { Avatar, Bar, ProTag, Txt, tap } from '../../src/ui/kit';
+import { EXPERT_LIST } from '../../src/data/experts';
+import { activeExBookings, expertById } from '../../src/logic/experts';
+import { CourseTile } from '../../src/components/CourseListing';
+import { openSession } from '../../src/components/ExpertUI';
+import { Avatar, ProTag, Txt, tap } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
 import { bizName, curBiz, isW } from '../../src/logic/core';
@@ -17,9 +17,8 @@ import { openCourses, openProfile } from '../../src/logic/nav';
 import { Rail, Sec, TabHeader } from '../../src/components/common';
 import { ListRow, MentorCard, OppCard } from '../../src/components/cards';
 import { onScrollFab } from '../../src/components/NavBar';
-import { openOpp, crSee, openArticles, openCourse, openExperts, openMentor, openMentorForm, openOppForm, openPaths, openSalaries, openCV } from '../../src/sheets/career';
+import { openOpp, crSee, openArticles, openExperts, openMentor, openMentorForm, openOppForm, openPaths, openSalaries, openCV } from '../../src/sheets/career';
 import { openPro } from '../../src/sheets/account';
-import { applying, isExpert } from '../../src/logic/expert';
 
 export default function Career() {
   useLive();
@@ -31,8 +30,8 @@ export default function Career() {
   const mine = db.MENTORSHIPS.filter((m) => m.mine && !m.plain && (w ? !m.asBiz : m.asBiz === db.BIZ.active));
   const others = db.MENTORSHIPS.filter((m) => !m.mine);
   const joined = others.filter((m) => m.joinedMe === 'yes' || m.joinedMe === 'req');
-  const learning = db.myLearning.map((id) => db.COURSES.find((c) => c.id === id)).filter(Boolean) as typeof db.COURSES;
-  const courses = db.COURSES.filter((c) => !db.myLearning.includes(c.id) && (w ? !c.mine : true)).slice(0, 10);
+  const courses = db.COURSES.filter((c) => !c.live && !c.quick && (w ? !c.mine : true)).slice(0, 10);
+  const sessions = w ? activeExBookings() : [];
   const myOpps = db.OPPS.filter((o) => (w ? o.applied : o.mine && o.biz === db.BIZ.active));
 
   const Promo = ({ title, text, cta, icon, alt, onPress, pro }: { title: string; text: string; cta: string; icon: string; alt?: boolean; onPress: () => void; pro?: boolean }) => (
@@ -91,31 +90,30 @@ export default function Career() {
           </>
         )}
       </View>
-      {w ? <LiveNow /> : null}
-      {w && learning.length ? <ContinueLearning list={learning} /> : null}
       {w ? (
-        <Pressable accessibilityRole="button" onPress={openExperts} style={{ marginTop: 12, padding: 16, borderRadius: 22, backgroundColor: C.blue }}>
+        <Pressable testID="career-experts" accessibilityRole="button" onPress={openExperts} style={({ pressed }) => ({ marginTop: 12, padding: 16, borderRadius: 22, backgroundColor: C.blue, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
           <Txt s={16} w={8}>
             Career experts
           </Txt>
           <Txt s={12} c="#e3e7ff" style={{ marginTop: 2 }}>
-            Help with your CV, interviews, job search and first job
+            Book a CV review, a mock interview or a career plan with a checked expert
           </Txt>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
             <View style={{ flexDirection: 'row' }}>
-              {EXPERTS.map((e, i) => (
-                <Avatar key={e[0]} pic={e[2]} size={34} style={{ marginLeft: i ? -8 : 0, borderWidth: 2, borderColor: C.blue }} />
+              {EXPERT_LIST.slice(0, 4).map((e, i) => (
+                <Avatar key={e.id} pic={e.pic} size={34} style={{ marginLeft: i ? -8 : 0, borderWidth: 2, borderColor: C.blue }} />
               ))}
             </View>
-            <View style={{ paddingHorizontal: 12, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,.18)', justifyContent: 'center' }}>
-              <Txt s={12} w={8}>
-                {isExpert() ? 'You’re an expert ✓' : applying() ? 'Application in review' : 'Become an expert'}
+            <View style={[S.row, { gap: 6, paddingHorizontal: 12, height: 30, borderRadius: 15, backgroundColor: '#fff' }]}>
+              <Txt s={12} w={8} c={C.blue}>
+                {sessions.length ? `${sessions.length} booked session${sessions.length === 1 ? '' : 's'}` : 'Find an expert'}
               </Txt>
+              <Icon name="arrow" size={12} color={C.blue} />
             </View>
           </View>
         </Pressable>
       ) : null}
-      {myOpps.length || (w && joined.length) ? (
+      {myOpps.length || (w && (joined.length || sessions.length)) ? (
         <>
           <Sec title={w ? 'My applications & mentors' : 'Your programs'} />
           <View style={{ gap: 8 }}>
@@ -129,6 +127,9 @@ export default function Career() {
                 pillKind={w ? 'acc' : 'wait'}
                 onPress={() => openOpp(o.id)}
               />
+            ))}
+            {sessions.map((b) => (
+              <ListRow key={b.id} icon="calcheck" title={b.title} sub={`Expert session · ${expertById(b.ex)?.name || ''}${b.when ? ' · ' + b.when : ''}`} pill={b.state === 'scheduled' ? 'Time agreed' : 'Booked'} pillKind={b.state === 'scheduled' ? 'acc' : 'wait'} onPress={() => openSession(b)} />
             ))}
             {w
               ? joined.map((m) => (
@@ -153,21 +154,21 @@ export default function Career() {
         ))}
       </Rail>
       <Sec testID="career-courses-all" title="Courses" action="All" onAction={() => openCourses(null, 'explore')} />
-      <Sub t="Short courses with live classes and a certificate" />
+      <Sub t="From schools and trainers. Tap one to open its website" />
       <Rail>
         {courses.map((c) => (
-          <CourseCard key={c.id} c={c} />
+          <CourseTile key={c.id} c={c} />
         ))}
         {w ? (
-          <Pressable testID="career-teach" accessibilityRole="button" onPress={() => (tap(), router.push('/teach' as any))} style={{ width: 168, height: 190, padding: 16, borderRadius: 22, borderWidth: 1, borderStyle: 'dashed', borderColor: C.s3, justifyContent: 'center', gap: 8 }}>
+          <Pressable testID="career-teach" accessibilityRole="button" onPress={() => (tap(), router.push('/teach' as any))} style={{ width: 168, height: 196, padding: 16, borderRadius: 22, borderWidth: 1, borderStyle: 'dashed', borderColor: C.s3, justifyContent: 'center', gap: 8 }}>
             <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.lav, alignItems: 'center', justifyContent: 'center' }}>
               <Icon name="cap" size={20} color="#000" />
             </View>
             <Txt s={15} w={8}>
-              Teach a course
+              List your course
             </Txt>
             <Txt s={12} c={C.muted}>
-              Share your skill and get paid
+              Add a link to your course page. We send you learners
             </Txt>
           </Pressable>
         ) : null}
@@ -226,95 +227,6 @@ export default function Career() {
   );
 }
 
-const TONES: [string, string][] = [
-  [C.blue, '#fff'],
-  [C.orange, '#000'],
-  [C.lav, '#000'],
-  [C.mint, '#000'],
-  [C.yellow, '#000'],
-  [C.pink, '#000'],
-];
-const toneOf = (c: Course) => TONES[Math.max(0, COURSE_CATS.findIndex((x) => x[0] === c.cat)) % TONES.length];
-const catIcon = (cat: string) => COURSE_CATS.find((x) => x[0] === cat)?.[1] || 'cap';
-
-/** The course you're in the middle of, one tap from your next lesson. */
-function ContinueLearning({ list }: { list: Course[] }) {
-  const c = list.find((x) => coursePct(x) < 100) || list[0];
-  const L = lessonsOf(c);
-  const d = Math.min(c.done || 0, L.length);
-  const pct = coursePct(c);
-  const live = isLive(c);
-  return (
-    <View style={{ marginTop: 12 }}>
-      <Pressable testID="career-continue" accessibilityRole="button" onPress={() => (tap(), router.push(`/course/${c.id}` as any))} style={({ pressed }) => ({ padding: 16, borderRadius: 24, backgroundColor: C.blue, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
-        <View style={S.rowB}>
-          <Txt s={12} w={8} c="#e3e7ff">
-            {live ? '🔴 LIVE CLASS NOW' : pct >= 100 ? 'COMPLETED' : 'CONTINUE LEARNING'}
-          </Txt>
-          <Txt s={12} w={8} c="#e3e7ff">
-            {pct}%
-          </Txt>
-        </View>
-        <View style={[S.row, { gap: 12, marginTop: 8 }]}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Txt s={17} w={8} lines={2}>
-              {c.title}
-            </Txt>
-            <Txt s={12} c="#e3e7ff" lines={1} style={{ marginTop: 2 }}>
-              {pct >= 100 ? 'Certificate earned' : `Lesson ${Math.min(d + 1, L.length)} of ${L.length}: ${L[Math.min(d, L.length - 1)]}`}
-            </Txt>
-          </View>
-          <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name={live ? 'video' : 'playfill'} size={20} color="#000" />
-          </View>
-        </View>
-        <Bar pct={pct} h={5} color={C.yellow} bg="rgba(255,255,255,.22)" style={{ marginTop: 12 }} />
-        {!live && c.startAt && pct < 100 ? (
-          <Txt s={11} c="#e3e7ff" style={{ marginTop: 8 }}>
-            Next live class · {classWhen(c.startAt)}
-          </Txt>
-        ) : null}
-      </Pressable>
-      {list.length > 1 ? (
-        <Pressable accessibilityRole="button" onPress={() => (tap(), openCourses(null, 'mine'))} style={[S.rowB, { marginTop: 8, paddingHorizontal: 14, height: 44, borderRadius: 16, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }]}>
-          <Txt s={13} w={7}>
-            My learning · {list.length} courses
-          </Txt>
-          <Icon name="chev" size={16} color={C.muted} />
-        </Pressable>
-      ) : null}
-    </View>
-  );
-}
-function CourseCard({ c }: { c: Course }) {
-  const [bg, fg] = toneOf(c);
-  return (
-    <Pressable accessibilityRole="button" accessibilityLabel={c.title} onPress={() => (tap(), openCourse(c.id))} style={({ pressed }) => ({ width: 168, height: 190, padding: 14, borderRadius: 22, backgroundColor: bg, justifyContent: 'space-between', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
-      <View style={S.rowB}>
-        <View style={{ width: 38, height: 38, borderRadius: 13, backgroundColor: fg === '#fff' ? 'rgba(255,255,255,.2)' : 'rgba(0,0,0,.1)', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name={catIcon(c.cat)} size={19} color={fg} />
-        </View>
-        <View style={{ paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: fg === '#fff' ? '#fff' : '#000', justifyContent: 'center' }}>
-          <Txt s={11} w={8} c={fg === '#fff' ? '#000' : '#fff'}>
-            {c.price ? 'XAF ' + Math.round(c.price / 1000) + 'k' : 'Free'}
-          </Txt>
-        </View>
-      </View>
-      <View>
-        <Txt s={15} w={8} c={fg} lines={3}>
-          {c.title}
-        </Txt>
-        <Txt s={11} w={7} c={fg} style={{ opacity: 0.7, marginTop: 4 }} lines={1}>
-          {c.prov.n}
-        </Txt>
-        <View style={{ marginTop: 4 }}>
-          <RatingBadge c={c} color={fg} text={fg} />
-        </View>
-      </View>
-    </Pressable>
-  );
-}
-
 /** Premium card for bolo Pro: layered gradient, soft light orbs and a frosted glass panel. */
 function ProCard({ on, onPress }: { on: boolean; onPress: () => void }) {
   return (
@@ -355,44 +267,5 @@ function ProCard({ on, onPress }: { on: boolean; onPress: () => void }) {
         </View>
       </View>
     </Pressable>
-  );
-}
-
-/** Always-live demo class: join as a student, or try the teacher's view. */
-function LiveNow() {
-  return (
-    <View testID="career-live" style={{ marginTop: 12, padding: 14, borderRadius: 22, backgroundColor: C.s1, borderWidth: 1.5, borderColor: '#e11d48' }}>
-      <View style={[S.row, { gap: 10 }]}>
-        <View style={[S.row, { gap: 5, paddingHorizontal: 8, height: 22, borderRadius: 6, backgroundColor: '#e11d48' }]}>
-          <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: '#fff' }} />
-          <Txt s={11} w={8}>
-            LIVE NOW
-          </Txt>
-        </View>
-        <Txt s={12} c={C.muted} style={{ flex: 1 }} lines={1}>
-          bolo Academy · free · join any time
-        </Txt>
-      </View>
-      <Txt s={16} w={8} style={{ marginTop: 8 }}>
-        Live demo class
-      </Txt>
-      <Txt s={12} c={C.muted}>
-        Try the live classroom: video, whiteboard, chat, Q&A and raise hand.
-      </Txt>
-      <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
-        <Pressable testID="live-demo-join" accessibilityRole="button" onPress={() => (tap(), joinLiveDemo(), router.push(`/live/${LIVE_ID}` as any))} style={({ pressed }) => [S.row, { flex: 1, gap: 6, height: 44, borderRadius: 22, backgroundColor: C.yellow, justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
-          <Icon name="video" size={16} color="#000" />
-          <Txt s={14} w={8} c="#000">
-            Join as student
-          </Txt>
-        </Pressable>
-        <Pressable testID="live-demo-teach" accessibilityRole="button" onPress={() => (tap(), joinLiveDemo(), router.push(`/live/${LIVE_ID}?as=host` as any))} style={({ pressed }) => [S.row, { flex: 1, gap: 6, height: 44, borderRadius: 22, backgroundColor: C.s2, justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
-          <Icon name="cap" size={16} color={C.text} />
-          <Txt s={14} w={8}>
-            Teach it
-          </Txt>
-        </Pressable>
-      </View>
-    </View>
   );
 }

@@ -30,7 +30,7 @@ export function createActions(): CreateAction[] {
       ...(db.user.intents.includes('find') ? [offer, need] : [need, offer]),
       { k: 'work', icon: 'post', bg: C.orange, label: 'Share your work', run: () => router.push('/new-post') },
       { k: 'avail', icon: 'clock', bg: C.lav, label: 'Set availability', run: () => openAvailability() },
-      { k: 'teach', icon: 'cap', bg: '#fff', label: 'Teach a course', run: () => router.push('/teach' as any) },
+      { k: 'teach', icon: 'cap', bg: '#fff', label: 'List a course', run: () => router.push('/teach' as any) },
       { k: 'mentor', icon: 'follow', bg: C.pink, label: 'Offer a mentorship', run: () => openMentorForm() },
     ];
   }
@@ -38,7 +38,7 @@ export function createActions(): CreateAction[] {
     { k: 'vacancy', icon: 'job', bg: C.yellow, label: 'Post a vacancy', run: () => router.push('/post-job') },
     { k: 'intern', icon: 'cap', bg: C.lav, label: 'Create an internship', run: () => openOppForm('Internship') },
     { k: 'program', icon: 'sparkle', bg: C.orange, label: 'Create a program', run: () => openOppForm('Training program') },
-    { k: 'course', icon: 'file', bg: C.mint, label: 'Create a course', run: () => openOppForm('Course') },
+    { k: 'course', icon: 'file', bg: C.mint, label: 'List a course', run: () => openOppForm('Course') },
     { k: 'mentor', icon: 'follow', bg: C.pink, label: 'Offer a mentorship', run: () => openMentorForm() },
     { k: 'update', icon: 'post', bg: '#fff', label: 'Company update', run: () => router.push('/new-post') },
   ];

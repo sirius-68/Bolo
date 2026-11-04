@@ -5,20 +5,20 @@ import { bump } from './live';
 import { showStories, Story } from '../components/Stories';
 import { openPayments } from '../sheets/account';
 
-export const WHATS_NEW_ID = '2026-11-03';
+export const WHATS_NEW_ID = '2026-11-04';
 
 /** Slides added in the latest update. */
-const LATEST = ['live', 'cvpro', 'rate', 'jobshare'];
+const LATEST = ['experts', 'courselinks', 'listcourse'];
 
 export const WHATS_NEW: Story[] = [
-  { key: 'live', colors: ['#e11d48', '#7f1d3a'], icon: 'video', chip: 'Courses', title: 'Live classes and recordings', text: 'Join live classes with a whiteboard, chat, Q&A and raise hand. Every class is recorded: watch again and ask about the exact moment you’re watching.', cta: 'My learning', onCta: () => router.push('/courses?tab=mine' as any) },
+  { key: 'experts', colors: ['#3d5af1', '#1b2a9b'], icon: 'verified', chip: 'Career', title: 'Book a career expert', text: 'CV reviews, mock interviews and career plans with checked, rated experts. Pick a service, pay safely with your wallet and agree the time in chat.', cta: 'Find an expert', onCta: () => router.push('/experts' as any) },
+  { key: 'courselinks', colors: ['#a9b6ff', '#5b6bd6'], icon: 'globe', chip: 'Courses', title: 'Courses open on the school’s site', text: 'Tap any course to open its own website right inside bolo, and sign up there. Save the ones you like with the bookmark.', cta: 'Explore courses', onCta: () => router.push('/courses' as any) },
+  { key: 'listcourse', colors: ['#7c5cff', '#3b1fa8'], icon: 'cap', chip: 'For trainers', title: 'List your course in a minute', text: 'Add the link to your course page, a title and price, and we send you learners. Running a school? bolo on the web has the full toolkit.', cta: 'List a course', onCta: () => router.push('/teach' as any) },
   { key: 'cvpro', colors: ['#6d4cff', '#14206e'], icon: 'file', chip: 'Pro', title: 'New CV designs', text: 'Five professional CV templates, Classic and Modern. Preview any of them with your own details; save as PDF with Pro.' },
-  { key: 'rate', colors: ['#f6ee5c', '#e3c400'], icon: 'star', chip: 'Courses', title: 'Rate your courses', text: 'Give your course 1 to 5 stars and a short review. Ratings help everyone pick good courses.', dark: true },
+  { key: 'rate', colors: ['#f6ee5c', '#e3c400'], icon: 'star', chip: 'Courses', title: 'Rate courses you took', text: 'Took a course? Open it, tap More → About this course and give it 1 to 5 stars. Ratings help everyone choose.', dark: true },
   { key: 'jobshare', colors: ['#2fbf7a', '#0f6e45'], icon: 'share', chip: 'Jobs', title: 'Share jobs, find them faster', text: 'Share any job with friends in one tap. New filters for jobs and people, and a clearer notifications page.' },
   { key: 'feed', colors: ['#3d5af1', '#1b2a9b'], icon: 'feed', chip: 'New tab', title: 'Your work feed', text: 'Home → Feed shows only the work people share, people you follow first, with Work in action videos along the way.' },
-  { key: 'teach', colors: ['#7c5cff', '#3b1fa8'], icon: 'cap', chip: 'For everyone', title: 'Teach a course', text: 'Tailor, plumber, developer, baker: anyone can now run a course with live classes and get paid to their wallet.', cta: 'Start teaching', onCta: () => router.push('/teach' as any) },
   { key: 'wallet', colors: ['#2fbf7a', '#0f6e45'], icon: 'shield', chip: 'Safe payments', title: 'Your bolo wallet', text: 'Add money from mobile money, card or bank. When you hire, the price waits in escrow and is released only when you confirm the job is done.', cta: 'Open my wallet', onCta: () => router.push('/wallet' as any) },
-  { key: 'learn', colors: ['#7c5cff', '#3b1fa8'], icon: 'cap', chip: 'New for you', title: 'My learning', text: 'All your courses in one place, with your progress, the next live class and one tap to continue your lesson.', cta: 'Open My learning', onCta: () => router.push('/courses?tab=mine' as any) },
   { key: 'adjob', colors: ['#3d5af1', '#1b2a9b'], icon: 'job', chip: 'Jobs', title: 'Ads lead to the job', text: 'Tap Apply or See job on any ad and you land on the job itself, ready to apply.' },
   { key: 'group', colors: ['#3d5af1', '#1b2a9b'], icon: 'follow', chip: 'Messages', title: 'Group pages', text: 'Tap a group’s name in a chat to see its members, photos, files, links and invite link. Mute or leave in one tap.', cta: 'Open messages', onCta: () => router.push('/inbox') },
   { key: 'pay', colors: ['#ff8a3d', '#c2410c'], icon: 'coins', chip: 'Payments', title: 'Pay your way', text: 'MTN MoMo, Orange Money, Airtel, M-Pesa, Wave, cards, PayPal, Google Pay and bank transfer. Set your favourite as default.', cta: 'Add a payment method', onCta: () => openPayments() },

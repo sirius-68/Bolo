@@ -119,7 +119,7 @@ export function CourseReviews({ c }: { c: Course }) {
         ) : null
       ) : !c.mine ? (
         <Txt s={12} c={C.muted}>
-          Students enrolled in this course can rate it.
+          {c.url ? 'Members who took this course can rate it.' : 'Students enrolled in this course can rate it.'}
         </Txt>
       ) : null}
 
@@ -128,7 +128,7 @@ export function CourseReviews({ c }: { c: Course }) {
       ))}
       {!L.length && !mine ? (
         <Txt s={13} c={C.muted}>
-          No reviews yet.
+          {c.url ? 'No ratings from bolo members yet.' : 'No reviews yet.'}
         </Txt>
       ) : null}
     </View>

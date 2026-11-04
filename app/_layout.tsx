@@ -23,7 +23,8 @@ import { startAdTicker } from '../src/logic/career';
 import { hasSession, pull, startSync } from '../src/logic/remote';
 import { locate } from '../src/logic/here';
 import { StoryHost } from '../src/components/Stories';
-import { ensureAdJobs, ensureClassTime, ensureLiveCourse, ensureQuickCourse, scheduleClass } from '../src/logic/career';
+import { ensureAdJobs } from '../src/logic/career';
+import { ensureCourseListings } from '../src/logic/listings';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -40,17 +41,12 @@ export default function Root() {
       startSync();
       // Refresh position and city quietly when location is already allowed (never prompts here).
       locate(false);
-      // Test course (starts 1 minute after enrolling) and timers for classes you've joined.
-      ensureQuickCourse();
-      ensureLiveCourse();
+      // Courses are listings that open the school's website; refresh old saves (drops in-app test classes).
+      ensureCourseListings();
       ensureAdJobs();
       ensureWallet();
       // Old bug: tapping Edit cleared cvDone, so leaving the editor left the CV unreachable. Restore it.
       if (db.user.cv && !db.user.cvDone) db.user.cvDone = true;
-      db.myLearning.forEach((cid) => {
-        const c = db.COURSES.find((x) => x.id === cid);
-        if (c && !ensureClassTime(c)) scheduleClass(c);
-      });
       // Copies saved before real accounts existed are demo sessions.
       if (db.loggedIn && !db.uid) db.demo = true;
       if (db.loggedIn && !db.demo) {

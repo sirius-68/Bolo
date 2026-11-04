@@ -197,6 +197,14 @@ export type Course = {
   live?: number;
   /** lessons the learner has finished */
   done?: number;
+  /** the course page on the school's or trainer's own website (courses are listings) */
+  url?: string;
+  /** short description written by whoever listed it */
+  desc?: string;
+  /** shown instead of the price when the site sets it (e.g. subscriptions) */
+  priceText?: string;
+  /** times people opened the site from bolo */
+  views?: number;
 };
 export type Mentorship = {
   id: string;
@@ -621,34 +629,42 @@ function opps(): Opp[] {
 }
 
 function courses(): Course[] {
-  const PROV = [
-    ['Silicon Mountain Academy', 'logo:SMA|#a9b6ff|#000'],
-    ['Buea Tech School', 'logo:BTS|#3d5af1|#fff'],
-    ['Learnly Africa', 'logo:LA|#f6ee5c|#000'],
-    ['SkillUp CM', 'logo:SU|#f47b3b|#000'],
-    ['Mboa Academy', 'logo:MA|#7be0a7|#000'],
-    ['GreenField Institute', 'logo:GF|#2a2a2e|#7be0a7'],
-  ].map(([n, logo]) => ({ n, logo }));
-  const raw: [string, number, string, string, string, string, string, string, number, number, string, string[]][] = [
-    ['Project management', 0, 'Business', 'Advanced', '9 months', 'Profession', 'Online', '', 286000, 519999, 'Project manager', ['Agile', 'Planning', 'Budgeting']],
-    ['Marketplace & social selling with AI', 2, 'Marketing', 'Beginner', '36 hours', 'Skill', 'Online', '', 24900, 41500, 'Sales manager', ['Facebook ads', 'WhatsApp Business', 'AI tools']],
-    ['Data analyst', 1, 'AI & data', 'Beginner', '12 months', 'Profession', 'Online', '', 67650, 225500, 'Data analyst', ['Excel', 'SQL', 'Power BI']],
-    ['Web developer from zero', 0, 'Development', 'Beginner', '6 months', 'Profession', 'Offline', 'Buea', 120000, 180000, 'Web developer', ['HTML', 'CSS', 'JavaScript', 'React']],
-    ['Flutter mobile apps', 1, 'Development', 'Advanced', '10 weeks', 'Skill', 'Online', '', 45000, 60000, 'Mobile developer', ['Flutter', 'Dart']],
-    ['Accounting with Sage & SYSCOHADA', 4, 'Finance', 'Beginner', '8 weeks', 'Skill', 'Offline', 'Douala', 55000, 70000, 'Accountant', ['Sage', 'SYSCOHADA', 'Excel']],
-    ['Bookkeeping for small businesses', 4, 'Finance', 'Beginner', '4 weeks', 'Skill', 'Online', '', 0, 0, 'Accountant', ['Excel', 'Bookkeeping']],
-    ['Graphic design with Canva & Photoshop', 3, 'Design', 'Beginner', '6 weeks', 'Skill', 'Offline', 'Buea', 35000, 50000, 'Graphic designer', ['Canva', 'Photoshop']],
-    ['UI/UX designer', 2, 'Design', 'Advanced', '5 months', 'Profession', 'Online', '', 98000, 140000, 'UI/UX designer', ['Figma', 'User research']],
-    ['Solar installation technician', 5, 'Trades', 'Beginner', '6 weeks', 'Profession', 'Offline', 'Buea', 60000, 75000, 'Solar technician', ['Solar installation', 'Wiring']],
-    ['Professional plumbing', 5, 'Trades', 'Beginner', '8 weeks', 'Profession', 'Offline', 'Limbe', 50000, 0, 'Plumber', ['Pipe fitting', 'Water heaters']],
-    ['Business English for work', 2, 'Languages', 'Beginner', '10 weeks', 'Skill', 'Online', '', 0, 0, '', ['Speaking', 'Emails', 'Interviews']],
-    ['French for the workplace (DELF prep)', 3, 'Languages', 'Advanced', '12 weeks', 'Skill', 'Offline', 'Yaoundé', 40000, 55000, '', ['French', 'DELF']],
-    ['Home care assistant', 4, 'Health', 'Beginner', '6 weeks', 'Profession', 'Offline', 'Buea', 45000, 0, 'Caregiver', ['Patient care', 'First aid']],
-    ['Start & grow your small business', 1, 'Business', 'Beginner', '4 weeks', 'Skill', 'Online', '', 0, 0, 'Entrepreneur', ['Pricing', 'Marketing', 'Bookkeeping']],
-    ['Prompting & AI tools for work', 0, 'AI & data', 'Beginner', '2 weeks', 'Skill', 'Online', '', 15000, 25000, '', ['AI tools', 'Productivity']],
-    ['Teaching skills for home tutors', 2, 'Teaching', 'Beginner', '3 weeks', 'Skill', 'Online', '', 12000, 20000, 'Tutor', ['Lesson planning', 'Exam prep']],
+  // Sample listings: real, well-known courses that open on the provider's own website.
+  const PROV: Record<string, { n: string; logo: Pic }> = {
+    cou: { n: 'Coursera', logo: 'logo:C|#0056d2|#fff' },
+    fcc: { n: 'freeCodeCamp', logo: 'logo:fCC|#0a0a23|#fff' },
+    flu: { n: 'Flutter by Google', logo: 'logo:F|#ffffff|#0468d7' },
+    ka: { n: 'Khan Academy', logo: 'logo:KA|#14bf96|#000' },
+    can: { n: 'Canva Design School', logo: 'logo:Ca|#7d2ae8|#fff' },
+    bc: { n: 'British Council', logo: 'logo:BC|#23085a|#fff' },
+    tv5: { n: 'TV5MONDE', logo: 'logo:TV5|#111111|#fff' },
+    meta: { n: 'Meta Blueprint', logo: 'logo:M|#0866ff|#fff' },
+    uh: { n: 'University of Helsinki', logo: 'logo:UH|#ffffff|#000' },
+    who: { n: 'OpenWHO', logo: 'logo:WHO|#009ade|#fff' },
+    rc: { n: 'British Red Cross', logo: 'logo:+|#ee2a24|#fff' },
+  };
+  const SITE = 'See price on site';
+  // title, provider, field, level, duration, type, price (0 = free), price note, profession, skills, url, description
+  const raw: [string, string, string, string, string, string, number, string, string, string[], string, string][] = [
+    ['Fundamentals of project planning and management', 'cou', 'Business', 'Beginner', 'About 9 hours', 'Skill', 0, SITE, 'Project manager', ['Planning', 'Scheduling', 'Risk'], 'https://www.coursera.org/learn/uva-darden-project-management', 'University of Virginia’s short introduction to running projects: scope, schedule, budget and risk.'],
+    ['Ads and social selling with Meta', 'meta', 'Marketing', 'Beginner', 'Self-paced', 'Skill', 0, '', 'Sales manager', ['Facebook ads', 'Instagram', 'WhatsApp Business'], 'https://www.facebook.com/business/learn', 'Free lessons from Meta on selling with Facebook, Instagram and WhatsApp.'],
+    ['Data analysis with Python', 'fcc', 'AI & data', 'Advanced', 'About 300 hours', 'Profession', 0, '', 'Data analyst', ['Python', 'Pandas', 'Charts'], 'https://www.freecodecamp.org/learn/data-analysis-with-python/', 'Learn to clean, analyse and chart data with Python, with projects you can show employers.'],
+    ['Web development from zero', 'fcc', 'Development', 'Beginner', 'Self-paced', 'Profession', 0, '', 'Web developer', ['HTML', 'CSS', 'JavaScript'], 'https://www.freecodecamp.org/learn', 'Free, project-based curriculum used by millions to become web developers.'],
+    ['Flutter: build your first app', 'flu', 'Development', 'Beginner', 'About 2 hours', 'Skill', 0, '', 'Mobile developer', ['Flutter', 'Dart'], 'https://docs.flutter.dev/get-started/codelab', 'The official step-by-step tutorial for building a mobile app with Flutter.'],
+    ['Accounting and financial statements', 'ka', 'Finance', 'Beginner', 'Self-paced', 'Skill', 0, '', 'Accountant', ['Balance sheet', 'Income statement', 'Cash flow'], 'https://www.khanacademy.org/economics-finance-domain/core-finance/accounting-and-financial-stateme', 'Short videos that explain how businesses record money and read their accounts.'],
+    ['Financial literacy', 'ka', 'Finance', 'Beginner', 'Self-paced', 'Skill', 0, '', '', ['Budgeting', 'Saving', 'Credit'], 'https://www.khanacademy.org/college-careers-more/financial-literacy', 'Budgeting, saving, loans and protecting your money, explained simply.'],
+    ['Graphic design basics with Canva', 'can', 'Design', 'Beginner', 'Self-paced', 'Skill', 0, '', 'Graphic designer', ['Canva', 'Layout', 'Branding'], 'https://www.canva.com/designschool/', 'Free design lessons: layout, colour, social posts and branding for small businesses.'],
+    ['Foundations of UX design', 'cou', 'Design', 'Beginner', 'About 18 hours', 'Profession', 0, SITE, 'UI/UX designer', ['User research', 'Wireframes'], 'https://www.coursera.org/learn/foundations-user-experience-design', 'The first course of Google’s UX design certificate on Coursera.'],
+    ['Solar energy basics', 'cou', 'Trades', 'Beginner', 'About 10 hours', 'Skill', 0, SITE, 'Solar technician', ['Solar panels', 'Installation basics'], 'https://www.coursera.org/learn/solar-energy-basics', 'How solar power works and what goes into a home or business installation.'],
+    ['Learn first aid', 'rc', 'Health', 'Beginner', 'Short lessons', 'Skill', 0, '', 'Caregiver', ['First aid', 'Emergencies'], 'https://www.redcross.org.uk/first-aid/learn-first-aid', 'Simple, free first aid skills for home and work.'],
+    ['English for work', 'bc', 'Languages', 'Beginner', 'Self-paced', 'Skill', 0, '', '', ['Speaking', 'Emails', 'Interviews'], 'https://learnenglish.britishcouncil.org/', 'Free lessons, videos and exercises from the British Council, including business English.'],
+    ['Learn French with TV5MONDE', 'tv5', 'Languages', 'Beginner', 'Self-paced', 'Skill', 0, '', '', ['French', 'Listening'], 'https://apprendre.tv5monde.com/', 'Free French lessons built around real TV news and shows, from beginner to advanced.'],
+    ['Health and care courses', 'who', 'Health', 'Beginner', 'Self-paced', 'Skill', 0, '', 'Nurse', ['Infection prevention', 'Public health'], 'https://openwho.org/', 'Free courses from the World Health Organization for health and care workers.'],
+    ['Entrepreneurship: lessons from founders', 'ka', 'Business', 'Beginner', 'Self-paced', 'Skill', 0, '', 'Entrepreneur', ['Starting a business', 'Mindset'], 'https://www.khanacademy.org/college-careers-more/entrepreneurship2', 'Founders share how they started, failed and grew their businesses.'],
+    ['Elements of AI', 'uh', 'AI & data', 'Beginner', 'About 30 hours', 'Skill', 0, '', '', ['AI basics', 'Machine learning'], 'https://www.elementsofai.com/', 'A free introduction to what AI is and how it’s used, no maths or coding needed.'],
+    ['Learning how to learn', 'cou', 'Teaching', 'Beginner', 'About 15 hours', 'Skill', 0, SITE, 'Tutor', ['Study skills', 'Memory'], 'https://www.coursera.org/learn/learning-how-to-learn', 'Proven techniques to learn faster, great for students and home tutors.'],
   ];
-  return raw.map(([title, pv, cat, lv, dur, type, fmt, reg, price, old, prof, skills], i) => ({
+  return raw.map(([title, pv, cat, lv, dur, type, price, priceText, prof, skills, url, desc], i) => ({
     id: 'c' + i,
     title,
     prov: PROV[pv],
@@ -656,13 +672,16 @@ function courses(): Course[] {
     lv,
     dur,
     type,
-    fmt,
-    reg,
+    fmt: 'Online',
+    reg: '',
     price,
-    old,
+    old: 0,
     prof,
     skills,
-    mo: /month|weeks|hours/.test(dur) && price > 60000 ? Math.round(price / 12 / 100) * 100 : 0,
+    mo: 0,
+    url,
+    desc,
+    priceText: priceText || undefined,
   }));
 }
 

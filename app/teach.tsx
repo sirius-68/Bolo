@@ -1,31 +1,21 @@
 import React from 'react';
-import { Pressable, View } from 'react-native';
+import { Linking, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
-import { db } from '../src/data/db';
 import { Btn, Page, TopBar, Txt, tap } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { C, S } from '../src/ui/theme';
-import { isW, mySkill, xaf } from '../src/logic/core';
 import { useLive } from '../src/logic/live';
-import { tutorCourses } from '../src/logic/career';
-import { openCourse, openOppForm } from '../src/sheets/career';
-import { openEdit } from '../src/sheets/account';
-import { bizOnlyPrompt } from '../src/sheets/account';
+import { WEB_TEACH, domainOf, myListings, priceLabel } from '../src/logic/listings';
+import { toneOf, catIcon } from '../src/components/CourseListing';
 
-/** Teach on bolo: anyone with a skill (tailoring, plumbing, coding, baking…) can run a course. */
+/** Offer a course: list it on bolo with a link to your own page. People sign up on your site. */
 export default function Teach() {
   useLive();
-  const mine = tutorCourses();
-  const students = mine.reduce((n, c) => n + (c.people || []).length, 0);
-  const earned = mine.reduce((n, c) => n + (c.people || []).length * c.price, 0);
-  const checks: [boolean, string, string, () => void][] = [
-    [!!db.user.name && !!db.user.avatar, 'Name and photo on your profile', 'Students want to see who teaches them', openEdit],
-    [db.PR.docs.id === 'verified', 'Verified ID', 'Verified tutors get a badge and more students', () => router.push('/id-verify')],
-    [!!db.user.skills?.length || !!mySkill(), `A skill you’re good at`, mySkill() ? `${mySkill()}. You can teach anything you know well` : 'Add your main skill', () => router.push('/skills?mode=edit' as any)],
-  ];
-  const create = () => (tap(), isW() ? openOppForm('Course') : bizOnlyPrompt('teach'));
+  const mine = myListings();
+  const visits = mine.reduce((n, c) => n + (c.views || 0), 0);
+  const create = () => (tap(), router.push('/list-course' as any));
   return (
-    <Page header={<TopBar title="Teach on bolo" />} bottom={32}>
+    <Page header={<TopBar title="Offer a course" />} bottom={32}>
       {/* hero */}
       <View style={{ marginTop: 6, padding: 20, borderRadius: 28, backgroundColor: C.lav }}>
         <View style={[S.row, { gap: 8 }]}>
@@ -36,14 +26,14 @@ export default function Teach() {
           ))}
         </View>
         <Txt s={28} w={8} c="#000" style={{ marginTop: 16, lineHeight: 32 }}>
-          Teach what you know.{'\n'}Get paid for it.
+          Teach it your way.{'\n'}We’ll send you learners.
         </Txt>
         <Txt s={14} c="#26294a" style={{ marginTop: 8 }}>
-          Tailors, plumbers, developers, bakers: run short courses with live classes and a class group. Fees go straight to your wallet.
+          List your course with a link to your website or school page. People find it in Career → Courses and sign up with you directly.
         </Txt>
         <Pressable testID="teach-create" accessibilityRole="button" onPress={create} style={({ pressed }) => [S.rowB, { marginTop: 18, height: 58, paddingLeft: 20, paddingRight: 7, borderRadius: 29, backgroundColor: '#000', transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
           <Txt s={16} w={8}>
-            {mine.length ? 'Create another course' : 'Create your first course'}
+            {mine.length ? 'List another course' : 'List a course · 1 minute'}
           </Txt>
           <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.lav, alignItems: 'center', justifyContent: 'center' }}>
             <Icon name="arrow" size={20} color="#000" />
@@ -51,59 +41,69 @@ export default function Teach() {
         </Pressable>
       </View>
 
-      {/* your courses */}
+      {/* web first */}
+      <Pressable testID="teach-web" accessibilityRole="link" onPress={() => (tap(), Linking.openURL(WEB_TEACH).catch(() => {}))} style={({ pressed }) => [S.row, { gap: 12, marginTop: 12, padding: 16, borderRadius: 22, backgroundColor: pressed ? C.s2 : C.s1, borderWidth: 1, borderColor: C.line }]}>
+        <View style={{ width: 44, height: 44, borderRadius: 15, backgroundColor: C.blue, alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="globe" size={22} color="#fff" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Txt s={15} w={8}>
+            Best on the web
+          </Txt>
+          <Txt s={12} c={C.muted}>
+            Schools and trainers with several courses: manage them all, add cover images, promo codes and sign-up stats at {domainOf(WEB_TEACH)}/teach
+          </Txt>
+        </View>
+        <Icon name="arrow" size={16} color={C.muted} style={{ transform: [{ rotate: '-45deg' }] }} />
+      </Pressable>
+
+      {/* your listings */}
       {mine.length ? (
         <>
-          <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
-            {(
-              [
-                [mine.length, 'Courses'],
-                [students, 'Students'],
-                [earned ? xaf(earned) : 'XAF 0', 'Earned'],
-              ] as [string | number, string][]
-            ).map(([v, l]) => (
-              <View key={l} style={{ flex: 1, padding: 12, borderRadius: 18, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }}>
-                <Txt s={17} w={8} lines={1}>
-                  {v}
-                </Txt>
-                <Txt s={11} c={C.muted}>
-                  {l}
-                </Txt>
-              </View>
-            ))}
+          <View style={[S.rowB, { marginTop: 24, marginBottom: 10 }]}>
+            <Txt s={18} w={8}>
+              Your listings
+            </Txt>
+            <Txt s={13} c={C.muted}>
+              {visits} site visit{visits === 1 ? '' : 's'} from bolo
+            </Txt>
           </View>
-          <Head t="Your courses" />
           <View style={{ gap: 8 }}>
-            {mine.map((c) => (
-              <Pressable key={c.id} accessibilityRole="button" onPress={() => (tap(), openCourse(c.id))} style={({ pressed }) => [S.row, { gap: 12, padding: 12, borderRadius: 20, backgroundColor: pressed ? C.s2 : C.s1, borderWidth: 1, borderColor: C.line }]}>
-                <View style={{ width: 46, height: 46, borderRadius: 15, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon name="cap" size={22} color="#000" />
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Txt s={14} w={8} lines={1}>
-                    {c.title}
+            {mine.map((c) => {
+              const [bg, fg] = toneOf(c);
+              return (
+                <Pressable key={c.id} testID={`my-listing-${c.id}`} accessibilityRole="button" onPress={() => (tap(), router.push(`/list-course?id=${c.id}` as any))} style={({ pressed }) => [S.row, { gap: 12, padding: 12, borderRadius: 20, backgroundColor: pressed ? C.s2 : C.s1, borderWidth: 1, borderColor: C.line }]}>
+                  <View style={{ width: 46, height: 46, borderRadius: 15, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon name={catIcon(c.cat)} size={22} color={fg} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Txt s={14} w={8} lines={1}>
+                      {c.title}
+                    </Txt>
+                    <Txt s={12} c={c.url ? C.muted : C.orange} lines={1}>
+                      {c.url ? `${domainOf(c.url)} · ${priceLabel(c)} · ${c.views || 0} visits` : 'Add a link to your course page'}
+                    </Txt>
+                  </View>
+                  <Txt s={12} w={8} c={C.lav}>
+                    Edit
                   </Txt>
-                  <Txt s={12} c={C.muted}>
-                    {(c.people || []).length} student{(c.people || []).length === 1 ? '' : 's'} · {c.price ? xaf(c.price) : 'Free'} · {c.dur}
-                  </Txt>
-                </View>
-                <Txt s={12} w={8} c={C.lav}>
-                  Manage
-                </Txt>
-              </Pressable>
-            ))}
+                </Pressable>
+              );
+            })}
           </View>
         </>
       ) : null}
 
       {/* how it works */}
-      <Head t="How it works" />
+      <Txt s={18} w={8} style={{ marginTop: 24, marginBottom: 10 }}>
+        How it works
+      </Txt>
       <View style={{ gap: 10 }}>
         {(
           [
-            ['edit', C.yellow, 'Create your course', 'Title, what people learn, price (or free) and how many places. Takes 2 minutes.'],
-            ['follow', C.mint, 'Students enrol', 'They join your class group, where you share links, files and answer questions.'],
-            ['video', C.orange, 'Teach live, get paid', 'Run live classes in the app. Paid course fees go to your wallet.'],
+            ['edit', C.yellow, 'List your course', 'Paste the link to your course page, add a title, field and price. That’s it.'],
+            ['search', C.mint, 'People find it', 'It shows in Career → Courses and in search, next to courses from well-known schools.'],
+            ['globe', C.orange, 'They sign up with you', 'Tapping your course opens your page. Sign-up and payment happen on your site.'],
           ] as [string, string, string, string][]
         ).map(([i, bg, t, d], k) => (
           <View key={t} style={[S.row, { gap: 12, padding: 14, borderRadius: 20, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, alignItems: 'flex-start' }]}>
@@ -121,42 +121,10 @@ export default function Teach() {
           </View>
         ))}
       </View>
-
-      {/* readiness */}
-      <Head t="Get ready to teach" />
-      <View style={{ borderRadius: 22, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, overflow: 'hidden' }}>
-        {checks.map(([ok, t, d, fix], i) => (
-          <Pressable key={t} accessibilityRole="button" disabled={ok} onPress={fix} style={[S.row, { gap: 12, padding: 14, borderBottomWidth: i < checks.length - 1 ? 1 : 0, borderColor: C.line }]}>
-            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: ok ? C.mint : C.s2, alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name={ok ? 'check' : 'plus'} size={14} color={ok ? '#000' : C.yellow} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Txt s={14} w={7}>
-                {t}
-              </Txt>
-              <Txt s={12} c={C.muted}>
-                {d}
-              </Txt>
-            </View>
-            {!ok ? (
-              <Txt s={12} w={8} c={C.yellow}>
-                Add
-              </Txt>
-            ) : null}
-          </Pressable>
-        ))}
-      </View>
-      <Txt s={12} c={C.faint} style={{ marginTop: 10 }}>
-        You can publish now; these just help you get more students.
+      <Txt s={12} c={C.faint} style={{ marginTop: 12 }}>
+        Don’t have a website yet? A public page on your school’s site, a Google Form or a WhatsApp Business catalogue link works too.
       </Txt>
-      <Btn variant="yellow" icon="cap" title={mine.length ? 'Create another course' : 'Create your first course'} style={{ marginTop: 18 }} onPress={create} />
+      <Btn variant="yellow" icon="plus" title={mine.length ? 'List another course' : 'List a course'} style={{ marginTop: 18 }} onPress={create} />
     </Page>
-  );
-}
-function Head({ t }: { t: string }) {
-  return (
-    <Txt s={18} w={8} style={{ marginTop: 24, marginBottom: 10 }}>
-      {t}
-    </Txt>
   );
 }

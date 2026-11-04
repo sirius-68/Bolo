@@ -5,6 +5,7 @@ import * as Sharing from 'expo-sharing';
 import { db, ui, Course } from '../data/db';
 import { router } from 'expo-router';
 import { WebView } from 'react-native-webview';
+import { openCourseSite } from '../logic/listings';
 import { CourseReviews, RatingBadge } from '../components/Reviews';
 import { ratingOf } from '../logic/reviews';
 import { CV_TEMPLATES, CvKind, CvTpl, cvData, cvHtml, tplOf } from '../components/cvTemplates';
@@ -204,7 +205,9 @@ export function OppSheet({ id }: { id: string }) {
 
 type OF = OppForm & { lv: string };
 export function openOppForm(kind?: string) {
-  // Anyone can teach a course; internships and programs come from business pages.
+  // Courses are listings with a link to the course's own page (quick setup screen).
+  if (kind === 'Course') return router.push('/list-course' as any);
+  // Anyone can list a course; internships and programs come from business pages.
   if (isW() && kind !== 'Course') {
     bizOnlyPrompt('create internships and programs');
     return;
@@ -231,7 +234,7 @@ function OppFormSheet({ f }: { f: OF }) {
         <Label>Type</Label>
         <Chips>
           {OPP_KINDS.map((k) => (
-            <Chip key={k} small label={k} on={f.kind === k} onPress={() => (set('kind', k), re())} />
+            <Chip key={k} small label={k} on={f.kind === k} onPress={() => (k === 'Course' ? (sheet.close(), afterSheet(() => router.push('/list-course' as any))) : (set('kind', k), re()))} />
           ))}
         </Chips>
       </View>}
@@ -603,8 +606,11 @@ function EmpEnroll({ kind, id, st }: { kind: 'course' | 'mentor' | 'opp'; id: st
 
 /* ======================= courses ======================= */
 export function openCourse(id: string) {
-  // Learners who are enrolled go straight to their course page.
   const c = db.COURSES.find((x) => x.id === id);
+  // Your own listing: edit it. Any other listing: open the course's website.
+  if (c?.mine) return router.push(`/list-course?id=${id}` as any);
+  if (c?.url) return openCourseSite(c);
+  // Learners who are enrolled go straight to their course page.
   if (c && isW() && !c.mine && db.myLearning.includes(id)) return router.push(`/course/${id}` as any);
   sheet.show(() => <CourseSheet id={id} />, { tag: 'course:' + id, full: true });
 }

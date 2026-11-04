@@ -511,6 +511,7 @@ export const NT_ICON: Record<string, [string, string]> = {
   material: ['video', C.lav],
   live: ['video', '#e11d48'],
   mentor: ['follow', C.pink],
+  booking: ['calcheck', C.mint],
   rating: ['star', C.yellow],
   pro: ['rocket', C.lav],
 };

@@ -216,118 +216,211 @@ name: Regular account tour
       - takeScreenshot: r11g-cv-after-edit-back
       - back
       - waitForAnimationToEnd
-# Always-live demo class: as a student, then as the teacher
-- runFlow:
-    when:
-      visible:
-        id: "live-demo-join"
-    commands:
-      - tapOn:
-          id: "live-demo-join"
-          waitToSettleTimeoutMs: 500
-      - extendedWaitUntil:
-          visible:
-            id: "live-end"
-          timeout: 8000
-      - takeScreenshot: r11h-live-student
-      - tapOn:
-          id: "live-end"
-          waitToSettleTimeoutMs: 500
-      - tapOn: "Leave"
-      - tapOn:
-          id: "live-demo-teach"
-          waitToSettleTimeoutMs: 500
-      - extendedWaitUntil:
-          visible:
-            id: "live-rec"
-          timeout: 8000
-      - tapOn:
-          id: "live-rec"
-          waitToSettleTimeoutMs: 500
-      - tapOn:
-          id: "live-stage-board"
-          waitToSettleTimeoutMs: 500
-      - swipe:
-          start: 30%,30%
-          end: 70%,40%
-      - takeScreenshot: r11i-live-teacher
-      - tapOn:
-          id: "live-end"
-          waitToSettleTimeoutMs: 500
-      - tapOn: "End class"
-# Courses: enrol in the 1-minute test class → welcome → course page → lesson → My learning
+# Career experts: list → filters → "find a mentor" → profile → book with a promo code (wallet escrow)
 - scrollUntilVisible:
-    element: "Quick test class.*"
+    element:
+      id: "career-experts"
     direction: DOWN
     centerElement: true
     optional: true
 - runFlow:
     when:
-      visible: "Quick test class.*"
+      visible:
+        id: "career-experts"
     commands:
-      - tapOn: "Quick test class.*"
-      - waitForAnimationToEnd
-      - takeScreenshot: r12h-course-sheet
+      - tapOn:
+          id: "career-experts"
+          waitToSettleTimeoutMs: 500
+      - extendedWaitUntil:
+          visible:
+            id: "ex-filters"
+          timeout: 8000
+      - takeScreenshot: r12d-experts
+      - tapOn:
+          id: "ex-filters"
+          waitToSettleTimeoutMs: 500
+      - tapOn:
+          id: "exf-goal"
+          waitToSettleTimeoutMs: 500
+      - takeScreenshot: r12d2-filter-goal
+      - tapOn:
+          id: "radio-0"
+          waitToSettleTimeoutMs: 500
+      - tapOn:
+          id: "exf-spec"
+          waitToSettleTimeoutMs: 500
       - scrollUntilVisible:
-          element: "Enroll for free"
+          element:
+            id: "multi-11"
           direction: DOWN
-      - tapOn: "Enroll for free"
+      - tapOn:
+          id: "multi-11"
+      - takeScreenshot: r12d3-filter-spec
+      - tapOn:
+          id: "multi-select"
+          waitToSettleTimeoutMs: 500
+      - takeScreenshot: r12d4-filters
+      - tapOn:
+          id: "exf-show"
+          waitToSettleTimeoutMs: 500
+      - takeScreenshot: r12d5-experts-filtered
+      - tapOn: "Clear all"
+      - scrollUntilVisible:
+          element:
+            id: "ex-match"
+          direction: DOWN
+          centerElement: true
+      - tapOn:
+          id: "ex-match"
+          waitToSettleTimeoutMs: 500
+      - takeScreenshot: r12d6-match-1
+      - tapOn:
+          id: "match-0-5"
+          waitToSettleTimeoutMs: 500
+      - scrollUntilVisible:
+          element:
+            id: "match-1-11"
+          direction: DOWN
+      - tapOn:
+          id: "match-1-11"
+          waitToSettleTimeoutMs: 500
+      - tapOn:
+          id: "match-2-3"
+          waitToSettleTimeoutMs: 500
+      - takeScreenshot: r12d7-matches
+      - tapOn:
+          id: "expert-ex_linda"
+          waitToSettleTimeoutMs: 500
+      - extendedWaitUntil:
+          visible:
+            id: "ex-select"
+          timeout: 8000
+      - takeScreenshot: r12d8-expert-profile
+      - scrollUntilVisible:
+          element:
+            id: "ex-all-reviews"
+          direction: DOWN
+      - takeScreenshot: r12d9-expert-services
+      - tapOn:
+          id: "ex-all-reviews"
+          waitToSettleTimeoutMs: 500
+      - takeScreenshot: r12d10-all-reviews
+      - back
+      - scrollUntilVisible:
+          element:
+            id: "svc-cv"
+          direction: UP
+      - tapOn:
+          id: "svc-cv"
+          waitToSettleTimeoutMs: 500
+      - extendedWaitUntil:
+          visible:
+            id: "book-pay"
+          timeout: 8000
+      - takeScreenshot: r12d11-booking
+      - tapOn:
+          id: "book-promo"
+          waitToSettleTimeoutMs: 500
+      - tapOn:
+          id: "promo-input"
+      - inputText: "FIRST20"
+      - takeScreenshot: r12d12-promo
+      - tapOn:
+          id: "promo-apply"
+          waitToSettleTimeoutMs: 500
+      - takeScreenshot: r12d13-promo-applied
+      - tapOn:
+          id: "book-pay"
+          waitToSettleTimeoutMs: 500
+      - extendedWaitUntil:
+          visible:
+            id: "booked-title"
+          timeout: 8000
+      - takeScreenshot: r12d14-booked
+      - tapOn:
+          id: "booked-done"
+          waitToSettleTimeoutMs: 500
+      - takeScreenshot: r12d15-profile-session
+      - back
+      - waitForAnimationToEnd
+      - takeScreenshot: r12d16-experts-sessions
+      - scrollUntilVisible:
+          element:
+            id: "become-expert"
+          direction: DOWN
+      - tapOn:
+          id: "become-expert"
+      - waitForAnimationToEnd
+      - takeScreenshot: r12e-expert-apply
+      - back
+      - waitForAnimationToEnd
+      - back
+      - waitForAnimationToEnd
+# Courses are listings: open one (its website inside bolo), save it, rate it, list your own
+- scrollUntilVisible:
+    element:
+      id: "career-courses-all"
+    direction: DOWN
+    centerElement: true
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: "career-courses-all"
+    commands:
+      - takeScreenshot: r12h-career-courses
+      - tapOn:
+          id: "career-courses-all"
+          waitToSettleTimeoutMs: 500
       - extendedWaitUntil:
           visible:
             id: "cw-next"
-          timeout: 10000
-      - takeScreenshot: r12i-course-welcome
-      - tapOn:
-          id: "cw-next"
-      - waitForAnimationToEnd
-      - takeScreenshot: r12j-course-welcome-2
-      - tapOn:
-          id: "cw-next"
-      - waitForAnimationToEnd
-      - tapOn:
-          id: "cw-next"
-      - extendedWaitUntil:
-          visible:
-            id: "course-continue"
-          timeout: 8000
-      - takeScreenshot: r12k-course-page
+          timeout: 6000
+          optional: true
+      - runFlow:
+          when:
+            visible:
+              id: "cw-next"
+          commands:
+            - takeScreenshot: r12i-course-welcome
+            - tapOn:
+                id: "cw-next"
+            - waitForAnimationToEnd
+            - takeScreenshot: r12j-course-welcome-2
+            - tapOn:
+                id: "cw-next"
+            - waitForAnimationToEnd
+            - tapOn:
+                id: "cw-next"
+            - waitForAnimationToEnd
+      - takeScreenshot: r12n-courses-explore
       - scrollUntilVisible:
           element:
-            id: "lesson-0"
+            id: "course-c3"
           direction: DOWN
-      - takeScreenshot: r12l-course-lessons
+          centerElement: true
       - tapOn:
-          id: "lesson-0"
-      - waitForAnimationToEnd
-      - takeScreenshot: r12m-lesson
+          id: "save-c3"
       - tapOn:
-          id: "lesson-done"
-      - waitForAnimationToEnd
-      # Recordings → player → ask at a timestamp
-      - tapOn: "Recordings"
-      - takeScreenshot: r12s-recordings
-      - tapOn:
-          id: "rec-c_quick-r0"
+          id: "course-c3"
           waitToSettleTimeoutMs: 500
       - extendedWaitUntil:
           visible:
-            id: "watch-ask"
-          timeout: 10000
-      - takeScreenshot: r12t-watch
+            id: "web-domain"
+          timeout: 8000
+      - waitForAnimationToEnd:
+          timeout: 6000
+      - takeScreenshot: r12k-course-website
       - tapOn:
-          id: "watch-ask"
+          id: "web-more"
+          waitToSettleTimeoutMs: 500
+      - takeScreenshot: r12l-web-more
+      - tapOn:
+          id: "web-about"
           waitToSettleTimeoutMs: 500
       - tapOn:
-          id: "ask-text"
+          id: "took-course"
           waitToSettleTimeoutMs: 500
-      - inputText: "Can someone explain this part?"
-      - takeScreenshot: r12u-ask
-      - tapOn:
-          id: "ask-send"
-          waitToSettleTimeoutMs: 500
-      - back
-      # Rate the course
-      - tapOn: "Reviews"
       - scrollUntilVisible:
           element:
             id: "star-5"
@@ -337,59 +430,16 @@ name: Regular account tour
       - tapOn:
           id: "review-submit"
       - takeScreenshot: r12v-review
-      # Live class (the test class goes live 1 minute after enrolling)
-      - swipe:
-          start: 50%,35%
-          end: 50%,90%
-      - swipe:
-          start: 50%,35%
-          end: 50%,90%
-      - extendedWaitUntil:
-          visible:
-            id: "course-join-class"
-          timeout: 70000
-          optional: true
-      - runFlow:
-          when:
-            visible:
-              id: "course-join-class"
-          commands:
-            - tapOn:
-                id: "course-join-class"
-                waitToSettleTimeoutMs: 500
-            - extendedWaitUntil:
-                visible:
-                  id: "live-end"
-                timeout: 8000
-            - takeScreenshot: r12w-live
-            - tapOn:
-                id: "live-stage-board"
-                waitToSettleTimeoutMs: 500
-            - takeScreenshot: r12x-board
-            - tapOn:
-                id: "live-hand"
-                waitToSettleTimeoutMs: 500
-            - takeScreenshot: r12y-hand
-            - tapOn:
-                id: "live-end"
-                waitToSettleTimeoutMs: 500
-            - tapOn: "Leave"
       - back
-      - waitForAnimationToEnd
-      - runFlow: dismiss.yaml
-      - takeScreenshot: r12p-career-continue
-      - scrollUntilVisible:
-          element:
-            id: "career-courses-all"
-          direction: DOWN
-          centerElement: true
       - tapOn:
-          id: "career-courses-all"
+          id: "web-close"
+          waitToSettleTimeoutMs: 500
+      - swipe:
+          start: 50%,35%
+          end: 50%,90%
+      - tapOn: "Saved.*"
       - waitForAnimationToEnd
-      - takeScreenshot: r12n-courses-explore
-      - tapOn: "My learning.*"
-      - waitForAnimationToEnd
-      - takeScreenshot: r12o-my-learning
+      - takeScreenshot: r12o-saved
       - back
       - waitForAnimationToEnd
       - scrollUntilVisible:
@@ -404,43 +454,46 @@ name: Regular account tour
           commands:
             - tapOn:
                 id: "career-teach"
+                waitToSettleTimeoutMs: 500
             - waitForAnimationToEnd
             - takeScreenshot: r12q-teach
+            - tapOn:
+                id: "teach-create"
+                waitToSettleTimeoutMs: 500
+            - tapOn:
+                id: "lc-url"
+            - inputText: "myschool.com/excel"
+            - tapOn:
+                id: "lc-title"
+            - inputText: "Excel for small businesses"
+            - hideKeyboard
+            - takeScreenshot: r12q2-list-course
+            - tapOn:
+                id: "lc-cat"
+                waitToSettleTimeoutMs: 500
+            - tapOn: "Business"
+            - scrollUntilVisible:
+                element:
+                  id: "lc-price"
+                direction: DOWN
+            - tapOn:
+                id: "lc-price"
+            - inputText: "15000"
+            - hideKeyboard
+            - scrollUntilVisible:
+                element:
+                  id: "lc-publish"
+                direction: DOWN
+            - takeScreenshot: r12q3-list-course-filled
+            - tapOn:
+                id: "lc-publish"
+                waitToSettleTimeoutMs: 500
+            - waitForAnimationToEnd
+            - takeScreenshot: r12q4-teach-listed
             - back
             - waitForAnimationToEnd
 - scroll
 - takeScreenshot: r12-career-2
-- runFlow:
-    when:
-      visible: "Career experts"
-    commands:
-      - tapOn: "Career experts"
-      - waitForAnimationToEnd
-      - takeScreenshot: r12d-experts
-      - scrollUntilVisible:
-          element:
-            id: "become-expert"
-          direction: DOWN
-      - tapOn:
-          id: "become-expert"
-      - waitForAnimationToEnd
-      - takeScreenshot: r12e-expert-apply
-      - runFlow:
-          when:
-            visible: "Verify ID"
-          commands:
-            - tapOn: "Verify ID"
-            - waitForAnimationToEnd
-            - takeScreenshot: r12f-id-verify
-            - tapOn:
-                id: "idv-next"
-            - tapOn:
-                id: "idv-doc-id"
-            - takeScreenshot: r12g-id-document
-            - back
-            - back
-      - back
-      - back
 - runFlow:
     when:
       visible: "Software engineering internship"

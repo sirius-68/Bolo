@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, Share, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, Course } from '../../src/data/db';
@@ -20,7 +20,14 @@ import { CourseWelcome, needsCourseWelcome } from '../../src/components/CourseWe
 const two = (n: number) => String(n).padStart(2, '0');
 
 /** A course you've enrolled in. Order of importance: what to do next (continue / join the live class), the class group, then the lesson plan. */
-export default function CoursePage() {
+/** Old links to a course page: listings open on the course's own website instead. */
+export default function CourseRoute() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const c = db.COURSES.find((x) => x.id === id);
+  if (c?.url) return <Redirect href={{ pathname: '/web', params: { url: c.url, title: c.title, cid: c.id } } as any} />;
+  return <CoursePage />;
+}
+function CoursePage() {
   useLive();
   const ins = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();

@@ -11,8 +11,8 @@ import { bump } from './live';
 
 export type NCat = 'jobs' | 'messages' | 'reminders' | 'applicants' | 'news' | 'learning' | 'mentorship' | 'social' | 'account';
 export type Go =
-  | { k: 'job' | 'opp' | 'course' | 'coursePage' | 'mentor' | 'chat' | 'profile' | 'track' | 'post' | 'watch' | 'live'; id: string; t?: number }
-  | { k: 'wallet' | 'cv' | 'teach' | 'me' | 'courses' | 'notifs'; id?: string };
+  | { k: 'job' | 'opp' | 'course' | 'coursePage' | 'mentor' | 'chat' | 'profile' | 'track' | 'post' | 'watch' | 'live' | 'expert' | 'web'; id: string; t?: number }
+  | { k: 'wallet' | 'cv' | 'teach' | 'me' | 'courses' | 'notifs' | 'experts'; id?: string };
 
 /** Index of each category's switch in db.PREF.notif (Settings → Notifications). */
 export const NCAT_PREF: Record<NCat, number> = { jobs: 0, messages: 1, reminders: 2, applicants: 3, news: 4, learning: 5, mentorship: 6, social: 7, account: 8 };
