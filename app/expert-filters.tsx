@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Dimensions, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Btn, TopBar, Txt, goBack, tap } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
@@ -107,7 +107,7 @@ function Multi({ title, opts, value, set }: { title: string; opts: string[]; val
   return (
     <View style={{ gap: 4, flex: 1 }}>
       <SheetTitle sub={sel.length ? `${sel.length} selected` : 'Pick one or more'}>{title}</SheetTitle>
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ maxHeight: Dimensions.get('window').height * 0.58 }} showsVerticalScrollIndicator={false}>
         {opts.map((o, i) => (
           <Pressable key={o} testID={`multi-${i}`} accessibilityRole="checkbox" accessibilityState={{ checked: sel.includes(o) }} onPress={() => flip(o)} style={[S.row, { gap: 14, minHeight: 52, borderBottomWidth: i < opts.length - 1 ? 1 : 0, borderColor: C.line }]}>
             <Box on={sel.includes(o)} />

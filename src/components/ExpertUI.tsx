@@ -1,7 +1,7 @@
 /* Building blocks for Career experts: the expert card, the "find a mentor for me" quiz,
    service picker, reviews and the sheet for a session you booked. */
 import React, { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Dimensions, Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { Avatar, Btn, Input, Steps, Txt, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
@@ -159,7 +159,7 @@ function MatchQuiz() {
         ) : null}
       </View>
       <SheetTitle sub={q.sub}>{q.q}</SheetTitle>
-      <ScrollView style={{ maxHeight: 520 }} contentContainerStyle={{ gap: 8, paddingBottom: 8 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ maxHeight: Dimensions.get('window').height * 0.6 }} contentContainerStyle={{ gap: 8, paddingBottom: 8 }} showsVerticalScrollIndicator={false}>
         {opts.map((o, i) => (
           <Pressable key={o} testID={`match-${step}-${i}`} accessibilityRole="button" onPress={() => choose(o)} style={({ pressed }) => [S.rowB, { minHeight: 54, paddingHorizontal: 16, borderRadius: 18, backgroundColor: pressed || a[step] === o ? C.s3 : C.s2 }]}>
             <Txt s={15} w={7} style={{ flex: 1 }}>
@@ -233,7 +233,7 @@ export function openAllReviews(e: Expert) {
     () => (
       <View style={{ gap: 10, flex: 1 }}>
         <SheetTitle sub={`${avg.toFixed(1)} out of 5 from ${n} review${n === 1 ? '' : 's'}`}>Reviews of {e.name.split(' ')[0]}</SheetTitle>
-        <ScrollView contentContainerStyle={{ gap: 8, paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ maxHeight: Dimensions.get('window').height * 0.72 }} contentContainerStyle={{ gap: 8, paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
           {reviewsOfEx(e).map((r, i) => (
             <ReviewItem key={i} r={r} full />
           ))}

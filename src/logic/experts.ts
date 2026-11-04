@@ -64,7 +64,7 @@ export function findExperts(f = exF) {
       (!f.fmt || e.services.some((s) => s.fmt === f.fmt)) &&
       (!q || [e.name, e.head, ...e.bio, ...e.specs, ...e.goals, ...e.services.map((s) => s.t)].join(' ').toLowerCase().includes(q)),
   );
-  const score = (e: Expert) => (f.goal && e.goals[0] === f.goal ? 2 : 0) + e.specs.filter((s) => f.specs.includes(s)).length + exRating(e).avg / 10;
+  const score = (e: Expert) => (f.goal && e.goals[0] === f.goal ? 2 : 0) + e.specs.filter((s) => f.specs.includes(s)).length + (exRating(e).avg * Math.log2(1 + exRating(e).n)) / 30;
   return L.sort((a, b) => score(b) - score(a) || exRating(b).n - exRating(a).n);
 }
 
