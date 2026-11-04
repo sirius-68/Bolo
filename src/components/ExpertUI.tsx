@@ -146,7 +146,7 @@ function MatchQuiz() {
     if (step < MATCH_Q.length - 1) return setStep(step + 1);
     const L = applyMatch(next[0], next[1] === 'Not sure yet' ? '' : next[1], next[2]);
     sheet.close();
-    toast(L.length ? `${L.length} expert${L.length === 1 ? '' : 's'} match what you need` : 'No exact match yet. Showing the closest experts');
+    toast(L.length ? `${L.length === 1 ? "1 expert matches" : L.length + " experts match"} what you need` : 'No exact match yet. Showing the closest experts');
   };
   return (
     <View style={{ gap: 14, flex: 1 }}>
