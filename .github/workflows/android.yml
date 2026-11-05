@@ -73,6 +73,14 @@ jobs:
       EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
       # Pushes build a quick arm64-only APK (every phone from the last ~8 years). Manual runs build all CPU types and run the emulator tour.
       FULL: ${{ github.event_name == 'workflow_dispatch' }}
+      # Backend the app talks to. Releases use production; push builds use staging once it exists.
+      # Only public values here (project URL, publishable key, Sentry DSN): set them under Settings → Variables.
+      EXPO_PUBLIC_SUPABASE_URL: ${{ github.event_name == 'push' && vars.STAGING_SUPABASE_URL || vars.SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_KEY: ${{ github.event_name == 'push' && vars.STAGING_SUPABASE_KEY || vars.SUPABASE_KEY }}
+      EXPO_PUBLIC_APP_ENV: ${{ github.event_name == 'push' && vars.STAGING_SUPABASE_URL && 'staging' || 'production' }}
+      EXPO_PUBLIC_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+      EXPO_PUBLIC_BUILD: ${{ github.run_number }}
+      SENTRY_DISABLE_AUTO_UPLOAD: "true"
     timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4

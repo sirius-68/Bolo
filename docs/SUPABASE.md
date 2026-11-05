@@ -1,5 +1,7 @@
 # bolo × Supabase
 
+> **Migrations are now applied by CI**, not pasted into the SQL Editor. See [BACKEND.md](BACKEND.md) for the setup and how changes reach staging and production. The dashboard settings below (email codes, SMS, SMTP) still apply.
+
 Project: `uwthkgtgemxakicvqugp` (https://uwthkgtgemxakicvqugp.supabase.co)
 
 The app ships with the project URL and the **publishable** key (`src/lib/supabase.ts`). That key is meant to be public: every table is protected by row-level security. Never put the `service_role` / secret key or the database password in the app or in this repo.

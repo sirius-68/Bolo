@@ -5,12 +5,13 @@ import { bump } from './live';
 import { showStories, Story } from '../components/Stories';
 import { openPayments } from '../sheets/account';
 
-export const WHATS_NEW_ID = '2026-11-04';
+export const WHATS_NEW_ID = '2026-11-05';
 
 /** Slides added in the latest update. */
-const LATEST = ['experts', 'courselinks', 'listcourse'];
+const LATEST = ['yourdata'];
 
 export const WHATS_NEW: Story[] = [
+  { key: 'yourdata', colors: ['#2fbf7a', '#0f6e45'], icon: 'shield', chip: 'Privacy', title: 'Your data, your call', text: 'Download everything bolo stores about you, or delete your account for good, from Settings → Privacy & safety.', cta: 'Open settings', onCta: () => router.push('/settings' as any) },
   { key: 'experts', colors: ['#3d5af1', '#1b2a9b'], icon: 'verified', chip: 'Career', title: 'Book a career expert', text: 'CV reviews, mock interviews and career plans with checked, rated experts. Pick a service, pay safely with your wallet and agree the time in chat.', cta: 'Find an expert', onCta: () => router.push('/experts' as any) },
   { key: 'courselinks', colors: ['#a9b6ff', '#5b6bd6'], icon: 'globe', chip: 'Courses', title: 'Courses open on the school’s site', text: 'Tap any course to open its own website right inside bolo, and sign up there. Save the ones you like with the bookmark.', cta: 'Explore courses', onCta: () => router.push('/courses' as any) },
   { key: 'listcourse', colors: ['#7c5cff', '#3b1fa8'], icon: 'cap', chip: 'For trainers', title: 'List your course in a minute', text: 'Add the link to your course page, a title and price, and we send you learners. Running a school? bolo on the web has the full toolkit.', cta: 'List a course', onCta: () => router.push('/teach' as any) },

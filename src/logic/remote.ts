@@ -2,8 +2,9 @@
    The rest of the app keeps reading/writing the local model (db); this module mirrors
    the parts that live on the server and pulls them back on log-in. Nothing here runs in demo mode. */
 import { AppState } from 'react-native';
-import { File } from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import { supabase } from '../lib/supabase';
+import { setMonitorUser } from '../lib/monitor';
 import { db, MyBiz } from '../data/db';
 import { bump, subscribe } from './live';
 
@@ -100,6 +101,7 @@ export async function signOut() {
     await supabase.auth.signOut();
   } catch {}
   lastSent = {};
+  setMonitorUser(null);
 }
 /** After any successful sign-in: remember the user and load their saved profile. */
 async function afterAuth() {
@@ -108,6 +110,7 @@ async function afterAuth() {
   const fresh = db.uid !== data.user.id;
   db.uid = data.user.id;
   db.demo = false;
+  setMonitorUser(db.uid);
   if (fresh) lastSent = {};
   await pull();
 }
@@ -363,4 +366,51 @@ export function startSync() {
   AppState.addEventListener('change', (s) => {
     if (s === 'active' && isReal() && db.uid && db.loggedIn) pull();
   });
+}
+
+/* ---------------------------------------------------------------- your data (Settings) */
+/** Everything bolo stores about this account, as a JSON file the person can save or share. */
+export async function exportMyData(): Promise<{ uri?: string; error?: string }> {
+  try {
+    const { data, error } = await supabase.rpc('export_my_data');
+    if (error) return { error: friendly(error) };
+    const f = new File(Paths.cache, `bolo-my-data-${new Date().toISOString().slice(0, 10)}.json`);
+    if (f.exists) f.delete();
+    f.create();
+    f.write(JSON.stringify(data, null, 2));
+    return { uri: f.uri };
+  } catch (e) {
+    return { error: friendly(e) };
+  }
+}
+
+/** Permanently delete this account on the server (profile, business pages, posts, files). */
+export async function deleteAccount(): Promise<string | null> {
+  try {
+    const { error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
+    if (error) {
+      const body = await (error as any).context?.json?.().catch(() => null);
+      return friendly(body?.error || error);
+    }
+    lastSent = {};
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch {}
+    return null;
+  } catch (e) {
+    return friendly(e);
+  }
+}
+
+/* ---------------------------------------------------------------- app config */
+/** The server can require a newer app (old versions miss security fixes). Returns the message to show, or null. */
+export async function updateRequired(platform: 'android' | 'ios', build: number): Promise<string | null> {
+  try {
+    const { data } = await supabase.from('app_config').select('value').eq('key', 'min_version').maybeSingle();
+    const v = data?.value as { android?: number; ios?: number; message?: string } | undefined;
+    const min = Number(v?.[platform] || 0);
+    return build && min > build ? v?.message || 'A new version of bolo is ready. Update to keep using the app.' : null;
+  } catch {
+    return null;
+  }
 }

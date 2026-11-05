@@ -10,10 +10,45 @@ import { C, S } from '../src/ui/theme';
 import { bizLogo, bizName, curBiz, isPro, isW, cityLabel, myPhoto, xaf } from '../src/logic/core';
 import { balance } from '../src/logic/wallet';
 import { useLive } from '../src/logic/live';
+import * as Sharing from 'expo-sharing';
 import { logout } from '../src/logic/account';
+import { deleteAccount, exportMyData } from '../src/logic/remote';
 import { openWhatsNew } from '../src/logic/whatsnew';
 import { defaultPay, openAccounts, openBizSetup, openCities, openEdit, openHelp, openLang, openNotifSettings, openPayments, openPrivacy, openPro } from '../src/sheets/account';
 import { openDoc } from '../src/sheets/profile';
+
+async function downloadData() {
+  if (db.demo) return toast('The demo keeps everything on this phone. Sign up to download your data');
+  toast('Preparing your data…');
+  const r = await exportMyData();
+  if (r.error || !r.uri) return toast(r.error || 'Couldn’t prepare your data. Try again');
+  try {
+    if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(r.uri, { mimeType: 'application/json', dialogTitle: 'Your bolo data', UTI: 'public.json' });
+    else toast('Saved on this phone');
+  } catch {}
+}
+
+function askDelete() {
+  if (db.demo) return toast('Nothing to delete in the demo. Log out to clear it');
+  confirm({
+    title: 'Delete your account?',
+    text: 'Your profile, business pages, posts and photos are removed for good. This can’t be undone. To use bolo again you’ll need a new account.',
+    ok: 'Delete account',
+    danger: true,
+    icon: 'trash',
+    onOk: async () => {
+      toast('Deleting your account…');
+      const err = await deleteAccount();
+      if (err) return toast(err);
+      await logout();
+      try {
+        if (router.canDismiss()) router.dismissAll();
+      } catch {}
+      router.replace('/welcome');
+      toast('Your account has been deleted');
+    },
+  });
+}
 
 export default function Settings() {
   useLive();
@@ -58,6 +93,8 @@ export default function Settings() {
       <Box>
         <OptRow icon="shield" bg={C.orange} title="Privacy & security" sub="Visibility, phone number, two-step login" onPress={openPrivacy} />
         <OptRow icon="idcard" bg={C.mint} title="Verification" sub={b ? 'RCCM and NIU' : 'ID, documents and badges'} onPress={() => (b ? openBizSetup('edit', 3) : openDoc('id'))} />
+        <OptRow testID="set-export" icon="download" bg={C.s3} iconColor="#fff" title="Download my data" sub="Everything bolo stores about you" onPress={downloadData} />
+        <OptRow testID="set-delete" icon="trash" bg="#3a1a1a" iconColor={C.err} title="Delete account" sub="Remove your account and data for good" onPress={askDelete} />
       </Box>
       <G t="Support" />
       <Box>

@@ -25,6 +25,21 @@ import { locate } from '../src/logic/here';
 import { StoryHost } from '../src/components/Stories';
 import { ensureAdJobs } from '../src/logic/career';
 import { ensureCourseListings } from '../src/logic/listings';
+import { Linking, Platform } from 'react-native';
+import { setMonitorUser, startMonitoring } from '../src/lib/monitor';
+import { updateRequired } from '../src/logic/remote';
+import { confirm } from '../src/ui/overlay';
+
+startMonitoring();
+
+/** Builds from CI carry their run number; the server can ask older builds to update. */
+const BUILD = Number(process.env.EXPO_PUBLIC_BUILD || 0);
+const UPDATE_URL = process.env.EXPO_PUBLIC_UPDATE_URL || 'https://github.com/sirius-68/Bolo/releases/latest';
+async function checkVersion() {
+  if (Platform.OS !== 'android' && Platform.OS !== 'ios') return;
+  const msg = await updateRequired(Platform.OS, BUILD);
+  if (msg) confirm({ title: 'Update bolo', text: msg, ok: 'Update', cancel: 'Later', icon: 'download', onOk: () => Linking.openURL(UPDATE_URL).catch(() => {}) });
+}
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -50,7 +65,7 @@ export default function Root() {
       // Copies saved before real accounts existed are demo sessions.
       if (db.loggedIn && !db.uid) db.demo = true;
       if (db.loggedIn && !db.demo) {
-        if (await hasSession()) pull();
+        if (await hasSession()) (setMonitorUser(db.uid), pull());
         else db.loggedIn = false; // session expired or revoked → log in again
       }
       if (db.loggedIn) {
@@ -60,6 +75,7 @@ export default function Root() {
         if (db.BIZ.list.some((b) => (b.ads || []).some((a) => a.status === 'active'))) startAdTicker();
       }
       setReady(true);
+      if (!db.demo) checkVersion();
     });
     const a = on('doneAlert', (id: string) => showDoneAlert(id));
     const b = on('fundAlert', (id: string) => openFund(id));
