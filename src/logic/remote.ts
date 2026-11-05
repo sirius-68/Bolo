@@ -18,17 +18,21 @@ const cred = (contact: string) => (isEmail(contact) ? { email: contact.trim().to
 
 /** Turn Supabase / network errors into something a person can act on. */
 export function friendly(e: any): string {
-  const m = String(e?.message || e || '').toLowerCase();
-  if (!m) return 'Something went wrong. Please try again.';
+  // Some failures arrive as a raw HTTP response instead of a message: never show those to people.
+  const raw = typeof e === 'string' ? e : typeof e?.message === 'string' ? e.message : '';
+  const status = Number(e?.status || e?.context?.status || 0);
+  const m = raw.toLowerCase();
+  if (m.includes('sending confirmation') || m.includes('sending recovery') || m.includes('sending magic') || m.includes('error sending')) return 'We couldn’t send the code email just now. Please try again in a few minutes.';
   if (m.includes('network') || m.includes('fetch') || m.includes('timeout')) return 'No internet connection. Check your data or Wi‑Fi and try again.';
   if (m.includes('invalid login')) return 'Wrong phone/email or password.';
   if (m.includes('already registered') || m.includes('already been registered') || m.includes('already exists')) return 'An account with this phone or email already exists. Log in instead.';
   if (m.includes('sms') || m.includes('phone provider') || m.includes('phone signups are disabled') || m.includes('unsupported phone')) return 'Phone codes aren’t switched on yet. Please use your email for now.';
-  if (m.includes('expired') || m.includes('invalid') && m.includes('otp') || m.includes('token has expired or is invalid')) return 'That code is wrong or has expired. Try again or send a new one.';
-  if (m.includes('rate limit') || m.includes('too many') || m.includes('security purposes')) return 'Too many attempts. Wait a minute and try again.';
+  if (m.includes('expired') || (m.includes('invalid') && m.includes('otp')) || m.includes('token has expired or is invalid')) return 'That code is wrong or has expired. Try again or send a new one.';
+  if (status === 429 || m.includes('rate limit') || m.includes('too many') || m.includes('security purposes')) return 'Too many attempts. Wait a minute and try again.';
   if (m.includes('email not confirmed')) return 'Confirm your email first. We sent you a code.';
   if (m.includes('password') && m.includes('6')) return 'Use a longer password (at least 8 characters).';
-  return e?.message || 'Something went wrong. Please try again.';
+  if (status >= 500 || !raw || raw.trim().startsWith('{') || raw.length > 160) return 'Something went wrong on our side. Please try again in a few minutes.';
+  return raw;
 }
 
 /* ---------------------------------------------------------------- auth */
