@@ -81,7 +81,7 @@ jobs:
           supabase link --project-ref "$REF"
           supabase db push --remote --dry-run
           supabase db push --remote --yes
-          supabase functions deploy --project-ref "$REF"
+          supabase functions deploy --remote --yes
 
   production:
     name: Deploy to production
@@ -104,4 +104,4 @@ jobs:
           supabase link --project-ref "$REF"
           supabase db push --remote --dry-run
           supabase db push --remote --yes
-          supabase functions deploy --project-ref "$REF"
+          supabase functions deploy --remote --yes
