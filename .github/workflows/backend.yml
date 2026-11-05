@@ -77,9 +77,10 @@ jobs:
           version: latest
       - name: Apply migrations and functions
         run: |
-          supabase link --project-ref "$REF" -p "$SUPABASE_DB_PASSWORD"
-          supabase db push --dry-run -p "$SUPABASE_DB_PASSWORD"
-          supabase db push -p "$SUPABASE_DB_PASSWORD"
+          # CLI 3: the database password comes from SUPABASE_DB_PASSWORD; --remote targets the linked project
+          supabase link --project-ref "$REF"
+          supabase db push --remote --dry-run
+          supabase db push --remote --yes
           supabase functions deploy --project-ref "$REF"
 
   production:
@@ -99,7 +100,8 @@ jobs:
           version: latest
       - name: Apply migrations and functions
         run: |
-          supabase link --project-ref "$REF" -p "$SUPABASE_DB_PASSWORD"
-          supabase db push --dry-run -p "$SUPABASE_DB_PASSWORD"
-          supabase db push -p "$SUPABASE_DB_PASSWORD"
+          # CLI 3: the database password comes from SUPABASE_DB_PASSWORD; --remote targets the linked project
+          supabase link --project-ref "$REF"
+          supabase db push --remote --dry-run
+          supabase db push --remote --yes
           supabase functions deploy --project-ref "$REF"
