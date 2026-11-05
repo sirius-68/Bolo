@@ -1,0 +1,30 @@
+# Supabase CLI settings. Used by CI to start a throwaway local copy of the backend for tests,
+# and to deploy migrations and server functions to staging and production.
+# Hosted project settings (email templates, SMS, SMTP) are set in the dashboard: see docs/SUPABASE.md.
+project_id = "bolo"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 17
+
+[db.seed]
+enabled = false
+
+[storage]
+enabled = true
+file_size_limit = "10MiB"
+
+[auth]
+enabled = true
+site_url = "bolo://"
+
+# The function checks the caller's session itself (works with the new publishable keys).
+[functions.delete-account]
+verify_jwt = false
