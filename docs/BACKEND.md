@@ -37,7 +37,8 @@ Supabase → your avatar → **Account preferences → Access tokens** → **Gen
 
 | Name | Value |
 |---|---|
-| `SUPABASE_ACCESS_TOKEN` | the token from step 2 |
+| `SUPABASE_ACCESS_TOKEN` | the token from step 2 (from the account that owns staging) |
+| `PROD_SUPABASE_ACCESS_TOKEN` | only if production is in a different Supabase account: a token made in that account |
 | `STAGING_DB_PASSWORD` | the staging database password |
 | `PROD_DB_PASSWORD` | the production (`uwthkgtgemxakicvqugp`) database password. Reset it under Project Settings → Database if you don't have it. |
 
