@@ -1,0 +1,41 @@
+name: Typecheck
+
+# Fast check for work branches (main is checked by the Android workflow).
+# Also publishes the packages' type definitions so the code can be type-checked offline.
+on:
+  push:
+    branches-ignore: [main, "ci-logs/**", "ci-cache/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  tsc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install
+        run: |
+          npm install --no-audit --no-fund > /tmp/install.log 2>&1 || (tail -50 /tmp/install.log; exit 1)
+          npx expo install --fix > /tmp/expo.log 2>&1 || true
+      - name: Typecheck
+        run: |
+          mkdir -p ci-out
+          npx tsc --noEmit > ci-out/tsc.log 2>&1; code=$?; echo "tsc exit=$code" >> ci-out/tsc.log; cat ci-out/tsc.log; echo $code > ci-out/code
+      - name: Publish log and type definitions
+        if: always()
+        run: |
+          mkdir -p /tmp/pub && cp -r ci-out/. /tmp/pub/ 2>/dev/null || true
+          cp package.json /tmp/pub/; cp package-lock.json /tmp/pub/ 2>/dev/null || true
+          find node_modules \( -name "*.d.ts" -o -name "*.d.mts" -o -name "*.d.cts" -o -name package.json -o -name "tsconfig*.json" \) -not -path "*/test/*" -print0 | tar --null -czf /tmp/types.tgz -T - 2>/dev/null || true
+          ls -la /tmp/types.tgz
+          (cd /tmp && split -b 45m types.tgz /tmp/pub/types.tgz.part-)
+          cd /tmp/pub && git init -q && git checkout -q -b logs && git add -A
+          git -c user.name=ci -c user.email=ci@bolo.app commit -qm "typecheck ${{ github.run_id }}" || true
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" logs:refs/heads/ci-logs/tsc-latest
+          [ "$(cat ci-out/code)" = 0 ]
