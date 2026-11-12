@@ -129,7 +129,7 @@ export const PROFILE_RAW: Record<string, any> = {};
 function bizFrom(b: any): { p: Person; s: BizSample } {
   const logo = pic(b.logo_url) || logoPic(initials(b.name), b.color || '#f6ee5c', b.color === '#3d5af1' ? '#fff' : '#000');
   const p: Person = { name: b.name || 'Business', role: 'Business', client: 1, biz: 1, area: b.area || b.city || '', dist: '', rate: 0, years: 0, photo: logo, pin: logo, verified: b.verified === 'verified' ? 1 : 0, jobs: 0, reviews: '0', followers: 0, hires: 0, sector: b.sector, about: b.about, uid: b.owner_id, bizId: b.id } as Person;
-  const s: BizSample = { name: p.name, sector: b.sector || '', size: b.size || '', area: p.area, logo, about: b.about || '', rate: 0, jobs: 0, hires: 0, reviews: '0', followers: 0, web: b.web || '' };
+  const s = { name: p.name, sector: b.sector || '', size: b.size || '', area: p.area, logo, about: b.about || '', rate: 0, jobs: 0, hires: 0, reviews: '0', followers: 0, web: b.web || '', email: b.email || '', phone: b.phone || '' } as BizSample;
   return { p, s };
 }
 
@@ -153,7 +153,7 @@ export async function ensurePeople(ids: (string | null | undefined)[]) {
 export async function ensureBiz(bids: (string | null | undefined)[]) {
   const want = [...new Set(bids.filter((x): x is string => !!x && !db.P[bizKey(x)] && !myBizOf(x)))];
   if (!want.length) return;
-  const { data } = await supabase.from('businesses').select('id,owner_id,name,sector,size,city,area,about,logo_url,color,verified,web').in('id', want);
+  const { data } = await supabase.from('businesses').select('id,owner_id,name,sector,size,city,area,about,logo_url,color,verified,web,email,phone').in('id', want);
   (data || []).forEach((b: any) => {
     const { p, s } = bizFrom(b);
     db.P[bizKey(b.id)] = p;
@@ -179,6 +179,16 @@ export async function loadPerson(id: string) {
 /** People to browse and hire: the newest members (nearest first in the lists). */
 async function loadPeople() {
   const { data } = await supabase.from('profile_cards').select(PROFILE_COLS).neq('id', ME()).order('created_at', { ascending: false }).limit(400);
+  (data || []).forEach((r: any) => {
+    db.P[r.id] = personFrom(r);
+    PROFILE_RAW[r.id] = r;
+  });
+}
+/** Find people by name or skill (beyond the ones already loaded). */
+export async function searchPeople(q: string) {
+  const term = q.replace(/[%,()]/g, ' ').trim();
+  if (term.length < 2) return;
+  const { data } = await supabase.from('profile_cards').select(PROFILE_COLS).neq('id', ME()).or(`name.ilike.%${term}%,city.ilike.%${term}%`).limit(30);
   (data || []).forEach((r: any) => {
     db.P[r.id] = personFrom(r);
     PROFILE_RAW[r.id] = r;
@@ -309,6 +319,13 @@ async function loadMine() {
   (blocks.data || []).forEach((x: any) => BLOCKED.add(x.blocked_id));
 }
 export const isBlocked = (id: string) => BLOCKED.has(R(id));
+/** People who follow me (app ids). */
+export async function myFollowers(): Promise<string[]> {
+  const { data } = await supabase.from('follows').select('follower_id').eq('followee_id', ME()).limit(500);
+  const ids = (data || []).map((x: any) => x.follower_id as string);
+  await ensurePeople(ids);
+  return ids.map(L);
+}
 export function setBlocked(id: string, on: boolean) {
   const u = R(id);
   if (on) BLOCKED.add(u);

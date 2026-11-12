@@ -114,16 +114,6 @@ CATS.forEach(([c]) => {
     ];
 });
 
-export const ABOUT_EDWARD = {
-  bio: 'Professional plumber with over 15 years of experience in residential and commercial plumbing. Specialising in repairs, installations, and maintenance. Licensed and insured with a commitment to quality workmanship and customer satisfaction.',
-  spec: ['Faucet and sink repairs/installations', 'Toilet repairs and replacements', 'Pipe leak detection and repair', 'Water heater installation and maintenance', 'Bathroom and kitchen remodeling'],
-  cred: [
-    ['Master Plumber Certificate', 'GTHS Buea • Issued 2010'],
-    ['Certified Water Systems Technician', 'CAMWATER • Issued 2015'],
-    ['Green Plumbing Certification', 'SkillUp CM • Issued 2018'],
-  ] as [string, string][],
-};
-
 /** Words that suggest a category when someone writes a job. */
 export const CAT_KW: Record<string, string[]> = {
   Plumber: ['sink', 'tap', 'faucet', 'pipe', 'leak', 'drip', 'toilet', 'shower', 'drain', 'water heater', 'plumb', 'bathroom', 'blocked', 'tank', 'borehole'],
@@ -518,23 +508,4 @@ export const NT_ICON: Record<string, [string, string]> = {
 export const NT_JOBS = ['quote', 'accept', 'reminder', 'offers', 'payment', 'newjob', 'payment_in', 'newoffer', 'onway', 'arrived', 'jobdone'];
 
 /** Job history shown on a Regular profile (sample). */
-export const JOB_HIST: [string, string, string, string, number][] = [
-  ['Kitchen sink repair', 'c_tabe', '3 days ago', 'XAF 15,000', 5],
-  ['Bathroom tap replacement', 'c_marie', '1 week ago', 'XAF 12,000', 5],
-  ['Water heater installation', 'c_ngo', '2 weeks ago', 'XAF 45,000', 4],
-  ['Blocked drain', 'c_ama', '3 weeks ago', 'XAF 10,000', 5],
-  ['Toilet flush repair', 'c_paul', '1 month ago', 'XAF 8,000', 5],
-  ['New water tank connection', 'c_tabe', '1 month ago', 'XAF 35,000', 5],
-  ['Shower pressure fix', 'c_ngo', '2 months ago', 'XAF 12,000', 4],
-  ['Pipe leak under sink', 'c_marie', '2 months ago', 'XAF 9,000', 5],
-  ['Kitchen sink install', 'c_ama', '3 months ago', 'XAF 25,000', 5],
-  ['Outdoor tap', 'c_paul', '3 months ago', 'XAF 7,000', 4],
-];
-export const FOLLOWERS = ['grace', 'kevin', 'joy', 'b_nexa', 'brenda', 'franklin', 'marie', 'claudine', 'b_sma', 'esther', 'lionel', 'sandrine', 'junior', 'vanessa', 'rita', 'moses'];
-export const CO_POSTS: [string, string][] = [
-  ['We’re hiring! 🎉 Check our open roles on bolo and apply in minutes.', 'clean'],
-  ['Our team at work this week. Proud of everyone who made this project happen.', 'electric'],
-  ['Thank you to our new interns for a great first month 🙏', 'mech'],
-  ['Open day this Saturday: come meet the team and learn about our programs.', 'plumb'],
-];
 export const SCENES = ['plumb', 'clean', 'electric', 'deliver', 'mech', 'design'];

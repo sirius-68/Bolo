@@ -1,12 +1,17 @@
 /* Career: internships & programs, courses, mentorships, groups, ads. */
-import { db, ui, uid, Course, Mentorship, Opp, Ad, makeDb } from '../data/db';
+import { router } from 'expo-router';
+import { db, ui, uid, Course, Mentorship, Opp, Ad } from '../data/db';
 import { toast } from '../ui/overlay';
 import { logoPic } from '../ui/kit';
 import { bump, later, every } from './live';
-import { P, isW, curBiz, bizName, bizLogo, WORKERS, nowT, mOwner, THREADS, ORDER, thread, fname, xaf, myCity, myPhoto } from './core';
+import { P, isW, curBiz, bizName, WORKERS, nowT, mOwner, THREADS, ORDER, thread, fname, xaf, myCity } from './core';
 import { bizLog } from './work';
 import { notify } from './notify';
-import { expectReview } from './reviews';
+import { supabase } from '../lib/supabase';
+import { friendly } from './remote';
+import { R, groupKey, refreshCareer, refreshChats } from './server';
+
+const fail = (e: any) => toast(friendly(e));
 
 /* ---------------- internships & programs ---------------- */
 export type OppForm = { kind: string; title: string; cat: string; desc: string; dur: string; start: string; mode: string; paid: string; amount: string; seats: number; deadline: string; lv?: string };
@@ -15,49 +20,15 @@ const fmtD = (d: string) => {
   return d && !isNaN(+x) ? x.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
 };
 export function publishOpp(f: OppForm): 'opp' | 'course' {
-  const b = curBiz()!;
-  const amt = +String(f.amount).replace(/\D/g, '') || 0;
-  // A Regular profile teaching in their own name (tutor), or a business page.
-  const tutor = isW();
+  // courses are listings that link to the school's own site
   if (f.kind === 'Course') {
-    const catMap: Record<string, string> = { Developer: 'Development', Designer: 'Design', Accountant: 'Finance', Sales: 'Marketing', Teacher: 'Teaching', Nurse: 'Health', Writer: 'Languages' };
-    const c: Course = {
-      id: uid('cu'),
-      mine: 1,
-      biz: tutor ? undefined : db.BIZ.active!,
-      title: f.title.trim(),
-      prov: tutor ? { n: db.user.name || 'bolo tutor', logo: myPhoto() } : { n: bizName(b), logo: bizLogo(b) },
-      cat: catMap[f.cat] || (/(Plumb|Electric|Builder|Mechanic)/.test(f.cat) ? 'Trades' : 'Business'),
-      lv: f.lv || 'Beginner',
-      dur: f.dur,
-      type: 'Skill',
-      fmt: f.mode === 'Online' ? 'Online' : 'Offline',
-      reg: f.mode === 'Online' ? '' : tutor ? myCity() : b.city || 'Buea',
-      price: f.paid === 'Free' ? 0 : amt,
-      old: 0,
-      prof: '',
-      skills: f.desc.trim() ? f.desc.split(/[\n,.;]/).map((x) => x.trim()).filter((x) => x.length > 2).slice(0, 5) : [],
-      mo: 0,
-      seats: f.seats,
-      enrolled: 0,
-      people: [],
-      prog: {},
-    };
-    db.COURSES.unshift(c);
-    if (!tutor) bizLog('cap', `Published course <b>${c.title}</b>`);
-    toast('Course published in Career → Courses');
-    const pool = WORKERS().sort(() => Math.random() - 0.5);
-    ([[pool.slice(0, 3), 5000], [pool.slice(3, 5), 11000], [pool.slice(5, 6), 17000]] as [string[], number][]).forEach(([ids, t]) =>
-      later(t, () => {
-        enrollPeople(c, ids);
-        if (tutor || !isW()) toast(`${ids.length} new student${ids.length > 1 ? 's' : ''} in “${c.title}”`);
-      }),
-    );
-    bump();
+    router.push('/list-course' as any);
     return 'course';
   }
+  const b = curBiz()!;
+  const amt = +String(f.amount).replace(/\D/g, '') || 0;
   const o: Opp = {
-    id: uid('op'),
+    id: uid('tmp_op'),
     biz: db.BIZ.active!,
     mine: 1,
     kind: f.kind,
@@ -77,28 +48,39 @@ export function publishOpp(f: OppForm): 'opp' | 'course' {
   };
   db.OPPS.unshift(o);
   bizLog('cap', `Published ${f.kind.toLowerCase()} <b>${o.title}</b>`);
-  toast(`${f.kind} published in Career`);
-  WORKERS()
-    .slice(0, 3)
-    .forEach((id, i) =>
-      later(4000 + i * 3500, () => {
-        if (o.joined < o.seats) {
-          o.joined++;
-          o.people!.push(id);
-          if (i === 0 && !isW()) toast(`${P(id).name} ${o.kind === 'Training program' ? 'asked to join' : 'applied to'} “${o.title}”`);
-          notify({ type: 'newoffer', cat: 'applicants', who: id, inbox: 'C', key: `opp:${o.id}:${id}`, text: `${o.kind === 'Training program' ? 'asked to join' : 'applied to'} “${o.title}”`, go: { k: 'opp', id: o.id } });
-        }
-      }),
-    );
   bump();
+  (async () => {
+    if (!b.remoteId) return fail('Your business page is still saving. Try again in a moment.');
+    const { cat, dur, start, mode, pay, deadline, desc, skills } = o;
+    const { data, error } = await supabase.from('opportunities').insert({ business_id: b.remoteId, kind: o.kind, title: o.title, seats: o.seats, data: { cat, dur, start, mode, pay, deadline, desc, skills } }).select('id').single();
+    if (error) {
+      db.OPPS = db.OPPS.filter((x) => x !== o);
+      bump();
+      return fail(error);
+    }
+    o.id = data.id;
+    toast(`${f.kind} published in Career`);
+    bump();
+  })();
   return 'opp';
 }
 export function joinOpp(id: string) {
   const o = db.OPPS.find((x) => x.id === id)!;
   o.applied = 1;
   o.joined++;
-  toast(o.kind === 'Training program' ? `You joined “${o.title}”` : `Application sent to ${db.BIZ_SAMPLE[o.biz]?.name || 'the business'}`);
   bump();
+  supabase
+    .from('opportunity_applications')
+    .insert({ opportunity_id: id })
+    .then(({ error }) => {
+      if (error) {
+        o.applied = undefined;
+        o.joined = Math.max(0, o.joined - 1);
+        bump();
+        return fail(error);
+      }
+      toast(o.kind === 'Training program' ? `You asked to join “${o.title}”` : `Application sent to ${db.BIZ_SAMPLE[o.biz]?.name || 'the business'}`);
+    });
 }
 export function answerApplicant(oid: string, pid: string, st: 'acc' | 'dec') {
   const o = db.OPPS.find((x) => x.id === oid)!;
@@ -107,6 +89,7 @@ export function answerApplicant(oid: string, pid: string, st: 'acc' | 'dec') {
   toast(st === 'acc' ? `${P(pid).name} accepted. We’ve let them know` : `${P(pid).name} declined`);
   if (!isW()) bizLog(st === 'acc' ? 'checkc' : 'x', `${st === 'acc' ? 'Accepted' : 'Declined'} <b>${P(pid).name}</b> for <b>${o.title}</b>`);
   bump();
+  supabase.from('opportunity_applications').update({ status: st }).eq('opportunity_id', oid).eq('user_id', R(pid)).then(({ error }) => error && fail(error));
 }
 
 /* ---------------- courses ---------------- */
@@ -255,7 +238,6 @@ export function enrollPeople(c: Course, ids: string[]) {
   c.enrolled = c.people.length;
   const gid = courseGroup(c);
   ids.forEach((id) => THREADS_ALL(gid)?.msgs.push({ sys: `${fname(P(id).name)} enrolled and joined` }));
-  if (c.mine && ids[0]) expectReview(c, ids[0]);
   if (c.mine && ids.length)
     notify({ type: 'enrol', cat: 'applicants', who: ids[0], inbox: c.biz ? 'C' : 'W', key: `enrol:${c.id}:${ids.join(',')}`, text: ids.length > 1 ? `and ${ids.length - 1} other${ids.length > 2 ? 's' : ''} enrolled in “${c.title}”` : `enrolled in “${c.title}”`, go: { k: 'course', id: c.id } });
   bump();
@@ -299,58 +281,35 @@ export const groupLogo = (m: Mentorship) => {
     .toUpperCase();
   return logoPic(t || 'MG', m.color || '#f47b3b', '#000');
 };
-/** Create (or reuse) the chat for a mentorship / group. */
-export function mentorGroup(m: Mentorship, asMentor: boolean) {
-  const gid = 'g_' + m.id;
-  if (!db.P[gid]) db.P[gid] = { name: m.title, group: 1, client: 1, role: m.plain ? (m.course ? 'Class group' : 'Group') : 'Mentorship group', photo: groupLogo(m), pin: groupLogo(m), area: '', dist: '', rate: 5, years: 1, jobs: 0, reviews: '0', followers: 0, mentorship: m.id };
-  const T = asMentor ? (isW() ? db.THREADS_W : db.THREADS_C) : db.THREADS_W;
-  const O = asMentor ? (isW() ? db.ORDER_W : db.ORDER_C) : db.ORDER_W;
-  if (!T[gid]) {
-    const mem = (m.people || []).length ? m.people! : WORKERS().filter((x) => x !== m.by).slice(5, 8);
-    const mentor = fname(mOwner(m).name);
-    T[gid] = {
-      time: nowT(),
-      group: 1,
-      members: [...mem],
-      unread: asMentor ? 1 : 2,
-      msgs: [
-        { d: 'Today' },
-        { sys: asMentor ? `You created the group for “${m.title}”` : `You joined “${m.title}” · ${m.joined} members` },
-        ...(asMentor
-          ? [{ f: 'them' as const, t: `${P(mem[0])?.name.split(' ')[0] || 'A mentee'}: Hello ${db.user.name ? db.user.name.split(' ')[0] : ''}! Excited to start 🙏`, at: nowT() }]
-          : [
-              { f: 'them' as const, t: `${mentor}: Welcome to the group! 👋 Introduce yourself, what do you want to get out of this mentorship?`, at: nowT() },
-              { f: 'them' as const, t: `${mentor}: First session is this week. I’ll share the link here.`, at: nowT() },
-            ]),
-      ],
-    };
-    if (!O.includes(gid)) O.unshift(gid);
-  }
-  return gid;
+/** The group chat of a mentorship (made on the server when the mentorship is published). */
+export function mentorGroup(m: Mentorship, _asMentor?: boolean) {
+  const cid = (m as any).cid as string | undefined;
+  return cid ? groupKey(cid) : '';
 }
 export function joinMentor(id: string) {
   const m = db.MENTORSHIPS.find((x) => x.id === id)!;
   m.joinedMe = 'req';
-  toast('Request sent');
   bump();
-  later(3000, () => {
-    m.joinedMe = 'yes';
-    m.joined++;
-    toast(`🎉 ${mOwner(m).name.split(' ')[0]} accepted you as a mentee`);
-    notify({ type: 'accept', cat: 'mentorship', who: m.by || undefined, key: `mentee:${m.id}`, text: `accepted you as a mentee in “${m.title}”.`, go: { k: 'mentor', id: m.id } });
-    later(200, () => {
-      mentorGroup(m, false);
-      toast(`💬 ${m.format === 'Group' ? 'Mentorship group' : 'Mentor chat'} added to your messages`);
+  supabase
+    .from('mentorship_members')
+    .insert({ mentorship_id: id })
+    .then(({ error }) => {
+      if (error) {
+        m.joinedMe = null;
+        bump();
+        return fail(error);
+      }
+      toast(`Request sent to ${fname(mOwner(m).name)}. You’ll join the group when they accept`);
     });
-  });
 }
 export type MentorForm = { title: string; field: string; format: '1-to-1' | 'Group'; dur: string; price: 'Free' | 'Paid'; amount: string; seats: number; desc: string; rules: string[] };
 export function publishMentor(f: MentorForm) {
   const amt = +String(f.amount).replace(/\D/g, '');
+  const biz = isW() ? null : curBiz();
   const m: Mentorship = {
-    id: uid('mm'),
+    id: uid('tmp_mm'),
     mine: 1,
-    asBiz: isW() ? null : db.BIZ.active,
+    asBiz: biz ? biz.id : null,
     title: f.title.trim(),
     field: f.field || db.user.skills[0] || 'Admin',
     format: f.format,
@@ -364,72 +323,44 @@ export function publishMentor(f: MentorForm) {
     rules: [...f.rules],
   };
   db.MENTORSHIPS.unshift(m);
-  toast('Mentorship published in Career');
-  if (!isW()) bizLog('follow', `Published mentorship <b>${m.title}</b>`);
-  WORKERS()
-    .slice(3, 5)
-    .forEach((pid, i) =>
-      later(4000 + i * 3000, () => {
-        if (m.joined < m.seats) {
-          m.joined++;
-          m.people!.push(pid);
-          m.st![pid] = 'pending';
-          if (i === 0) toast(`${P(pid).name} wants you as a mentor`);
-          notify({ type: 'mentor', cat: 'mentorship', who: pid, inbox: m.asBiz ? 'C' : 'W', key: `mreq:${m.id}:${pid}`, text: `asked to join your mentorship “${m.title}”`, go: { k: 'mentor', id: m.id } });
-        }
-      }),
-    );
-  later(4200, () => mentorGroup(m, true));
+  if (biz) bizLog('follow', `Published mentorship <b>${m.title}</b>`);
   bump();
+  (async () => {
+    const { field, format, dur, price, desc, rules } = m;
+    const { error } = await supabase.from('mentorships').insert({ business_id: biz?.remoteId || null, title: m.title, seats: m.seats, data: { field, format, dur, price, desc, rules, color: m.color } });
+    if (error) {
+      db.MENTORSHIPS = db.MENTORSHIPS.filter((x) => x !== m);
+      bump();
+      return fail(error);
+    }
+    toast('Mentorship published in Career. Its group chat is in your messages');
+    await refreshCareer();
+    await refreshChats();
+  })();
 }
 export function answerMentee(mid: string, pid: string, st: 'acc' | 'dec') {
   const m = db.MENTORSHIPS.find((x) => x.id === mid)!;
   (m.st = m.st || {})[pid] = st;
-  if (st === 'dec') {
-    m.joined = Math.max(0, m.joined - 1);
-    const th = THREADS_ALL('g_' + mid);
-    if (th) th.members = (th.members || []).filter((x) => x !== pid);
-  }
-  toast(st === 'acc' ? `${P(pid).name} accepted as a mentee` : `${P(pid).name} declined`);
-  if (st === 'acc')
-    later(2500, () => {
-      const th = THREADS_ALL('g_' + mid);
-      th?.msgs.push({ sys: `${fname(P(pid).name)} joined the group` });
-      notify({ type: 'mentor', cat: 'mentorship', who: pid, inbox: m.asBiz ? 'C' : 'W', key: `mjoin:${mid}:${pid}`, text: `joined your mentorship group “${m.title}”`, go: { k: 'chat', id: 'g_' + mid } });
-    });
+  if (st === 'acc') m.joined++;
+  toast(st === 'acc' ? `${P(pid).name} accepted. They’re in the group now` : `${P(pid).name} declined`);
   bump();
+  supabase
+    .from('mentorship_members')
+    .update({ status: st === 'acc' ? 'yes' : 'dec' })
+    .eq('mentorship_id', mid)
+    .eq('user_id', R(pid))
+    .then(({ error }) => (error ? fail(error) : refreshChats()));
 }
-export function createGroup(o: { title: string; desc: string; rules: string[]; color: string; members: string[] }) {
-  const m: Mentorship = { id: uid('gp'), plain: 1, mine: 1, asBiz: isW() ? null : db.BIZ.active, title: o.title.trim(), desc: o.desc.trim() || 'A group on bolo.', field: '', format: 'Group', dur: '', price: 'Free', seats: 500, joined: o.members.length, people: [...o.members], rules: [...o.rules], color: o.color };
-  db.MENTORSHIPS.push(m);
-  const gid = mentorGroup(m, true);
-  const initials = m.title
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-  db.P[gid].role = 'Group';
-  db.P[gid].photo = db.P[gid].pin = logoPic(initials, o.color, '#000');
-  const th = thread(gid);
-  th.members = [...o.members];
-  th.unread = 0;
-  th.msgs = [
-    { d: 'Today' },
-    { sys: `You created the group “${m.title}”` },
-    { sys: `You added ${o.members.slice(0, 3).map((id) => fname(P(id).name)).join(', ')}${o.members.length > 3 ? ` and ${o.members.length - 3} others` : ''}` },
-  ];
-  th.time = nowT();
-  later(2500, () => {
-    const f0 = o.members[0];
-    if (f0 && THREADS()[gid]) {
-      th.msgs.push({ f: 'them', t: `${fname(P(f0).name)}: Thanks for adding me! 👋`, at: nowT() });
-      th.time = nowT();
-    }
-  });
+/** A new group chat with the people picked. Returns its chat key. */
+export async function createGroup(o: { title: string; desc: string; rules: string[]; color: string; members: string[] }): Promise<string | null> {
+  const { data, error } = await supabase.rpc('create_group', { p_title: o.title.trim(), p_about: o.desc.trim(), p_color: o.color, p_rules: o.rules, p_members: o.members.map(R).filter(Boolean) });
+  if (error) {
+    fail(error);
+    return null;
+  }
+  await refreshChats();
   toast('Group created');
-  bump();
-  return gid;
+  return groupKey(data as string);
 }
 export function courseGroup(c: Course) {
   let m = db.MENTORSHIPS.find((x) => x.course === c.id);
@@ -456,6 +387,7 @@ export function courseGroup(c: Course) {
 export const groupOf = (gid: string) => db.MENTORSHIPS.find((x) => x.id === db.P[gid]?.mentorship);
 export function leaveGroup(gid: string) {
   const m = groupOf(gid);
+  const cid = gid.startsWith('g_') ? gid.slice(2) : '';
   [db.THREADS_W, db.THREADS_C].forEach((T) => delete T[gid]);
   [db.ORDER_W, db.ORDER_C].forEach((O) => {
     const i = O.indexOf(gid);
@@ -465,10 +397,18 @@ export function leaveGroup(gid: string) {
     m.joinedMe = null;
     m.joined = Math.max(0, m.joined - 1);
   }
-  toast(`You left “${m?.title || 'the group'}”`);
+  toast(`You left “${m?.title || db.P[gid]?.name || 'the group'}”`);
   bump();
+  (async () => {
+    if (m && !m.mine) await supabase.from('mentorship_members').delete().eq('mentorship_id', m.id).eq('user_id', db.uid!);
+    if (cid) {
+      const { error } = await supabase.from('conversation_members').delete().eq('conversation_id', cid).eq('user_id', db.uid!);
+      if (error) fail(error);
+    }
+  })();
 }
 export function deleteGroup(gid: string) {
+  const cid = gid.startsWith('g_') ? gid.slice(2) : '';
   [db.THREADS_W, db.THREADS_C].forEach((T) => delete T[gid]);
   [db.ORDER_W, db.ORDER_C].forEach((O) => {
     const i = O.indexOf(gid);
@@ -476,22 +416,13 @@ export function deleteGroup(gid: string) {
   });
   toast('Group deleted');
   bump();
+  if (cid) supabase.rpc('delete_group', { p_conversation: cid }).then(({ error }) => error && fail(error));
 }
+/** Groups with the "no private messages" rule: you can still message the mentor; please keep to the rules. */
 export function requestDM(mid: string) {
-  const m = db.MENTORSHIPS.find((x) => x.id === mid)!;
-  const o = mOwner(m);
-  db.DMREQ[mid] = 'pending';
-  toast(`Request sent to ${o.name.split(' ')[0]}`);
+  db.DMREQ[mid] = 'ok';
+  toast('You can message them now. Please keep to the group rules');
   bump();
-  later(3500, () => {
-    db.DMREQ[mid] = 'ok';
-    const t = thread(m.by!);
-    t.msgs.push({ sys: `${o.name.split(' ')[0]} accepted your message request` });
-    t.time = nowT();
-    t.unread = (t.unread || 0) + 1;
-    notify({ type: 'accept', cat: 'mentorship', who: m.by, key: `dm:${mid}`, text: 'accepted your request to message them privately.', go: { k: 'chat', id: m.by! } });
-    toast(`✅ ${o.name.split(' ')[0]} accepted. You can message them now`);
-  });
 }
 /** Is messaging this person blocked by a group rule? */
 export function dmBlocked(id: string) {
@@ -501,24 +432,8 @@ export function dmBlocked(id: string) {
 }
 
 /* ---------------- businesses enrol employees ---------------- */
-export function enrolEmployees(kind: 'course' | 'mentor' | 'opp', id: string, n: number) {
-  const it: any = kind === 'course' ? db.COURSES.find((c) => c.id === id) : kind === 'mentor' ? db.MENTORSHIPS.find((m) => m.id === id) : db.OPPS.find((o) => o.id === id);
-  it.emp = (it.emp || 0) + n;
-  if (kind !== 'course') it.joined += n;
-  bizLog('cap', `Enrolled ${n} employee${n > 1 ? 's' : ''} in <b>${it.title}</b>`);
-  toast(`${n} employee${n > 1 ? 's' : ''} enrolled in “${it.title}”`);
-  if (kind === 'mentor') {
-    const m = it as Mentorship;
-    later(1000, () => {
-      const gid = 'g_' + m.id;
-      if (!db.P[gid]) db.P[gid] = { name: m.title, group: 1, client: 1, role: 'Mentorship group', photo: groupLogo(m), pin: groupLogo(m), area: '', dist: '', rate: 5, years: 1, jobs: 0, reviews: '0', followers: 0, mentorship: m.id };
-      if (!db.THREADS_C[gid]) {
-        db.THREADS_C[gid] = { time: nowT(), group: 1, unread: 1, members: [], msgs: [{ d: 'Today' }, { sys: `${bizName(curBiz())} added employees to “${m.title}”` }, { f: 'them', t: `${mOwner(m).name.split(' ')[0]}: Welcome to your team! We start this week.`, at: nowT() }] };
-        db.ORDER_C.unshift(gid);
-      }
-    });
-  }
-  bump();
+export function enrolEmployees(_kind: 'course' | 'mentor' | 'opp', _id: string, _n: number) {
+  toast('Team enrolment is coming soon. Share the page with your team for now');
 }
 
 /* ---------------- ads (pay per 100 people reached) ---------------- */

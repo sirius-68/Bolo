@@ -8,6 +8,7 @@ import { C, S } from '../src/ui/theme';
 import { sheet, SheetTitle } from '../src/ui/overlay';
 import { db } from '../src/data/db';
 import { useLive } from '../src/logic/live';
+import { MONEY_LIVE } from '../src/logic/money';
 import { xaf } from '../src/logic/core';
 import { ExBooking, bookService, expertById, expertContact, nearestDate, priceAfter, promoFor, serviceOf } from '../src/logic/experts';
 import { ExRating } from '../src/components/ExpertUI';
@@ -32,17 +33,12 @@ export default function ExpertBook() {
   if (done) return <Booked b={done} />;
   const due = priceAfter(s.price, code);
   const bal = db.WALLET.bal;
-  const short = due > bal;
+  const short = MONEY_LIVE && due > bal;
   const pay = () => {
     tap();
     if (short) return router.push(`/topup?amt=${Math.max(500, Math.ceil((due - bal) / 100) * 100)}` as any);
-    setBusy(true);
-    setTimeout(() => {
-      const r = bookService(e, s, code || undefined);
-      setBusy(false);
-      if ('need' in r) router.push(`/topup?amt=${Math.max(500, r.need)}` as any);
-      else setDone(r);
-    }, 700);
+    const r = bookService(e, s, code || undefined);
+    if (!('need' in r)) setDone(r);
   };
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: ins.top }}>
@@ -100,10 +96,10 @@ export default function ExpertBook() {
           <Icon name="lock" size={18} color={C.lav} />
           <View style={{ flex: 1, gap: 2 }}>
             <Txt s={14} w={8}>
-              Paid safely through bolo
+              How it works
             </Txt>
             <Txt s={12} c={C.muted}>
-              We hold your payment until you confirm the session happened. Cancel before it starts and get it all back. {e.name.split(' ')[0]} confirms the exact time in chat.
+              Your request goes to {e.name.split(' ')[0]} in chat. When they accept, the session is booked and you agree the time there. Pay {e.name.split(' ')[0]} directly as agreed: payments through bolo are coming soon.
             </Txt>
           </View>
         </View>
@@ -113,7 +109,7 @@ export default function ExpertBook() {
       <View style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 + ins.bottom, gap: 10, backgroundColor: C.s1, borderTopLeftRadius: 26, borderTopRightRadius: 26, borderTopWidth: 1, borderColor: C.line }}>
         <View style={S.rowB}>
           <Txt s={14} c={C.muted}>
-            Amount due
+            Price
           </Txt>
           <View style={[S.row, { gap: 8 }]}>
             {due < s.price ? (
@@ -126,36 +122,9 @@ export default function ExpertBook() {
             </Txt>
           </View>
         </View>
-        {code ? (
-          <View style={[S.rowB, { height: 44, paddingHorizontal: 14, borderRadius: 14, backgroundColor: 'rgba(123,224,167,.12)' }]}>
-            <View style={[S.row, { gap: 8 }]}>
-              <Icon name="receipt" size={16} color={C.mint} />
-              <Txt s={13} w={8} c={C.mint}>
-                {code} · {promoFor(code)?.label}
-              </Txt>
-            </View>
-            <Txt s={13} w={8} c={C.muted} onPress={() => (tap(), setCode(''))}>
-              Remove
-            </Txt>
-          </View>
-        ) : (
-          <Pressable testID="book-promo" accessibilityRole="button" onPress={() => (tap(), openPromo(setCode))} style={[S.rowB, { height: 44, paddingHorizontal: 14, borderRadius: 14, backgroundColor: C.s2 }]}>
-            <View style={[S.row, { gap: 8 }]}>
-              <Icon name="receipt" size={16} color={C.yellow} />
-              <Txt s={13} w={7}>
-                I have a promo code
-              </Txt>
-            </View>
-            <Icon name="chev" size={16} color={C.muted} />
-          </Pressable>
-        )}
-        <Txt s={12} c={short ? C.orange : C.muted}>
-          Wallet balance {xaf(bal)}
-          {short ? ` · add ${xaf(due - bal)} to book` : ''}
-        </Txt>
-        <Btn testID="book-pay" variant="yellow" icon={short ? 'plus' : 'lock'} loading={busy} title={short ? 'Top up and book' : 'Pay and book'} onPress={pay} />
+        <Btn testID="book-pay" variant="yellow" icon="send" loading={busy} title="Send request" onPress={pay} />
         <Txt s={11} c={C.faint} center>
-          By booking you agree to bolo’s terms for expert sessions. Payment is held until you confirm the session.
+          By booking you agree to bolo’s terms for expert sessions.
         </Txt>
       </View>
     </View>
@@ -200,24 +169,11 @@ function Booked({ b }: { b: ExBooking }) {
       <View style={{ flex: 1, justifyContent: 'center', gap: 12 }}>
         <AlertIll icon="checkc" bg={C.mint} />
         <Txt testID="booked-title" s={26} w={8} center>
-          You’re booked
+          Request sent
         </Txt>
         <Txt s={14} c={C.muted} center>
-          {b.title} with {e.name}. {e.name.split(' ')[0]} will message you to confirm the time (nearest date {b.date}).
+          {b.title} with {e.name}. When {e.name.split(' ')[0]} accepts in chat, the session is booked and shows in Career experts → Your sessions.
         </Txt>
-        <View style={{ padding: 14, borderRadius: 18, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, gap: 6, marginTop: 8 }}>
-          <View style={S.rowB}>
-            <Txt s={13} c={C.muted}>
-              Held by bolo
-            </Txt>
-            <Txt s={14} w={8}>
-              {xaf(b.amt)}
-            </Txt>
-          </View>
-          <Txt s={12} c={C.muted}>
-            Released to {e.name.split(' ')[0]} only when you tap “Session done”. Find it in Career experts → Your sessions.
-          </Txt>
-        </View>
       </View>
       <Btn testID="booked-chat" variant="yellow" icon="chat" title={`Message ${e.name.split(' ')[0]}`} onPress={() => (router.back(), setTimeout(() => openChat(expertContact(e)), 50))} />
       <Btn testID="booked-done" variant="dark" title="Done" style={{ marginTop: 10 }} onPress={goBack} />

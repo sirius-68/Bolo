@@ -9,7 +9,7 @@ import { bizName, curBiz, isW, mySkill, cityLabel } from '../src/logic/core';
 import { services } from '../src/logic/account';
 import { bump } from '../src/logic/live';
 import { pickImage } from '../src/logic/media';
-import { expectCommentOn } from '../src/logic/comments';
+import { createPost } from '../src/logic/work';
 import { resetTo } from '../src/logic/nav';
 
 export default function NewPost() {
@@ -75,22 +75,7 @@ export default function NewPost() {
           title="Post"
           disabled={!ok}
           onPress={() => {
-            const nid = uid('np');
-            db.POSTS.unshift({
-              id: nid,
-              by: w ? 'me' : 'me',
-              kind: src ? 'photo' : 'text',
-              src: src || undefined,
-              text: text.trim() || (w ? `Another ${mySkill().toLowerCase()} job done ✅` : 'Update'),
-              tags,
-              job: link || undefined,
-              time: 'Just now',
-              likes: 0,
-              comments: 0,
-              as: w ? 'regular' : 'business',
-              biz: w ? null : db.BIZ.active,
-            });
-            expectCommentOn(nid);
+            createPost({ kind: src ? 'photo' : 'text', src: src || undefined, text: text.trim() || (w ? `Another ${mySkill().toLowerCase()} job done ✅` : 'Update'), tags, job: link || undefined });
             ui.feedView = 'all';
             bump();
             toast('Posted to the feed');

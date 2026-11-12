@@ -1,3 +1,4 @@
+import { createPost } from '../logic/work';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { router } from 'expo-router';
@@ -119,7 +120,7 @@ function Availability() {
         disabled={!sel.length}
         onPress={() => {
           const slots = SLOTS.filter((s) => sel.includes(s) && (day === 'Today' || s !== 'Now'));
-          db.POSTS.unshift({ id: uid('a'), by: 'me', kind: 'avail', text: `Available ${day.toLowerCase()} for ${mySkill().toLowerCase()} jobs around ${myCity()}. Book a slot below.`, slots, time: 'Just now', likes: 0, comments: 0 });
+          createPost({ kind: 'avail', text: `Available ${day.toLowerCase()} for ${mySkill().toLowerCase()} jobs around ${myCity()}. Book a slot below.`, slots });
           ui.feedView = 'all';
           bump();
           sheet.close();

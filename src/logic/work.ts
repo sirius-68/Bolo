@@ -205,6 +205,51 @@ export function postJob(f: JobForm): Post {
   })();
   return job;
 }
+/** Share a work post, an update or my free slots. Shown at once; photos upload in the background. */
+export function createPost(p: { kind: 'photo' | 'text' | 'avail'; text: string; src?: string; tags?: string[]; job?: string; slots?: string[] }) {
+  const w = isW();
+  const biz = w ? null : curBiz();
+  const po: Post = { id: 'tmp_' + uuid(), by: 'me', kind: p.kind, text: p.text, src: p.src, photos: p.src ? [p.src] : [], tags: p.tags, job: p.job, slots: p.slots, time: 'now', at: Date.now(), likes: 0, comments: 0, mine: 1, as: w ? 'regular' : 'business', biz: w ? null : db.BIZ.active };
+  db.POSTS.unshift(po);
+  bump();
+  (async () => {
+    try {
+      if (biz && !biz.remoteId) throw new Error('Your business page is still saving. Try again in a moment.');
+      const photos = p.src ? await uploadPostPhotos([p.src]) : [];
+      const { data, error } = await supabase
+        .from('posts')
+        .insert({ author_id: db.uid, business_id: biz?.remoteId || null, kind: p.kind, body: p.text, photos: photos.map((x) => x.replace(/^uri:/, '')), cat: w ? mySkill() : null, area: cityLabel(), data: { tags: p.tags || [], job: p.job, slots: p.slots } })
+        .select('id')
+        .single();
+      if (error) throw error;
+      po.id = data.id;
+      if (photos[0]) po.src = photos[0];
+      bump();
+    } catch (e) {
+      db.POSTS = db.POSTS.filter((x) => x !== po);
+      bump();
+      fail(e);
+    }
+  })();
+  return po;
+}
+export function deletePost(id: string) {
+  const i = db.POSTS.findIndex((p) => p.id === id && p.mine);
+  if (i < 0) return;
+  const [po] = db.POSTS.splice(i, 1);
+  toast('Post deleted');
+  bump();
+  supabase
+    .from('posts')
+    .delete()
+    .eq('id', id)
+    .then(({ error }) => {
+      if (!error) return;
+      db.POSTS.splice(i, 0, po);
+      bump();
+      fail(error);
+    });
+}
 export function closeJob(id: string) {
   const i = db.POSTS.findIndex((p) => p.id === id);
   if (i < 0) return;
@@ -668,6 +713,47 @@ export const readersOf = (id: string) => {
   const cid = THREADS()[id]?.cid;
   return cid ? membersOf(cid).filter((m: any) => m.user_id !== db.uid) : [];
 };
+
+/* =========================== safety: report and block =========================== */
+export const REPORT_REASONS: [string, string][] = [
+  ['scam', 'Scam or fraud'],
+  ['spam', 'Spam'],
+  ['fake', 'Fake profile or listing'],
+  ['harassment', 'Harassment or hate'],
+  ['inappropriate', 'Inappropriate content'],
+  ['other', 'Something else'],
+];
+/** Send a report to bolo's moderators (once per item). */
+export async function report(targetType: string, targetId: string, reason: string, details = '') {
+  const id = targetType === 'profile' ? R(targetId) || targetId : targetId;
+  const { error } = await supabase.from('reports').insert({ target_type: targetType, target_id: id, reason, details: details.trim() || null });
+  if (error && /duplicate|unique/i.test(error.message)) return toast('You already reported this. Our team is on it');
+  if (error) return fail(error);
+  toast('Thanks. Our team will check it');
+}
+/** Block someone: their posts disappear and they can't message you or comment on your posts. */
+export function blockPerson(id: string) {
+  const uid = R(id);
+  if (!uid) return;
+  const { setBlocked } = require('./server');
+  setBlocked(id, true);
+  db.POSTS = db.POSTS.filter((p) => p.by !== id && p.client !== id);
+  db.followed = db.followed.filter((x) => x !== id);
+  toast(`${P(id)?.name || 'They'} won’t be able to contact you`);
+  bump();
+  (async () => {
+    const { error } = await supabase.from('blocks').insert({ blocked_id: uid });
+    if (error && !/duplicate/i.test(error.message)) return fail(error);
+    await supabase.from('follows').delete().eq('follower_id', db.uid!).eq('followee_id', uid);
+  })();
+}
+export function unblockPerson(id: string) {
+  const uid = R(id);
+  const { setBlocked } = require('./server');
+  setBlocked(id, false);
+  bump();
+  supabase.from('blocks').delete().eq('blocker_id', db.uid!).eq('blocked_id', uid).then(({ error }) => (error ? fail(error) : (toast('Unblocked'), refreshPosts())));
+}
 
 /* =========================== notifications =========================== */
 export function readNotif(id: string) {

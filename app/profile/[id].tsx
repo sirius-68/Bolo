@@ -1,35 +1,34 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { db, Review } from '../../src/data/db';
-import { CO_POSTS, SERVICES, catIcon } from '../../src/data/catalog';
+import { catIcon } from '../../src/data/catalog';
 import { Avatar, Btn, Empty, IconBtn, PTabs, Page, Pict, Rate, Rich, StatusPill, TopBar, Txt, Verified, CoTag } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { pick, toast } from '../../src/ui/overlay';
 import { C, S } from '../../src/ui/theme';
-import { P, aboutOf, fname, has, isW, k, myVacancies } from '../../src/logic/core';
+import { P, aboutOf, fname, has, isW, k, myVacancies, profileRaw } from '../../src/logic/core';
+import { loadPerson } from '../../src/logic/server';
 import { useLive, bump } from '../../src/logic/live';
 import { follow, hireState, reviewable, saveToggle, sendText } from '../../src/logic/work';
 import { openHire, openReview, openMedia } from '../../src/sheets/work';
 import { openChat } from '../../src/sheets/chat';
-import { OppCard, ReqPost, ReelThumb } from '../../src/components/cards';
-import { REELS } from '../../src/data/db';
+import { OppCard, ReqPost, ReelThumb, PostCard } from '../../src/components/cards';
+import type { Reel } from '../../src/data/db';
 import { router } from 'expo-router';
 import { PersonCV } from '../../src/components/cv';
 import { sheet } from '../../src/ui/overlay';
-
-const SAMPLE_REV: [string, string, number, string][] = [
-  ['c_ama', '2 days ago', 5, 'Fixed it in under an hour. Very professional and tidy.'],
-  ['c_marie', '1 week ago', 4, 'Good work. Arrived a bit late but explained everything clearly.'],
-  ['c_paul', '3 weeks ago', 5, 'Fair price, would hire again!'],
-];
 
 export default function Profile() {
   useLive();
   const { id } = useLocalSearchParams<{ id: string }>();
   const p = P(id);
   const [tab, setTab] = useState('About');
+  // fresh numbers, bio and reviews every time the profile opens
+  useEffect(() => {
+    if (id && id !== 'me') void loadPerson(id);
+  }, [id]);
   if (!p?.name)
     return (
       <Page header={<TopBar title="Profile" />}>
@@ -50,7 +49,7 @@ export default function Profile() {
       ? [
           [openRoles.length, 'Open roles'],
           [p.hires || 0, 'Hired'],
-          [k(p.followers + (following ? 1 : 0)), 'Followers'],
+          [k(p.followers), 'Followers'],
         ]
       : kind === 'client'
         ? [
@@ -61,7 +60,7 @@ export default function Profile() {
         : [
             [k(p.jobs), 'Jobs done'],
             [p.reviews, 'Reviews'],
-            [k(p.followers + (following ? 1 : 0)), 'Followers'],
+            [k(p.followers), 'Followers'],
           ];
   const inviteToVacancy = () => {
     const V = myVacancies();
@@ -124,7 +123,7 @@ export default function Profile() {
             <View style={[S.row, { gap: 6, flexWrap: 'wrap', marginTop: 3 }]}>
               {kind === 'company' ? <CoTag /> : null}
               <Txt s={13} c={C.muted}>
-                {kind === 'company' ? `${b?.sector || p.sector || ''} · ${p.area}` : p.role && kind === 'worker' ? `${p.role} · ${p.years} years` : 'Hires on bolo'}
+                {kind === 'company' ? [b?.sector || p.sector, p.area].filter(Boolean).join(' · ') : p.role && kind === 'worker' ? `${p.role}${p.years ? ` · ${p.years} years` : ''}` : 'Hires on bolo'}
               </Txt>
               <Rate r={p.rate} />
             </View>
@@ -151,7 +150,7 @@ export default function Profile() {
       <View style={[S.row, { gap: 6, marginTop: 12, paddingHorizontal: 18 }]}>
         <Icon name="pin" size={15} color={C.muted} />
         <Txt s={13} c={C.muted}>
-          {p.area} · {kind === 'company' ? `${b?.size || ''} people` : p.dist}
+          {[p.area, kind === 'company' ? (b?.size ? `${b.size} people` : '') : p.dist].filter(Boolean).join(' · ') || 'Location not shared'}
         </Txt>
       </View>
       <PTabs style={{ marginTop: 16 }} items={tabs2.map((x) => [x, x] as [string, string])} value={t2} onChange={setTab} />
@@ -286,15 +285,16 @@ function PersonTab({ id, t, kind }: { id: string; t: string; kind: string }) {
   const [slot, setSlot] = useState<string | null>(null);
 
   if (t === 'About') {
-    const a = worker ? aboutOf(id) : null;
+    const a = aboutOf(id);
+    const since = a.since ? new Date(a.since).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) : '';
     return (
       <>
         <Card title="About">
-          <Txt s={14} c="#d9d9de">
-            {a ? a.bio : `${p.name} has posted ${p.jobs} jobs on bolo and hired ${p.hires || 0} people around ${p.area}. Usually replies within an hour.`}
+          <Txt s={14} c={a.bio ? '#d9d9de' : C.muted}>
+            {a.bio || `${f} hasn’t written a bio yet.`}
           </Txt>
         </Card>
-        {a ? (
+        {a.spec.length ? (
           <Card title="Specialties">
             {a.spec.map((x) => (
               <View key={x} style={[S.row, { gap: 10 }]}>
@@ -309,17 +309,19 @@ function PersonTab({ id, t, kind }: { id: string; t: string; kind: string }) {
           </Card>
         ) : null}
         <Card title="Trust and verification">
-          {p.verified ? <Cred icon="idcard" t="Identity verified" s="Checked by bolo" /> : null}
-          <Cred icon="phone" t="Phone verified" s="Confirmed when they joined" />
-          {worker ? <Cred icon="checkc" t={`${p.jobs} jobs completed`} s="Paid and confirmed on bolo" /> : <Cred icon="money" t="Pays on time" s={`${p.hires || 0} completed payments`} />}
-          <Cred icon="calcheck" t={`Member for ${p.years} year${p.years > 1 ? 's' : ''}`} s="Active on bolo" />
+          {p.verified ? <Cred icon="idcard" t="Identity verified" s="ID checked by a bolo reviewer" /> : <Cred icon="idcard" t="ID not verified yet" s="Ask to see ID before work starts" />}
+          <Cred icon="mail" t="Contact confirmed" s="Confirmed their email or phone when they joined" />
+          {worker ? <Cred icon="checkc" t={`${p.jobs} job${p.jobs === 1 ? '' : 's'} completed`} s="Confirmed by the client on bolo" /> : <Cred icon="checkc" t={`${p.hires || 0} people hired`} s="Jobs confirmed on bolo" />}
+          {since ? <Cred icon="calcheck" t={`On bolo since ${since}`} s="Member" /> : null}
         </Card>
       </>
     );
   }
 
   if (t === 'Services') {
-    const L = worker ? SERVICES[p.role] || SERVICES.Plumber : [];
+    const L: [string, string, string, string | undefined][] = ((profileRaw(id)?.services || []) as any[])
+      .filter((x) => x && x.pub !== false && !x.draft)
+      .map((x) => [x.skill, typeof x.price === 'number' ? `XAF ${x.price.toLocaleString('en-US')}${x.unit ? ' ' + x.unit : ''}` : String(x.price || 'Ask for a quote'), [x.desc, x.where].filter(Boolean).join(' · '), undefined]);
     if (!L.length) return <EmptyTab icon="wrench" title="No services listed" text={`${f} hasn’t listed any services with prices yet.`} action={`Message ${f}`} onAction={() => openChat(id)} />;
     return (
       <>
@@ -371,7 +373,7 @@ function PersonTab({ id, t, kind }: { id: string; t: string; kind: string }) {
   }
 
   if (t === 'Posts') {
-    const reels = REELS.map((r, i) => [r, i] as const).filter(([r]) => r.by === id);
+    const reels: (readonly [Reel, number])[] = [];
     const posts = db.POSTS.filter((x) => x.by === id && x.kind !== 'request');
     if (!reels.length && !posts.length) return <EmptyTab icon="image" title="No posts yet" text={`When ${f} shares photos or videos of their work, they’ll show here.`} />;
     return (
@@ -394,14 +396,15 @@ function PersonTab({ id, t, kind }: { id: string; t: string; kind: string }) {
 
   if (t === 'Reviews') {
     const mine: Review[] = db.REVIEWS[id] || [];
-    const sample: [string, string, number, string][] = worker
-      ? SAMPLE_REV
-      : [
-          ['edward', '1 week ago', 5, 'Clear instructions and paid right away.'],
-          ['grace', '3 weeks ago', 5, 'Lovely to work with. Everything was ready when I arrived.'],
-        ];
-    const all: RV[] = [...mine.map((r) => ({ pic: r.photo, name: r.name, time: r.time, stars: r.stars, text: r.text, tags: r.tags })), ...sample.map(([c, tm, n, x]) => ({ pic: P(c).photo, name: P(c).name, time: tm, stars: n, text: x }))];
-    const dist = [0.82, 0.12, 0.04, 0.01, 0.01];
+    const all: RV[] = mine.map((r) => ({ pic: r.photo, name: r.name, time: r.time, stars: r.stars, text: r.text, tags: r.tags }));
+    const dist = [5, 4, 3, 2, 1].map((n) => (mine.length ? mine.filter((r) => r.stars === n).length / mine.length : 0));
+    if (!mine.length)
+      return (
+        <>
+          <ReviewGate id={id} />
+          <EmptyTab icon="star" title="No reviews yet" text={`Reviews appear after someone completes a job with ${f} on bolo.`} />
+        </>
+      );
     return (
       <>
         <View style={[S.row, { gap: 18, padding: 18, borderRadius: 22, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }]}>
@@ -489,11 +492,11 @@ function PersonTab({ id, t, kind }: { id: string; t: string; kind: string }) {
           })}
         </View>
         <Txt s={16} w={8}>
-          Available times
+          Suggest a time
         </Txt>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {SL.map((x, i) => {
-            const busy = (i + day) % 3 === 0;
+            const busy = false;
             const on = slot === x;
             return (
               <Pressable key={x} disabled={busy} onPress={() => setSlot(x)} style={{ width: '23%', flexGrow: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.blue : C.s2, borderWidth: 1, borderColor: on ? C.lav : 'transparent', opacity: busy ? 0.35 : 1 }}>
@@ -504,23 +507,12 @@ function PersonTab({ id, t, kind }: { id: string; t: string; kind: string }) {
             );
           })}
         </View>
-        <View style={[S.row, { gap: 14 }]}>
-          <View style={[S.row, { gap: 6 }]}>
-            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.s2, borderWidth: 1, borderColor: C.s3 }} />
-            <Txt s={11} c={C.muted}>
-              Free
-            </Txt>
-          </View>
-          <View style={[S.row, { gap: 6, opacity: 0.5 }]}>
-            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.s3 }} />
-            <Txt s={11} c={C.muted}>
-              Booked
-            </Txt>
-          </View>
-        </View>
+        <Txt s={12} c={C.muted}>
+          {f} confirms the time when they accept your request.
+        </Txt>
       </View>
       {isW() ? (
-        <Btn variant="yellow" disabled={!slot} title={slot ? `Book ${label(day)} at ${slot}` : 'Select a time'} onPress={() => openHire(id, { when: `${label(day)}, ${slot}` })} />
+        <Btn variant="yellow" disabled={!slot} title={slot ? `Request ${label(day)} at ${slot}` : 'Select a time'} onPress={() => openHire(id, { when: `${label(day)}, ${slot}` })} />
       ) : (
         <Txt s={12} c={C.muted} center>
           To book {f} for your company, invite them to apply to a vacancy.
@@ -533,27 +525,27 @@ function CompanyTab({ id, t }: { id: string; t: string }) {
   const p = P(id);
   const b = db.BIZ_SAMPLE[id];
   const f = fname(p.name);
-  const soc: [string, string, string][] = [
-    ['globe', 'Website', b?.web || 'bolo.app'],
-    ['mail', 'Email', `jobs@${(b?.web || 'company.cm').replace(/^www\./, '')}`],
-    ['fb', 'Facebook', p.name],
-    ['linkedin', 'LinkedIn', p.name],
-  ];
+  const bx = (b || {}) as any;
+  const soc = ([
+    ['globe', 'Website', bx.web || ''],
+    ['mail', 'Email', bx.email || ''],
+    ['phone', 'Phone', bx.phone || ''],
+  ] as [string, string, string][]).filter(([, , v]) => !!v);
   if (t === 'About')
     return (
       <>
         <Card title={`About ${p.name}`}>
           <Txt s={14} c="#d9d9de">
-            {b?.about || p.about}
+            {b?.about || p.about || `${p.name} hasn’t written about the company yet.`}
           </Txt>
         </Card>
         <Card title="Details">
           <Cred icon="storefront" t={b?.sector || p.sector || 'Company'} s="Sector" />
-          <Cred icon="follow" t={`${b?.size || ''} people`} s="Company size" />
-          <Cred icon="pin" t={p.area} s="Location" />
-          <Cred icon="verified" t="Verified business" s="RCCM checked by bolo" />
+          {b?.size ? <Cred icon="follow" t={`${b.size} people`} s="Company size" /> : null}
+          {p.area ? <Cred icon="pin" t={p.area} s="Location" /> : null}
+          {p.verified ? <Cred icon="verified" t="Verified business" s="RCCM checked by bolo" /> : <Cred icon="verified" t="Not verified yet" s="bolo hasn’t checked this business’s registration" />}
         </Card>
-        <Card title="Find us online">
+        {soc.length ? <Card title="Contact">
           {soc.map(([i, l, v]) => (
             <Pressable
               key={l}
@@ -575,7 +567,7 @@ function CompanyTab({ id, t }: { id: string; t: string }) {
               <Icon name="copy" size={16} color={C.faint} />
             </Pressable>
           ))}
-        </Card>
+        </Card> : null}
       </>
     );
   if (t === 'Jobs') {
@@ -601,39 +593,12 @@ function CompanyTab({ id, t }: { id: string; t: string }) {
     );
   }
   if (t === 'Posts') {
-    const i = Object.keys(db.BIZ_SAMPLE).indexOf(id);
+    const posts = db.POSTS.filter((x) => x.by === id && x.kind !== 'request');
+    if (!posts.length) return <Empty title="No posts yet" text={`When ${f} shares updates, they’ll show here.`} />;
     return (
       <>
-        {CO_POSTS.map(([tt, scene], j) => (
-          <View key={j} style={{ padding: 14, borderRadius: 22, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, gap: 10 }}>
-            <View style={[S.row, { gap: 10 }]}>
-              <Avatar pic={p.photo} square size={36} />
-              <View style={{ flex: 1 }}>
-                <Txt s={14} w={8}>
-                  {p.name}
-                </Txt>
-                <Txt s={11} c={C.muted}>
-                  {['2h ago', 'Yesterday', '3 days ago', '1 week ago'][j % 4]}
-                </Txt>
-              </View>
-            </View>
-            <Txt s={14}>{tt}</Txt>
-            <Pict pic={'scenes/' + scene} style={{ width: '100%', aspectRatio: 16 / 10, borderRadius: 16 }} />
-            <View style={[S.row, { gap: 16 }]}>
-              <View style={[S.row, { gap: 4 }]}>
-                <Icon name="like" size={16} color={C.muted} />
-                <Txt s={12} c={C.muted}>
-                  {40 + j * 23 + i * 7}
-                </Txt>
-              </View>
-              <View style={[S.row, { gap: 4 }]}>
-                <Icon name="comment" size={16} color={C.muted} />
-                <Txt s={12} c={C.muted}>
-                  {3 + j * 2}
-                </Txt>
-              </View>
-            </View>
-          </View>
+        {posts.map((po) => (
+          <PostCard key={po.id} po={po} />
         ))}
       </>
     );
@@ -645,10 +610,9 @@ function CompanyTab({ id, t }: { id: string; t: string }) {
     ...js.map((j) => ['job', `Posted a vacancy: <b>${j.title}</b>`, j.time] as [string, string, string]),
     ...ops.map((o) => ['cap', `Published ${o.kind.toLowerCase()}: <b>${o.title}</b>`, 'This week'] as [string, string, string]),
     ...ms.map((m) => ['follow', `Started a mentorship: <b>${m.title}</b>`, 'This month'] as [string, string, string]),
-    ['checkc', `Hired <b>${Math.max(2, Math.round((p.hires || 24) / 12))} people</b> through bolo`, 'This month'],
-    ['star', `Received <b>${p.reviews} reviews</b> · ${p.rate} average`, 'All time'],
-    ['verified', 'Became a <b>verified business</b>', '2025'],
+    ...(p.verified ? [['verified', 'Is a <b>verified business</b> on bolo', ''] as [string, string, string]] : []),
   ];
+  if (!A.length) return <Empty title="No activity yet" text={`${f}’s vacancies, programs and mentorships will show here.`} />;
   return (
     <Card>
       {A.map(([ic, tt, wh], n) => (

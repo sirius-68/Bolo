@@ -5,7 +5,6 @@ import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../../src/data/db';
-import { EXPERT_LIST } from '../../src/data/experts';
 import { activeExBookings, expertById } from '../../src/logic/experts';
 import { CourseTile } from '../../src/components/CourseListing';
 import { openSession } from '../../src/components/ExpertUI';
@@ -101,7 +100,7 @@ export default function Career() {
           </Txt>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
             <View style={{ flexDirection: 'row' }}>
-              {EXPERT_LIST.slice(0, 4).map((e, i) => (
+              {db.EXPERTS.slice(0, 4).map((e, i) => (
                 <Avatar key={e.id} pic={e.pic} size={34} style={{ marginLeft: i ? -8 : 0, borderWidth: 2, borderColor: C.blue }} />
               ))}
             </View>

@@ -1,10 +1,12 @@
 import { router } from 'expo-router';
 import { submitDocs } from '../logic/verify';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { db, Service, uid } from '../data/db';
-import { CATS, CT, DOCS, EDU, FOLLOWERS, JOB_HIST, NB, QUIZ, UNITS, WHERE, catIcon } from '../data/catalog';
+import { CATS, CT, DOCS, EDU, NB, QUIZ, UNITS, WHERE, catIcon } from '../data/catalog';
+import { MONEY_LIVE } from '../logic/money';
+import { myFollowers } from '../logic/server';
 import { OptRow, AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Note, SelectBox, Seg, StatusPill, SwitchRow, Txt, Kpis, CoTag } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { afterSheet, pick, sheet, SheetTitle, toast, confirm } from '../ui/overlay';
@@ -127,6 +129,7 @@ export function openSvcMenu(id: string) {
   });
 }
 export function openBoost(id: string) {
+  if (!MONEY_LIVE) return toast('Boosts start once payments are live');
   sheet.show(() => <Boost id={id} />);
 }
 function Boost({ id }: { id: string }) {
@@ -595,13 +598,17 @@ function Follows({ tab0 }: { tab0: 'Followers' | 'Following' }) {
   const [tab, setTab] = useState(tab0);
   const [q, setQ] = useState('');
   const [, f] = useState(0);
-  const src = tab === 'Followers' ? FOLLOWERS : db.followed;
+  const [followers, setFollowers] = useState<string[]>([]);
+  useEffect(() => {
+    void myFollowers().then(setFollowers);
+  }, []);
+  const src = tab === 'Followers' ? followers : db.followed;
   const L = src.filter((id) => P(id)?.name && (!q || P(id).name.toLowerCase().includes(q.toLowerCase())));
   return (
     <View style={{ gap: 10 }}>
       <Seg
         items={[
-          ['Followers', `Followers ${FOLLOWERS.length}`],
+          ['Followers', `Followers ${followers.length}`],
           ['Following', `Following ${db.followed.length}`],
         ]}
         value={tab}
@@ -653,8 +660,8 @@ export function openJobHistory() {
 }
 function JobHistory() {
   const [flt, setF] = useState<'All' | 'Completed' | 'In progress'>('All');
-  const live = db.BOOKINGS.filter((b) => b.worker === 'me').map((b) => [b.title, b.client, b.state === 'confirmed' ? 'Today' : b.when, b.price, b.state === 'confirmed' ? 5 : 0, b.state] as [string, string, string, string, number, string]);
-  const all = [...live, ...JOB_HIST.map((x) => [...x, 'confirmed'] as [string, string, string, string, number, string])];
+  const live = db.BOOKINGS.filter((b) => b.worker === 'me').map((b) => [b.title, b.client, b.state === 'confirmed' ? b.log.confirmed || 'Done' : b.when, b.price, 0, b.state] as [string, string, string, string, number, string]);
+  const all = live;
   const done = all.filter((x) => x[5] === 'confirmed');
   const L = all.filter((x) => flt === 'All' || (flt === 'Completed' ? x[5] === 'confirmed' : x[5] !== 'confirmed'));
   const earn = done.reduce((a, x) => a + budgetNum(x[3]), 0);
@@ -666,7 +673,7 @@ function JobHistory() {
       <Kpis
         items={[
           [done.length, 'Jobs done'],
-          [Math.round(earn / 1000) + 'k', 'XAF earned'],
+          [Math.round(earn / 1000) + 'k', 'XAF agreed'],
           [avg, 'Avg rating'],
         ]}
       />
@@ -697,7 +704,7 @@ function JobHistory() {
               <Txt s={13} w={8}>
                 {pr}
               </Txt>
-              <StatusPill kind={st === 'confirmed' ? 'acc' : 'wait'} text={st === 'confirmed' ? 'Paid' : st === 'done' ? 'Awaiting confirm' : st === 'booked' ? 'Upcoming' : 'In progress'} />
+              <StatusPill kind={st === 'confirmed' ? 'acc' : 'wait'} text={st === 'confirmed' ? 'Done' : st === 'done' ? 'Awaiting confirm' : st === 'booked' ? 'Upcoming' : 'In progress'} />
             </View>
           </View>
         ))

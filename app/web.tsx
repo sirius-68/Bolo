@@ -12,6 +12,7 @@ import { db } from '../src/data/db';
 import { useLive } from '../src/logic/live';
 import { domainOf, isSavedCourse, priceLabel, toggleSaveCourse } from '../src/logic/listings';
 import { openAbout } from '../src/components/CourseListing';
+import { openReport } from '../src/sheets/safety';
 
 /** A course's own website, opened inside bolo. Only https pages load here; anything else opens outside. */
 export default function Web() {
@@ -106,7 +107,7 @@ export default function Web() {
         <OptRow icon="globe" bg={C.s2} iconColor={C.text} title="Open in browser" onPress={() => (sheet.close(), outside())} />
         <OptRow icon="share" bg={C.s2} iconColor={C.text} title="Share" onPress={() => (sheet.close(), Share.share({ message: `${title ? title + ': ' : ''}${cur || url}` }).catch(() => {}))} />
         <OptRow icon="file" bg={C.s2} iconColor={C.text} title="Copy link" onPress={() => (Clipboard.setStringAsync(cur || url).catch(() => {}), sheet.close('Link copied'))} />
-        {c && !c.mine ? <OptRow icon="flag" bg={C.s2} iconColor={C.err} title="Report this listing" sub="Wrong link, scam or misleading" onPress={() => sheet.close('Thanks. Our team will check this listing')} /> : null}
+        {c && !c.mine ? <OptRow icon="flag" bg={C.s2} iconColor={C.err} title="Report this listing" sub="Wrong link, scam or misleading" onPress={() => (sheet.close(), afterSheet(() => openReport('course', c.id)))} /> : null}
       </View>
     ));
   }

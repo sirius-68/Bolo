@@ -170,6 +170,7 @@ export default function Feed() {
 
   const render = ({ item }: { item: Item }) => {
     if (item.sp === 'compose') return <Composer />;
+    if (item.sp === 'reels' && !REELS.length) return null;
     if (item.sp === 'reels')
       return (
         <View style={{ marginBottom: 18 }}>

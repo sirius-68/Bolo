@@ -1,6 +1,6 @@
 /* Shared helpers and selectors over the data model. */
 import { db, ui, Person, Post, Thread, Notif, MyBiz, Mentorship, Opp } from '../data/db';
-import { ABOUT_EDWARD, CATS, lvOf, SKILLS } from '../data/catalog';
+import { CATS, lvOf, SKILLS } from '../data/catalog';
 import { logoPic } from '../ui/kit';
 
 /* ---------------- formatting ---------------- */
@@ -59,10 +59,18 @@ export function add<T>(a: T[], x: T) {
 
 /* ---------------- people & accounts ---------------- */
 export const isW = () => db.user.role === 'worker';
+/** A person by app id. Someone not loaded yet shows a neutral placeholder (and is fetched), never a crash. */
 export const P = (id: string): Person => {
   if (id === 'me') return me();
-  return db.P[id];
+  const p = db.P[id];
+  if (p || !id) return p;
+  const { ensurePeople, ensureBiz, facePic } = require('./server');
+  if (id.startsWith('b_')) void ensureBiz([id.slice(2)]).then(() => require('./live').bump());
+  else if (!id.startsWith('g_')) void ensurePeople([id]).then(() => require('./live').bump());
+  return { name: 'bolo member', role: 'Member', years: 0, rate: 0, dist: '', area: '', photo: facePic('?', id), jobs: 0, reviews: '0', followers: 0 } as Person;
 };
+/** What the person wrote on their profile (bio, experience, services…), when loaded from the server. */
+export const profileRaw = (id: string): any => require('./server').PROFILE_RAW[id];
 export const curBiz = (): MyBiz | null => db.BIZ.list.find((b) => b.id === db.BIZ.active) || null;
 export const bizName = (b?: MyBiz | null) => (b && b.name ? b.name : 'Your business');
 export const bizInitials = (b?: MyBiz | null) =>
@@ -113,7 +121,7 @@ export const WORKERS = () => Object.keys(db.P).filter((id) => !db.P[id].client &
 export const isGroup = (id: string) => !!db.P[id]?.group;
 export const isBiz = (id: string) => !!db.P[id]?.biz;
 /** Chat side: true when I'm the one hiring in this conversation. */
-export const hiringSide = (id: string) => !P(id)?.client;
+export const hiringSide = (id: string): boolean => require('./work').hiringIn(id);
 
 export function ensureSkillList() {
   const u = db.user;
@@ -187,17 +195,12 @@ export function mOwner(m: Mentorship): { name: string; photo: string; sq?: boole
 }
 
 /* ---------------- about / profile content ---------------- */
+/** About a person: only what they wrote themselves (nothing generated). */
 export function aboutOf(id: string) {
-  const p = P(id);
-  if (id === 'edward') return ABOUT_EDWARD;
-  return {
-    bio: `${p.role} with ${p.years} years of experience serving homes and businesses around ${p.area}. Reliable, on time and focused on doing the job right the first time.`,
-    spec: [`${p.role} work for homes and businesses`, 'Emergency call-outs', 'Free on-site estimates', 'Clear pricing before I start'],
-    cred: [
-      ['Verified by bolo', 'Identity and skills checked'],
-      [`${p.jobs} jobs completed`, 'On bolo since 2023'],
-    ] as [string, string][],
-  };
+  const r = profileRaw(id) || {};
+  const list: { n?: string; c?: string }[] = r.skill_list || [];
+  const spec = [...new Set([...list.map((x) => x.n || x.c || ''), ...(r.skills || [])].filter(Boolean))].slice(0, 8) as string[];
+  return { bio: (r.bio || P(id)?.about || '') as string, spec, cred: [] as [string, string][], since: r.created_at as string | undefined };
 }
 
 /* ---------------- search filters ---------------- */

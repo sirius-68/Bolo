@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
@@ -9,8 +9,10 @@ import { Icon } from '../ui/Icon';
 import { afterSheet, sheet, SheetTitle, toast } from '../ui/overlay';
 import { C, R, S } from '../ui/theme';
 import { P, ORDER, THREADS, WORKERS, thread, hiringSide, mySkill, fname, isW, digits } from '../logic/core';
-import { deleteChat, deleteMsg, forwardMsg, msgPreview, openThread, sendLocation, sendQuote, sendText, shareContact, sendPhoto, sendFile } from '../logic/work';
+import { blockPerson, deleteChat, deleteMsg, forwardMsg, msgPreview, muteChat, openThread, sendLocation, sendQuote, sendText, shareContact, sendPhoto, sendFile } from '../logic/work';
 import { createGroup, dmBlocked, requestDM, groupOf } from '../logic/career';
+import { searchPeople } from '../logic/server';
+import { openReport } from './safety';
 import { mOwner } from '../logic/core';
 import { bump } from '../logic/live';
 import { pickDocument, pickImage } from '../logic/media';
@@ -126,7 +128,7 @@ export function openAttach(id: string) {
         onPress={() =>
           afterSheet(async () => {
             const d = await pickDocument(['*/*']);
-            if (d) sendFile(id, d.name, d.size);
+            if (d) sendFile(id, d.name, d.size, d.uri, d.mime);
           })
         }
       />
@@ -232,7 +234,10 @@ export function openChatMenu(id: string) {
         }}
       />
       <OptRow icon="share" bg="#fff" title={`Share ${p.group ? 'group' : 'contact'}`} chev={false} onPress={() => openForward(id, (to) => shareContact(id, to))} />
-      <OptRow icon="trash" bg={C.errSoft} title="Delete chat" danger chev={false} onPress={() => (sheet.close(), deleteChat(id))} />
+      <OptRow icon="bell" bg={C.s2} iconColor={C.text} title={th.muted ? 'Unmute' : 'Mute notifications'} chev={false} onPress={() => (sheet.close(th.muted ? 'Unmuted' : 'Muted'), muteChat(id, !th.muted))} />
+      {!p.group ? <OptRow icon="flag" bg={C.s2} iconColor={C.err} title={`Report ${p.name.split(' ')[0]}`} chev={false} onPress={() => (sheet.close(), afterSheet(() => openReport(id.startsWith('b_') ? 'business' : 'profile', id.startsWith('b_') ? id.slice(2) : id)))} /> : null}
+      {!p.group && !id.startsWith('b_') ? <OptRow icon="x" bg={C.s2} iconColor={C.text} title={`Block ${p.name.split(' ')[0]}`} chev={false} onPress={() => (sheet.close(), blockPerson(id))} /> : null}
+      <OptRow icon="trash" bg={C.errSoft} title="Delete chat" sub="Hides it on this phone" danger chev={false} onPress={() => (sheet.close(), deleteChat(id))} />
     </View>
   ));
 }
@@ -243,9 +248,16 @@ export function openNewChat() {
 }
 function NewChat() {
   const [q, setQ] = useState('');
+  const [, force] = useState(0);
   const ql = q.toLowerCase();
+  // anyone on bolo, not only the people already loaded
+  useEffect(() => {
+    if (ql.trim().length < 2) return;
+    const t = setTimeout(() => searchPeople(ql.trim()).then(() => force((x) => x + 1)), 300);
+    return () => clearTimeout(t);
+  }, [ql]);
   const L = Object.keys(db.P)
-    .filter((id) => !db.P[id].group && (!ql || db.P[id].name.toLowerCase().includes(ql) || db.P[id].role.toLowerCase().includes(ql)))
+    .filter((id) => id !== 'me' && !db.P[id].group && db.P[id].name !== 'Deleted account' && (!ql || db.P[id].name.toLowerCase().includes(ql) || db.P[id].role.toLowerCase().includes(ql)))
     .slice(0, 40);
   return (
     <View style={{ gap: 8 }}>
@@ -357,9 +369,9 @@ function NewGroup({ g }: { g: NG }) {
         variant="yellow"
         title="Create group"
         disabled={!g.title.trim()}
-        onPress={() => {
-          const gid = createGroup({ title: g.title, desc: g.desc, rules: g.rules, color: g.color, members: g.sel });
-          afterSheet(() => openChat(gid), 250);
+        onPress={async () => {
+          const gid = await createGroup({ title: g.title, desc: g.desc, rules: g.rules, color: g.color, members: g.sel });
+          if (gid) afterSheet(() => openChat(gid), 250);
         }}
       />
     </View>

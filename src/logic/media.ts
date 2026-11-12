@@ -91,11 +91,13 @@ export async function takePhoto(): Promise<string | null> {
     return null;
   }
 }
-export async function pickDocument(types: string[] = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']): Promise<{ name: string; size: number } | null> {
+export async function pickDocument(types: string[] = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']): Promise<{ name: string; size: number; uri: string; mime?: string } | null> {
   try {
-    const r = await DocumentPicker.getDocumentAsync({ type: types, copyToCacheDirectory: false });
+    // copied into the app's cache so it can be uploaded (Android content:// links can't be read directly)
+    const r = await DocumentPicker.getDocumentAsync({ type: types, copyToCacheDirectory: true });
     if (r.canceled || !r.assets?.length) return null;
-    return { name: r.assets[0].name, size: r.assets[0].size || 120 * 1024 };
+    const a = r.assets[0];
+    return { name: a.name, size: a.size || 120 * 1024, uri: a.uri, mime: a.mimeType };
   } catch {
     toast('Couldn’t open your files');
     return null;

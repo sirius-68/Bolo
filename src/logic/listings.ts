@@ -2,7 +2,10 @@
    Tapping a course opens that site inside bolo. Anyone can list a course here with a quick setup;
    the web version of bolo is the better place to manage many courses. */
 import { router } from 'expo-router';
-import { db, makeDb, uid, Course } from '../data/db';
+import { db, uid, Course } from '../data/db';
+import { supabase } from '../lib/supabase';
+import { friendly } from './remote';
+import { saveToggle } from './work';
 import { bump } from './live';
 import { toast } from '../ui/overlay';
 import { bizName, curBiz, isW, myPhoto } from './core';
@@ -32,6 +35,7 @@ export const domainOf = (u?: string) =>
 export function openCourseSite(c: Course) {
   if (!c.url) return false;
   c.views = (c.views || 0) + 1;
+  if (!c.id.startsWith('c_tmp')) void supabase.rpc('count_listing_view', { p_id: c.id });
   const R = recent();
   const i = R.indexOf(c.id);
   if (i >= 0) R.splice(i, 1);
@@ -44,12 +48,7 @@ const recent = () => (((db as any).CRECENT = (db as any).CRECENT || []) as strin
 export const recentCourses = () => recent().map((id) => db.COURSES.find((c) => c.id === id)).filter((c): c is Course => !!c && !!c.url);
 export const isSavedCourse = (id: string) => db.savedCourses.includes(id);
 export function toggleSaveCourse(id: string) {
-  const L = db.savedCourses;
-  const i = L.indexOf(id);
-  if (i >= 0) L.splice(i, 1);
-  else L.unshift(id);
-  toast(i >= 0 ? 'Removed from saved courses' : 'Saved. Find it in Courses → Saved');
-  bump();
+  saveToggle('savedCourses', id, 'Course');
 }
 export const savedCourses = () => db.savedCourses.map((id) => db.COURSES.find((c) => c.id === id)).filter(Boolean) as Course[];
 
@@ -91,38 +90,47 @@ export function saveListing(f: ListingForm, id?: string): Course {
     desc: f.desc.trim(),
   };
   let c = id ? db.COURSES.find((x) => x.id === id) : undefined;
+  const isNew = !c;
   if (c) Object.assign(c, fields);
   else {
-    c = { id: uid('c'), type: 'Skill', prof: '', skills: [], mo: 0, mine: 1, biz: tutor ? undefined : db.BIZ.active, views: 0, ...fields } as Course;
+    c = { id: uid('c_tmp'), type: 'Skill', prof: '', skills: [], mo: 0, mine: 1, biz: tutor ? undefined : db.BIZ.active, views: 0, ...fields } as Course;
     db.COURSES.unshift(c);
   }
-  toast(id ? 'Listing updated' : 'Your course is listed in Career → Courses');
   bump();
+  const course = c;
+  (async () => {
+    const biz = tutor ? null : curBiz();
+    const row = { url: fields.url, title: fields.title, business_id: biz?.remoteId || null, data: { prov: fields.prov, cat: fields.cat, lv: fields.lv, dur: fields.dur, fmt: fields.fmt, reg: fields.reg, price: fields.price, desc: fields.desc, by: name } };
+    const res = isNew ? await supabase.from('course_listings').insert({ ...row, owner_id: db.uid }).select('id').single() : await supabase.from('course_listings').update(row).eq('id', course.id).select('id').single();
+    if (res.error) {
+      if (isNew) db.COURSES = db.COURSES.filter((x) => x !== course);
+      bump();
+      return toast(friendly(res.error));
+    }
+    course.id = res.data.id;
+    toast(id ? 'Listing updated' : 'Your course is listed in Career → Courses');
+    bump();
+  })();
   return c;
 }
 export function removeListing(id: string) {
   const i = db.COURSES.findIndex((c) => c.id === id && c.mine);
-  if (i >= 0) db.COURSES.splice(i, 1);
+  if (i < 0) return;
+  const [c] = db.COURSES.splice(i, 1);
   const s = db.savedCourses.indexOf(id);
   if (s >= 0) db.savedCourses.splice(s, 1);
   toast('Listing removed');
   bump();
-}
-
-/** Saves from before courses were listings: refresh the sample courses (now with their websites),
-    drop the in-app test classes, and keep your own listings. */
-export function ensureCourseListings() {
-  const fresh = makeDb().COURSES;
-  const mine = db.COURSES.filter((c) => c.mine);
-  const stale = db.COURSES.some((c) => !c.mine && !c.url);
-  if (!stale) return;
-  db.COURSES = [...mine, ...fresh];
-  // ratings that were simulated for the old sample courses
-  const R = (db as any).CREVIEWS as Record<string, { by: string }[]> | undefined;
-  if (R) Object.keys(R).forEach((k) => (R[k] = R[k].filter((r) => r.by === 'me')));
-  db.savedCourses = db.savedCourses.filter((id) => db.COURSES.some((c) => c.id === id));
-  // enrolments were for in-app classes, which are gone
-  db.myLearning = [];
+  supabase
+    .from('course_listings')
+    .delete()
+    .eq('id', id)
+    .then(({ error }) => {
+      if (!error) return;
+      db.COURSES.splice(i, 0, c);
+      bump();
+      toast(friendly(error));
+    });
 }
 
 /** "XAF 25,000", "Free" or the site's own note ("See price on site"). */

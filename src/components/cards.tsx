@@ -2,11 +2,13 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 import { db, Post, Opp, Mentorship, Reel } from '../data/db';
 import { catIcon } from '../data/catalog';
-import { Avatar, CoTag, Pict, Pill, Rate, StatusPill, Txt, Verified, Meta, tap } from '../ui/kit';
+import { Avatar, CoTag, OptRow, Pict, Pill, Rate, StatusPill, Txt, Verified, Meta, tap } from '../ui/kit';
+import { afterSheet, sheet, SheetTitle } from '../ui/overlay';
+import { openReport } from '../sheets/safety';
 import { Icon } from '../ui/Icon';
 import { C, R, S } from '../ui/theme';
 import { P, isW, k, oppBiz, mOwner, has, WORKERS, fname, myPhoto, meAs } from '../logic/core';
-import { follow, hireState, isSaved, likePost, saveToggle, toggleSave } from '../logic/work';
+import { blockPerson, closeJob, deletePost, follow, hireState, isSaved, likePost, saveToggle, toggleSave } from '../logic/work';
 import { openProfile } from '../logic/nav';
 import { openJob, openHire, openComments, sharePost, openMedia, shareJob } from '../sheets/work';
 import { commentCount } from '../logic/comments';
@@ -168,7 +170,7 @@ export function ReqPost({ po }: { po: Post }) {
   const mine = !!po.mine;
   const c = mine ? meAs(po.as, po.biz) : P(po.client!);
   const off = db.myOffers[po.id];
-  const n = mine ? po.offerList!.length : (po.offers || 0) + (off ? 1 : 0);
+  const n = mine ? (po.offerList || []).length : Math.max(po.offers || 0, off ? 1 : 0);
   const saved = has(db.savedJobs, po.id);
   const isBizPost = !!c?.biz && !mine;
   const btn = mine
@@ -302,9 +304,10 @@ export function PostCard({ po }: { po: Post }) {
           </View>
           <Meta parts={self ? [p.area, po.time] : [<Rate key="r" r={p.rate} />, p.dist, po.time]} />
         </Pressable>
-        {self ? (
-          <StatusPill text="You" />
-        ) : isW() ? (
+        <Pressable accessibilityLabel="Post options" hitSlop={8} onPress={() => openPostMenu(po)} style={{ width: 30, height: 30, alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="dots" size={18} color={C.muted} />
+        </Pressable>
+        {self ? null : isW() ? (
           <Pill title={following ? 'Following' : 'Follow'} on={following} onPress={() => follow(po.by!)} />
         ) : (
           <Pill title={hireLabel(po.by!)} on={hireState(po.by!) !== 'none'} onPress={() => openHire(po.by!)} />
@@ -385,7 +388,7 @@ export function PostCard({ po }: { po: Post }) {
         >
           <Icon name="like" size={18} color="#fff" />
           <Txt s={12} w={7}>
-            {k((po.likes || 0) + (liked ? 1 : 0))}
+            {k(po.likes || 0)}
           </Txt>
         </Pressable>
         <Pressable accessibilityLabel="Comments" onPress={() => openComments(po.id)} style={[S.row, { gap: 6, height: 36, paddingHorizontal: 12, borderRadius: 999, backgroundColor: C.s2 }]}>
@@ -404,6 +407,25 @@ export function PostCard({ po }: { po: Post }) {
       </View>
     </View>
   );
+}
+
+/** Your post: delete it. Someone else's: report it or block them. */
+export function openPostMenu(po: Post) {
+  const mine = po.by === 'me' || po.client === 'me' || !!po.mine;
+  const who = po.by || po.client || '';
+  sheet.show(() => (
+    <View style={{ gap: 8 }}>
+      <SheetTitle>{mine ? 'Your post' : 'Post options'}</SheetTitle>
+      {mine ? (
+        <OptRow icon="trash" bg="#3a1a1a" iconColor={C.err} danger title={po.kind === 'request' ? 'Close this job' : 'Delete post'} sub="It disappears for everyone" onPress={() => (sheet.close(), po.kind === 'request' ? closeJob(po.id) : deletePost(po.id))} />
+      ) : (
+        <>
+          <OptRow icon="flag" bg={C.s2} iconColor={C.err} title="Report this post" sub="Spam, scam, fake or inappropriate" onPress={() => (sheet.close(), afterSheet(() => openReport(po.kind === 'request' ? 'job' : 'post', po.id)))} />
+          {who && !who.startsWith('b_') ? <OptRow icon="x" bg={C.s2} iconColor={C.text} title={`Block ${P(who)?.name || 'this person'}`} sub="You won’t see their posts and they can’t message you" onPress={() => (sheet.close(), blockPerson(who))} /> : null}
+        </>
+      )}
+    </View>
+  ));
 }
 
 /* ------------------------- reel thumbnail ------------------------- */
