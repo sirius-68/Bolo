@@ -244,6 +244,15 @@ export function postFrom(r: any): Post {
   if (old?.booked) po.booked = old.booked;
   return po;
 }
+/** One post that isn't in the feed yet (opened from a notification or a link). */
+export async function loadPost(id: string) {
+  const { data } = await supabase.from('post_feed').select(POST_COLS).eq('id', id).maybeSingle();
+  if (!data) return;
+  await Promise.all([ensurePeople([data.author_id]), ensureBiz([data.business_id])]);
+  if (!db.POSTS.some((p) => p.id === id)) db.POSTS.push(postFrom(data));
+  if (data.author_id === db.uid) await loadApplications();
+  bump();
+}
 async function loadPosts() {
   const [recent, mine] = await Promise.all([
     supabase.from('post_feed').select(POST_COLS).neq('status', 'closed').order('created_at', { ascending: false }).limit(300),
@@ -666,7 +675,7 @@ function goFrom(t: any): Notif['go'] {
     const c = db.CONV[t.id];
     return c ? { k: 'chat', id: c.key } : { k: 'notifs' };
   }
-  if (t.k === 'profile') return { k: 'profile', id: L(t.id) };
+  if (t.k === 'profile') return t.id === db.uid ? { k: 'me' } : { k: 'profile', id: L(t.id) };
   if (t.k === 'verify') return { k: 'me' };
   return t;
 }

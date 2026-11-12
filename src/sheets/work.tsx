@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MONEY_LIVE } from '../logic/money';
+import { loadPost } from '../logic/server';
 import { Pressable, Share, View } from 'react-native';
 import * as Linking from 'expo-linking';
 import { db, Post, CvFile } from '../data/db';
@@ -25,6 +26,7 @@ import { openPro, switchRole } from './account';
 /* Job / vacancy sheet                                                    */
 /* ====================================================================== */
 export function openJob(id: string, stage?: string) {
+  if (!postById(id)) void loadPost(id);
   sheet.show(() => <JobSheet id={id} initialStage={stage} />, { tag: 'job:' + id, full: true });
 }
 

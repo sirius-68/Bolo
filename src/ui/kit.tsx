@@ -797,7 +797,14 @@ export function Empty({ title, text, children, style }: { title: string; text?: 
 export function Verified({ size = 16 }: { size?: number }) {
   return <Icon name="verified" size={size} color={C.yellow} style={{ marginLeft: 4 }} />;
 }
+/** A rating, or "New" for someone without reviews yet. */
 export function Rate({ r, s = 12, c }: { r: number | string; s?: number; c?: string }) {
+  if (!Number(r))
+    return (
+      <Txt s={s} w={7} c={c || C.lav}>
+        New
+      </Txt>
+    );
   return (
     <View style={[S.row, { gap: 3 }]}>
       <Txt s={s} w={8} c={c}>

@@ -118,7 +118,7 @@ export function meAs(as?: string, bizId?: string | number | null): Person {
   return { ...me(), name: u.name || 'You', role: mySkill(), photo: myPhoto(), pin: myPhoto(), client: undefined, biz: undefined, area: myCity(), verified: 1 };
 }
 /** Other people you can hire (not clients, businesses or groups). */
-export const WORKERS = () => Object.keys(db.P).filter((id) => !db.P[id].client && !db.P[id].group && id !== 'me');
+export const WORKERS = () => Object.keys(db.P).filter((id) => id !== 'me' && !db.P[id].client && !db.P[id].group && db.P[id].name !== 'Deleted account' && !require('./server').isBlocked(id));
 export const isGroup = (id: string) => !!db.P[id]?.group;
 export const isBiz = (id: string) => !!db.P[id]?.biz;
 /** Chat side: true when I'm the one hiring in this conversation. */
@@ -169,7 +169,11 @@ export const openJobs = () =>
     (a, b) => (+db.user.skills.includes(b.cat!) - +db.user.skills.includes(a.cat!)) || ((b.urgent ? 1 : 0) - (a.urgent ? 1 : 0)),
   );
 export const listJobs = () => db.POSTS.filter((p) => p.kind === 'request' && !p.mine && p.client !== 'me');
-export const listPeople = () => WORKERS().sort((a, b) => db.P[b].rate - db.P[a].rate);
+/** People you can hire: members who list at least one skill, nearest first (then best rated). */
+export const listPeople = () =>
+  WORKERS()
+    .filter((id) => (db.P[id].skills || []).length)
+    .sort((a, b) => (kmOf(db.P[a].dist) || 999) - (kmOf(db.P[b].dist) || 999) || db.P[b].rate - db.P[a].rate);
 export const myVacancies = () => db.POSTS.filter((p) => p.mine && p.as === 'business' && p.biz === db.BIZ.active);
 export const myPersonalJobs = () => db.POSTS.filter((p) => p.mine && p.as !== 'business');
 export const myOpps = () => db.OPPS.filter((o) => o.mine && o.biz === db.BIZ.active);

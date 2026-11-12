@@ -43,9 +43,6 @@ export function RecCard({ id, i }: { id: string; i: number }) {
   const p = P(id);
   const alt = i % 2 === 1;
   const bg = alt ? C.lav : C.yellow;
-  const others = WORKERS()
-    .filter((x) => x !== id)
-    .slice(i % 10, (i % 10) + 3);
   const saved = has(db.saved, id);
   const st = hireState(id);
   return (
@@ -62,7 +59,7 @@ export function RecCard({ id, i }: { id: string; i: number }) {
           <View style={[S.row, { gap: 3, opacity: 0.7 }]}>
             <Icon name="pin" size={12} color="#000" />
             <Txt s={11} w={6} c="#000" lines={1}>
-              {p.area} · {p.dist}
+              {[p.area, p.dist].filter(Boolean).join(' · ') || 'Location not shared'}
             </Txt>
           </View>
         </View>
@@ -74,7 +71,7 @@ export function RecCard({ id, i }: { id: string; i: number }) {
         {p.role}
       </Txt>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-        {[`${p.years} years`, p.tag, p.rate >= 4.7 ? 'Top rated' : p.verified ? 'Verified' : null]
+        {[p.years ? `${p.years} years` : null, p.tag, p.rate >= 4.7 && Number(p.reviews) >= 3 ? 'Top rated' : p.verified ? 'Verified' : null]
           .filter(Boolean)
           .map((t) => (
             <View key={t as string} style={{ height: 26, paddingHorizontal: 10, borderRadius: 999, backgroundColor: 'rgba(0,0,0,.08)', justifyContent: 'center' }}>
@@ -87,19 +84,16 @@ export function RecCard({ id, i }: { id: string; i: number }) {
       <View style={{ height: 1.5, backgroundColor: 'rgba(0,0,0,.12)', marginTop: 14, marginBottom: 12 }} />
       <View style={[S.row, { gap: 8 }]}>
         <View style={[S.row, { flex: 1 }]}>
-          {others.map((o, j) => (
-            <Avatar key={o} pic={P(o).pin} size={26} ring={bg} style={{ marginLeft: j ? -8 : 0 }} />
-          ))}
-          <Txt s={10} w={7} c="#000" style={{ opacity: 0.7, marginLeft: 6, lineHeight: 12 }}>
+          <Txt s={10} w={7} c="#000" style={{ opacity: 0.7, lineHeight: 12 }}>
             {p.reviews}
             {'\n'}reviews
           </Txt>
         </View>
         <View style={[S.row, { gap: 3 }]}>
           <Txt s={15} w={8} c="#000">
-            {p.rate}
+            {p.rate || 'New'}
           </Txt>
-          <Icon name="star" size={14} color="#000" />
+          {p.rate ? <Icon name="star" size={14} color="#000" /> : null}
         </View>
         <Pill title={hireLabel(id)} kind="black" on={st !== 'none'} onPress={() => openHire(id)} />
       </View>
@@ -470,8 +464,8 @@ export function PersonRow({ id }: { id: string }) {
           </Txt>
           {p.verified ? <Verified /> : null}
         </View>
-        <Meta parts={[p.role, `${p.years} yrs`, p.tag]} />
-        <Meta parts={[<Rate key="r" r={p.rate} />, `${p.area} · ${p.dist}`]} />
+        <Meta parts={[p.role, p.years ? `${p.years} yrs` : null, p.tag]} />
+        <Meta parts={[<Rate key="r" r={p.rate} />, p.area, p.dist]} />
       </View>
       <View style={{ alignItems: 'flex-end', gap: 8 }}>
         <Pressable accessibilityLabel={saved ? `Unsave ${p.name}` : `Save ${p.name}`} hitSlop={6} onPress={() => toggleSave(id)} style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: saved ? C.yellow : C.s2, alignItems: 'center', justifyContent: 'center' }}>

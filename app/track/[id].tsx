@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +20,7 @@ import { db, Booking } from '../../src/data/db';
 import { bookingAmt } from '../../src/logic/wallet';
 import { openEscrowInfo } from '../../src/sheets/wallet';
 import { MONEY_LIVE } from '../../src/logic/money';
+import { refreshBooking } from '../../src/logic/server';
 import { xaf } from '../../src/logic/core';
 
 const STEPS: [string, string, string][] = [
@@ -67,6 +68,10 @@ export default function Track() {
   const ins = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const b = bk(id);
+  // opened from a notification before the booking was loaded
+  useEffect(() => {
+    if (id && !bk(id)) void refreshBooking(id);
+  }, [id]);
   if (!b)
     return (
       <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: ins.top, padding: 20 }}>
