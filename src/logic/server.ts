@@ -904,11 +904,36 @@ export const refreshMine = async () => (await loadMine(), bump());
 
 let channel: RealtimeChannel | null = null;
 /** Live updates: new messages, read receipts, bookings, the worker's position, offers and notifications. */
+let wantLive = false;
+let dropped = false;
+let retry: any = null;
+/** The live connection dropped (bad network, long sleep, expired session): connect again and catch up. */
+function restartSoon() {
+  if (retry || !wantLive) return;
+  dropped = true;
+  retry = setTimeout(() => {
+    retry = null;
+    if (!wantLive) return;
+    const c = channel;
+    channel = null;
+    if (c) void supabase.removeChannel(c);
+    startRealtime();
+  }, 4000);
+}
+/** When the app comes back to the front: make sure live updates are still connected. */
+export function checkRealtime() {
+  if (!wantLive) return;
+  if (!channel) return startRealtime();
+  const st = (channel as any).state;
+  if (st !== 'joined' && st !== 'joining') restartSoon();
+}
 export function startRealtime() {
   if (!db.uid || channel) return;
+  wantLive = true;
   const me = db.uid;
-  channel = supabase
-    .channel('bolo-' + me)
+  const ch = supabase.channel('bolo-' + me);
+  channel = ch;
+  ch
     .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, async (e: any) => {
       const m = e.new;
       if (!m?.conversation_id) return;
@@ -969,9 +994,23 @@ export function startRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => {
       void loadApplications().then(bump);
     })
-    .subscribe();
+    .subscribe((status: string) => {
+      if (ch !== channel) return; // an old connection being closed
+      if (status === 'SUBSCRIBED') {
+        // anything that happened while we were disconnected
+        if (dropped) {
+          dropped = false;
+          void loadAll();
+        }
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') restartSoon();
+    });
 }
 export function stopRealtime() {
-  if (channel) supabase.removeChannel(channel);
+  wantLive = false;
+  dropped = false;
+  if (retry) clearTimeout(retry);
+  retry = null;
+  const c = channel;
   channel = null;
+  if (c) void supabase.removeChannel(c);
 }
