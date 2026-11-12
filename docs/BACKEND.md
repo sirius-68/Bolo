@@ -76,6 +76,14 @@ select id, 'owner' from auth.users where email = '<your login email>';
 | 0003 foundations | admins and an append-only audit log, rate limits, blocks, reports (the moderation queue), ID and business verification with a private documents bucket, push tokens, private exact location with a public ~1 km area, account deletion, data export, app config (minimum app version, maintenance switch) |
 | 0004 marketplace | posts and jobs (with ~500 m job location), likes, saves, follows, offers/applications, chat (1-to-1, business and group, private files bucket), bookings with each step checked on the server, live location while the worker is on the way, reviews after confirmed jobs, course listings and their ratings, internships/programs and applications, mentorships with their group chat, career experts (approved by bolo), realtime on chat, bookings, location, offers and notifications |
 | 0005 course seed | the 17 real courses picked by bolo (links to the provider's site) |
+| 0006 calls | voice and video calls in 1-to-1 chats: ringing, accepted, ended, missed; the call log in the chat; rate limits |
+
+### Calls (Agora)
+Media goes through Agora. The `agora-token` server function gives a 2-hour pass for one call, only to its two people.
+Set **variable** `AGORA_APP_ID` and **secret** `AGORA_APP_CERTIFICATE` (Agora console → project in Secured mode); the Backend deploy copies them into the server functions' secrets. Without them, calls say "Calls aren't switched on yet". Incoming calls ring while bolo is open; ringing a closed app needs push notifications.
+
+### Errors (Sentry)
+Set **secret** `SENTRY_AUTH_TOKEN` and **variables** `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_DSN`. Release builds report crashes; the **Sentry report** workflow (daily, or Run workflow) saves the latest issues to the branch `ci-logs/sentry-latest`.
 
 ### How the app uses it
 - `src/logic/server.ts` loads everything for the signed-in account and keeps it live (Supabase realtime).

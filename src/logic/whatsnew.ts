@@ -8,11 +8,12 @@ import { openPayments } from '../sheets/account';
 export const WHATS_NEW_ID = '2026-11-12';
 
 /** Slides added in the latest update. */
-const LATEST = ['live', 'chatlive', 'tracklive', 'safety'];
+const LATEST = ['live', 'chatlive', 'calls', 'tracklive', 'safety'];
 
 export const WHATS_NEW: Story[] = [
   { key: 'live', colors: ['#f6ee5c', '#e3c400'], icon: 'sparkle', chip: 'bolo is live', title: 'Real people, real jobs', text: 'Everything you see is now from real bolo members: jobs, people, posts and courses. Post a job or share your work and people near you see it right away.', dark: true },
   { key: 'chatlive', colors: ['#3d5af1', '#1b2a9b'], icon: 'chat', chip: 'Messages', title: 'Chat in real time', text: 'Messages arrive instantly, with read ticks. Send photos, documents and your location, or a quote that books the job when it’s accepted.', cta: 'Open messages', onCta: () => router.push('/inbox') },
+  { key: 'calls', colors: ['#7c5cff', '#3b1fa8'], icon: 'video', chip: 'Calls', title: 'Voice and video calls', text: 'Call anyone you’re chatting with, or the worker on your booking, from the phone and camera buttons. Missed calls show in the chat.' },
   { key: 'tracklive', colors: ['#2fbf7a', '#0f6e45'], icon: 'nav', chip: 'Bookings', title: 'Follow the worker live', text: 'When a worker taps Start trip, you see them move on the map with an arrival time, until they arrive. Pay them directly as agreed: payments in bolo are coming soon.' },
   { key: 'safety', colors: ['#ff8a3d', '#c2410c'], icon: 'shield', chip: 'Safety', title: 'Report and block', text: 'Tap ⋯ on a post or the chat menu to report something to our team or block someone. Real ID checks are done by a bolo reviewer.' },
   { key: 'yourdata', colors: ['#2fbf7a', '#0f6e45'], icon: 'shield', chip: 'Privacy', title: 'Your data, your call', text: 'Download everything bolo stores about you, or delete your account for good, from Settings → Privacy & safety.', cta: 'Open settings', onCta: () => router.push('/settings' as any) },
