@@ -3,7 +3,7 @@ import { Pressable, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { db } from '../data/db';
-import { RULES, SERVICES } from '../data/catalog';
+import { RULES } from '../data/catalog';
 import { AlertIll, Avatar, Btn, Chip, Chips, Field, Input, Label, OptRow, Txt, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { afterSheet, sheet, SheetTitle, toast } from '../ui/overlay';
@@ -49,13 +49,14 @@ export function openChat(id: string) {
 }
 
 /* ---------------- quotes ---------------- */
-export function openQuote(id: string) {
-  sheet.show(() => <QuoteSheet id={id} />);
+/** as: 'worker' = my price for doing the job; 'client' = the price I offer them for doing it. */
+export function openQuote(id: string, as?: 'worker' | 'client') {
+  sheet.show(() => <QuoteSheet id={id} as={as} />);
 }
-function QuoteSheet({ id }: { id: string }) {
+function QuoteSheet({ id, as }: { id: string; as?: 'worker' | 'client' }) {
   const th = thread(id);
-  const hiring = hiringSide(id);
-  const def = (th.job || '').split(' · ')[0] || (hiring ? (SERVICES[P(id).role] || SERVICES.Plumber)[0][0] : (SERVICES[mySkill()] || SERVICES.Plumber)[0][0]);
+  const hiring = as ? as === 'client' : hiringSide(id);
+  const def = (th.job || '').split(' · ')[0];
   const [job, setJob] = useState(def);
   const [price, setPrice] = useState('');
   const [when, setWhen] = useState('Tomorrow');
@@ -63,7 +64,7 @@ function QuoteSheet({ id }: { id: string }) {
     <View style={{ gap: 14 }}>
       <SheetTitle>{hiring ? `Offer your price to ${fname(P(id).name)}` : 'Send a quote'}</SheetTitle>
       <Field label="Job">
-        <Input value={job} onChangeText={setJob} icon="job" />
+        <Input value={job} onChangeText={setJob} icon="job" placeholder="e.g. Fix a leaking kitchen tap" />
       </Field>
       <Field label="Price">
         <Input value={price} onChangeText={(v) => setPrice(digits(v))} prefix="XAF" keyboardType="number-pad" placeholder="e.g. 12,000" autoFocus />
@@ -79,9 +80,9 @@ function QuoteSheet({ id }: { id: string }) {
       <Btn
         variant="yellow"
         title={hiring ? 'Send price offer' : 'Send quote'}
-        disabled={!(+price > 0)}
+        disabled={!(+price > 0) || !job.trim()}
         onPress={() => {
-          sendQuote(id, job.trim(), price, when);
+          sendQuote(id, job.trim(), price, when, hiring ? 'client' : 'worker');
           sheet.close();
         }}
       />
@@ -133,8 +134,9 @@ export function openAttach(id: string) {
         }
       />
       <OptRow icon="pin" bg={C.orange} title="My location" sub="So they know exactly where to come" onPress={() => (sheet.close(), sendLocation(id))} />
-      {!group ? <OptRow icon="coins" bg={C.ok} iconColor="#fff" title={hiring ? 'Offer a price' : 'Send a quote'} sub={hiring ? 'Offer your own price for the job' : 'Give your price for the job'} onPress={() => afterSheet(() => openQuote(id))} /> : null}
-      {!group && hiring ? <OptRow icon="money" bg="#fff" title="Request a quote" sub="Ask them for a price" onPress={() => (sheet.close(), sendText(id, 'Could you send me a quote?'))} /> : null}
+      {!group ? <OptRow icon="coins" bg={C.ok} iconColor="#fff" title="Send a quote" sub="Your price for doing the job" onPress={() => (sheet.close(), afterSheet(() => openQuote(id, 'worker')))} /> : null}
+      {!group ? <OptRow icon="money" bg="#fff" title="Offer a price" sub="What you’ll pay them to do the job" onPress={() => (sheet.close(), afterSheet(() => openQuote(id, 'client')))} /> : null}
+      {!group ? <OptRow icon="chat" bg={C.s2} iconColor={C.text} title="Ask for a quote" sub="Ask them for their price" onPress={() => (sheet.close(), sendText(id, 'Could you send me a quote?'))} /> : null}
     </View>
   ));
 }

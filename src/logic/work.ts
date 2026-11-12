@@ -585,9 +585,9 @@ export function answerOffer(id: string, i: number, st: 'acc' | 'dec') {
     bump();
   })();
 }
-export function sendQuote(id: string, job: string, price: string, whenKey: string) {
+export function sendQuote(id: string, job: string, price: string, whenKey: string, as?: 'worker' | 'client') {
   const when = whenKey === 'This week' ? 'This week' : `${whenKey}, 10:00`;
-  const hiring = !P(id)?.client && !isW() ? true : hiringIn(id);
+  const hiring = as ? as === 'client' : hiringIn(id);
   sendMessage(id, inboxNow(), 'offer', '', {
     job: job || 'Job',
     price: `XAF ${(+price).toLocaleString('en-US')}`,
@@ -598,11 +598,16 @@ export function sendQuote(id: string, job: string, price: string, whenKey: strin
     ...(hiring ? myPlace() : {}),
   }).catch(fail);
 }
-/** In this chat, am I the one hiring? (a business always hires; otherwise: they offer the skill I need) */
+/** In this chat, am I the one hiring? Decided from what we did: their job I offered on, my job they offered on, an open booking. */
 export function hiringIn(id: string) {
   if (!isW()) return true;
   const p = P(id);
-  if (p?.biz || p?.client) return false;
+  if (p?.biz) return false;
+  const b = db.BOOKINGS.find((x) => x.state !== 'confirmed' && (x.worker === id || x.client === id));
+  if (b) return b.client === 'me';
+  if (db.POSTS.some((po) => po.client === id && db.myOffers[po.id])) return false;
+  if (db.POSTS.some((po) => po.mine && (po.offerList || []).some((o) => o.by === id))) return true;
+  if (p?.client) return false;
   return true;
 }
 export async function sendLocation(id: string) {

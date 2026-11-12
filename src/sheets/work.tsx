@@ -8,7 +8,7 @@ import { AlertIll, Avatar, Btn, Check, Chip, Chips, CoTag, Empty, Field, Input, 
 import { Icon } from '../ui/Icon';
 import { afterSheet, sheet, SheetTitle, toast } from '../ui/overlay';
 import { C, R, S, tx } from '../ui/theme';
-import { P, isW, me, curBiz, bizName, bizLogo, first, myName, myPhoto, mySkill, postById, digits, fname, myCity } from '../logic/core';
+import { profileRaw, P, isW, me, curBiz, bizName, bizLogo, first, myName, myPhoto, mySkill, postById, digits, fname, myCity } from '../logic/core';
 import {
   acceptOffer, applyVac, bk, closeJob, confirmDone, declineApp, reportIssue, sendHireRequest, sendOffer, setStage, stageLabel, submitReview, withdrawApplication, withdrawOffer, hireState, trOther,
 } from '../logic/work';
@@ -482,9 +482,12 @@ export function openHire(id: string, preset?: { when?: string }) {
 function HireSheet({ id, preset }: { id: string; preset?: { when?: string } }) {
   const p = P(id);
   const f = fname(p.name);
-  const svcs = SERVICES[p.role] || SERVICES.Plumber;
+  // their own services and prices when they listed some; otherwise typical jobs for their trade (you set the price)
+  const own = ((profileRaw(id)?.services || []) as any[]).filter((x) => x && x.pub !== false && !x.draft).map((x) => [x.skill, typeof x.price === 'number' ? `XAF ${x.price.toLocaleString('en-US')}${x.unit ? ' ' + x.unit : ''}` : String(x.price || 'Ask for a quote')] as [string, string]);
+  const typical = SERVICES[p.role] ? (SERVICES[p.role] as any[]).map((x) => [x[0], 'Typical: ' + x[1]] as [string, string]) : [];
+  const svcs: [string, string][] = own.length ? own : typical.length ? typical : [['Describe the job below', 'Agree the price together']];
   const [svc, setSvc] = useState(0);
-  const [title, setTitle] = useState(svcs[0][0]);
+  const [title, setTitle] = useState(own.length || typical.length ? svcs[0][0] : '');
   const guess = (s: string) => ((s.match(/[\d.,]+k?/) || [''])[0] as string).replace(/k$/, '000').replace(/[^\d]/g, '');
   const [price, setPrice] = useState(guess(svcs[0][1]));
   const [when, setWhen] = useState(preset?.when || 'Tomorrow, 10:00');
@@ -519,7 +522,7 @@ function HireSheet({ id, preset }: { id: string; preset?: { when?: string } }) {
         </View>
       </View>
       <View>
-        <Label>What do you need?</Label>
+        <Label>{own.length ? `${f}’s services` : 'What do you need?'}</Label>
         <View style={{ gap: 8 }}>
           {svcs.map(([n, pr], i) => (
             <Pressable
