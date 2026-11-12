@@ -107,6 +107,11 @@ jobs:
           set -o pipefail
           mkdir -p ci-out
           npx expo prebuild --platform android --no-install 2>&1 | tee -a ci-out/prebuild.log
+      - name: More memory for Gradle (Agora's native libraries make packaging heavy)
+        run: |
+          sed -i '/^org.gradle.jvmargs=/d' android/gradle.properties
+          echo 'org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1536m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8' >> android/gradle.properties
+          grep jvmargs android/gradle.properties
       - name: Install Android NDK (with retries)
         run: |
           for i in 1 2 3; do
