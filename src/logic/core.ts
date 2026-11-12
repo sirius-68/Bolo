@@ -63,10 +63,13 @@ export const isW = () => db.user.role === 'worker';
 export const P = (id: string): Person => {
   if (id === 'me') return me();
   const p = db.P[id];
-  if (p || !id) return p;
+  if (p) return p;
   const { ensurePeople, ensureBiz, facePic } = require('./server');
-  if (id.startsWith('b_')) void ensureBiz([id.slice(2)]).then(() => require('./live').bump());
-  else if (!id.startsWith('g_')) void ensurePeople([id]).then(() => require('./live').bump());
+  // unknown yet: fetch real ids in the background; anything else (empty, or an id from old sample data) just gets the placeholder
+  const real = /^[0-9a-f]{8}-[0-9a-f]{4}-/i;
+  if (id && id.startsWith('b_') && real.test(id.slice(2))) void ensureBiz([id.slice(2)]).then(() => require('./live').bump());
+  else if (id && real.test(id)) void ensurePeople([id]).then(() => require('./live').bump());
+  id = id || '?';
   return { name: 'bolo member', role: 'Member', years: 0, rate: 0, dist: '', area: '', photo: facePic('?', id), jobs: 0, reviews: '0', followers: 0 } as Person;
 };
 /** What the person wrote on their profile (bio, experience, services…), when loaded from the server. */
