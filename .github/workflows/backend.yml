@@ -85,8 +85,8 @@ jobs:
           supabase db push --remote --yes
           # Agora for calls: the App Certificate lives only in the server functions' secrets
           if [ -n "$AGORA_APP_ID" ] && [ -n "$AGORA_APP_CERTIFICATE" ]; then
-            supabase secrets set --project-ref "$REF" "AGORA_APP_ID=$AGORA_APP_ID" "AGORA_APP_CERTIFICATE=$AGORA_APP_CERTIFICATE" \
-              || supabase secrets set "AGORA_APP_ID=$AGORA_APP_ID" "AGORA_APP_CERTIFICATE=$AGORA_APP_CERTIFICATE"
+            supabase secrets set --yes --project-ref "$REF" "AGORA_APP_ID=$AGORA_APP_ID" "AGORA_APP_CERTIFICATE=$AGORA_APP_CERTIFICATE" \
+              || supabase secrets set --yes "AGORA_APP_ID=$AGORA_APP_ID" "AGORA_APP_CERTIFICATE=$AGORA_APP_CERTIFICATE"
           fi
           supabase functions deploy --remote --yes
 
@@ -116,7 +116,7 @@ jobs:
           supabase db push --remote --yes
           # Agora for calls: the App Certificate lives only in the server functions' secrets
           if [ -n "$AGORA_APP_ID" ] && [ -n "$AGORA_APP_CERTIFICATE" ]; then
-            supabase secrets set --project-ref "$REF" "AGORA_APP_ID=$AGORA_APP_ID" "AGORA_APP_CERTIFICATE=$AGORA_APP_CERTIFICATE" \
-              || supabase secrets set "AGORA_APP_ID=$AGORA_APP_ID" "AGORA_APP_CERTIFICATE=$AGORA_APP_CERTIFICATE"
+            supabase secrets set --yes --project-ref "$REF" "AGORA_APP_ID=$AGORA_APP_ID" "AGORA_APP_CERTIFICATE=$AGORA_APP_CERTIFICATE" \
+              || supabase secrets set --yes "AGORA_APP_ID=$AGORA_APP_ID" "AGORA_APP_CERTIFICATE=$AGORA_APP_CERTIFICATE"
           fi
           supabase functions deploy --remote --yes
