@@ -74,6 +74,18 @@ select id, 'owner' from auth.users where email = '<your login email>';
 | 0001 accounts | profiles (public and private), business pages, RCCM/NIU, profile photos |
 | 0002 activity | posts, comments, notifications (only from triggers), notification settings, courses, enrolments, course ratings, job photos |
 | 0003 foundations | admins and an append-only audit log, rate limits, blocks, reports (the moderation queue), ID and business verification with a private documents bucket, push tokens, private exact location with a public ~1 km area, account deletion, data export, app config (minimum app version, maintenance switch) |
+| 0004 marketplace | posts and jobs (with ~500 m job location), likes, saves, follows, offers/applications, chat (1-to-1, business and group, private files bucket), bookings with each step checked on the server, live location while the worker is on the way, reviews after confirmed jobs, course listings and their ratings, internships/programs and applications, mentorships with their group chat, career experts (approved by bolo), realtime on chat, bookings, location, offers and notifications |
+| 0005 course seed | the 17 real courses picked by bolo (links to the provider's site) |
+
+### How the app uses it
+- `src/logic/server.ts` loads everything for the signed-in account and keeps it live (Supabase realtime).
+- `src/logic/work.ts`, `career.ts`, `comments.ts`, `reviews.ts`, `listings.ts`, `experts.ts` write each action to the server.
+- `src/logic/tracking.ts` shares the worker's position while on the way (only while bolo is open).
+- There is no demo mode and no sample data: everything comes from real accounts.
+- Money is switched off in `src/logic/money.ts` until a payment provider is connected: no wallet, escrow, Pro or ads; people pay each other directly.
+
+### Testing with the emulator
+The emulator tour always checks the signed-out screens. To also tour the app signed in, create a test account in the app and add two GitHub secrets: `QA_EMAIL` and `QA_PASSWORD`.
 
 ### Admin actions (sign in as an admin, call from the SQL Editor or the future admin site)
 
@@ -82,6 +94,7 @@ select id, 'owner' from auth.users where email = '<your login email>';
 | `admin_review_verification(id, approve, note)` | approves or rejects an ID or business check, sets the badge, notifies the person |
 | `admin_resolve_report(id, status, note)` | closes a report (`reviewing`, `actioned`, `dismissed`) |
 | `admin_set_pro(user, regular, business)` | gives or removes Pro until payments are live |
+| `admin_review_expert(user, status, note)` | moves a career expert application on (`review`, `interview`, `approved`, `declined`); approved experts show in Career |
 
 Each one writes `audit_log`, which nobody can edit or delete.
 
