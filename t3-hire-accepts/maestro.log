@@ -1,0 +1,55 @@
+Running on test
+ > Flow The job owner logs back in - sees the offer, accepts it, chats
+Run _login.yaml...
+  Launch app "cm.bolo.app" with clear state... COMPLETED
+  Run dismiss.yaml...
+    Run flow when "isn't responding" is visible...
+    Run flow when "isn't responding" is visible... SKIPPED
+    Run flow when "Not yet, something’s wrong" is visible...
+    Run flow when "Not yet, something’s wrong" is visible... SKIPPED
+    Run flow when id: story-close is visible...
+    Run flow when id: story-close is visible... SKIPPED
+  Run dismiss.yaml... COMPLETED
+  Assert that id: skip is visible... COMPLETED
+  Tap on id: skip... COMPLETED
+  Tap on id: have-account... COMPLETED
+  Tap on id: li-contact... COMPLETED
+  Input text ${EMAIL}... COMPLETED
+  Hide Keyboard... COMPLETED
+  Tap on id: li-pwd... COMPLETED
+  Input text ${TOUR_PASSWORD}... COMPLETED
+  Hide Keyboard... COMPLETED
+  Tap on id: li-submit... COMPLETED
+  Assert that id: tab-feed is visible... COMPLETED
+  Wait for animation to end... COMPLETED
+  Run dismiss.yaml...
+    Run flow when "isn't responding" is visible...
+    Run flow when "isn't responding" is visible... SKIPPED
+    Run flow when "Not yet, something’s wrong" is visible...
+    Run flow when "Not yet, something’s wrong" is visible... SKIPPED
+    Run flow when id: story-close is visible...
+    Run flow when id: story-close is visible... SKIPPED
+  Run dismiss.yaml... COMPLETED
+Run _login.yaml... COMPLETED
+Take screenshot a01-feed... COMPLETED
+Tap on "Notifications"... COMPLETED
+Wait for animation to end... COMPLETED
+Take screenshot a02-notifications... COMPLETED
+Press back... COMPLETED
+Tap on "Jobs"... COMPLETED
+Wait for animation to end... COMPLETED
+Assert that "Tour leaking tap ${RUN}" is visible... FAILED
+
+Assertion is false: "Tour leaking tap 43324094198" is visible
+
+Assertion '"Tour leaking tap 43324094198" is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state
+- This could be a real regression that needs to be addressed
+
+==== Debug output (logs & screenshots) ====
+
+/home/runner/.maestro/tests/2026-11-12_231804
+exit=1
