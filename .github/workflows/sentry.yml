@@ -1,0 +1,50 @@
+name: Sentry report
+
+# Lists the latest crashes and errors from Sentry with the Sentry CLI (github.com/getsentry/toolkit)
+# and saves them on the branch ci-logs/sentry-latest, so they can be read and fixed.
+# Needs: secret SENTRY_AUTH_TOKEN, variables SENTRY_ORG and SENTRY_PROJECT.
+on:
+  workflow_dispatch:
+    inputs:
+      period:
+        description: "How far back (e.g. 24h, 7d, 14d)"
+        default: "7d"
+  schedule:
+    - cron: "17 6 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  report:
+    if: ${{ vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      TARGET: ${{ vars.SENTRY_ORG }}/${{ vars.SENTRY_PROJECT }}
+      PERIOD: ${{ inputs.period || '7d' }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the Sentry CLI
+        run: npm install -g sentry > /dev/null 2>&1 && sentry --version
+      - name: Collect issues
+        run: |
+          mkdir -p out
+          sentry issue list "$TARGET" --period "$PERIOD" --limit 50 --sort freq --json > out/issues.json 2> out/issues.err || true
+          sentry issue list "$TARGET" --period "$PERIOD" --limit 50 --sort freq > out/issues.txt 2>&1 || true
+          # full details (stack trace, tags, breadcrumbs) of the most frequent and the latest issue
+          sentry issue view @most_frequent --json > out/most_frequent.json 2>&1 || true
+          sentry issue view @latest --json > out/latest.json 2>&1 || true
+          # and of each of the top 10 issues
+          node -e 'const L=JSON.parse(require("fs").readFileSync("out/issues.json","utf8")||"[]");const a=Array.isArray(L)?L:(L.data||L.issues||[]);console.log(a.slice(0,10).map(i=>i.shortId||i.id).filter(Boolean).join("\n"))' > out/top.txt 2>/dev/null || true
+          while read -r id; do [ -n "$id" ] && sentry issue view "$id" --json > "out/issue-$id.json" 2>&1 || true; done < out/top.txt
+          ls -la out
+      - name: Publish
+        if: always()
+        run: |
+          cd out && git init -q && git checkout -q -b logs && git add -A
+          git -c user.name=ci -c user.email=ci@bolo.app commit -qm "sentry ${{ github.run_id }}" || true
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" logs:refs/heads/ci-logs/sentry-latest
