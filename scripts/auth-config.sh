@@ -19,10 +19,18 @@ patch() {
   fi
 }
 
-body=$(jq -c . supabase/auth/email.json)
-[ "$MODE" = "staging" ] && body=$(jq -c '. + {mailer_autoconfirm: true}' <<<"$body")
-patch "$body"
-echo "Email codes are set. Current sign-in settings (no secrets):"
+# Email templates can only be changed when the project sends email through its own SMTP (e.g. Brevo).
+if patch "$(jq -c . supabase/auth/email.json)"; then
+  echo "Emails now carry a 6-digit code."
+else
+  echo "::warning::Email templates not changed for $REF (set up custom SMTP in Supabase → Authentication → Emails first)"
+fi
+if [ "$MODE" = "staging" ]; then
+  patch '{"mailer_autoconfirm": true}'
+  echo "Staging: new accounts are confirmed at once (for automatic tests)."
+fi
+patch '{"mailer_otp_length": 6}' || true
+echo "Current sign-in settings (no secrets):"
 jq '{external_email_enabled, mailer_autoconfirm, mailer_otp_length, smtp_host, smtp_sender_name, rate_limit_email_sent, external_phone_enabled, sms_provider, hook_send_sms_enabled, site_url}' /tmp/auth.json
 
 if [ -n "${BREVO_API_KEY:-}" ]; then
