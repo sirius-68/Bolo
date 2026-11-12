@@ -38,4 +38,4 @@ jobs:
           cd /tmp/pub && git init -q && git checkout -q -b logs && git add -A
           git -c user.name=ci -c user.email=ci@bolo.app commit -qm "typecheck ${{ github.run_id }}" || true
           git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" logs:refs/heads/ci-logs/tsc-latest
-          [ "$(cat ci-out/code)" = 0 ]
+          [ "$(cat "$GITHUB_WORKSPACE/ci-out/code")" = 0 ]
