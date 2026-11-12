@@ -21,6 +21,7 @@ import { bookingAmt } from '../../src/logic/wallet';
 import { openEscrowInfo } from '../../src/sheets/wallet';
 import { MONEY_LIVE } from '../../src/logic/money';
 import { refreshBooking } from '../../src/logic/server';
+import { callsAvailable, startCall } from '../../src/logic/calls';
 import { xaf } from '../../src/logic/core';
 
 const STEPS: [string, string, string][] = [
@@ -269,6 +270,7 @@ export default function Track() {
               <Rate r={o.rate} />
             </View>
           </View>
+          {callsAvailable() ? <IconBtn name="phone" label={`Call ${f}`} onPress={() => startCall(oid, 'voice')} /> : null}
           <IconBtn name="chat" label={`Message ${f}`} onPress={() => openChat(oid)} />
         </View>
         <View style={{ padding: 14, borderRadius: 20, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, gap: 10 }}>

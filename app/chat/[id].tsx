@@ -10,6 +10,7 @@ import { toast } from '../../src/ui/overlay';
 import { C, S, tx } from '../../src/ui/theme';
 import { P, THREADS, fname, isGroup, isW, postById } from '../../src/logic/core';
 import { hiringIn } from '../../src/logic/work';
+import { callsAvailable, startCall } from '../../src/logic/calls';
 import { useLive } from '../../src/logic/live';
 import { answerOffer, markChatRead, sendText } from '../../src/logic/work';
 import { openProfile } from '../../src/logic/nav';
@@ -77,6 +78,12 @@ export default function Chat() {
             </Txt>
           </View>
         </Pressable>
+        {!grp && callsAvailable() ? (
+          <>
+            <IconBtn name="phone" label="Voice call" onPress={() => startCall(id, 'voice')} />
+            <IconBtn name="video" label="Video call" onPress={() => startCall(id, 'video')} />
+          </>
+        ) : null}
         <IconBtn name="dots" label="Chat options" onPress={() => openChatMenu(id)} />
       </View>
       {job ? (

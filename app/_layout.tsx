@@ -88,6 +88,7 @@ export default function Root() {
       >
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
         <Stack.Screen name="reels" options={{ animation: 'fade' }} />
+        <Stack.Screen name="call" options={{ animation: 'fade', gestureEnabled: false }} />
         <Stack.Screen name="splash" options={{ animation: 'none' }} />
       </Stack>
       <Overlays />

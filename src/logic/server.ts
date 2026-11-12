@@ -374,7 +374,7 @@ function msgFrom(m: any, conv: { kind: string }, others: any[]): Msg {
   const at = hm(m.created_at);
   const d = m.data || {};
   const base: Msg = { id: m.id, f: mine ? 'me' : 'them', at, ts0: +new Date(m.created_at) };
-  if (m.kind === 'sys' || !m.sender_id) return { ...base, sys: m.body, f: undefined };
+  if (m.kind === 'sys' || !m.sender_id) return { ...base, sys: m.body, f: undefined, call: d.call ? 1 : undefined, missed: d.call ? !!d.missed : undefined };
   if (mine) base.st = others.some((o) => +new Date(o.last_read_at) >= +new Date(m.created_at)) ? 'read' : 'sent';
   if (conv.kind === 'group' && !mine) base.by = L(m.sender_id);
   const who = conv.kind === 'group' && !mine ? (db.P[m.sender_id]?.name || 'Member').split(' ')[0] + ': ' : '';
@@ -962,6 +962,9 @@ export function startRealtime() {
         placeNotif(e.new);
       }
       bump();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'calls' }, (e: any) => {
+      if (e.new?.id) require('./calls').applyCallChange(e.new);
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => {
       void loadApplications().then(bump);
