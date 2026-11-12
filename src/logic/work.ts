@@ -194,6 +194,7 @@ export function postJob(f: JobForm): Post {
         .select('id')
         .single();
       if (error) throw error;
+      (job as any).tmp = job.id;
       job.id = data.id;
       job.photos = photos;
       bump();
@@ -222,6 +223,7 @@ export function createPost(p: { kind: 'photo' | 'text' | 'avail'; text: string; 
         .select('id')
         .single();
       if (error) throw error;
+      (po as any).tmp = po.id;
       po.id = data.id;
       if (photos[0]) po.src = photos[0];
       bump();

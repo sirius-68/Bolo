@@ -157,7 +157,8 @@ export const unreadMsgs = () => ORDER().reduce((a, id) => a + (THREADS()[id]?.un
 export const unreadNotifs = () => NOTIFS().filter((n) => !n.read).length;
 
 /* ---------------- jobs ---------------- */
-export const postById = (id: string) => db.POSTS.find((p) => p.id === id);
+/** A post by id (also by the temporary id it had before the server saved it). */
+export const postById = (id: string) => db.POSTS.find((p) => p.id === id) || db.POSTS.find((p) => (p as any).tmp === id);
 export function postVisible(p: Post) {
   if (p.kind !== 'request') return true;
   if (p.mine) return isW() ? p.as !== 'business' : p.as === 'business' && p.biz === db.BIZ.active;

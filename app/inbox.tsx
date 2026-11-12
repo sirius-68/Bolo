@@ -1,3 +1,4 @@
+import { openChatMenu } from '../src/sheets/chat';
 import React, { useState } from 'react';
 import { FlatList, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,7 +26,7 @@ export default function Inbox() {
   const ins = useSafeAreaInsets();
   const [q, setQ] = useState('');
   const T = THREADS();
-  const O = ORDER().filter((id) => T[id] && P(id)?.name);
+  const O = ORDER().filter((id) => T[id] && P(id)?.name && (T[id].cid || T[id].msgs.length));
   const tab = ui.ibTab in TABS ? ui.ibTab : 'All';
   const qq = q.trim().toLowerCase();
   const ids = O.filter(TABS[tab])
@@ -35,31 +36,7 @@ export default function Inbox() {
   const unread = O.reduce((a, id) => a + (T[id].unread || 0), 0);
   const menu = (id: string) => {
     tap();
-    const th = T[id];
-    sheet.show(() => (
-      <View>
-        <SheetTitle>{P(id).name}</SheetTitle>
-        <OptRow
-          icon="pushpin"
-          bg={C.lav}
-          title={th.pinned ? 'Unpin' : 'Pin to top'}
-          onPress={() => {
-            th.pinned = th.pinned ? 0 : 1;
-            sheet.close(th.pinned ? 'Chat pinned' : 'Chat unpinned');
-          }}
-        />
-        <OptRow
-          icon="check"
-          bg="#fff"
-          title={th.unread ? 'Mark as read' : 'Mark as unread'}
-          onPress={() => {
-            th.unread = th.unread ? 0 : 1;
-            sheet.close();
-          }}
-        />
-        <OptRow icon="trash" bg={C.errSoft} danger title="Delete chat" onPress={() => (sheet.close(), deleteChat(id))} />
-      </View>
-    ));
+    openChatMenu(id);
   };
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: ins.top }}>

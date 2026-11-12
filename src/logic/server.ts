@@ -239,6 +239,7 @@ export function postFrom(r: any): Post {
   if (!po.src && photos[0] && r.kind !== 'request') po.src = photos[0];
   // keep the offers already loaded for my own jobs
   const old = db.POSTS.find((x) => x.id === r.id);
+  if ((old as any)?.tmp) (po as any).tmp = (old as any).tmp;
   if (old?.offerList) po.offerList = old.offerList;
   if (old?.booked) po.booked = old.booked;
   return po;
@@ -461,10 +462,10 @@ async function loadChats() {
   const { data: convs } = await supabase.from('conversations').select('*').order('last_message_at', { ascending: false }).limit(200);
   const ids = (convs || []).map((c: any) => c.id);
   if (!ids.length) {
-    db.THREADS_W = {};
-    db.THREADS_C = {};
-    db.ORDER_W = [];
-    db.ORDER_C = [];
+    db.THREADS_W = Object.fromEntries(Object.entries(db.THREADS_W).filter(([, th]) => !th.cid));
+    db.THREADS_C = Object.fromEntries(Object.entries(db.THREADS_C).filter(([, th]) => !th.cid));
+    db.ORDER_W = Object.keys(db.THREADS_W);
+    db.ORDER_C = Object.keys(db.THREADS_C);
     db.CONV = {};
     return;
   }
@@ -480,13 +481,15 @@ async function loadChats() {
   Object.keys(RAW_MSGS).forEach((k) => delete RAW_MSGS[k]);
   (msgs.data || []).reverse().forEach((m: any) => (RAW_MSGS[m.conversation_id] = [...(RAW_MSGS[m.conversation_id] || []), m]));
   await Promise.all([ensurePeople([...(mem.data || []).map((m: any) => m.user_id)]), ensureBiz((convs || []).map((c: any) => c.business_id))]);
-  // keep pins; rebuild everything else
+  // keep pins and chats just opened that have no messages yet; rebuild everything else
   const pins: Record<string, number> = {};
   [db.THREADS_W, db.THREADS_C].forEach((T) => Object.entries(T).forEach(([k, th]) => th.pinned && (pins[k] = 1)));
-  db.THREADS_W = {};
-  db.THREADS_C = {};
-  db.ORDER_W = [];
-  db.ORDER_C = [];
+  const draftsW = Object.entries(db.THREADS_W).filter(([, th]) => !th.cid);
+  const draftsC = Object.entries(db.THREADS_C).filter(([, th]) => !th.cid);
+  db.THREADS_W = Object.fromEntries(draftsW);
+  db.THREADS_C = Object.fromEntries(draftsC);
+  db.ORDER_W = draftsW.map(([k]) => k);
+  db.ORDER_C = draftsC.map(([k]) => k);
   db.CONV = {};
   ids.forEach(buildThread);
   Object.keys(pins).forEach((k) => {
@@ -533,7 +536,9 @@ export async function sendMessage(key: string, inbox: 'W' | 'C', kind: 'text' | 
   buildThread(cid);
   sortOrders();
   bump();
-  const { error } = await supabase.from('messages').insert({ id, conversation_id: cid, kind, body, data });
+  // signed links expire: only the file's path is stored, each phone makes its own link
+  const { url: _url, ...stored } = data;
+  const { error } = await supabase.from('messages').insert({ id, conversation_id: cid, kind, body, data: stored });
   if (error) {
     RAW_MSGS[cid] = RAW_MSGS[cid].filter((m) => m.id !== id);
     buildThread(cid);
@@ -903,7 +908,7 @@ export function startRealtime() {
       const L0 = RAW_MSGS[cid] || [];
       const i = L0.findIndex((x) => x.id === m.id);
       if (m.kind === 'img' || m.kind === 'file') await signFiles([m]);
-      if (i >= 0) L0[i] = { ...L0[i], ...m, data: { ...(L0[i].data || {}), ...(m.data || {}) } };
+      if (i >= 0) L0[i] = { ...L0[i], ...m, data: m.kind === 'deleted' ? {} : { ...(L0[i].data || {}), ...(m.data || {}) } };
       else RAW_MSGS[cid] = [...L0, m];
       if (e.eventType === 'INSERT') CONVS[cid].last_message_at = m.created_at;
       if (m.sender_id && m.sender_id !== me) await ensurePeople([m.sender_id]);
