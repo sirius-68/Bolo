@@ -12,15 +12,9 @@ appId: cm.bolo.app
     id: "skip"
 - tapOn:
     id: "create-account"
-# "Offer my skills" is ticked to begin with: the hire-only tour swaps it for "Get something done"
-- runFlow:
-    when:
-      true: ${INTENT == 'hire'}
-    commands:
-      - tapOn:
-          id: "intent-find"
-      - tapOn:
-          id: "intent-hire"
+# Both "Offer my skills" and "Get something done" are ticked to begin with: untick the one this tour doesn't want
+- tapOn:
+    id: "intent-${INTENT == 'hire' ? 'find' : 'hire'}"
 - tapOn:
     id: "role-continue"
 - tapOn:
