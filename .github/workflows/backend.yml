@@ -71,6 +71,7 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
       AGORA_APP_ID: ${{ vars.STAGING_AGORA_APP_ID || vars.AGORA_APP_ID }}
       AGORA_APP_CERTIFICATE: ${{ secrets.STAGING_AGORA_APP_CERTIFICATE || secrets.AGORA_APP_CERTIFICATE }}
+      FCM_SERVICE_ACCOUNT: ${{ secrets.FCM_SERVICE_ACCOUNT }}
       REF: ${{ vars.STAGING_PROJECT_REF }}
     steps:
       - uses: actions/checkout@v4
@@ -88,7 +89,26 @@ jobs:
             supabase secrets set --yes --project-ref "$REF" "AGORA_APP_ID=$AGORA_APP_ID" "AGORA_APP_CERTIFICATE=$AGORA_APP_CERTIFICATE" \
               || supabase secrets set --yes "AGORA_APP_ID=$AGORA_APP_ID" "AGORA_APP_CERTIFICATE=$AGORA_APP_CERTIFICATE"
           fi
+          # Push notifications: the Firebase service account and a fresh shared secret go into the functions' secrets
+          if [ -n "$FCM_SERVICE_ACCOUNT" ]; then
+            FCM_B64=$(printf '%s' "$FCM_SERVICE_ACCOUNT" | base64 -w0)
+            PUSH_SECRET=$(openssl rand -hex 32)
+            echo "::add-mask::$FCM_B64"
+            echo "::add-mask::$PUSH_SECRET"
+            supabase secrets set --yes --project-ref "$REF" "FCM_SERVICE_ACCOUNT_B64=$FCM_B64" "PUSH_SECRET=$PUSH_SECRET"
+          fi
           supabase functions deploy --remote --yes
+          if [ -n "$FCM_SERVICE_ACCOUNT" ]; then
+            # tell the database where to send new notifications (retries while the new function starts)
+            for i in 1 2 3 4 5 6; do
+              code=$(curl -s -o /tmp/push.json -w '%{http_code}' -X POST "https://$REF.supabase.co/functions/v1/push" \
+                -H 'Content-Type: application/json' -H "x-push-secret: $PUSH_SECRET" -d '{"setup":true}')
+              cat /tmp/push.json; echo
+              [ "$code" = "200" ] && break
+              sleep 10
+            done
+            [ "$code" = "200" ] || { echo "push setup failed ($code)"; exit 1; }
+          fi
 
   production:
     name: Deploy to production
@@ -102,6 +122,7 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
       AGORA_APP_ID: ${{ vars.AGORA_APP_ID }}
       AGORA_APP_CERTIFICATE: ${{ secrets.AGORA_APP_CERTIFICATE }}
+      FCM_SERVICE_ACCOUNT: ${{ secrets.FCM_SERVICE_ACCOUNT }}
       REF: ${{ vars.PROD_PROJECT_REF }}
     steps:
       - uses: actions/checkout@v4
@@ -119,4 +140,23 @@ jobs:
             supabase secrets set --yes --project-ref "$REF" "AGORA_APP_ID=$AGORA_APP_ID" "AGORA_APP_CERTIFICATE=$AGORA_APP_CERTIFICATE" \
               || supabase secrets set --yes "AGORA_APP_ID=$AGORA_APP_ID" "AGORA_APP_CERTIFICATE=$AGORA_APP_CERTIFICATE"
           fi
+          # Push notifications: the Firebase service account and a fresh shared secret go into the functions' secrets
+          if [ -n "$FCM_SERVICE_ACCOUNT" ]; then
+            FCM_B64=$(printf '%s' "$FCM_SERVICE_ACCOUNT" | base64 -w0)
+            PUSH_SECRET=$(openssl rand -hex 32)
+            echo "::add-mask::$FCM_B64"
+            echo "::add-mask::$PUSH_SECRET"
+            supabase secrets set --yes --project-ref "$REF" "FCM_SERVICE_ACCOUNT_B64=$FCM_B64" "PUSH_SECRET=$PUSH_SECRET"
+          fi
           supabase functions deploy --remote --yes
+          if [ -n "$FCM_SERVICE_ACCOUNT" ]; then
+            # tell the database where to send new notifications (retries while the new function starts)
+            for i in 1 2 3 4 5 6; do
+              code=$(curl -s -o /tmp/push.json -w '%{http_code}' -X POST "https://$REF.supabase.co/functions/v1/push" \
+                -H 'Content-Type: application/json' -H "x-push-secret: $PUSH_SECRET" -d '{"setup":true}')
+              cat /tmp/push.json; echo
+              [ "$code" = "200" ] && break
+              sleep 10
+            done
+            [ "$code" = "200" ] || { echo "push setup failed ($code)"; exit 1; }
+          fi

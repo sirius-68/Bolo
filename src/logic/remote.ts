@@ -103,6 +103,9 @@ export async function updatePassword(password: string): Promise<string | null> {
 }
 export async function signOut() {
   try {
+    await require('./push').unregisterPush();
+  } catch {}
+  try {
     await supabase.auth.signOut();
   } catch {}
   lastSent = {};
@@ -124,6 +127,7 @@ async function afterAuth() {
 export function startServer() {
   if (!db.uid) return;
   startRealtime();
+  void require('./push').registerPush();
   void loadAll().then(() => {
     const { resumeSims } = require('./work');
     resumeSims();

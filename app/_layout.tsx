@@ -17,6 +17,7 @@ import { db, ui } from '../src/data/db';
 import { on } from '../src/logic/events';
 import { showDoneAlert } from '../src/sheets/work';
 import { hasSession, pull, resumeSession, startServer, startSync } from '../src/logic/remote';
+import { initPush } from '../src/logic/push';
 import { locate } from '../src/logic/here';
 import { StoryHost } from '../src/components/Stories';
 import { Linking, Platform } from 'react-native';
@@ -45,6 +46,7 @@ export default function Root() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    initPush();
     restore().then(async () => {
       startAutosave();
       startSync();

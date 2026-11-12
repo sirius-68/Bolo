@@ -3,14 +3,15 @@ import { router } from 'expo-router';
 import { db, ui } from '../data/db';
 import { bump } from './live';
 import { showStories, Story } from '../components/Stories';
-import { openPayments } from '../sheets/account';
+import { openNotifSettings, openPayments } from '../sheets/account';
 
-export const WHATS_NEW_ID = '2026-11-12';
+export const WHATS_NEW_ID = '2026-11-12b';
 
 /** Slides added in the latest update. */
-const LATEST = ['live', 'chatlive', 'calls', 'tracklive', 'safety'];
+const LATEST = ['push'];
 
 export const WHATS_NEW: Story[] = [
+  { key: 'push', colors: ['#f6ee5c', '#e3c400'], icon: 'bell', chip: 'Notifications', title: 'Never miss a message', text: 'New messages, offers, booking updates and calls now pop up on your phone, even when bolo is closed. Tap one to go straight there. Choose what you get in Settings → Notifications.', cta: 'Notification settings', onCta: () => openNotifSettings(), dark: true },
   { key: 'live', colors: ['#f6ee5c', '#e3c400'], icon: 'sparkle', chip: 'bolo is live', title: 'Real people, real jobs', text: 'Everything you see is now from real bolo members: jobs, people, posts and courses. Post a job or share your work and people near you see it right away.', dark: true },
   { key: 'chatlive', colors: ['#3d5af1', '#1b2a9b'], icon: 'chat', chip: 'Messages', title: 'Chat in real time', text: 'Messages arrive instantly, with read ticks. Send photos, documents and your location, or a quote that books the job when it’s accepted.', cta: 'Open messages', onCta: () => router.push('/inbox') },
   { key: 'calls', colors: ['#7c5cff', '#3b1fa8'], icon: 'video', chip: 'Calls', title: 'Voice and video calls', text: 'Call anyone you’re chatting with, or the worker on your booking, from the phone and camera buttons. Missed calls show in the chat.' },

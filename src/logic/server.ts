@@ -669,7 +669,7 @@ export const markReviewed = (bid: string) => REVIEWED.add(bid);
 
 /* ================================================================ notifications */
 const NOTIF_TYPE: Record<string, string> = { newoffer: 'newoffer', stage: 'accept', booked: 'accept', onway: 'onway', arrived: 'arrived', jobdone: 'jobdone', confirmed: 'accept', cancelled: 'reminder', issue: 'reminder', message: 'message', comment: 'comment', like: 'like', follow: 'follow', review: 'review', enrol: 'enrol', accept: 'accept', mentor: 'mentor', verification: 'account', expert: 'account', rating: 'rating', course: 'course' };
-function goFrom(t: any): Notif['go'] {
+export function goFrom(t: any): Notif['go'] {
   if (!t || !t.k) return undefined;
   if (t.k === 'chat') {
     const c = db.CONV[t.id];

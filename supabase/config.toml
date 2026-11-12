@@ -32,3 +32,7 @@ verify_jwt = false
 # Checks the caller's session itself, and that they're in the call.
 [functions.agora-token]
 verify_jwt = false
+
+# Called by the database (and once at deploy); checks its own shared secret.
+[functions.push]
+verify_jwt = false
