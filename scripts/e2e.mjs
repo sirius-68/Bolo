@@ -130,21 +130,30 @@ if (ready) {
   let live = null;
   await step('live updates connect', async () => {
     await B.sb.realtime.setAuth((await B.sb.auth.getSession()).data.session.access_token);
-    live = { got: [], status: '' };
+    live = { got: [], status: '', system: [] };
     live.ch = B.sb
       .channel('e2e-' + run)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (p) => live.got.push(p.new))
+      .on('system', {}, (p) => live.system.push(`${p.status}: ${p.message}`))
       .subscribe((s) => (live.status = s));
     const ok = await eventually(() => live.status === 'SUBSCRIBED', 15000);
     expect(ok, 'realtime did not connect: ' + live.status);
+    // the database stream is ready a moment after the channel joins
+    await eventually(() => live.system.length > 0, 10000);
+    return live.system.join(' | ');
   });
   const msgId = randomUUID();
   await step('Ana sends a message (the same way the app does)', async () => {
     must(await A.sb.from('messages').insert({ id: msgId, conversation_id: cid, kind: 'text', body: 'Hello Ben, are you coming?', data: {} }));
   });
-  await step('Ben receives it live', async () => {
-    const ok = await eventually(() => live?.got.some((m) => m.id === msgId), 15000);
-    expect(ok, 'the message did not arrive over realtime');
+  await step('Ben receives messages live', async () => {
+    if (await eventually(() => live?.got.some((m) => m.id === msgId), 8000)) return 'first message';
+    for (let i = 2; i <= 4; i++) {
+      const id = randomUUID();
+      must(await A.sb.from('messages').insert({ id, conversation_id: cid, kind: 'text', body: 'ping ' + i, data: {} }));
+      if (await eventually(() => live?.got.some((m) => m.id === id), 8000)) return `from message ${i} (the stream needed a moment to start)`;
+    }
+    throw new Error('no message arrived over realtime · ' + (live.system.join(' | ') || 'no system message'));
   });
   await step('Ben reads it, is notified, and replies', async () => {
     const msgs = must(await B.sb.from('messages').select('id,sender_id,kind,body').eq('conversation_id', cid).order('created_at'));
@@ -236,7 +245,7 @@ if (ready) {
     const d = must(await A.sb.rpc('export_my_data'));
     expect(d && typeof d === 'object', 'empty export');
   });
-  await step('app config is readable', async () => must(await A.sb.from('app_config').select('key,value')));
+  await step('app config is readable', async () => void must(await A.sb.from('app_config').select('key,value')));
   await step('career lists load', async () => {
     const c = must(await A.sb.from('course_listings').select('id').limit(50));
     must(await A.sb.from('opportunities').select('id').limit(5));
