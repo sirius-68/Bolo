@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Post } from '../data/db';
 import { catIcon } from '../data/catalog';
-import { LngLat, anchor, coordOf } from '../data/geo';
+import { LngLat, anchor, coordOf, placeOf } from '../data/geo';
 import { hasCoord, locGranted, locate } from '../logic/here';
 import { useLive } from '../logic/live';
 import { Mapbox } from '../lib/mapbox';
@@ -42,7 +42,7 @@ export function LiveMap({ mode, jobs, people, bottomInset = 64, topInset = 150, 
   const a = anchor();
   const key = mode + ':' + a.map((x) => x.toFixed(3)).join(',') + ':' + (mode === 'jobs' ? jobs.slice(0, max).map((p) => p.id) : people.slice(0, max)).join(',');
   const bounds = useMemo(() => {
-    const pts: LngLat[] = mode === 'jobs' ? jobs.slice(0, max).map((po) => coordOf(po.id, po.area)) : people.slice(0, max).map((id) => coordOf(id, P(id).area));
+    const pts: LngLat[] = mode === 'jobs' ? jobs.slice(0, max).map((po) => placeOf(po.id, po.area, po.coord)) : people.slice(0, max).map((id) => placeOf(id, P(id).area, P(id).coord));
     if (hasCoord()) pts.push(anchor());
     if (pts.length < 2) return undefined;
     const lngs = pts.map((p) => p[0]);
@@ -59,7 +59,7 @@ export function LiveMap({ mode, jobs, people, bottomInset = 64, topInset = 150, 
         {locOk ? <M.LocationPuck visible pulsing={{ isEnabled: true, color: C.blue }} /> : null}
         {mode === 'jobs'
           ? jobs.slice(0, max).map((po) => (
-              <M.MarkerView key={po.id} coordinate={coordOf(po.id, po.area)} allowOverlap anchor={{ x: 0.5, y: 1 }}>
+              <M.MarkerView key={po.id} coordinate={placeOf(po.id, po.area, po.coord)} allowOverlap anchor={{ x: 0.5, y: 1 }}>
                 <Pressable accessibilityRole="button" accessibilityLabel={`${po.title}, ${po.budget}`} onPress={() => (tap(), onSelect ? onSelect(po.id) : openJob(po.id))} style={{ alignItems: 'center' }}>
                   <View style={[S.row, { gap: 4, height: selected === po.id ? 34 : 30, paddingHorizontal: selected === po.id ? 11 : 8, borderRadius: 999, backgroundColor: selected === po.id ? '#fff' : po.urgent ? C.orange : C.yellow, borderWidth: selected === po.id ? 2 : 0, borderColor: '#000' }]}>
                     <Icon name={catIcon(po.cat)} size={14} color="#000" />
@@ -73,7 +73,7 @@ export function LiveMap({ mode, jobs, people, bottomInset = 64, topInset = 150, 
           : people.slice(0, max).map((id) => {
               const p = P(id);
               return (
-                <M.MarkerView key={id} coordinate={coordOf(id, p.area)} allowOverlap anchor={{ x: 0.5, y: 1 }}>
+                <M.MarkerView key={id} coordinate={placeOf(id, p.area, p.coord)} allowOverlap anchor={{ x: 0.5, y: 1 }}>
                   <Pressable accessibilityRole="button" accessibilityLabel={p.name} onPress={() => (tap(), onSelect ? onSelect(id) : openProfile(id))} style={{ alignItems: 'center' }}>
                     <Avatar pic={p.pin || p.photo} size={selected === id ? 46 : 38} ring={selected === id ? '#fff' : C.yellow} />
                     <View style={{ marginTop: 2, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6, backgroundColor: 'rgba(0,0,0,.8)' }}>
@@ -102,17 +102,20 @@ export function LiveMap({ mode, jobs, people, bottomInset = 64, topInset = 150, 
 }
 
 /** Small route map for job tracking: worker → client, with the worker moving along the line. */
-export function RouteMap({ from, to, progress, workerPic, height }: { from: LngLat; to: LngLat; progress: number; workerPic: any; height: number }) {
+/** The worker's real position (live) and the job's place; the camera keeps both in view as the worker moves. */
+export function RouteMap({ from, to, progress, workerPic, height, live }: { from: LngLat; to: LngLat; progress: number; workerPic: any; height: number; live?: LngLat | null }) {
   if (!Mapbox) return null;
   const M = Mapbox;
   const t = Math.max(0, Math.min(1, progress));
-  const cur: LngLat = [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t];
-  const line = { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [from, to] } };
-  const mid: LngLat = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2];
+  const cur: LngLat = live || [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t];
+  const line = { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [cur, to] } };
+  const mid: LngLat = [(cur[0] + to[0]) / 2, (cur[1] + to[1]) / 2];
+  const far = Math.abs(cur[0] - to[0]) > 0.002 || Math.abs(cur[1] - to[1]) > 0.002;
+  const bounds = far ? { ne: [Math.max(cur[0], to[0]), Math.max(cur[1], to[1])], sw: [Math.min(cur[0], to[0]), Math.min(cur[1], to[1])], paddingTop: 110, paddingBottom: 70, paddingLeft: 60, paddingRight: 60 } : undefined;
   return (
     <View style={{ height }}>
       <M.MapView style={{ flex: 1 }} styleURL={M.StyleURL.Dark} scaleBarEnabled={false} compassEnabled={false} pitchEnabled={false} rotateEnabled={false} logoPosition={{ bottom: 34, left: 10 }} attributionPosition={{ bottom: 34, right: 10 }}>
-        <M.Camera defaultSettings={{ centerCoordinate: mid, zoomLevel: 13.6 }} />
+        <M.Camera defaultSettings={{ centerCoordinate: mid, zoomLevel: 13.6 }} bounds={bounds} centerCoordinate={bounds ? undefined : mid} zoomLevel={bounds ? undefined : 15} animationDuration={800} />
         <M.ShapeSource id="route" shape={line}>
           <M.LineLayer id="routeLine" style={{ lineColor: C.yellow, lineWidth: 4, lineDasharray: [0.5, 2], lineCap: 'round' }} />
         </M.ShapeSource>

@@ -95,14 +95,13 @@ export function answerApplicant(oid: string, pid: string, st: 'acc' | 'dec') {
 /* ---------------- courses ---------------- */
 export function enroll(id: string, done: () => void) {
   const c = db.COURSES.find((x) => x.id === id)!;
-  later(c.price ? 1300 : 500, () => {
+  later(300, () => {
     if (!db.myLearning.includes(id)) db.myLearning.push(id);
     c.startAt = c.quick ? Date.now() + 60_000 : nextClassAt();
     c.done = c.done || 0;
     learnerGroup(c);
     scheduleClass(c);
     toast(`You’re enrolled in “${c.title}”`);
-    notify({ type: 'course', cat: 'learning', key: `enrolled:${c.id}`, text: c.price ? `Payment approved. You’re enrolled in “${c.title}”. Your class group is ready.` : `You’re enrolled in “${c.title}”. Your class group is ready.`, go: { k: 'coursePage', id: c.id } });
     done();
   });
 }
@@ -118,20 +117,7 @@ export function learnerGroup(c: Course) {
   if (!db.P[gid]) db.P[gid] = { name: `${c.title} · Class`, group: 1, client: 1, role: 'Class group', photo: c.prov.logo, pin: c.prov.logo, area: '', dist: '', rate: 5, years: 1, jobs: 0, reviews: '0', followers: 0 } as any;
   const T = db.THREADS_W;
   if (!T[gid]) {
-    const mem = WORKERS().slice(2, 9);
-    T[gid] = {
-      time: nowT(),
-      group: 1,
-      course: 1,
-      members: mem,
-      unread: 1,
-      msgs: [
-        { d: 'Today' },
-        { sys: `You joined the class group for “${c.title}”` },
-        { f: 'them', t: `${c.prov.n}: Welcome to the class! 👋 Introduce yourself and tell us what you want to learn.`, at: nowT() },
-        { f: 'them', t: `${c.prov.n}: The first class starts ${c.quick ? 'in about a minute' : 'next Monday at 18:00'}. The link will appear here.`, at: nowT() },
-      ],
-    };
+    T[gid] = { time: nowT(), group: 1, course: 1, members: [], unread: 0, msgs: [{ d: 'Today' }, { sys: `Class group for “${c.title}”` }] };
     if (!db.ORDER_W.includes(gid)) db.ORDER_W.unshift(gid);
   }
   return gid;
@@ -182,13 +168,6 @@ export function joinLiveDemo() {
   keepLive(c);
   bump();
   return c;
-}
-/** Test course: starts 1 minute after you enrol. */
-export function ensureQuickCourse() {
-  if (db.COURSES.some((x) => x.id === 'c_quick')) return;
-  // A new course became available: tell learners (once).
-  later(4000, () => isW() && notify({ type: 'newcourse', cat: 'learning', key: 'newcourse:c_quick', text: 'New course: “Quick test class”. Free, starts 1 minute after you enrol.', go: { k: 'course', id: 'c_quick' } }));
-  db.COURSES.unshift({ id: 'c_quick', quick: 1, title: 'Quick test class: starts 1 minute after you enrol', prov: { n: 'bolo Academy', logo: logoPic('bA', '#f6ee5c', '#000') }, cat: 'Business', lv: 'Beginner', dur: '15 minutes', type: 'Skill', fmt: 'Online', reg: '', price: 0, old: 0, prof: '', skills: ['How bolo courses work', 'Joining a live class', 'Using your class group'], mo: 0 });
 }
 /** Courses enrolled before class times existed get the next Monday class. */
 export function ensureClassTime(c: Course) {

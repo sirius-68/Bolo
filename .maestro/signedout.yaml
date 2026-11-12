@@ -1,0 +1,43 @@
+appId: cm.bolo.app
+name: Signed out (welcome, sign-up and log-in screens)
+---
+- launchApp:
+    clearState: true
+- runFlow: dismiss.yaml
+- extendedWaitUntil:
+    visible:
+      id: "skip"
+    timeout: 30000
+- takeScreenshot: s01-onboard
+- tapOn:
+    id: "skip"
+- extendedWaitUntil:
+    visible:
+      id: "create-account"
+    timeout: 10000
+- takeScreenshot: s02-welcome
+# no demo any more: only real accounts
+- assertNotVisible: "Explore the demo"
+- tapOn:
+    id: "create-account"
+- takeScreenshot: s03-role
+- back
+- tapOn:
+    id: "have-account"
+- extendedWaitUntil:
+    visible:
+      id: "li-submit"
+    timeout: 10000
+- takeScreenshot: s04-login
+# empty form: the app explains what's missing instead of calling the server
+- tapOn:
+    id: "li-submit"
+- takeScreenshot: s05-login-empty
+- tapOn: "Forgot password?"
+- takeScreenshot: s06-forgot
+- back
+- back
+- tapOn:
+    id: "create-business"
+- takeScreenshot: s07-business-signup
+- back

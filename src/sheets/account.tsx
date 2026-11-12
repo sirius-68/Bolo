@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { MONEY_LIVE } from '../logic/money';
+import { NCAT_PREF } from '../logic/notify';
+import { supabase } from '../lib/supabase';
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, ui, MyBiz } from '../data/db';
@@ -782,6 +784,9 @@ export function openNotifSettings() {
                 db.PREF.notif[i] = v ? 1 : 0;
                 bump();
                 f((x) => x + 1);
+                // the server checks these before creating a notification
+                const cat = (Object.keys(NCAT_PREF) as (keyof typeof NCAT_PREF)[]).find((k) => NCAT_PREF[k] === i);
+                if (cat && db.uid) void supabase.from('notification_prefs').upsert({ user_id: db.uid, category: cat, enabled: v });
               }}
             />
           ))}

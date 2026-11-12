@@ -27,7 +27,7 @@ const STEPS: [string, string, string][] = [
   ['onway', 'On the way', 'nav'],
   ['working', 'Working', 'wrench'],
   ['done', 'Done', 'flag'],
-  ['confirmed', 'Paid', 'coins'],
+  ['confirmed', 'Confirmed', 'checkc'],
 ];
 /** Route as a polyline in a 390×330 box (start → home). */
 const ROUTE: [number, number][] = [
@@ -79,27 +79,32 @@ export default function Track() {
   const o = P(oid);
   const f = fname(o.name);
   const idx = STEPS.findIndex((s) => s[0] === b.state);
-  const prog = b.state === 'booked' ? 0 : b.state === 'onway' ? Math.max(0.06, 1 - b.eta / (b.eta0 || 1)) : 1;
+  const prog = b.state === 'booked' ? 0 : b.state === 'onway' ? Math.max(0.06, b.eta0 ? 1 - b.eta / b.eta0 : 0.1) : 1;
+  // real positions: where the job is, and where the worker is now (live while on the way)
+  const dest = b.dest || (W ? undefined : db.user.coord || undefined) || coordOf(b.id, b.area);
+  const workerAt = b.state === 'onway' ? b.live || (W ? db.user.coord : P(b.worker).coord) || null : b.state === 'booked' ? (W ? db.user.coord : P(b.worker).coord) || null : dest;
+  const fresh = b.liveAt ? Math.round((Date.now() - b.liveAt) / 1000) : null;
+  const etaTxt = b.eta ? `${b.eta} min away` : b.live ? 'On the way' : 'Waiting for location';
   const k = width / 390;
   const H = 330 * k;
   const [px, py] = along(prog);
   const ST: Record<string, [string, string]> = W
     ? {
         booked: [`Job with ${f}`, `${b.when} · Tap Start trip when you leave so ${f} can follow you.`],
-        onway: [`Heading to ${f}`, `${b.eta} min · ${b.area}`],
+        onway: [`Heading to ${f}`, `${b.eta ? b.eta + ' min · ' : ''}${b.area || 'Your location is shared with ' + f}`],
         working: ['Job in progress', `Started at ${b.log.working || nowT()}. Tap Mark as done when you finish.`],
-        done: [`Waiting for ${f}`, `${f} is checking the work. Payment is released when they confirm.`],
-        confirmed: ['Job complete', `${b.price} has been added to your balance.`],
+        done: [`Waiting for ${f}`, `${f} is checking the work and will confirm.`],
+        confirmed: ['Job complete', `${f} confirmed the job. Agreed price: ${b.price}.`],
       }
     : {
         booked: [`${f} starts ${b.when}`, 'We’ll let you know when they’re on the way.'],
-        onway: [`${f} is on the way`, `Arriving in about ${b.eta} min`],
+        onway: [`${f} is on the way`, b.eta ? `Arriving in about ${b.eta} min${fresh != null && fresh > 90 ? ' · last seen ' + Math.round(fresh / 60) + ' min ago' : ''}` : b.live ? 'Following their location live' : 'Their location appears here once they share it'],
         working: [`${f} is working`, `Started at ${b.log.working || nowT()}`],
-        done: [`${f} says the job is done`, 'Check the work and confirm to release payment.'],
-        confirmed: ['Job complete', `You paid ${b.price}`],
+        done: [`${f} says the job is done`, 'Check the work, then confirm.'],
+        confirmed: ['Job complete', `Agreed price: ${b.price}. Pay ${f} directly if you haven’t yet.`],
       };
   const [h, s] = ST[b.state];
-  const eta: Record<string, [string, string]> = { booked: ['calcheck', b.when], onway: ['timer', `${b.eta} min away`], working: ['wrench', 'Working now'], done: ['flag', 'Job done'], confirmed: ['checkc', 'Paid'] };
+  const eta: Record<string, [string, string]> = { booked: ['calcheck', b.when], onway: ['timer', etaTxt], working: ['wrench', 'Working now'], done: ['flag', 'Job done'], confirmed: ['checkc', 'Confirmed'] };
   let act: React.ReactNode = null;
   if (W)
     act = {
@@ -114,8 +119,8 @@ export default function Track() {
       done: <Btn disabled icon="timer" title={`Waiting for ${f} to confirm…`} />,
       confirmed: (
         <>
-          <Note icon="coins" color={C.mint}>
-            {b.price} added to your wallet
+          <Note icon="checkc" color={C.mint}>
+            {f} confirmed the job is done
           </Note>
           {!b.reviewed ? <Btn variant="yellow" icon="star" title={`Rate ${f}`} onPress={() => openReview(oid, b.id)} /> : null}
         </>
@@ -185,7 +190,7 @@ export default function Track() {
       <View style={{ height: H + ins.top, overflow: 'hidden' }}>
         {hasMapbox ? (
           <View style={{ position: 'absolute', left: 0, right: 0, top: 0 }}>
-            <RouteMap from={coordOf(b.worker, W ? db.PR.area.home : P(b.worker).area)} to={coordOf(b.id, b.area)} progress={prog} workerPic={W ? myPhoto() : P(b.worker).photo} height={H + ins.top} />
+            <RouteMap from={workerAt || dest} to={dest} live={workerAt} progress={prog} workerPic={W ? myPhoto() : P(b.worker).photo} height={H + ins.top} />
           </View>
         ) : (
           <>

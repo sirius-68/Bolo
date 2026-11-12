@@ -18,6 +18,16 @@ export async function locGranted() {
   }
 }
 
+let lastSaved: { t: number; c: LngLat } | null = null;
+/** My exact position is private (for directions on my bookings); the public profile shows it rounded to ~1 km. */
+function saveLocation(c: LngLat) {
+  if (!db.uid) return;
+  const moved = lastSaved ? Math.abs(lastSaved.c[0] - c[0]) + Math.abs(lastSaved.c[1] - c[1]) : 1;
+  if (lastSaved && moved < 0.003 && Date.now() - lastSaved.t < 30 * 60_000) return;
+  lastSaved = { t: Date.now(), c };
+  const { supabase } = require('../lib/supabase');
+  void supabase.rpc('set_my_location', { lat: c[1], lng: c[0] });
+}
 /** Get the current position (asks for permission only when `ask` is true) and update the city name. */
 export function locate(ask = false): Promise<LngLat | null> {
   if (busy) return busy;
@@ -32,6 +42,7 @@ export function locate(ask = false): Promise<LngLat | null> {
       if (!pos) return null;
       const c: LngLat = [pos.coords.longitude, pos.coords.latitude];
       db.user.coord = c;
+      saveLocation(c);
       if (db.user.cityAuto !== false) {
         try {
           const g = (await Location.reverseGeocodeAsync({ latitude: c[1], longitude: c[0] }))[0];

@@ -95,15 +95,6 @@ export function askAt(r: Rec, ts: number, text: string) {
   th.msgs.push({ f: 'me', k: 'ts', t: text.trim(), ts: Math.floor(ts), rec: r.id, name: r.title, at: nowT(), st: 'sent' });
   th.time = nowT();
   toast(`Asked in the class group at ${fmtTs(ts)}`);
-  // Someone in the class answers, pointing to the same moment.
-  if (!c.mine)
-    later(5000, () => {
-      th.msgs.push({ f: 'them', t: `${c.prov.n}: Good question! At ${fmtTs(ts)} we compare the two cases. Watch from ${fmtTs(Math.max(0, ts - 10))} again, then try the exercise.`, at: nowT() });
-      th.time = nowT();
-      th.unread = (th.unread || 0) + 1;
-      notify({ type: 'message', cat: 'messages', who: undefined, key: `msg:${gid}`, upsert: true, text: `${c.prov.n} answered your question in “${c.title}”`, go: { k: 'chat', id: gid } });
-      bump();
-    });
   bump();
   return gid;
 }

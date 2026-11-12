@@ -14,7 +14,7 @@ import { ExBooking, bookService, expertById, expertContact, nearestDate, priceAf
 import { ExRating } from '../src/components/ExpertUI';
 import { openChat } from '../src/sheets/chat';
 
-/** Booking a service: what you get, the nearest date, promo code, and pay into escrow. */
+/** Booking a service: what you get and a request to the expert in chat. */
 export default function ExpertBook() {
   useLive();
   const { e: eid, s: sid } = useLocalSearchParams<{ e: string; s: string }>();

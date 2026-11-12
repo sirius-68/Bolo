@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../data/db';
 import { CATS } from '../data/catalog';
-import { anchor, coordOf, kmBetween } from '../data/geo';
+import { anchor, coordOf, placeOf, kmBetween } from '../data/geo';
 import { Avatar, Pict, Txt, Verified, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { C, S, tx } from '../ui/theme';
@@ -49,7 +49,7 @@ export function MapScreen() {
     let best: string | null = null;
     let bd = Infinity;
     ids.slice(0, 12).forEach((id) => {
-      const d = kmBetween(a, mode === 'jobs' ? coordOf(id, jobs.find((p) => p.id === id)?.area) : coordOf(id, P(id).area));
+      const d = kmBetween(a, mode === 'jobs' ? placeOf(id, jobs.find((p) => p.id === id)?.area, jobs.find((p) => p.id === id)?.coord) : placeOf(id, P(id).area, P(id).coord));
       if (d < bd) {
         bd = d;
         best = id;

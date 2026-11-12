@@ -619,6 +619,12 @@ export async function refreshBooking(id: string) {
 }
 function upsertBooking(r: any) {
   const i = db.BOOKINGS.findIndex((b) => b.id === r.id);
+  const was = i >= 0 ? db.BOOKINGS[i].state : null;
+  if (r.state === 'done' && was && was !== 'done' && r.client_id === db.uid) setTimeout(() => require('./events').emit('doneAlert', r.id), 300);
+  if (r.state === 'onway' && was === 'booked' && r.worker_id === db.uid) {
+    const b = db.BOOKINGS[i];
+    if (b && require('./tracking').sharingFor() !== b.id) void require('./tracking').startSharing(b, true);
+  }
   if (r.state === 'cancelled') {
     if (i >= 0) db.BOOKINGS.splice(i, 1);
   } else if (i >= 0) db.BOOKINGS[i] = { ...bookingFrom({ ...r, dest_lng: r.dest_lng ?? db.BOOKINGS[i].dest?.[0], dest_lat: r.dest_lat ?? db.BOOKINGS[i].dest?.[1] }) };

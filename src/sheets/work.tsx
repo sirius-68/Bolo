@@ -564,7 +564,7 @@ function HireSheet({ id, preset }: { id: string; preset?: { when?: string } }) {
       <View style={[S.row, { gap: 10, padding: 12, borderRadius: 14, backgroundColor: 'rgba(169,182,255,.12)' }]}>
         <Icon name="shield" size={18} color={C.lav} />
         <Txt s={12} c={C.lav} style={{ flex: 1 }}>
-          When {f} accepts, the price is paid from your wallet into escrow. {f} gets it only after you confirm the job is done.
+          When {f} accepts, the job is booked and you can follow it live. Pay {f} directly as agreed: payments through bolo are coming soon.
         </Txt>
       </View>
       <Btn
@@ -596,12 +596,12 @@ function DoneAlert({ id }: { id: string }) {
   return (
     <View style={{ gap: 10 }}>
       <AlertIll icon="flag" bg={C.ok} color="#fff" />
-      <SheetTitle center sub={`Is everything okay with “${b.title}”? Confirming releases ${b.price} from escrow to ${f}.`}>
+      <SheetTitle center sub={`Is everything okay with “${b.title}”? Confirm once you’ve checked the work.`}>
         {f} says the job is done
       </SheetTitle>
       <Btn
         variant="yellow"
-        title="Yes, release payment"
+        title="Yes, confirm"
         style={{ marginTop: 8 }}
         onPress={() => {
           if (confirmDone(id)) afterSheet(() => openReview(b.worker, b.id), 500);

@@ -1,0 +1,55 @@
+appId: cm.bolo.app
+name: Signed in with the QA account (real server data)
+---
+- launchApp:
+    clearState: true
+- runFlow: dismiss.yaml
+- extendedWaitUntil:
+    visible:
+      id: "skip"
+    timeout: 30000
+- tapOn:
+    id: "skip"
+- tapOn:
+    id: "have-account"
+- tapOn: "Email"
+- tapOn:
+    id: "li-contact"
+- inputText: ${QA_EMAIL}
+- hideKeyboard
+- tapOn:
+    id: "li-pwd"
+- inputText: ${QA_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "li-submit"
+- extendedWaitUntil:
+    visible:
+      id: "tab-feed"
+    timeout: 30000
+- waitForAnimationToEnd
+- runFlow: dismiss.yaml
+- takeScreenshot: q01-feed
+- tapOn: "Jobs"
+- takeScreenshot: q02-jobs
+- tapOn: "People"
+- takeScreenshot: q03-people
+- tapOn:
+    id: "tab-career"
+- waitForAnimationToEnd
+- runFlow: dismiss.yaml
+- takeScreenshot: q04-career
+- tapOn:
+    id: "tab-me"
+- waitForAnimationToEnd
+- takeScreenshot: q05-me
+- tapOn:
+    id: "tab-feed"
+- tapOn: "Messages"
+- waitForAnimationToEnd
+- takeScreenshot: q06-inbox
+- back
+- tapOn: "Notifications"
+- waitForAnimationToEnd
+- takeScreenshot: q07-notifications
+- back

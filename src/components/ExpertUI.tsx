@@ -314,12 +314,12 @@ function Session({ b }: { b: ExBooking }) {
           testID="exb-done"
           variant="dark"
           icon="checkc"
-          title="Session done · release payment"
+          title="Session done"
           onPress={() =>
             confirm({
               title: 'Did the session happen?',
-              text: `${xaf(b.amt)} goes to ${e.name}. Only confirm once you’ve had your session or received your report.`,
-              ok: 'Yes, release payment',
+              text: `Only confirm once you’ve had your session or received your report from ${e.name}.`,
+              ok: 'Yes, confirm',
               icon: 'checkc',
               onOk: () => (confirmSession(b), afterSheet(() => openSession(b))),
             })
@@ -333,11 +333,11 @@ function Session({ b }: { b: ExBooking }) {
           c={C.err}
           center
           onPress={() =>
-            confirm({ title: 'Cancel this session?', text: `${xaf(b.amt)} goes back to your wallet.`, ok: 'Cancel session', danger: true, icon: 'x', onOk: () => cancelSession(b) })
+            confirm({ title: 'Cancel this session?', text: `${e.name} will be told right away.`, ok: 'Cancel session', danger: true, icon: 'x', onOk: () => cancelSession(b) })
           }
           style={{ paddingVertical: 6 }}
         >
-          Cancel and get a refund
+          Cancel session
         </Txt>
       ) : null}
       {b.state === 'done' && !b.rated ? (

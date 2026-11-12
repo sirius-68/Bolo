@@ -9,9 +9,12 @@ LOGPID=$!
 adb shell settings put global hide_error_dialogs 1 || true
 adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
 sleep 20
-for f in regular business; do
+# Signed out always; signed in only when a QA account is set in GitHub secrets (QA_EMAIL, QA_PASSWORD).
+FLOWS="signedout"
+[ -n "$QA_EMAIL" ] && [ -n "$QA_PASSWORD" ] && FLOWS="signedout signedin"
+for f in $FLOWS; do
   mkdir -p qa-out/$f
-  (cd qa-out/$f && maestro test ../../.maestro/$f.yaml > maestro.log 2>&1; echo "exit=$?" >> maestro.log)
+  (cd qa-out/$f && maestro test -e QA_EMAIL="$QA_EMAIL" -e QA_PASSWORD="$QA_PASSWORD" ../../.maestro/$f.yaml > maestro.log 2>&1; echo "exit=$?" >> maestro.log)
   adb exec-out screencap -p > qa-out/$f/zz-last.png || true
 done
 find .maestro ~/.maestro/tests -name "*.png" -newer out -exec cp {} qa-out/ \; 2>/dev/null || true

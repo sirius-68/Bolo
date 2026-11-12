@@ -1,3 +1,4 @@
+import { REELS } from '../data/db';
 import React, { useEffect } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -52,6 +53,8 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
         { name: 'reels', icon: 'play', label: 'Reels' },
         { name: 'me', icon: 'user', label: 'Company' },
       ];
+  // Videos come back with video posts; until there are any, no empty Reels tab.
+  if (!REELS.length) tabs.splice(tabs.findIndex((t) => t.name === 'reels'), 1);
   // The map is a full-screen experience with its own Home button.
   if (W && cur === 'home') return null;
   return (
