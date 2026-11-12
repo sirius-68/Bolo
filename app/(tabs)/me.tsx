@@ -4,11 +4,12 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, ui, REELS } from '../../src/data/db';
+import { myStats } from '../../src/logic/server';
 import { DOCS, ST_C, ST_W, catIcon } from '../../src/data/catalog';
 import { Avatar, Btn, Empty, IconBtn, PTabs, ProTag, Ring, StatusPill, Txt, Verified, tap } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
-import { P, bizLogo, bizName, bizPct, curBiz, isPro, isW, myHandle, myCity, cityLabel, myPhoto, mySkill, myVacancies, myOpps, myCourses, xaf, postById, openJobs, has } from '../../src/logic/core';
+import { P, bizLogo, bizName, bizPct, curBiz, isPro, isW, myHandle, myCity, cityLabel, myPhoto, mySkill, myVacancies, myOpps, myCourses, xaf, postById, openJobs, has , k } from '../../src/logic/core';
 import { bump, useLive } from '../../src/logic/live';
 import { balance, heldTotal } from '../../src/logic/wallet';
 import { myListings } from '../../src/logic/listings';
@@ -270,13 +271,13 @@ function MeRegular() {
         handle={myHandle()}
         role={st[1]}
         roleColor={st[3]}
-        verified={db.PR.docs.id === 'verified'}
-        bio={db.user.bio || `${mySkill()} in ${myCity()} · ${db.user.years} years experience.`}
+        verified={db.user.verified || db.PR.docs.id === 'verified'}
+        bio={db.user.bio || 'Add a short bio so people know what you do.'}
         contact={db.user.contact ? (db.user.contact.includes('@') ? db.user.contact : showPhone(db.user.contact)) : 'Add your email or phone'}
         onAvatar={PR_ACT.photo}
         stats={[
-          [12 + acc, 'Jobs done', openJobHistory],
-          ['1.2k', 'Followers', () => openFollows('Followers')],
+          [myStats().jobs_done, 'Jobs done', openJobHistory],
+          [k(myStats().followers), 'Followers', () => openFollows('Followers')],
           [followingCount(), 'Following', () => openFollows('Following')],
         ]}
       />

@@ -99,7 +99,8 @@ export const myHandle = () => '@' + (db.user.name ? db.user.name.toLowerCase().r
 /** The signed-in person as a Person record (Regular or the active business). */
 export function me(): Person {
   const u = db.user;
-  const base: Person = { name: u.name || 'You', role: isW() ? mySkill() : 'Client', tag: 'You', years: u.years, rate: 5, dist: 'You', area: myCity(), photo: myPhoto(), verified: 1, jobs: 12, reviews: '0', followers: 1200, self: 1 };
+  const st = require('./server').myStats();
+  const base: Person = { name: u.name || 'You', role: isW() ? mySkill() : 'Client', tag: 'You', years: u.years, rate: st.rating, dist: 'You', area: myCity(), photo: myPhoto(), verified: u.verified ? 1 : 0, jobs: st.jobs_done, reviews: String(st.reviews), followers: st.followers, self: 1 };
   if (!isW()) {
     const b = curBiz();
     if (b) Object.assign(base, { name: bizName(b), role: 'Business', photo: bizLogo(b), client: 1, biz: 1, area: b.area || b.city || '', verified: b.verified === 'verified' ? 1 : 0 });

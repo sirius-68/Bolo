@@ -9,7 +9,7 @@ import { Icon } from '../ui/Icon';
 import { afterSheet, sheet, SheetTitle, toast, confirm } from '../ui/overlay';
 import { C, S } from '../ui/theme';
 import { P, cityLabel, curBiz, bizName, bizLogo, myVacancies, postById, isEmail, isPhone, xaf } from '../logic/core';
-import { endContract, sendContract, ContractDraft } from '../logic/work';
+import { endContract, markSigned, sendContract, ContractDraft } from '../logic/work';
 import { invite } from '../logic/account';
 import { adCost, adRate, adTargets, adHead, launchAd, MAX_SKIP, SEC_RATE, STORY_EXTRA } from '../logic/career';
 import { showStories, Story } from '../components/Stories';
@@ -173,7 +173,7 @@ function ContractView({ id }: { id: string }) {
               {bizName(b)} · No. {id.slice(-6)}
             </Txt>
           </View>
-          <StatusPill kind={k.status === 'active' ? 'acc' : k.status === 'ended' ? 'urg' : 'wait'} text={k.status === 'active' ? 'Active' : k.status === 'ended' ? 'Ended' : 'Waiting to sign'} />
+          <StatusPill kind={k.status === 'active' ? 'acc' : k.status === 'ended' ? 'urg' : 'wait'} text={k.status === 'active' ? 'Active' : k.status === 'ended' ? 'Ended' : 'Waiting for reply'} />
         </View>
         {rows.map(([a, v]) => (
           <View key={a} style={{ flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' }}>
@@ -193,7 +193,7 @@ function ContractView({ id }: { id: string }) {
             <View key={j} style={[S.row, { flex: 1, gap: 6, padding: 10, borderRadius: 12, backgroundColor: ok ? '#e7f7ee' : '#f4f4f4' }]}>
               <Icon name={ok ? 'check' : 'timer'} size={16} color={ok ? '#1e9e5a' : '#888'} />
               <Txt s={11} c="#333" style={{ flex: 1 }}>
-                {ok ? 'Signed by' : 'Waiting for'}
+                {ok ? (j === 0 ? 'Offered by' : 'Accepted by') : 'Waiting for'}
                 {'\n'}
                 <Txt s={12} w={8} c="#111">
                   {n as string}
@@ -223,6 +223,9 @@ function ContractView({ id }: { id: string }) {
         />
         <Btn variant="dark" icon="chat" title="Message" style={{ flex: 1 }} onPress={() => afterSheet(() => openChat(k.person))} />
       </View>
+      {k.status === 'sent' ? (
+        <Btn variant="yellow" icon="checkc" title={`${w.name.split(' ')[0]} accepted: add to team`} style={{ marginTop: 10 }} onPress={() => (markSigned(id), sheet.close())} />
+      ) : null}
       {k.status === 'active' ? (
         <Btn
           variant="ghost"

@@ -319,6 +319,15 @@ async function loadMine() {
   (blocks.data || []).forEach((x: any) => BLOCKED.add(x.blocked_id));
 }
 export const isBlocked = (id: string) => BLOCKED.has(R(id));
+/** My public numbers (followers, jobs done, rating) as others see them. */
+const MINE: { followers: number; following: number; jobs_done: number; hires: number; rating: number; reviews: number } = { followers: 0, following: 0, jobs_done: 0, hires: 0, rating: 0, reviews: 0 };
+export const myStats = () => MINE;
+async function loadMyStats() {
+  const { data } = await supabase.from('profile_stats').select('*').eq('id', ME()).maybeSingle();
+  if (data) Object.assign(MINE, { ...data, rating: Number(data.rating) || 0 });
+  const { data: p } = await supabase.from('profiles').select('verified').eq('id', ME()).maybeSingle();
+  if (p) db.user.verified = !!p.verified;
+}
 /** People who follow me (app ids). */
 export async function myFollowers(): Promise<string[]> {
   const { data } = await supabase.from('follows').select('follower_id').eq('followee_id', ME()).limit(500);
@@ -858,7 +867,7 @@ export function loadAll(): Promise<void> {
   loading = (async () => {
     try {
       await loadMine();
-      await Promise.all([loadPeople(), loadPosts(), loadCourses()]);
+      await Promise.all([loadPeople(), loadPosts(), loadCourses(), loadMyStats()]);
       await Promise.all([loadApplications(), loadMentorships(), loadOpps(), loadExperts()]);
       await loadChats();
       await Promise.all([loadBookings(), loadNotifs()]);

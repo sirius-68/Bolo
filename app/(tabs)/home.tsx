@@ -58,8 +58,8 @@ function BizHome() {
         const n = po.offerList!.filter((o) => o.stage === 'applied').length;
         return ['follow', `${n} new applicant${n > 1 ? 's' : ''} for ${po.title}`, () => openJob(po.id, 'applied')] as [string, string, () => void];
       }),
-    ...apps.filter((a) => a.o.stage === 'interview').map((a) => ['calcheck', `Interview with ${P(a.o.by).name} · tomorrow 10:00`, () => openJob(a.po.id, 'interview')] as [string, string, () => void]),
-    ...wait.map((c) => ['file', `Contract waiting for ${P(c.person).name}’s signature`, () => viewContract(c.id)] as [string, string, () => void]),
+    ...apps.filter((a) => a.o.stage === 'interview').map((a) => ['calcheck', `Interview to arrange with ${P(a.o.by).name}`, () => openJob(a.po.id, 'interview')] as [string, string, () => void]),
+    ...wait.map((c) => ['file', `Job offer waiting for ${P(c.person).name}’s reply`, () => viewContract(c.id)] as [string, string, () => void]),
     ...(pct < 100 ? ([['edit', `Finish your business page (${pct}%)`, () => openBizSetup('edit', !b.name || !b.sector || !b.about ? 1 : !b.address || !b.phone || !b.email ? 2 : 3)]] as [string, string, () => void][]) : []),
   ];
   const ads = adsOf();

@@ -5,12 +5,16 @@ import { bump } from './live';
 import { showStories, Story } from '../components/Stories';
 import { openPayments } from '../sheets/account';
 
-export const WHATS_NEW_ID = '2026-11-05';
+export const WHATS_NEW_ID = '2026-11-12';
 
 /** Slides added in the latest update. */
-const LATEST = ['yourdata'];
+const LATEST = ['live', 'chatlive', 'tracklive', 'safety'];
 
 export const WHATS_NEW: Story[] = [
+  { key: 'live', colors: ['#f6ee5c', '#e3c400'], icon: 'sparkle', chip: 'bolo is live', title: 'Real people, real jobs', text: 'Everything you see is now from real bolo members: jobs, people, posts and courses. Post a job or share your work and people near you see it right away.', dark: true },
+  { key: 'chatlive', colors: ['#3d5af1', '#1b2a9b'], icon: 'chat', chip: 'Messages', title: 'Chat in real time', text: 'Messages arrive instantly, with read ticks. Send photos, documents and your location, or a quote that books the job when it’s accepted.', cta: 'Open messages', onCta: () => router.push('/inbox') },
+  { key: 'tracklive', colors: ['#2fbf7a', '#0f6e45'], icon: 'nav', chip: 'Bookings', title: 'Follow the worker live', text: 'When a worker taps Start trip, you see them move on the map with an arrival time, until they arrive. Pay them directly as agreed: payments in bolo are coming soon.' },
+  { key: 'safety', colors: ['#ff8a3d', '#c2410c'], icon: 'shield', chip: 'Safety', title: 'Report and block', text: 'Tap ⋯ on a post or the chat menu to report something to our team or block someone. Real ID checks are done by a bolo reviewer.' },
   { key: 'yourdata', colors: ['#2fbf7a', '#0f6e45'], icon: 'shield', chip: 'Privacy', title: 'Your data, your call', text: 'Download everything bolo stores about you, or delete your account for good, from Settings → Privacy & safety.', cta: 'Open settings', onCta: () => router.push('/settings' as any) },
   { key: 'experts', colors: ['#3d5af1', '#1b2a9b'], icon: 'verified', chip: 'Career', title: 'Book a career expert', text: 'CV reviews, mock interviews and career plans with checked, rated experts. Pick a service, pay safely with your wallet and agree the time in chat.', cta: 'Find an expert', onCta: () => router.push('/experts' as any) },
   { key: 'courselinks', colors: ['#a9b6ff', '#5b6bd6'], icon: 'globe', chip: 'Courses', title: 'Courses open on the school’s site', text: 'Tap any course to open its own website right inside bolo, and sign up there. Save the ones you like with the bookmark.', cta: 'Explore courses', onCta: () => router.push('/courses' as any) },
