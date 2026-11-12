@@ -1,0 +1,30 @@
+appId: cm.bolo.app
+# Shared: fresh install, log in with EMAIL / TOUR_PASSWORD, land on the feed.
+---
+- launchApp:
+    clearState: true
+- runFlow: dismiss.yaml
+- extendedWaitUntil:
+    visible:
+      id: "skip"
+    timeout: 30000
+- tapOn:
+    id: "skip"
+- tapOn:
+    id: "have-account"
+- tapOn:
+    id: "li-contact"
+- inputText: ${EMAIL}
+- hideKeyboard
+- tapOn:
+    id: "li-pwd"
+- inputText: ${TOUR_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "li-submit"
+- extendedWaitUntil:
+    visible:
+      id: "tab-feed"
+    timeout: 40000
+- waitForAnimationToEnd
+- runFlow: dismiss.yaml

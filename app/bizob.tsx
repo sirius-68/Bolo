@@ -16,7 +16,7 @@ import { LogoPicker } from '../src/components/business';
 import { signup } from '../src/components/auth';
 import { isReal, signUp } from '../src/logic/remote';
 import { db } from '../src/data/db';
-import { PhoneInput, intlPhone } from '../src/components/auth';
+import { PhoneInput, authCaps, intlPhone } from '../src/components/auth';
 
 /** Business-only sign-up (from the welcome screen). */
 export default function BizOnboarding() {
@@ -38,7 +38,7 @@ export default function BizOnboarding() {
   const next = () => {
     if (step === 0) {
       if (o.owner.trim().length < 2) return setErr('owner');
-      if (!isEmail(o.email) && !isPhone(o.phone)) return setErr('contact');
+      if (!isEmail(o.email) && !(authCaps.phone && isPhone(o.phone))) return setErr('contact');
       if (o.pass.length < 8) return setErr('pass');
     }
     if (step === 1) {
@@ -63,7 +63,7 @@ export default function BizOnboarding() {
     };
     if (!isReal()) return done();
     // Real account: log-in uses the work email (or the phone when there's no email).
-    const contact = isEmail(o.email) ? o.email.trim() : intlPhone(o.phone);
+    const contact = isEmail(o.email) || !authCaps.phone ? o.email.trim() : intlPhone(o.phone);
     setBusy(true);
     const r = await signUp(contact, o.pass, { name: o.owner.trim(), biz_only: true });
     setBusy(false);
@@ -104,7 +104,7 @@ export default function BizOnboarding() {
           <Field label="Your role in the business">
             <SelectBox value={o.ownerRole} onPress={() => pick('Your role', ['Owner', 'Co-founder', 'HR / recruiter', 'Manager'], o.ownerRole, (v) => up('ownerRole', v))} />
           </Field>
-          <Field label="Work email" error={err === 'contact' && 'Add a work email or phone number'}>
+          <Field label="Work email" error={err === 'contact' && authCaps.phone ? 'Add a work email or phone number' : 'Add a work email'}>
             <Input testID="bo-email" value={o.email} onChangeText={(v) => up('email', v)} icon="mail" placeholder="you@yourbusiness.cm" keyboardType="email-address" invalid={err === 'contact'} />
           </Field>
           <Field label="Phone number">

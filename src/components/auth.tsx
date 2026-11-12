@@ -1,10 +1,28 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Field, Input, Pict, Seg, Txt, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { pick } from '../ui/overlay';
 import { C, R } from '../ui/theme';
 import { COUNTRIES, Country, countryByIso, deviceCountry, flag } from '../data/countries';
+import { SUPABASE_KEY, SUPABASE_URL } from '../lib/supabase';
+import { bump } from '../logic/live';
+
+/** What the server can do for sign-in. Phone numbers only work once text messages are set up there. */
+export const authCaps = { phone: false };
+export async function loadAuthCaps() {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: SUPABASE_KEY } });
+    const j = await r.json();
+    const phone = !!j?.external?.phone;
+    if (phone !== authCaps.phone) {
+      authCaps.phone = phone;
+      bump();
+    }
+  } catch {}
+}
+/** Phone first where text messages work, otherwise email. */
+export const firstMode = (): Mode => (authCaps.phone ? 'phone' : 'email');
 
 /** Last country picked for phone numbers (starts as the phone's own region). */
 let lastCountry: Country | null = null;
@@ -78,19 +96,28 @@ export const signup = { otpMode: 'signup' as 'signup' | 'reset' | 'login', conta
 
 export type Mode = 'phone' | 'email';
 export function ContactField({ mode, setMode, value, onChange, error, testID }: { mode: Mode; setMode: (m: Mode) => void; value: string; onChange: (v: string) => void; error?: string | false; testID?: string }) {
+  // no text messages on the server yet → email only
+  useEffect(() => {
+    if (!authCaps.phone && mode === 'phone') {
+      setMode('email');
+      onChange('');
+    }
+  }, [mode]);
   return (
     <View style={{ gap: 16 }}>
-      <Seg
-        items={[
-          ['phone', 'Phone'],
-          ['email', 'Email'],
-        ]}
-        value={mode}
-        onChange={(m) => {
-          setMode(m);
-          onChange('');
-        }}
-      />
+      {authCaps.phone ? (
+        <Seg
+          items={[
+            ['phone', 'Phone'],
+            ['email', 'Email'],
+          ]}
+          value={mode}
+          onChange={(m) => {
+            setMode(m);
+            onChange('');
+          }}
+        />
+      ) : null}
       <Field label={mode === 'phone' ? 'Phone number' : 'Email'} error={error}>
         {mode === 'phone' ? (
           <PhoneInput testID={testID} value={value} onChange={onChange} invalid={!!error} />

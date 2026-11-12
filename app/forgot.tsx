@@ -3,11 +3,11 @@ import { View } from 'react-native';
 import { router } from 'expo-router';
 import { Btn, Page, Pict, Sub, TextLink, Title, TopBar, Txt } from '../src/ui/kit';
 import { C } from '../src/ui/theme';
-import { ContactField, Mode, contactOk, contactValue, signup } from '../src/components/auth';
+import { ContactField, firstMode, Mode, contactOk, contactValue, signup } from '../src/components/auth';
 import { isReal, sendReset } from '../src/logic/remote';
 
 export default function Forgot() {
-  const [mode, setMode] = useState<Mode>('phone');
+  const [mode, setMode] = useState<Mode>(firstMode());
   const [contact, setContact] = useState('');
   const [tried, setTried] = useState(false);
   const [busy, setBusy] = useState(false);

@@ -7,9 +7,9 @@ name: Backend
 on:
   push:
     branches: [main]
-    paths: ["supabase/**", ".github/workflows/backend.yml"]
+    paths: ["supabase/**", "scripts/**", ".github/workflows/backend.yml"]
   pull_request:
-    paths: ["supabase/**", ".github/workflows/backend.yml"]
+    paths: ["supabase/**", "scripts/**", ".github/workflows/backend.yml"]
   workflow_dispatch:
     inputs:
       target:
@@ -109,6 +109,39 @@ jobs:
             done
             [ "$code" = "200" ] || { echo "push setup failed ($code)"; exit 1; }
           fi
+      - name: Sign-in settings (codes by email and SMS; test sign-ups on staging)
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          SMS_SENDER: ${{ vars.SMS_SENDER }}
+        run: bash scripts/auth-config.sh "$REF" staging
+
+  e2e:
+    name: End-to-end test on staging
+    needs: staging
+    if: ${{ vars.STAGING_SUPABASE_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Two test accounts go through the app's main flows
+        env:
+          SUPABASE_URL: ${{ vars.STAGING_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ vars.STAGING_SUPABASE_KEY }}
+        run: |
+          set -o pipefail
+          mkdir -p /tmp/e2e ci-out && cp scripts/e2e.mjs /tmp/e2e/ && cd /tmp/e2e
+          npm init -y > /dev/null && npm i --no-audit --no-fund @supabase/supabase-js@2 > /dev/null
+          node e2e.mjs 2>&1 | tee "$GITHUB_WORKSPACE/ci-out/e2e.log"
+      - name: Publish result
+        if: always()
+        run: |
+          mkdir -p /tmp/pub && cp -r ci-out/. /tmp/pub/ 2>/dev/null || true
+          cd /tmp/pub && git init -q && git checkout -q -b logs && git add -A
+          git -c user.name=ci -c user.email=ci@bolo.app commit -qm "e2e ${{ github.run_id }}" || true
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" logs:refs/heads/ci-logs/e2e-latest || true
 
   production:
     name: Deploy to production
@@ -160,3 +193,8 @@ jobs:
             done
             [ "$code" = "200" ] || { echo "push setup failed ($code)"; exit 1; }
           fi
+      - name: Sign-in settings (codes by email and SMS)
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          SMS_SENDER: ${{ vars.SMS_SENDER }}
+        run: bash scripts/auth-config.sh "$REF"

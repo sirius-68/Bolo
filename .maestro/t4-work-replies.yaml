@@ -1,0 +1,35 @@
+appId: cm.bolo.app
+name: The worker logs back in - sees the booking and the message, replies
+---
+- runFlow:
+    file: _login.yaml
+    env:
+      EMAIL: ${WORK_EMAIL}
+- takeScreenshot: b01-feed
+- tapOn: "Notifications"
+- waitForAnimationToEnd
+- takeScreenshot: b02-notifications
+- back
+- tapOn: "Messages"
+- waitForAnimationToEnd
+- takeScreenshot: b03-inbox
+- tapOn: "Tour Hira"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Hello from the tour ${RUN}"
+    timeout: 20000
+- takeScreenshot: b04-chat-received
+- tapOn:
+    id: "chat-input"
+- inputText: "Got it, see you soon"
+- tapOn:
+    id: "chat-send"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: b05-chat-replied
+- back
+- back
+- tapOn:
+    id: "tab-me"
+- waitForAnimationToEnd
+- takeScreenshot: b06-me

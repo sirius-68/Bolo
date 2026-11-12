@@ -1,0 +1,50 @@
+appId: cm.bolo.app
+# Shared: from a fresh install to the end of the sign-up form. Needs INTENT, NAME, EMAIL, TOUR_PASSWORD.
+---
+- launchApp:
+    clearState: true
+- runFlow: dismiss.yaml
+- extendedWaitUntil:
+    visible:
+      id: "skip"
+    timeout: 30000
+- tapOn:
+    id: "skip"
+- tapOn:
+    id: "create-account"
+- tapOn:
+    id: "intent-${INTENT}"
+- tapOn:
+    id: "role-continue"
+- tapOn:
+    id: "su-name"
+- inputText: ${NAME}
+- hideKeyboard
+- tapOn:
+    id: "su-contact"
+- inputText: ${EMAIL}
+- hideKeyboard
+- tapOn:
+    id: "su-pwd"
+- inputText: ${TOUR_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "su-terms"
+- takeScreenshot: ${SHOT}01-signup
+- tapOn:
+    id: "su-submit"
+# staging confirms test accounts at once, so the next screen is the profile step
+- extendedWaitUntil:
+    visible:
+      id: "setup-continue"
+    timeout: 40000
+- takeScreenshot: ${SHOT}02-setup
+- tapOn:
+    id: "setup-continue"
+- extendedWaitUntil:
+    visible:
+      id: "not-now"
+    timeout: 15000
+- takeScreenshot: ${SHOT}03-location
+- tapOn:
+    id: "not-now"

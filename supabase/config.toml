@@ -36,3 +36,7 @@ verify_jwt = false
 # Called by the database (and once at deploy); checks its own shared secret.
 [functions.push]
 verify_jwt = false
+
+# Called by Supabase Auth (Send SMS hook); checks the hook's signature itself.
+[functions.send-sms]
+verify_jwt = false

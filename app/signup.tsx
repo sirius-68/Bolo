@@ -4,13 +4,13 @@ import { router } from 'expo-router';
 import { Btn, Check, Field, Input, Page, Steps, Sub, TextLink, Title, TopBar, Txt } from '../src/ui/kit';
 import { C } from '../src/ui/theme';
 import { db } from '../src/data/db';
-import { ContactField, Divider, Mode, Socials, Strength, contactOk, contactValue, signup } from '../src/components/auth';
+import { ContactField, firstMode, Divider, Mode, Socials, Strength, contactOk, contactValue, signup } from '../src/components/auth';
 import { toast } from '../src/ui/overlay';
 import { wantsWork } from '../src/logic/account';
 import { isReal, signUp } from '../src/logic/remote';
 
 export default function Signup() {
-  const [mode, setMode] = useState<Mode>('phone');
+  const [mode, setMode] = useState<Mode>(firstMode());
   const [name, setName] = useState(db.user.name);
   const [contact, setContact] = useState('');
   const [pwd, setPwd] = useState('');
@@ -53,7 +53,7 @@ export default function Signup() {
           <Input testID="su-pwd" value={pwd} onChangeText={setPwd} icon="lock" placeholder="At least 8 characters" secure invalid={bad.pwd} />
           <Strength v={pwd} />
         </Field>
-        <Check on={terms} onPress={() => setTerms(!terms)}>
+        <Check testID="su-terms" on={terms} onPress={() => setTerms(!terms)}>
           I agree to bolo’s <Txt s={13} w={7} c={C.lav}>Terms of Service</Txt> and <Txt s={13} w={7} c={C.lav}>Privacy Policy</Txt>.
         </Check>
         {err ? (

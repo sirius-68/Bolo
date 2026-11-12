@@ -12,9 +12,15 @@ sleep 20
 # Signed out always; signed in only when a QA account is set in GitHub secrets (QA_EMAIL, QA_PASSWORD).
 FLOWS="signedout"
 [ -n "$QA_EMAIL" ] && [ -n "$QA_PASSWORD" ] && FLOWS="signedout signedin"
+# Test builds talk to staging, where new accounts are confirmed at once: two fresh accounts sign up,
+# go through onboarding, and do a job together (post, offer, accept, chat).
+RUN="${GITHUB_RUN_ID:-$(date +%s)}"
+[ -n "$TOUR_SIGNUP" ] && FLOWS="$FLOWS t1-hire-signup t2-work-signup t3-hire-accepts t4-work-replies"
 for f in $FLOWS; do
   mkdir -p qa-out/$f
-  (cd qa-out/$f && maestro test -e QA_EMAIL="$QA_EMAIL" -e QA_PASSWORD="$QA_PASSWORD" ../../.maestro/$f.yaml > maestro.log 2>&1; echo "exit=$?" >> maestro.log)
+  (cd qa-out/$f && maestro test -e QA_EMAIL="$QA_EMAIL" -e QA_PASSWORD="$QA_PASSWORD" \
+    -e RUN="$RUN" -e TOUR_PASSWORD="Tour-$RUN-pw" -e HIRE_EMAIL="bolo-tour-$RUN-h@mailinator.com" -e WORK_EMAIL="bolo-tour-$RUN-w@mailinator.com" \
+    ../../.maestro/$f.yaml > maestro.log 2>&1; echo "exit=$?" >> maestro.log)
   adb exec-out screencap -p > qa-out/$f/zz-last.png || true
 done
 find .maestro ~/.maestro/tests -name "*.png" -newer out -exec cp {} qa-out/ \; 2>/dev/null || true

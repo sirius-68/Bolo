@@ -73,11 +73,11 @@ jobs:
       EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
       # Pushes build a quick arm64-only APK (every phone from the last ~8 years). Manual runs build all CPU types and run the emulator tour.
       FULL: ${{ github.event_name == 'workflow_dispatch' }}
-      # Backend the app talks to. Releases use production; push builds use staging once it exists.
+      # Backend the app talks to. Releases use production; push builds and manual test builds use staging.
       # Only public values here (project URL, publishable key, Sentry DSN): set them under Settings → Variables.
-      EXPO_PUBLIC_SUPABASE_URL: ${{ github.event_name == 'push' && vars.STAGING_SUPABASE_URL || vars.SUPABASE_URL }}
-      EXPO_PUBLIC_SUPABASE_KEY: ${{ github.event_name == 'push' && vars.STAGING_SUPABASE_KEY || vars.SUPABASE_KEY }}
-      EXPO_PUBLIC_APP_ENV: ${{ github.event_name == 'push' && vars.STAGING_SUPABASE_URL && 'staging' || 'production' }}
+      EXPO_PUBLIC_SUPABASE_URL: ${{ (github.event_name == 'push' || !inputs.release) && vars.STAGING_SUPABASE_URL || vars.SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_KEY: ${{ (github.event_name == 'push' || !inputs.release) && vars.STAGING_SUPABASE_KEY || vars.SUPABASE_KEY }}
+      EXPO_PUBLIC_APP_ENV: ${{ (github.event_name == 'push' || !inputs.release) && vars.STAGING_SUPABASE_URL && 'staging' || 'production' }}
       EXPO_PUBLIC_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
       EXPO_PUBLIC_BUILD: ${{ github.run_number }}
       SENTRY_DISABLE_AUTO_UPLOAD: "true"
@@ -199,7 +199,7 @@ jobs:
     needs: build
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 70
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -224,6 +224,8 @@ jobs:
         env:
           QA_EMAIL: ${{ secrets.QA_EMAIL }}
           QA_PASSWORD: ${{ secrets.QA_PASSWORD }}
+          # test builds (staging): two fresh accounts sign up and do a job together
+          TOUR_SIGNUP: ${{ !inputs.release && vars.STAGING_SUPABASE_URL != '' && '1' || '' }}
         with:
           api-level: 34
           arch: x86_64
