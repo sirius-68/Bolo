@@ -10,7 +10,11 @@ name: The job owner logs back in - sees the offer, accepts it, chats
 - waitForAnimationToEnd
 - takeScreenshot: a02-notifications
 - back
-- tapOn: "Jobs"
+# my own jobs live on my profile (the Jobs tab shows other people's)
+- tapOn:
+    id: "tab-me"
+- waitForAnimationToEnd
+- tapOn: "My jobs.*"
 - waitForAnimationToEnd
 - extendedWaitUntil:
     visible: "Tour leaking tap ${RUN}"
