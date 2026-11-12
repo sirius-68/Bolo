@@ -1,4 +1,5 @@
 import React from 'react';
+import { MONEY_LIVE } from '../../src/logic/money';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -81,7 +82,7 @@ export default function Career() {
         {w ? (
           <>
             <Promo title={db.user.cvDone ? 'Your CV is ready' : 'Create your CV'} text={db.user.cvDone ? 'Update it any time or save it as a PDF' : 'Answer 5 quick steps. We build a professional CV for you'} cta={db.user.cvDone ? 'View my CV' : 'Create my CV'} icon="file" onPress={() => (db.user.cvDone ? openCV() : router.push('/cvflow'))} />
-            <ProCard on={!!db.user.pro.regular} onPress={() => openPro('regular')} />
+            {MONEY_LIVE ? <ProCard on={!!db.user.pro.regular} onPress={() => openPro('regular')} /> : null}
           </>
         ) : (
           <>

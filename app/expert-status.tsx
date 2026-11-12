@@ -97,7 +97,7 @@ export default function ExpertStatus() {
         </View>
       ) : (
         <View style={{ gap: 10, marginTop: 18 }}>
-          {!db.demo && E.status === 'submitted' ? <Note icon="mail">Reviews start once bolo opens expert applications in your area. We’ll notify you when yours is picked up.</Note> : null}
+          {E.status === 'submitted' ? <Note icon="mail">Reviews start once bolo opens expert applications in your area. We’ll notify you when yours is picked up.</Note> : null}
           <Btn variant="dark" title="Back to Career" onPress={() => router.navigate('/(tabs)/career')} />
         </View>
       )}

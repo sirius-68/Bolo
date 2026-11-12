@@ -5,10 +5,11 @@ import { AppState } from 'react-native';
 import { File, Paths } from 'expo-file-system';
 import { supabase } from '../lib/supabase';
 import { setMonitorUser } from '../lib/monitor';
+import { loadAll, startRealtime, stopRealtime } from './server';
 import { db, MyBiz } from '../data/db';
 import { bump, subscribe } from './live';
 
-export const isReal = () => !db.demo;
+export const isReal = () => true;
 const digits = (s: string) => (s || '').replace(/\D/g, '');
 /** Cameroon numbers in E.164 (+2376XXXXXXXX). */
 /** +<country><number>. Numbers saved before international support were local Cameroon numbers. */
@@ -105,6 +106,7 @@ export async function signOut() {
     await supabase.auth.signOut();
   } catch {}
   lastSent = {};
+  stopRealtime();
   setMonitorUser(null);
 }
 /** After any successful sign-in: remember the user and load their saved profile. */
@@ -113,10 +115,33 @@ async function afterAuth() {
   if (!data.user) return;
   const fresh = db.uid !== data.user.id;
   db.uid = data.user.id;
-  db.demo = false;
   setMonitorUser(db.uid);
   if (fresh) lastSent = {};
   await pull();
+  startServer();
+}
+/** Load everything from the server and keep it live (after sign-in and at app start). */
+export function startServer() {
+  if (!db.uid) return;
+  startRealtime();
+  void loadAll().then(() => {
+    const { resumeSims } = require('./work');
+    resumeSims();
+  });
+}
+/** App opened with a saved session but no saved copy of the app's data (first start after an update). */
+export async function resumeSession(): Promise<boolean> {
+  try {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) return false;
+    db.uid = data.user.id;
+    db.user.contact = data.user.email || data.user.phone || db.user.contact;
+    await pull();
+    db.loggedIn = true;
+    return true;
+  } catch {
+    return false;
+  }
 }
 /** At app start: is there a saved Supabase session? */
 export async function hasSession() {
@@ -368,7 +393,10 @@ export function startSync() {
     if (isReal() && db.uid && db.loggedIn) schedule();
   });
   AppState.addEventListener('change', (s) => {
-    if (s === 'active' && isReal() && db.uid && db.loggedIn) pull();
+    if (s === 'active' && db.uid && db.loggedIn) {
+      pull();
+      void loadAll();
+    }
   });
 }
 

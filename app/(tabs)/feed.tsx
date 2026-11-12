@@ -99,17 +99,6 @@ export default function Feed() {
   const header = (
     <View style={{ paddingTop: ins.top }}>
       <TabHeader />
-      {!db.demo && !(db.PREF as any).sampleSeen ? (
-        <View testID="early-note" style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, padding: 12, borderRadius: 16, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }}>
-          <Icon name="sparkle" size={18} color={C.lav} />
-          <Txt s={12} c={C.muted} style={{ flex: 1 }}>
-            Early access: the listings below are examples while bolo grows{cityLabel() ? ` in ${cityLabel()}` : ' near you'}. Your own posts and profile are real.
-          </Txt>
-          <Pressable accessibilityRole="button" accessibilityLabel="Dismiss" hitSlop={10} onPress={() => (((db.PREF as any).sampleSeen = true), bump())}>
-            <Icon name="x" size={16} color={C.muted} />
-          </Pressable>
-        </View>
-      ) : null}
       <View style={{ marginTop: 14 }}>
         <SearchBar
           value={ui.q}

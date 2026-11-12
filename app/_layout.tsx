@@ -14,17 +14,11 @@ import {
 import { Overlays } from '../src/ui/overlay';
 import { restore, startAutosave } from '../src/logic/persist';
 import { db, ui } from '../src/data/db';
-import { resumeSims } from '../src/logic/work';
 import { on } from '../src/logic/events';
 import { showDoneAlert } from '../src/sheets/work';
-import { openFund } from '../src/sheets/wallet';
-import { ensureWallet } from '../src/logic/wallet';
-import { startAdTicker } from '../src/logic/career';
-import { hasSession, pull, startSync } from '../src/logic/remote';
+import { hasSession, pull, resumeSession, startServer, startSync } from '../src/logic/remote';
 import { locate } from '../src/logic/here';
 import { StoryHost } from '../src/components/Stories';
-import { ensureAdJobs } from '../src/logic/career';
-import { ensureCourseListings } from '../src/logic/listings';
 import { Linking, Platform } from 'react-native';
 import { setMonitorUser, startMonitoring } from '../src/lib/monitor';
 import { updateRequired } from '../src/logic/remote';
@@ -56,30 +50,24 @@ export default function Root() {
       startSync();
       // Refresh position and city quietly when location is already allowed (never prompts here).
       locate(false);
-      // Courses are listings that open the school's website; refresh old saves (drops in-app test classes).
-      ensureCourseListings();
-      ensureAdJobs();
-      ensureWallet();
       // Old bug: tapping Edit cleared cvDone, so leaving the editor left the CV unreachable. Restore it.
       if (db.user.cv && !db.user.cvDone) db.user.cvDone = true;
-      // Copies saved before real accounts existed are demo sessions.
-      if (db.loggedIn && !db.uid) db.demo = true;
-      if (db.loggedIn && !db.demo) {
-        if (await hasSession()) (setMonitorUser(db.uid), pull());
-        else db.loggedIn = false; // session expired or revoked → log in again
-      }
-      if (db.loggedIn) {
-        ui.returning = true;
-        ui.appStarted = true;
-        resumeSims();
-        if (db.BIZ.list.some((b) => (b.ads || []).some((a) => a.status === 'active'))) startAdTicker();
-      }
+      if (await hasSession()) {
+        // first start after this update: no saved copy yet, but still signed in
+        if (!db.loggedIn || !db.uid) await resumeSession();
+        if (db.loggedIn) {
+          setMonitorUser(db.uid);
+          pull();
+          startServer();
+          ui.returning = true;
+          ui.appStarted = true;
+        }
+      } else db.loggedIn = false; // signed out, or the session expired: log in again
       setReady(true);
-      if (!db.demo) checkVersion();
+      checkVersion();
     });
     const a = on('doneAlert', (id: string) => showDoneAlert(id));
-    const b = on('fundAlert', (id: string) => openFund(id));
-    return () => (a(), b());
+    return () => a();
   }, []);
 
   useEffect(() => {
@@ -100,7 +88,6 @@ export default function Root() {
       >
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
         <Stack.Screen name="reels" options={{ animation: 'fade' }} />
-        <Stack.Screen name="call" options={{ animation: 'fade', gestureEnabled: false }} />
         <Stack.Screen name="splash" options={{ animation: 'none' }} />
       </Stack>
       <Overlays />

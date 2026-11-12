@@ -1,4 +1,5 @@
 import React from 'react';
+import { MONEY_LIVE } from '../src/logic/money';
 import { Pressable, View } from 'react-native';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
@@ -18,7 +19,6 @@ import { defaultPay, openAccounts, openBizSetup, openCities, openEdit, openHelp,
 import { openDoc } from '../src/sheets/profile';
 
 async function downloadData() {
-  if (db.demo) return toast('The demo keeps everything on this phone. Sign up to download your data');
   toast('Preparing your data…');
   const r = await exportMyData();
   if (r.error || !r.uri) return toast(r.error || 'Couldn’t prepare your data. Try again');
@@ -29,7 +29,6 @@ async function downloadData() {
 }
 
 function askDelete() {
-  if (db.demo) return toast('Nothing to delete in the demo. Log out to clear it');
   confirm({
     title: 'Delete your account?',
     text: 'Your profile, business pages, posts and photos are removed for good. This can’t be undone. To use bolo again you’ll need a new account.',
@@ -69,19 +68,19 @@ export default function Settings() {
             {b ? bizName(b) : db.user.name || 'Your name'}
           </Txt>
           <Txt s={12} c={C.muted}>
-            {b ? 'Business' : 'Regular'} profile{isPro() ? ' · PRO' : ''}{db.demo ? ' · demo' : ''} · tap to switch
+            {b ? 'Business' : 'Regular'} profile{isPro() ? ' · PRO' : ''} · tap to switch
           </Txt>
         </View>
         <Icon name="chev" size={20} color={C.faint} />
       </Pressable>
       <G t="Account" />
       <Box>
-        <OptRow icon="rocket" bg={C.lav} title={isPro() ? `bolo ${w ? 'Pro' : 'Business Pro'} · active` : `Upgrade to ${w ? 'Pro' : 'Business Pro'}`} sub={w ? 'Get jobs faster, premium CV, profile boosts' : 'Cheaper ads, more businesses, featured company'} onPress={() => openPro()} />
+        {MONEY_LIVE ? <OptRow icon="rocket" bg={C.lav} title={isPro() ? `bolo ${w ? 'Pro' : 'Business Pro'} · active` : `Upgrade to ${w ? 'Pro' : 'Business Pro'}`} sub={w ? 'Get jobs faster, premium CV, profile boosts' : 'Cheaper ads, more businesses, featured company'} onPress={() => openPro()} /> : null}
         <OptRow icon="sparkle" bg={C.lav} title="What’s new" sub="The latest updates to bolo" onPress={openWhatsNew} />
-        <OptRow icon="coins" bg={C.yellow} title="Wallet" sub={`${xaf(balance())} available · escrow`} onPress={() => router.push('/wallet' as any)} />
-        <OptRow icon="money" title="Payment methods" sub={defaultPay()} onPress={openPayments} />
+        {MONEY_LIVE ? <OptRow icon="coins" bg={C.yellow} title="Wallet" sub={`${xaf(balance())} available · escrow`} onPress={() => router.push('/wallet' as any)} /> : null}
+        {MONEY_LIVE ? <OptRow icon="money" title="Payment methods" sub={defaultPay()} onPress={openPayments} /> : null}
         {b ? <OptRow icon="storefront" bg="#fff" title="Business page" sub="Details, logo, RCCM & NIU" onPress={() => openBizSetup('edit', 1)} /> : <OptRow icon="edit" bg="#fff" title="Edit profile" sub="Name, bio, contact" onPress={openEdit} />}
-        {b ? <OptRow icon="rocket" bg={C.orange} title="Ads manager" sub="Promote vacancies, programs and courses" onPress={() => router.push('/ads')} /> : null}
+        {MONEY_LIVE ? (b ? <OptRow icon="rocket" bg={C.orange} title="Ads manager" sub="Promote vacancies, programs and courses" onPress={() => router.push('/ads')} /> : null) : null}
       </Box>
       <G t="Preferences" />
       <Box>
@@ -113,7 +112,7 @@ export default function Settings() {
             onPress={() =>
               confirm({
                 title: 'Log out of bolo?',
-                text: db.demo ? 'Demo data on this phone will be reset.' : 'Your account stays saved. Log back in any time.',
+                text: 'Your account stays saved. Log back in any time.',
                 ok: 'Log out',
                 danger: true,
                 icon: 'logout',

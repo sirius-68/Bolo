@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { submitDocs } from '../logic/verify';
 import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -8,7 +9,8 @@ import { OptRow, AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label,
 import { Icon } from '../ui/Icon';
 import { afterSheet, pick, sheet, SheetTitle, toast, confirm } from '../ui/overlay';
 import { C, R, S } from '../ui/theme';
-import { P, budgetNum, cityLabel, digits, isEmail, isPhone, isW, myCity, mySkill, has } from '../logic/core';
+import { P, budgetNum, cityLabel, curBiz, digits, isEmail, isPhone, isW, myCity, mySkill, has } from '../logic/core';
+import { pickImage } from '../logic/media';
 import { defaultPay, openCities } from './account';
 import { services, syncContacts, toggleFollow } from '../logic/account';
 import { bump, later } from '../logic/live';
@@ -499,13 +501,15 @@ export function openDoc(k: string) {
 function DocSheet({ k }: { k: string }) {
   const [t, , s] = DOCS[k];
   const st = db.PR.docs[k];
-  const submit = () => {
+  const submit = async () => {
+    const photo = await pickImage({});
+    if (!photo) return;
+    toast('Sending…');
+    const b = curBiz();
+    const e = await submitDocs([photo], k === 'biz' && b?.remoteId ? 'business' : 'id', k === 'biz' ? b?.remoteId : null);
+    if (e) return toast(e);
     db.PR.docs[k] = 'review';
-    sheet.close(db.demo ? `${t} sent for review` : `${t} sent. We’ll notify you once it’s checked`);
-    if (db.demo) later(4000, () => {
-      db.PR.docs[k] = 'verified';
-      toast(`✅ ${t} verified`);
-    });
+    sheet.close(`${t} sent. We’ll notify you once it’s checked`);
   };
   if (st)
     return (

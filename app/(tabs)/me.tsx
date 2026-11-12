@@ -1,4 +1,5 @@
 import React from 'react';
+import { MONEY_LIVE } from '../../src/logic/money';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -186,6 +187,8 @@ function SwitchAndPro() {
           <Icon name="chev" size={18} color={C.faint} />
         </Pressable>
       ) : null}
+      {MONEY_LIVE ? (
+        <>
       <Pressable testID="me-wallet" accessibilityRole="button" onPress={() => (tap(), router.push('/wallet' as any))} style={({ pressed }) => [S.row, { gap: 12, padding: 12, borderRadius: 18, backgroundColor: pressed ? C.s2 : C.s1, borderWidth: 1, borderColor: C.line }]}>
         <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: C.mint, alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="coins" size={20} color="#000" />
@@ -214,6 +217,8 @@ function SwitchAndPro() {
         </View>
         <Icon name="chev" size={18} color={C.faint} />
       </Pressable>
+        </>
+      ) : null}
     </View>
   );
 }

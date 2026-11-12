@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { FlatList, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { fmtTs } from '../../src/logic/classes';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,9 +8,10 @@ import { Avatar, CoTag, Empty, IconBtn, Pict, Txt, Verified, goBack, tap } from 
 import { Icon } from '../../src/ui/Icon';
 import { toast } from '../../src/ui/overlay';
 import { C, S, tx } from '../../src/ui/theme';
-import { P, THREADS, fname, hiringSide, isGroup, isW, postById } from '../../src/logic/core';
-import { every, cancel, useLive } from '../../src/logic/live';
-import { answerOffer, markChatRead, sendText, sendVoice } from '../../src/logic/work';
+import { P, THREADS, fname, isGroup, isW, postById } from '../../src/logic/core';
+import { hiringIn } from '../../src/logic/work';
+import { useLive } from '../../src/logic/live';
+import { answerOffer, markChatRead, sendText } from '../../src/logic/work';
 import { openProfile } from '../../src/logic/nav';
 import { groupOf } from '../../src/logic/career';
 import { openAttach, openChatMenu, openMsgMenu, openQuote, openRules } from '../../src/sheets/chat';
@@ -23,8 +24,6 @@ export default function Chat() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const ins = useSafeAreaInsets();
   const [text, setText] = useState('');
-  const [rec, setRec] = useState<number | null>(null);
-  const recT = useRef<any>(null);
   const th = THREADS()[id];
   const p = P(id);
   useEffect(() => {
@@ -32,7 +31,6 @@ export default function Chat() {
   });
   useEffect(() => {
     if (th && isGroup(id) && !th.rulesOk && (groupOf(id)?.rules || []).length) setTimeout(() => openRules(id), 350);
-    return () => cancel(recT.current);
   }, [id]);
   if (!th || !p?.name)
     return (
@@ -44,31 +42,13 @@ export default function Chat() {
   const grp = isGroup(id);
   const msgs = th.msgs;
   const rows: Row[] = msgs.map((m, i) => ({ m, i, grp: !m.d && !m.sys && !!msgs[i + 1] && msgs[i + 1].f === m.f && !msgs[i + 1].sys && !msgs[i + 1].d })).reverse();
-  const hiring = hiringSide(id);
+  const hiring = hiringIn(id);
   const quick = grp ? ['Hello everyone 👋', 'Thanks! 🙏', 'See you at the session'] : hiring ? ['When can you come?', 'What’s your price?', 'Send me a quote', 'Thanks! 🙏'] : ['I can come tomorrow', 'On my way 🛵', 'Thanks! 🙏'];
   const send = () => {
     const t = text.trim();
     if (!t) return;
     setText('');
     sendText(id, t);
-  };
-  const startRec = () => {
-    tap();
-    setRec(0);
-    recT.current = every(1000, () => {
-      setRec((s) => (s == null ? s : s + 1));
-      return 'skip';
-    });
-  };
-  const stopRec = (keep: boolean) => {
-    cancel(recT.current);
-    recT.current = null;
-    const s = rec || 0;
-    setRec(null);
-    if (keep) {
-      if (s < 1) return toast('Hold the mic to record a voice message');
-      sendVoice(id, s);
-    }
   };
   const job = th.job;
   const viewJob = () => {
@@ -92,17 +72,11 @@ export default function Chat() {
               {p.verified ? <Verified size={13} /> : null}
               {p.biz ? <CoTag /> : null}
             </View>
-            <Txt s={12} c={th.typing ? C.mint : th.on ? C.mint : C.muted} lines={1}>
-              {th.typing ? 'typing…' : grp ? `${(th.members || []).length + 1} members` : th.on ? 'Online' : 'Last seen recently'}
+            <Txt s={12} c={C.muted} lines={1}>
+              {grp ? `${(th.members || []).length + 1} members` : p.biz ? 'Business' : p.role}
             </Txt>
           </View>
         </Pressable>
-        {!grp ? (
-          <>
-            <IconBtn name="phone" label="Voice call" onPress={() => router.push(`/call?id=${id}&type=voice` as any)} />
-            <IconBtn name="video" label="Video call" onPress={() => router.push(`/call?id=${id}&type=video` as any)} />
-          </>
-        ) : null}
         <IconBtn name="dots" label="Chat options" onPress={() => openChatMenu(id)} />
       </View>
       {job ? (
@@ -126,7 +100,6 @@ export default function Chat() {
         contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 12 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
-        ListHeaderComponent={th.typing ? <Typing /> : null}
         ListEmptyComponent={
           <View style={{ alignItems: 'center', gap: 8, paddingVertical: 30, transform: [{ scaleY: -1 }] }}>
             <Avatar pic={p.photo} size={64} square={!!p.biz || grp} />
@@ -156,23 +129,7 @@ export default function Chat() {
         ))}
       </ScrollView>
       <View style={[S.row, { gap: 8, paddingHorizontal: 12, paddingTop: 6, paddingBottom: ins.bottom + 8, borderTopWidth: 1, borderTopColor: C.line }]}>
-        {rec != null ? (
-          <>
-            <Pressable accessibilityLabel="Cancel recording" onPress={() => stopRec(false)} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="trash" size={20} color={C.errSoft} />
-            </Pressable>
-            <View style={[S.row, { flex: 1, gap: 8, height: 46, paddingHorizontal: 14, borderRadius: 23, backgroundColor: C.s1 }]}>
-              <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.err }} />
-              <Txt s={14} w={7}>
-                Recording {Math.floor(rec / 60)}:{String(rec % 60).padStart(2, '0')}
-              </Txt>
-            </View>
-            <Pressable accessibilityLabel="Send voice message" onPress={() => stopRec(true)} style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="send" size={20} color="#000" />
-            </Pressable>
-          </>
-        ) : (
-          <>
+        <>
             <Pressable accessibilityLabel="Attach" onPress={() => openAttach(id)} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
               <Icon name="plus" size={22} color={C.text} />
             </Pressable>
@@ -190,31 +147,10 @@ export default function Chat() {
               <Pressable accessibilityLabel="Send" onPress={send} style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }} testID="chat-send">
                 <Icon name="send" size={20} color="#000" />
               </Pressable>
-            ) : (
-              <Pressable accessibilityLabel="Record a voice message" onPress={startRec} style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
-                <Icon name="mic" size={20} color={C.text} />
-              </Pressable>
-            )}
-          </>
-        )}
+            ) : null}
+        </>
       </View>
     </KeyboardAvoidingView>
-  );
-}
-
-function Typing() {
-  const a = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const l = Animated.loop(Animated.timing(a, { toValue: 1, duration: 900, useNativeDriver: true }));
-    l.start();
-    return () => l.stop();
-  }, []);
-  return (
-    <View style={{ flexDirection: 'row', gap: 4, alignSelf: 'flex-start', padding: 12, borderRadius: 18, backgroundColor: C.s1, marginTop: 6 }}>
-      {[0, 1, 2].map((i) => (
-        <Animated.View key={i} style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.muted, opacity: a.interpolate({ inputRange: [0, 0.33 * i, 0.33 * i + 0.2, 1], outputRange: [0.3, 0.3, 1, 0.3], extrapolate: 'clamp' }) }} />
-      ))}
-    </View>
   );
 }
 
@@ -245,7 +181,7 @@ function Bubble({ id, r, hiring }: { id: string; r: Row; hiring: boolean }) {
         <View style={[S.row, { gap: 6, padding: 10, backgroundColor: C.lav }]}>
           <Icon name="job" size={14} color="#000" />
           <Txt s={12} w={8} c="#000">
-            {me ? (hiring ? 'Your price offer' : 'Your quote') : (p.client ? 'Price offer from ' : 'Quote from ') + fname(p.name)}
+            {me ? (m.wk === 'them' ? 'Your price offer' : 'Your quote') : (m.wk === 'me' ? 'Price offer from ' : 'Quote from ') + fname(p.name)}
           </Txt>
         </View>
         <View style={{ padding: 12, gap: 6 }}>
@@ -282,7 +218,7 @@ function Bubble({ id, r, hiring }: { id: string; r: Row; hiring: boolean }) {
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
               <Pressable onPress={() => answerOffer(id, i, 'acc')} style={{ flex: 1, height: 38, borderRadius: 12, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
                 <Txt s={13} w={8} c="#000">
-                  {p.client ? 'Accept offer' : 'Accept quote'}
+                  {m.wk === 'me' ? 'Accept offer' : 'Accept quote'}
                 </Txt>
               </Pressable>
               <Pressable onPress={() => answerOffer(id, i, 'dec')} style={{ flex: 1, height: 38, borderRadius: 12, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
@@ -341,7 +277,7 @@ function Bubble({ id, r, hiring }: { id: string; r: Row; hiring: boolean }) {
             {m.size}
           </Txt>
         </View>
-        <Pressable accessibilityLabel="Download" onPress={() => toast(`${m.name} saved`)} hitSlop={8}>
+        <Pressable accessibilityLabel={`Open ${m.name}`} onPress={() => (m.src ? Linking.openURL(m.src).catch(() => toast('Couldn’t open the file')) : toast('The file is still uploading'))} hitSlop={8}>
           <Icon name="download" size={18} color="#fff" />
         </Pressable>
       </View>
@@ -378,7 +314,7 @@ function Bubble({ id, r, hiring }: { id: string; r: Row; hiring: boolean }) {
     );
   else if (m.k === 'loc')
     body = (
-      <View style={{ width: 240, height: 150, borderRadius: 18, overflow: 'hidden' }}>
+      <Pressable accessibilityLabel="Open location in maps" onPress={() => (m.lat != null ? Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${m.lat},${m.lng}`).catch(() => {}) : toast('No exact position was shared'))} style={{ width: 240, height: 150, borderRadius: 18, overflow: 'hidden' }}>
         <Pict pic="img/map-bg" style={{ width: 240, height: 150, opacity: 0.8 }} />
         <View style={{ position: 'absolute', left: 103, top: 50, width: 34, height: 34, borderRadius: 17, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#000' }}>
           <Icon name="pin" size={16} color="#000" />
@@ -386,7 +322,7 @@ function Bubble({ id, r, hiring }: { id: string; r: Row; hiring: boolean }) {
         <Txt s={12} w={8} style={{ position: 'absolute', left: 12, bottom: 10 }}>
           {m.t}
         </Txt>
-      </View>
+      </Pressable>
     );
   else
     body = (

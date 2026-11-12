@@ -1,36 +1,84 @@
-/* Jobs, offers, bookings, chats and notifications. */
-import { db, ui, uid, Booking, Msg, Post, Notif, CvFile } from '../data/db';
-import { SERVICES, STAGES } from '../data/catalog';
+/* Jobs, offers, bookings, chats and notifications, on real accounts.
+   Each action writes to the server; the local model is updated at once and then corrected by what the server
+   sends back (see server.ts). Nothing here pretends to be the other person. */
+import { db, ui, Booking, Msg, Post, Notif, CvFile } from '../data/db';
+import { STAGES } from '../data/catalog';
 import { toast, undoBar } from '../ui/overlay';
-import { bump, later, every, cancel } from './live';
-import { emit } from './events';
-import { bookingAmt, earnFor, holdFor, refundFor, releaseFor } from './wallet';
-import { notify, readKey } from './notify';
+import { supabase } from '../lib/supabase';
+import { bump } from './live';
+import { notify } from './notify';
+import { P, isW, thread, nowT, fname, first, xaf, budgetNum, mySkill, cityLabel, THREADS, ORDER, NOTIFS, curBiz, postById, add, toggle, has } from './core';
+import { friendly } from './remote';
 import {
-  P, isW, thread, nowT, fname, first, xaf, budgetNum, WORKERS, mySkill, myCity, cityLabel, hiringSide, THREADS, ORDER, NOTIFS, curBiz, bizName, postById, add, toggle, has, mOwner,
-} from './core';
+  R, L, SAVE_KIND, convFor, deleteNotifRows, markRead, markReviewed, refreshBooking, refreshBookings, refreshChats, refreshMine, refreshPosts, sendMessage, setNotifRead, uploadChatFile, uuid, convOfKey, rawMessage, membersOf,
+} from './server';
+import { startSharing, stopSharing } from './tracking';
+
+const fail = (e: any) => toast(friendly(e));
+const inboxNow = (): 'W' | 'C' => (isW() ? 'W' : 'C');
 
 /* =========================== saves & follows =========================== */
+type SaveList = 'savedJobs' | 'saved' | 'savedPosts' | 'savedOpps' | 'savedCourses' | 'savedCos' | 'savedMentors';
+async function saveRemote(list: SaveList, id: string, on: boolean) {
+  const target = list === 'saved' ? R(id) : id;
+  if (!target) return;
+  const kind = SAVE_KIND[list];
+  const q = on ? supabase.from('saves').insert({ kind, target_id: target }) : supabase.from('saves').delete().eq('user_id', db.uid!).eq('kind', kind).eq('target_id', target);
+  const { error } = await q;
+  if (error && !/duplicate/i.test(error.message)) {
+    toggle(db[list] as string[], id);
+    bump();
+    fail(error);
+  }
+}
 export function toggleSave(id: string) {
   const on = toggle(db.saved, id);
   toast(on ? `${P(id).name} saved` : 'Removed from saved');
   bump();
+  void saveRemote('saved', id, on);
 }
-type SaveList = 'savedJobs' | 'saved' | 'savedPosts' | 'savedOpps' | 'savedCourses' | 'savedCos' | 'savedMentors';
 export function saveToggle(list: SaveList, id: string, label: string) {
   const on = toggle(db[list] as string[], id);
   toast(on ? `${label} saved` : 'Removed from saved');
   bump();
+  void saveRemote(list, id, on);
 }
 export const isSaved = (list: SaveList, id: string) => has(db[list] as string[], id);
 export function follow(id: string) {
   const on = toggle(db.followed, id);
   toast(on ? `Following ${P(id).name}` : `Unfollowed ${P(id).name}`);
+  const p = db.P[id];
+  if (p) p.followers = Math.max(0, (p.followers || 0) + (on ? 1 : -1));
   bump();
+  (async () => {
+    // a business page is followed by saving it; a person with a real follow
+    if (id.startsWith('b_')) {
+      toggle(db.savedCos, id);
+      return saveRemote('savedCos', id, on);
+    }
+    const uid = R(id);
+    const { error } = on ? await supabase.from('follows').insert({ followee_id: uid }) : await supabase.from('follows').delete().eq('follower_id', db.uid!).eq('followee_id', uid);
+    if (error && !/duplicate/i.test(error.message)) {
+      toggle(db.followed, id);
+      bump();
+      fail(error);
+    }
+  })();
 }
 export function likePost(id: string) {
-  toggle(db.liked, id);
+  const on = toggle(db.liked, id);
+  const po = postById(id);
+  if (po) po.likes = Math.max(0, (po.likes || 0) + (on ? 1 : -1));
   bump();
+  (async () => {
+    const { error } = on ? await supabase.from('post_likes').insert({ post_id: id }) : await supabase.from('post_likes').delete().eq('post_id', id).eq('user_id', db.uid!);
+    if (error && !/duplicate/i.test(error.message)) {
+      toggle(db.liked, id);
+      if (po) po.likes = Math.max(0, (po.likes || 0) + (on ? -1 : 1));
+      bump();
+      fail(error);
+    }
+  })();
 }
 export function likeReel(i: number) {
   toggle(db.reelLiked, i);
@@ -38,21 +86,24 @@ export function likeReel(i: number) {
 }
 
 /* =========================== hiring a person directly =========================== */
-/** Sends a priced job request to a person in chat; they accept and a booking is created. */
+/** My position to send with a hire request, so the worker can find the place. */
+const myPlace = () => (db.user.coord ? { lng: db.user.coord[0], lat: db.user.coord[1] } : {});
+/** Sends a priced job request to a person in chat; when they accept, the job is booked. */
 export function sendHireRequest(id: string, job: string, price: string, when: string) {
-  const th = thread(id);
-  th.msgs.push({ d: 'Today' }, { f: 'me', k: 'offer', job, price, when, dur: 'Hire request', at: nowT(), st: 'sent' });
-  th.time = nowT();
-  th.job = `${job} · Request sent`;
   add(db.hired, id); // shows as "Requested" until they answer
-  reply(id, 'hire');
-  toast(`Request sent to ${P(id).name}`);
   bump();
+  sendMessage(id, inboxNow(), 'offer', '', { job, price, when, dur: 'Hire request', worker: 'recipient', area: [db.PR.area.home, cityLabel()].filter(Boolean).join(', '), ...myPlace() })
+    .then(() => toast(`Request sent to ${P(id).name}`))
+    .catch((e) => {
+      db.hired = db.hired.filter((x) => x !== id);
+      bump();
+      fail(e);
+    });
 }
 export const hireState = (id: string): 'none' | 'requested' | 'booked' => {
   if (db.BOOKINGS.some((b) => b.worker === id && b.client === 'me' && b.state !== 'confirmed')) return 'booked';
   const th = THREADS()[id];
-  return th?.msgs.some((m) => m.k === 'offer' && m.f === 'me' && !m.state && m.dur === 'Hire request') ? 'requested' : 'none';
+  return th?.msgs.some((m) => m.k === 'offer' && m.f === 'me' && !m.state && m.wk === 'them') ? 'requested' : 'none';
 };
 
 /* =========================== posting jobs =========================== */
@@ -70,11 +121,33 @@ export type JobForm = {
   urgent: boolean;
   photos: string[];
 };
+/** Upload photos picked on the phone to the public post-photo folder; returns 'uri:https://…' pictures. */
+export async function uploadPostPhotos(photos: string[]): Promise<string[]> {
+  const { File } = require('expo-file-system');
+  const out: string[] = [];
+  for (const ph of photos) {
+    if (!ph.startsWith('uri:') || ph.startsWith('uri:http')) {
+      out.push(ph);
+      continue;
+    }
+    try {
+      const bytes = await new File(ph.slice(4)).bytes();
+      const path = `${db.uid}/${uuid()}.jpg`;
+      const { error } = await supabase.storage.from('job-photos').upload(path, bytes, { contentType: 'image/jpeg' });
+      if (error) throw error;
+      out.push('uri:' + supabase.storage.from('job-photos').getPublicUrl(path).data.publicUrl);
+    } catch {
+      toast('A photo couldn’t be uploaded and was left out');
+    }
+  }
+  return out;
+}
 export function postJob(f: JobForm): Post {
   const w = isW();
   const b = f.budget.replace(/[^\d]/g, '');
+  const biz = w ? null : curBiz();
   const job: Post = {
-    id: uid('j'),
+    id: 'tmp_' + uuid(),
     kind: 'request',
     client: 'me',
     mine: 1,
@@ -88,46 +161,67 @@ export function postJob(f: JobForm): Post {
     as: w ? 'regular' : 'business',
     biz: w ? null : db.BIZ.active,
     openings: w ? 1 : f.openings || 1,
-    time: 'Just now',
+    time: 'now',
+    at: Date.now(),
     photos: [...f.photos],
     urgent: f.urgent,
     offerList: [],
+    status: 'open',
   };
   db.POSTS.unshift(job);
   if (!w) bizLog('job', `Posted vacancy <b>${job.title}</b>`);
-  simulateOffers(job);
   bump();
+  (async () => {
+    try {
+      if (!w && !biz?.remoteId) throw new Error('Your business page is still saving. Try again in a moment.');
+      const photos = await uploadPostPhotos(job.photos || []);
+      const { data, error } = await supabase
+        .from('posts')
+        .insert({
+          author_id: db.uid,
+          business_id: biz?.remoteId || null,
+          kind: 'request',
+          title: job.title,
+          body: job.text,
+          cat: job.cat,
+          area: job.area,
+          urgent: !!job.urgent,
+          budget_num: +b || 0,
+          photos: photos.map((p) => p.replace(/^uri:/, '')),
+          data: { budget: job.budget, when: job.when, type: job.type, openings: job.openings },
+          location: db.user.coord ? `POINT(${db.user.coord[0]} ${db.user.coord[1]})` : null,
+        })
+        .select('id')
+        .single();
+      if (error) throw error;
+      job.id = data.id;
+      job.photos = photos;
+      bump();
+    } catch (e) {
+      db.POSTS = db.POSTS.filter((p) => p !== job);
+      bump();
+      fail(e);
+    }
+  })();
   return job;
-}
-function simulateOffers(job: Post) {
-  const pool = ((a: string[]) => (a.length ? a : WORKERS()))(WORKERS().filter((id) => db.P[id].role === job.cat));
-  const lo = parseInt(((job.budget!.match(/[\d,]+/) || ['10000'])[0]).replace(/,/g, '')) || 10000;
-  const asBiz = job.as === 'business';
-  pool.slice(0, 3).forEach((id, i) =>
-    later(3500 + i * 4500, () => {
-      if (!db.POSTS.includes(job)) return;
-      const price = Math.round((lo * (0.85 + i * 0.1)) / 500) * 500;
-      job.offerList!.push({
-        by: id,
-        price: asBiz ? job.budget! : `XAF ${price.toLocaleString('en-US')}`,
-        when: job.when === 'Flexible' ? 'Tomorrow, 10:00' : job.when!,
-        msg: asBiz
-          ? ['I’m very interested in this role and can start quickly.', 'I have done this kind of work for years, happy to interview.', 'I live nearby and I’m available full-time.'][i]
-          : ['I can do this, I’ve done many jobs like it nearby.', 'Available at that time. I’ll bring my own tools.', 'I’m close by and can come quickly.'][i],
-        stage: asBiz ? 'applied' : undefined,
-      });
-      notify({ type: 'newoffer', cat: 'applicants', who: id, job: job.id, inbox: asBiz ? 'C' : 'W', key: `offer:${job.id}:${id}`, text: asBiz ? `applied for “${job.title}”` : `sent an offer on “${job.title}”`, go: { k: 'job', id: job.id } });
-      if (asBiz) bizLog('follow', `<b>${P(id).name}</b> applied for <b>${job.title}</b>`);
-      const viewingRightSide = isW() === !asBiz;
-      if (viewingRightSide) toast(`${P(id).name} ${asBiz ? 'applied to' : 'sent an offer on'} “${job.title}”`);
-    }),
-  );
 }
 export function closeJob(id: string) {
   const i = db.POSTS.findIndex((p) => p.id === id);
-  if (i >= 0) db.POSTS.splice(i, 1);
+  if (i < 0) return;
+  const po = db.POSTS.splice(i, 1)[0];
   toast('Job closed');
   bump();
+  supabase
+    .from('posts')
+    .update({ status: 'closed' })
+    .eq('id', id)
+    .then(({ error }) => {
+      if (error) {
+        db.POSTS.splice(i, 0, po);
+        bump();
+        fail(error);
+      }
+    });
 }
 
 /* =========================== offers (Regular finds work) =========================== */
@@ -136,84 +230,78 @@ export function sendOffer(id: string, price: string, whenKey: string, msg: strin
   const p = `XAF ${(+price).toLocaleString('en-US')}`;
   const when = whenKey === 'This week' ? 'This week' : `${whenKey}, 10:00`;
   db.myOffers[id] = { price: p, when, state: 'sent', cv };
-  const th = thread(po.client!);
-  th.job = `${po.title} · Offer sent`;
-  th.msgs.push({ d: 'Today' }, { f: 'me', k: 'offer', job: po.title, price: p, when, dur: `${mySkill()} · ${db.user.years} yrs experience`, at: nowT(), st: 'sent' });
-  if (msg) th.msgs.push({ f: 'me', t: msg, at: nowT(), st: 'sent' });
-  if (cv) th.msgs.push({ f: 'me', k: 'file', name: cv.name, size: cv.kb + ' KB', at: nowT(), st: 'sent' });
-  th.time = nowT();
-  toast(`Offer sent to ${P(po.client!).name}`);
   bump();
-  later(6000, () => {
-    const o = db.myOffers[id];
-    if (!o || o.state !== 'sent') return;
-    o.state = 'acc';
-    th.job = `${po.title} · ${when}`;
-    const oc = th.msgs.find((m) => m.k === 'offer' && m.job === po.title && !m.state);
-    if (oc) oc.state = 'acc';
-    th.msgs.push({ sys: `Job booked · ${po.title} · ${when}` }, { f: 'them', t: 'Great, see you then! 👍', at: nowT() });
-    if (ui.openChat !== po.client) th.unread = (th.unread || 0) + 1;
-    th.time = nowT();
-    createBooking({ worker: 'me', client: po.client!, title: po.title!, when, price: o.price, area: po.area!, as: 'regular' });
-    notify({ type: 'accept', cat: 'jobs', who: po.client, key: `offeracc:${id}`, text: `accepted your offer for “${po.title}”.`, go: { k: 'chat', id: po.client! } });
-    if (isW()) toast(`🎉 ${P(po.client!).name} accepted your offer!`);
-  });
+  (async () => {
+    const { data, error } = await supabase.from('applications').insert({ post_id: id, price: p, when_text: when, msg: msg.trim(), cv }).select('id').single();
+    if (error) {
+      delete db.myOffers[id];
+      bump();
+      return fail(error);
+    }
+    db.myOffers[id].id = data.id;
+    toast(`Offer sent to ${P(po.client!).name}`);
+    // the conversation about this job, with the offer in it, so you can talk it through
+    try {
+      await sendMessage(po.client!, 'W', 'text', `Hi! I sent an offer on “${po.title}”: ${p}, ${when}.${msg.trim() ? ' ' + msg.trim() : ''}`);
+    } catch {}
+  })();
 }
 export function withdrawOffer(id: string) {
+  const o = db.myOffers[id];
   delete db.myOffers[id];
   toast('Offer withdrawn');
   bump();
+  if (o?.id) supabase.from('applications').update({ stage: 'withdrawn' }).eq('id', o.id).then(({ error }) => error && fail(error));
 }
 /** Regular user hires someone who made an offer on their job. */
 export function acceptOffer(jobId: string, i: number) {
   const po = postById(jobId)!;
   const o = po.offerList![i];
+  if (!o.id) return toast('Please wait a moment and try again');
   po.booked = o.by;
   add(db.hired, o.by);
-  const th = thread(o.by);
-  th.job = `${po.title} · ${o.when}`;
-  th.msgs.push({ sys: `Job booked · ${po.title} · ${o.when} · ${o.price}` });
-  th.time = nowT();
-  createBooking({ worker: o.by, client: 'me', title: po.title!, when: o.when, price: o.price, area: po.area!, as: 'regular' });
-  toast(`You hired ${P(o.by).name} for ${o.when}`);
   bump();
+  (async () => {
+    const { data, error } = await supabase.rpc('accept_application', { p_application: o.id });
+    if (error) {
+      po.booked = undefined;
+      db.hired = db.hired.filter((x) => x !== o.by);
+      bump();
+      return fail(error);
+    }
+    toast(`You hired ${P(o.by).name} for ${o.when}`);
+    await Promise.all([refreshBooking(data as string), refreshChats(), refreshPosts()]);
+  })();
 }
 
 /* =========================== applications (vacancies) =========================== */
 export function applyVac(id: string, msg: string, cv: CvFile | null) {
   const po = postById(id)!;
   db.myOffers[id] = { price: po.budget!, when: po.type!, state: 'sent', app: 1, stage: 'Application sent' + (db.user.pro.regular ? ' · priority' : ''), cv };
-  const th = thread(po.client!);
-  th.job = `${po.title} · Application sent`;
-  th.msgs.push({ d: 'Today' }, { f: 'me', t: msg, at: nowT(), st: 'sent' });
-  if (cv) th.msgs.push({ f: 'me', k: 'file', name: cv.name, size: cv.kb + ' KB', at: nowT(), st: 'sent' });
-  th.time = nowT();
-  toast(`Application sent to ${P(po.client!).name}`);
   bump();
-  later(db.user.pro.regular ? 3500 : 7000, () => {
-    const o = db.myOffers[id];
-    if (!o) return;
-    o.stage = 'Shortlisted, interview soon';
-    o.state = 'acc';
-    notify({ type: 'accept', cat: 'jobs', who: po.client, key: `app:${id}:short`, text: `shortlisted you for “${po.title}”. Expect an interview invite.`, go: { k: 'job', id } });
-    if (isW()) toast(`🎉 ${P(po.client!).name} shortlisted you!`);
-    // Next step of the application: the employer responds with an interview invite in chat.
-    later(9000, () => {
-      const o2 = db.myOffers[id];
-      if (!o2) return;
-      o2.stage = 'Interview invite';
-      const th2 = thread(po.client!);
-      th2.msgs.push({ f: 'them', t: `Hello! Thanks for applying for “${po.title}”. Can you come for an interview tomorrow at 10:00?`, at: nowT() });
-      th2.time = nowT();
-      if (ui.openChat !== po.client) th2.unread = (th2.unread || 0) + 1;
-      notify({ type: 'reminder', cat: 'jobs', who: po.client, key: `app:${id}:interview`, text: `invited you to an interview for “${po.title}”.`, go: { k: 'chat', id: po.client! } });
-    });
-  });
+  (async () => {
+    const { data, error } = await supabase.from('applications').insert({ post_id: id, price: po.budget || '', when_text: po.type || '', msg: msg.trim(), cv }).select('id').single();
+    if (error) {
+      delete db.myOffers[id];
+      bump();
+      return fail(error);
+    }
+    db.myOffers[id].id = data.id;
+    toast(`Application sent to ${P(po.client!).name}`);
+    if (msg.trim()) {
+      try {
+        await sendMessage(po.client!, 'W', 'text', msg.trim());
+      } catch {}
+    }
+  })();
 }
 export function withdrawApplication(id: string) {
-  delete db.myOffers[id];
-  toast('Application withdrawn');
-  bump();
+  withdrawOffer(id);
+}
+async function setStageRemote(appId: string | undefined, stage: string) {
+  if (!appId) return;
+  const { error } = await supabase.from('applications').update({ stage }).eq('id', appId);
+  if (error) fail(error);
 }
 export function setStage(jobId: string, i: number, st: string) {
   const po = postById(jobId)!;
@@ -225,47 +313,58 @@ export function setStage(jobId: string, i: number, st: string) {
   }
   if (st === 'interview') {
     toast(`Interview invite sent to ${P(o.by).name}`);
-    const th = thread(o.by);
-    th.msgs.push({ f: 'me', t: `Hello ${first(o.by)}, we’d like to invite you to an interview for “${po.title}”. Are you free tomorrow at 10:00?`, at: nowT(), st: 'sent' });
-    th.time = nowT();
+    sendMessage(o.by, inboxNow(), 'text', `Hello ${first(o.by)}, we’d like to invite you to an interview for “${po.title}”. When are you free?`).catch(fail);
     bizLog('calcheck', `Interview invite sent to <b>${P(o.by).name}</b> for <b>${po.title}</b>`);
   }
   bump();
+  void setStageRemote(o.id, st);
 }
 export function declineApp(jobId: string, i: number) {
   const po = postById(jobId)!;
   const o = po.offerList!.splice(i, 1)[0];
   toast(`${P(o.by).name} declined. We’ll let them know kindly`);
   bump();
+  void setStageRemote(o.id, 'declined');
 }
 export const stageLabel = (k: string) => STAGES.find((s) => s[0] === k)?.[1] || 'Applied';
 
 /* =========================== company contracts =========================== */
 export type ContractDraft = { pid: string; i: number; person: string; role: string; pay: string; start: string; dur: string; prob: string; hours: string; terms: string };
+/** Sends the job offer (contract terms) to the candidate in chat. They answer there; you mark them hired when they accept. */
 export function sendContract(c: ContractDraft) {
   const b = curBiz()!;
   const po = postById(c.pid)!;
   const o = po.offerList![c.i];
-  const id = uid('k');
+  const id = uuid();
   const start = (() => {
     const d = new Date(c.start);
     return isNaN(+d) ? c.start : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   })();
   b.contracts.unshift({ id, person: c.person, role: c.role, pay: c.pay, start, dur: c.dur, prob: c.prob, hours: c.hours, terms: c.terms, status: 'sent', vac: po.id });
   o.stage = 'offer';
-  bizLog('file', `Contract sent to <b>${P(c.person).name}</b> · ${c.role}`);
-  toast(`Contract sent to ${P(c.person).name}`);
+  bizLog('file', `Job offer sent to <b>${P(c.person).name}</b> · ${c.role}`);
+  toast(`Job offer sent to ${P(c.person).name}`);
   bump();
-  later(4500, () => {
-    const k = b.contracts.find((x) => x.id === id);
-    if (!k || k.status !== 'sent') return;
-    k.status = 'active';
+  void setStageRemote(o.id, 'offer');
+  const lines = [`📄 Job offer from ${b.name}: ${c.role}`, `Pay: ${c.pay}`, `Start: ${start}`, c.dur ? `Length: ${c.dur}` : '', c.prob ? `Probation: ${c.prob}` : '', c.hours ? `Hours: ${c.hours}` : '', c.terms ? `Terms: ${c.terms}` : '', 'Please reply here to accept.'].filter(Boolean);
+  sendMessage(c.person, 'C', 'text', lines.join('\n')).catch(fail);
+}
+/** The candidate accepted the offer (in chat): they join the team. */
+export function markSigned(id: string) {
+  const b = curBiz()!;
+  const k = b.contracts.find((x) => x.id === id);
+  if (!k) return;
+  k.status = 'active';
+  add(b.team, k.person);
+  const po = postById(k.vac);
+  const o = po?.offerList?.find((x) => x.by === k.person);
+  if (o) {
     o.stage = 'hired';
-    add(b.team, c.person);
-    notify({ type: 'accept', cat: 'applicants', who: c.person, inbox: 'C', key: `contract:${id}`, text: `signed the contract for “${c.role}”. Welcome to the team!`, go: { k: 'chat', id: c.person } });
-    b.events.unshift({ icon: 'checkc', text: `<b>${P(c.person).name}</b> signed the contract and joined your team`, at: nowT() });
-    if (!isW() && db.BIZ.active === b.id) toast(`✍️ ${P(c.person).name} signed. They’re on your team`);
-  });
+    void setStageRemote(o.id, 'hired');
+  }
+  b.events.unshift({ icon: 'checkc', text: `<b>${P(k.person).name}</b> accepted the offer and joined your team`, at: nowT() });
+  toast(`${P(k.person).name} is on your team`);
+  bump();
 }
 export function endContract(id: string) {
   const b = curBiz()!;
@@ -289,127 +388,67 @@ export const bk = (id: string) => db.BOOKINGS.find((x) => x.id === id);
 export const trOther = (b: Booking) => (b.worker === 'me' ? b.client : b.worker);
 /** Bookings for the active profile: Regular sees personal jobs both ways, Business sees its company bookings. */
 export const myBookings = () => db.BOOKINGS.filter((b) => (isW() ? b.worker === 'me' || (b.client === 'me' && b.as !== 'business') : b.client === 'me' && b.as === 'business'));
-const timers: Record<string, any> = {};
-export function createBooking(o: Omit<Booking, 'id' | 'state' | 'eta' | 'eta0' | 'log'>) {
-  const b: Booking = { id: uid('b'), state: 'booked', eta: 8, eta0: 8, log: { booked: nowT() }, ...o };
-  db.BOOKINGS.unshift(b);
-  if (b.client === 'me') {
-    // The price goes into escrow right away; the worker only sets off once it's there.
-    if (holdFor(b)) {
-      runSim(b, 6000);
-      later(900, () => toast(`${xaf(bookingAmt(b))} held safely in escrow`));
-    } else if (ui.appStarted) later(700, () => emit('fundAlert', b.id));
-  } else b.escrow = 'held'; // the client paid into escrow before you start
+async function step(b: Booking, state: Booking['state'] | 'cancelled', eta?: number) {
+  const before = { state: b.state, log: { ...b.log } };
+  if (state !== 'cancelled') {
+    b.state = state;
+    b.log[state] = nowT();
+  }
   bump();
-  return b;
-}
-/** Pay an unfunded booking from the wallet; the job can start. */
-export function fundBooking(id: string) {
-  const b = bk(id);
-  if (!b || b.escrow !== 'unfunded') return false;
-  if (!holdFor(b)) return false;
-  runSim(b, 6000);
-  toast(`${xaf(bookingAmt(b))} paid into escrow. ${P(b.worker).name} can set off`);
-  bump();
+  const { error } = await supabase.rpc('booking_step', { p_booking: b.id, p_state: state, p_eta: eta ?? null });
+  if (error) {
+    b.state = before.state;
+    b.log = before.log;
+    bump();
+    fail(error);
+    return false;
+  }
   return true;
 }
-/** Simulates the worker's side for the person who hired. */
-export function runSim(b: Booking, delay = 5000) {
-  if (timers[b.id]) return;
-  const step = () => {
-    if (b.state === 'booked')
-      timers[b.id] = later(delay, () => {
-        setState(b, 'onway');
-        step();
-      });
-    else if (b.state === 'onway')
-      timers[b.id] = every(2000, () => {
-        b.eta = Math.max(0, b.eta - 1);
-        if (!b.eta) {
-          cancel(timers[b.id]);
-          setState(b, 'working');
-          step();
-          return false;
-        }
-      });
-    else if (b.state === 'working') timers[b.id] = later(10000, () => setState(b, 'done'));
-  };
-  step();
-}
-export function setState(b: Booking, s: Booking['state']) {
-  b.state = s;
-  b.log[s] = nowT();
-  const inbox = b.as === 'business' ? 'C' : 'W';
-  const go = { k: 'track' as const, id: b.id };
-  if (b.client === 'me') {
-    if (s === 'onway') notify({ type: 'onway', cat: 'jobs', who: b.worker, booking: b.id, inbox, go, key: `bk:${b.id}:onway`, text: `is on the way for “${b.title}” · ${b.eta} min` });
-    if (s === 'working') notify({ type: 'arrived', cat: 'jobs', who: b.worker, booking: b.id, inbox, go, key: `bk:${b.id}:working`, text: `has arrived and started “${b.title}”.` });
-    if (s === 'done') {
-      notify({ type: 'jobdone', cat: 'jobs', who: b.worker, booking: b.id, inbox, go, key: `bk:${b.id}:done:${b.log.done || ''}`, text: `marked “${b.title}” as done. Please confirm.` });
-      if (ui.appStarted && myBookings().includes(b)) emit('doneAlert', b.id);
-    }
-  }
-  if (b.client === 'me' && s === 'confirmed') releaseFor(b);
-  if (b.worker === 'me' && s === 'confirmed') earnFor(b);
-  if (b.worker === 'me' && s === 'confirmed') notify({ type: 'payment_in', cat: 'account', who: b.client, amount: b.price, key: `pay:${b.id}`, text: `paid ${b.price} for “${b.title}”`, go: { k: 'wallet' } });
-  bump();
-}
-export function wStart(id: string) {
+/** Worker: I'm leaving now. Shares my position with the client until I arrive. */
+export async function wStart(id: string) {
   const b = bk(id)!;
-  b.eta = b.eta0 = 8;
-  setState(b, 'onway');
-  cancel(timers[b.id]);
-  timers[b.id] = every(2500, () => {
-    if (b.state !== 'onway') return false;
-    b.eta = Math.max(1, b.eta - 1);
-  });
-  toast(`${P(b.client).name} has been told you’re on the way`);
+  const eta = await startSharing(b);
+  if (eta === false) return;
+  b.eta = b.eta0 = eta ?? 0;
+  if (await step(b, 'onway', eta ?? undefined)) toast(`${fname(P(b.client).name)} can follow you on the map`);
+  else stopSharing();
 }
-export function wArrive(id: string) {
+export async function wArrive(id: string) {
   const b = bk(id)!;
-  cancel(timers[b.id]);
+  stopSharing();
   b.eta = 0;
-  setState(b, 'working');
-  toast('Job started, good luck!');
+  if (await step(b, 'working')) toast('Job started, good luck!');
 }
-export function wDone(id: string) {
+export async function wDone(id: string) {
   const b = bk(id)!;
-  setState(b, 'done');
-  toast(`${P(b.client).name} has been asked to confirm`);
-  timers[b.id] = later(4500, () => {
-    setState(b, 'confirmed');
-    if (isW()) toast(`✅ ${P(b.client).name} confirmed · ${b.price} added to your wallet`);
-  });
+  if (await step(b, 'done')) toast(`${fname(P(b.client).name)} has been asked to confirm`);
 }
 export function confirmDone(id: string) {
   const b = bk(id);
   if (!b || b.state !== 'done') return false;
-  setState(b, 'confirmed');
-  toast(`${xaf(bookingAmt(b))} released from escrow to ${P(b.worker).name}`);
+  step(b, 'confirmed').then((ok) => ok && toast(`Thanks! ${fname(P(b.worker).name)} has been told`));
   return true;
 }
 export function reportIssue(id: string) {
   const b = bk(id)!;
-  setState(b, 'working');
-  toast(`We’ve told ${P(b.worker).name} something isn’t right`);
-  cancel(timers[b.id]);
-  timers[b.id] = later(9000, () => setState(b, 'done'));
+  step(b, 'working').then((ok) => ok && toast(`We’ve told ${fname(P(b.worker).name)} something isn’t right`));
 }
-export function cancelBooking(id: string) {
-  const i = db.BOOKINGS.findIndex((x) => x.id === id);
-  if (i < 0) return;
-  const b = db.BOOKINGS[i];
-  cancel(timers[b.id]);
-  const back = b.escrow === 'held';
-  refundFor(b);
-  db.BOOKINGS.splice(i, 1);
-  db.hired = db.hired.filter((x) => x !== b.worker);
-  toast(back ? `Booking cancelled · ${xaf(bookingAmt(b))} back in your wallet` : 'Booking cancelled');
-  bump();
+export async function cancelBooking(id: string) {
+  const b = bk(id);
+  if (!b) return;
+  if (b.worker === 'me') stopSharing();
+  if (await step(b, 'cancelled')) {
+    db.BOOKINGS = db.BOOKINGS.filter((x) => x.id !== id);
+    db.hired = db.hired.filter((x) => x !== b.worker);
+    toast('Booking cancelled');
+    bump();
+  }
 }
-/** Resume simulations after the app restarts. */
+/** No simulations any more: after a restart, keep sharing my position if I'm on the way. */
 export function resumeSims() {
-  db.BOOKINGS.filter((b) => b.client === 'me' && b.state !== 'done' && b.state !== 'confirmed' && b.escrow !== 'unfunded').forEach((b) => runSim(b, 4000));
+  const b = db.BOOKINGS.find((x) => x.worker === 'me' && x.state === 'onway');
+  if (b) void startSharing(b, true);
 }
 export function liveInfo(b: Booking): [string, string, string] {
   const f = fname(P(trOther(b)).name);
@@ -417,239 +456,193 @@ export function liveInfo(b: Booking): [string, string, string] {
   return (
     {
       booked: [W ? `Job with ${f} · ${b.when}` : `${f} starts ${b.when}`, b.title, 'sched'],
-      onway: [W ? `On your way to ${f}` : `${f} is on the way`, `${b.eta} min away · ${b.title}`, ''],
+      onway: [W ? `On your way to ${f}` : `${f} is on the way`, `${b.eta ? b.eta + ' min away · ' : ''}${b.title}`, ''],
       working: [W ? 'Job in progress' : `${f} is working`, b.title, ''],
       done: [W ? `Waiting for ${f} to confirm` : `${f} says it’s done, confirm`, b.title, 'done'],
-      confirmed: [W ? `${b.price} paid · rate ${f}` : `Rate ${f}`, 'How did it go?', 'done'],
+      confirmed: [W ? `Job done · rate ${f}` : `Rate ${f}`, 'How did it go?', 'done'],
     } as Record<string, [string, string, string]>
   )[b.state];
 }
-export const pctOf = (b: Booking) => ({ booked: 8, onway: 20 + Math.round(60 * (1 - b.eta / (b.eta0 || 1))), working: 85, done: 95, confirmed: 100 })[b.state];
+export const pctOf = (b: Booking) => ({ booked: 8, onway: 20 + Math.round(60 * (b.eta0 ? 1 - b.eta / b.eta0 : 0)), working: 85, done: 95, confirmed: 100 })[b.state];
 
 /* =========================== reviews =========================== */
 export function reviewable(id: string): { bid: string; what: string } | null {
   const b = db.BOOKINGS.find((x) => x.state === 'confirmed' && !x.reviewed && ((x.worker === 'me' && x.client === id) || (x.client === 'me' && x.worker === id)));
   if (b) return { bid: b.id, what: b.title };
-  for (const bz of db.BIZ.list) {
-    const k = bz.contracts.find((c) => c.person === id && c.status === 'ended' && !c.reviewed);
-    if (k) return { bid: k.id, what: k.role + ' contract' };
-  }
   return null;
 }
 export function submitReview(target: string, bid: string | null, stars: number, tags: string[], text: string) {
-  (db.REVIEWS[target] = db.REVIEWS[target] || []).unshift({ stars, tags, text, name: db.user.name || 'You', photo: db.user.avatar || 'img/me', time: 'Just now' });
   const b = bid ? bk(bid) : null;
-  if (b) b.reviewed = 1;
-  if (bid && bid[0] === 'k') db.BIZ.list.forEach((bz) => bz.contracts.forEach((c) => c.id === bid && (c.reviewed = 1)));
-  toast(`Thanks! Your review of ${first(target)} is live`);
+  if (!b) return toast('You can review someone after a job with them is confirmed');
+  (db.REVIEWS[target] = db.REVIEWS[target] || []).unshift({ stars, tags, text, name: db.user.name || 'You', photo: db.user.avatar || 'img/me', time: 'now' });
+  b.reviewed = 1;
+  markReviewed(b.id);
   bump();
+  (async () => {
+    const { error } = await supabase.from('reviews').insert({ booking_id: b.id, reviewee_id: R(target), stars, tags, body: text.trim(), what: b.title });
+    if (error) {
+      b.reviewed = undefined;
+      db.REVIEWS[target] = (db.REVIEWS[target] || []).slice(1);
+      bump();
+      return fail(error);
+    }
+    toast(`Thanks! Your review of ${first(target)} is live`);
+  })();
 }
 
 /* =========================== chat =========================== */
-export function pushMsg(m: Msg, id: string) {
-  const th = thread(id);
-  th.msgs.push(m);
-  th.time = nowT();
-  bump();
-}
 export function markChatRead(id: string) {
   const th = THREADS()[id];
-  readKey(`msg:${id}`);
-  if (th && th.unread) {
+  if (!th) return;
+  readChatNotif(id);
+  if (th.cid) markRead(th.cid);
+  if (th.unread) {
     th.unread = 0;
     bump();
   }
 }
 export function openThread(id: string) {
-  const th = thread(id);
-  th.unread = 0;
-  readKey(`msg:${id}`);
-  if (th.typing && th.next) {
-    later(1600, () => {
-      th.typing = 0;
-      th.msgs.push({ f: 'them', t: th.next || 'Okay!', at: nowT() });
-      th.next = undefined;
-      th.time = nowT();
-    });
-  }
+  thread(id);
+  markChatRead(id);
   bump();
 }
 export function sendText(id: string, t: string) {
   t = t.trim();
   if (!t) return;
-  pushMsg({ f: 'me', t, at: nowT(), st: 'sent' }, id);
-  reply(id, t);
-}
-function settleReply(id: string, fn: () => void, wait = 2200) {
-  const th = thread(id);
-  later(700, () => {
-    th.typing = 1;
-  });
-  later(wait, () => {
-    th.typing = 0;
-    th.msgs.forEach((m) => {
-      if (m.f === 'me') m.st = 'read';
-    });
-    fn();
-    th.time = nowT();
-    if (ui.openChat !== id) {
-      th.unread = (th.unread || 0) + 1;
-      // One notification per chat: newer messages update it instead of piling up.
-      const last = th.msgs[th.msgs.length - 1];
-      const p = P(id);
-      if (p && last && (last.f === 'them' || last.k === 'offer'))
-        notify({ type: 'message', cat: 'messages', who: id, key: `msg:${id}`, upsert: true, inbox: db.THREADS_C[id] && !db.THREADS_W[id] ? 'C' : 'W', text: th.unread > 1 ? `sent you ${th.unread} messages` : 'sent you a message', snip: (last.t || (last.k === 'offer' ? `Quote: ${last.job} · ${last.price}` : '')).slice(0, 90), go: { k: 'chat', id } });
-    }
-  });
+  sendMessage(id, inboxNow(), 'text', t).catch(fail);
 }
 /** Opening a chat clears its message notification. */
-export const readChatNotif = (id: string) => readKey(`msg:${id}`);
-/** The other side answers (simulated). */
-export function reply(id: string, t: string) {
-  const p = P(id);
-  if (!p) return;
-  const th = thread(id);
-  const lo = (t || '').toLowerCase();
-  const last = th.msgs.filter((m) => m.f === 'me').pop();
-  // a price/hire request from me waiting for an answer
-  if (last && last.k === 'offer' && !last.state && !p.group) {
-    settleReply(
-      id,
-      () => {
-        last.state = 'acc';
-        th.job = `${last.job} · ${last.when}`;
-        th.msgs.push({ sys: `Job booked · ${last.job} · ${last.when} · ${last.price}` });
-        th.msgs.push({ f: 'them', t: p.client ? 'Perfect, I accept 👍 See you then!' : 'Deal 👍 I accept. See you then!', at: nowT() });
-        const iHire = hiringSide(id);
-        createBooking(
-          iHire
-            ? { worker: id, client: 'me', title: last.job!, when: last.when!, price: last.price!, area: myCity(), as: isW() ? 'regular' : 'business' }
-            : { worker: 'me', client: id, title: last.job!, when: last.when!, price: last.price!, area: p.area, as: 'regular' },
-        );
-        if (iHire) add(db.hired, id);
-        toast(`🎉 ${p.name} accepted · job booked`);
-      },
-      2300,
-    );
-    return;
-  }
-  if (p.group) {
-    const m = db.MENTORSHIPS.find((x) => x.id === p.mentorship);
-    const mem = th.members || [];
-    const who = /session|when|link|slides/.test(lo) && m ? fname(mOwner(m).name) : P(mem[th.msgs.length % Math.max(1, mem.length)])?.name.split(' ')[0] || 'Member';
-    const txt = /when|session/.test(lo) ? 'Thursday at 6pm on Google Meet. I’ll post the link an hour before.' : /slides/.test(lo) ? 'Yes, I’ll share them right after the session 👍' : /thank/.test(lo) ? 'Thank you too! See you next week.' : /hello|hi\b/.test(lo) ? 'Welcome! 😊' : 'Great point 👌';
-    settleReply(id, () => th.msgs.push({ f: 'them', t: `${who}: ${txt}`, at: nowT() }), 2000);
-    return;
-  }
-  if (p.client) {
-    settleReply(id, () => {
-      let r: string;
-      if (/quote|price|cost/.test(lo)) r = 'Sounds good. Send me a quote and I’ll confirm.';
-      else if (/tomorrow|today|come|time|when/.test(lo)) r = 'That time works for me. Call when you reach the gate.';
-      else if (/way|🛵/.test(lo)) r = 'Great, I’m home. See you soon!';
-      else if (/thank/.test(lo)) r = 'Thank you too! 🙏';
-      else if (/interview/.test(lo)) r = 'Thank you! Tomorrow at 10:00 works for me.';
-      else r = ['Okay, noted 👍', 'Great, thanks!', 'Please confirm when you’re on the way.'][th.msgs.length % 3];
-      th.msgs.push({ f: 'them', t: r, at: nowT() });
-    });
-    return;
-  }
-  settleReply(id, () => {
-    const svc = (SERVICES[p.role] || SERVICES.Plumber)[0];
-    if (/quote|price|cost|how much|charge/.test(lo)) {
-      th.msgs.push({ f: 'them', t: `For ${svc[0].toLowerCase()} I usually charge ${svc[1]}. Here’s a quote:`, at: nowT() });
-      th.msgs.push({ f: 'them', k: 'offer', job: svc[0], price: svc[1].split(' - ')[0].split(' – ')[0], when: 'Tomorrow, 10:00', dur: 'About 1–2 hours', at: nowT() });
-    } else if (/when|come|time|available|today|tomorrow/.test(lo)) th.msgs.push({ f: 'them', t: 'I can come tomorrow at 10:00, or Friday afternoon. Which works better?', at: nowT() });
-    else if (/thank|🙏/.test(lo)) th.msgs.push({ f: 'them', t: 'You’re welcome! 😊', at: nowT() });
-    else if (/location|📍/.test(lo)) th.msgs.push({ f: 'them', t: 'Got it, I know the area. 👍', at: nowT() });
-    else th.msgs.push({ f: 'them', t: ['Sounds good 👍', 'Sure, I can help with that.', 'Okay! Anything else I should know before I come?'][th.msgs.length % 3], at: nowT() });
-  });
+export function readChatNotif(id: string) {
+  const cid = THREADS()[id]?.cid;
+  if (!cid) return;
+  const key = 'msg:' + cid;
+  [db.NOTIFS_W, db.NOTIFS_C].forEach((N) => N.forEach((n) => n.key === key && (n.read = 1)));
 }
 /** Accept or decline a quote/offer the other person sent in chat. */
 export function answerOffer(id: string, i: number, st: 'acc' | 'dec') {
   const th = thread(id);
   const m = th.msgs[i];
-  const o = P(id);
+  if (!m?.id) return;
   m.state = st;
-  if (st === 'acc') {
-    th.job = `${m.job} · ${m.when}`;
-    th.msgs.push({ sys: `Job booked · ${m.job} · ${m.when} · ${m.price}` });
-    const iHire = hiringSide(id);
-    createBooking(
-      iHire
-        ? { worker: id, client: 'me', title: m.job!, when: m.when!, price: m.price!, area: myCity(), as: isW() ? 'regular' : 'business' }
-        : { worker: 'me', client: id, title: m.job!, when: m.when!, price: m.price!, area: o.area, as: 'regular' },
-    );
-    if (iHire) add(db.hired, id);
-    toast(`Booked · ${m.job} · ${m.when}`);
-  } else {
-    th.msgs.push({ f: 'me', t: 'Thanks, but I’ll pass for now.', at: nowT(), st: 'sent' });
-    toast('Quote declined');
-  }
   bump();
+  (async () => {
+    const { data, error } = await supabase.rpc('answer_offer', { p_message: m.id, p_accept: st === 'acc' });
+    if (error) {
+      m.state = undefined;
+      bump();
+      return fail(error);
+    }
+    if (st === 'acc') {
+      if (m.wk === 'them') add(db.hired, id);
+      toast(`Booked · ${m.job} · ${m.when}`);
+      if (data) await refreshBooking(data as string);
+    } else toast('Declined');
+    bump();
+  })();
 }
 export function sendQuote(id: string, job: string, price: string, whenKey: string) {
   const when = whenKey === 'This week' ? 'This week' : `${whenKey}, 10:00`;
-  pushMsg({ f: 'me', k: 'offer', job: job || 'Job', price: `XAF ${(+price).toLocaleString('en-US')}`, when, dur: hiringSide(id) ? 'Price offered by you' : `${mySkill()} · ${db.user.years} yrs experience`, at: nowT(), st: 'sent' }, id);
-  reply(id, 'quote');
+  const hiring = !P(id)?.client && !isW() ? true : hiringIn(id);
+  sendMessage(id, inboxNow(), 'offer', '', {
+    job: job || 'Job',
+    price: `XAF ${(+price).toLocaleString('en-US')}`,
+    when,
+    dur: hiring ? 'Price offered by you' : `${mySkill()} · ${db.user.years} yrs experience`,
+    worker: hiring ? 'recipient' : 'sender',
+    area: [db.PR.area.home, cityLabel()].filter(Boolean).join(', '),
+    ...(hiring ? myPlace() : {}),
+  }).catch(fail);
 }
-export const sendLocation = (id: string) => {
-  pushMsg({ f: 'me', k: 'loc', t: `📍 ${[db.PR.area.home, cityLabel()].filter(Boolean).join(' · ') || 'Shared my location'}`, at: nowT(), st: 'sent' }, id);
-  reply(id, 'location');
-};
-export const sendPhoto = (id: string, uri: string) => {
-  pushMsg({ f: 'me', k: 'img', src: uri, at: nowT(), st: 'sent' }, id);
-  reply(id, 'photo');
-};
-export const sendFile = (id: string, name: string, bytes: number) => {
+/** In this chat, am I the one hiring? (a business always hires; otherwise: they offer the skill I need) */
+export function hiringIn(id: string) {
+  if (!isW()) return true;
+  const p = P(id);
+  if (p?.biz || p?.client) return false;
+  return true;
+}
+export async function sendLocation(id: string) {
+  const { locate } = require('./here');
+  const c = (await locate(true)) as [number, number] | null;
+  const label = [db.PR.area.home, cityLabel()].filter(Boolean).join(' · ') || 'My location';
+  sendMessage(id, inboxNow(), 'loc', `📍 ${label}`, c ? { lng: c[0], lat: c[1] } : {}).catch(fail);
+}
+export async function sendPhoto(id: string, uri: string) {
+  try {
+    const cid = await convFor(id, inboxNow());
+    const local = uri.startsWith('uri:') ? uri.slice(4) : uri;
+    const { path, url } = await uploadChatFile(cid, local, 'jpg', 'image/jpeg');
+    await sendMessage(id, inboxNow(), 'img', '', { path, url });
+  } catch (e) {
+    fail(e);
+  }
+}
+export async function sendFile(id: string, name: string, bytes: number, uri?: string, mime?: string) {
   const kb = bytes / 1024;
-  pushMsg({ f: 'me', k: 'file', name, size: kb > 1024 ? (kb / 1024).toFixed(1) + ' MB' : Math.max(1, Math.round(kb)) + ' KB', at: nowT(), st: 'sent' }, id);
-  reply(id, 'file');
-};
-export const sendVoice = (id: string, secs: number) => {
-  pushMsg({ f: 'me', k: 'voice', dur: `${Math.floor(secs / 60)}:${String(Math.max(1, secs % 60)).padStart(2, '0')}`, at: nowT(), st: 'sent' }, id);
-  reply(id, 'voice');
-};
-export function logCall(id: string, type: 'video' | 'voice', secs: number) {
-  const d = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
-  thread(id).msgs.push({ sys: `${type === 'video' ? 'Video' : 'Voice'} call · ${secs ? d : 'No answer'}`, call: 1, missed: !secs });
-  bump();
+  const size = kb > 1024 ? (kb / 1024).toFixed(1) + ' MB' : Math.max(1, Math.round(kb)) + ' KB';
+  try {
+    if (!uri) throw new Error('Pick the file again');
+    if (bytes > 20 * 1024 * 1024) throw new Error('Files up to 20 MB can be sent');
+    const cid = await convFor(id, inboxNow());
+    const ext = (name.split('.').pop() || 'bin').slice(0, 5).toLowerCase();
+    const { path, url } = await uploadChatFile(cid, uri, ext, mime || 'application/octet-stream');
+    await sendMessage(id, inboxNow(), 'file', '', { path, url, name, size });
+  } catch (e) {
+    fail(e);
+  }
 }
 export function deleteMsg(id: string, i: number, all: boolean) {
   const th = thread(id);
-  if (all) th.msgs[i] = { f: 'me', t: '🚫 You deleted this message', at: th.msgs[i].at, st: 'read' };
-  else th.msgs.splice(i, 1);
+  const m = th.msgs[i];
+  if (all && m?.id) {
+    th.msgs[i] = { ...m, t: '🚫 You deleted this message', k: undefined };
+    supabase.from('messages').update({ kind: 'deleted' }).eq('id', m.id).then(({ error }) => error && fail(error));
+  } else th.msgs.splice(i, 1);
   toast('Message deleted');
   bump();
 }
 export function forwardMsg(from: string, i: number, to: string) {
-  const m: Msg = { ...thread(from).msgs[i], f: 'me', at: nowT(), st: 'sent', fw: 1 };
-  delete m.state;
-  thread(to).msgs.push(m);
-  thread(to).time = nowT();
-  toast(`Forwarded to ${P(to).name}`);
-  bump();
+  const m = thread(from).msgs[i];
+  if (!m) return;
+  const cid = THREADS()[from]?.cid;
+  const raw = cid && m.id ? rawMessage(cid, m.id) : null;
+  const kind = raw && ['text', 'img', 'file', 'loc'].includes(raw.kind) ? raw.kind : 'text';
+  const body = kind === 'text' ? (raw?.body ?? m.t ?? '') : raw?.body || '';
+  const data = { ...(raw?.data || {}), fw: 1 };
+  delete (data as any).url;
+  sendMessage(to, inboxNow(), kind, body, data)
+    .then(() => toast(`Forwarded to ${P(to).name}`))
+    .catch(fail);
 }
 export function shareContact(contact: string, to: string) {
   const p = P(contact);
-  thread(to).msgs.push({ f: 'me', t: `👤 ${p.name} · ${p.role} on bolo`, at: nowT(), st: 'sent' });
-  thread(to).time = nowT();
-  toast(`Shared with ${P(to).name}`);
-  bump();
+  sendMessage(to, inboxNow(), 'text', `👤 ${p.name} · ${p.role} on bolo`)
+    .then(() => toast(`Shared with ${P(to).name}`))
+    .catch(fail);
 }
+/** Hides the chat on this phone; it comes back if a new message arrives. */
 export function deleteChat(id: string) {
   const T = THREADS();
   const O = ORDER();
   const keep = T[id];
   const i = O.indexOf(id);
+  const cid = keep?.cid;
   delete T[id];
   if (i >= 0) O.splice(i, 1);
+  if (cid) db.HIDDEN[cid] = Date.now();
   bump();
   undoBar('Chat deleted', () => {
     T[id] = keep;
     O.splice(i, 0, id);
+    if (cid) delete db.HIDDEN[cid];
     bump();
   });
+}
+export function muteChat(id: string, on: boolean) {
+  const th = THREADS()[id];
+  if (!th) return;
+  th.muted = on ? 1 : undefined;
+  bump();
+  if (th.cid) supabase.from('conversation_members').update({ muted: on }).eq('conversation_id', th.cid).eq('user_id', db.uid!).then(({ error }) => error && fail(error));
 }
 export const msgPreview = (m: Msg) => (m.k === 'voice' ? '🎤 Voice message' : m.k === 'img' ? '📷 Photo' : m.k === 'file' ? '📄 ' + m.name : m.k === 'offer' ? '💼 Quote · ' + m.job : m.k === 'loc' ? '📍 Location' : m.t || '');
 export function preview(th: { msgs: Msg[]; typing?: number }, inChat: boolean): [string, string, string] {
@@ -670,6 +663,11 @@ export function preview(th: { msgs: Msg[]; typing?: number }, inChat: boolean): 
   if (m.k === 'offer') return ['', `${me}Quote: ${m.job} · ${m.price}`, 'money'];
   return ['', me + m.t, ''];
 }
+/** Read receipts for a chat: who has read up to when. */
+export const readersOf = (id: string) => {
+  const cid = THREADS()[id]?.cid;
+  return cid ? membersOf(cid).filter((m: any) => m.user_id !== db.uid) : [];
+};
 
 /* =========================== notifications =========================== */
 export function readNotif(id: string) {
@@ -677,49 +675,43 @@ export function readNotif(id: string) {
   if (n && !n.read) {
     n.read = 1;
     bump();
+    void setNotifRead([id]);
   }
 }
-export function answerQuoteNotif(nid: string, st: 'acc' | 'dec') {
-  const n = NOTIFS().find((x) => x.id === nid)!;
-  n.state = st;
-  n.read = 1;
-  const who = n.who as string;
-  const th = thread(who);
-  const o = th.msgs.find((m) => m.k === 'offer' && !m.state);
-  if (st === 'acc') {
-    add(db.hired, who);
-    if (o) o.state = 'acc';
-    th.msgs.push({ sys: `Job booked · ${n.job} · ${n.when}` });
-    th.job = `${n.job} · ${n.when}`;
-    createBooking({ worker: who, client: 'me', title: n.job!, when: n.when!, price: n.price!, area: myCity(), as: isW() ? 'regular' : 'business' });
-    toast(`Booked ${P(who).name} for ${n.when}`);
-  } else {
-    if (o) o.state = 'dec';
-    toast('Quote declined');
-  }
-  bump();
+/** Old quote notifications: answering opens the chat, where the quote is. */
+export function answerQuoteNotif(nid: string, _st: 'acc' | 'dec') {
+  const n = NOTIFS().find((x) => x.id === nid);
+  if (n) readNotif(nid);
 }
 export function markAllRead() {
+  const ids = NOTIFS()
+    .filter((n) => !n.read)
+    .map((n) => n.id);
   NOTIFS().forEach((n) => (n.read = 1));
   toast('All notifications marked as read');
   bump();
+  void setNotifRead(ids);
 }
 export function removeNotif(id: string) {
-  const L = NOTIFS();
-  const i = L.findIndex((n) => n.id === id);
+  const L0 = NOTIFS();
+  const i = L0.findIndex((n) => n.id === id);
   if (i < 0) return;
-  const n = L.splice(i, 1)[0];
+  const n = L0.splice(i, 1)[0];
   bump();
+  let undone = false;
   undoBar('Notification removed', () => {
-    L.splice(i, 0, n);
+    undone = true;
+    L0.splice(i, 0, n);
     bump();
   });
+  setTimeout(() => !undone && deleteNotifRows([id]), 5000);
 }
 export function deleteNotifs(ids: string[]) {
-  const L = NOTIFS();
-  for (let i = L.length - 1; i >= 0; i--) if (ids.includes(L[i].id)) L.splice(i, 1);
+  const L0 = NOTIFS();
+  for (let i = L0.length - 1; i >= 0; i--) if (ids.includes(L0[i].id)) L0.splice(i, 1);
   toast(`${ids.length} notification${ids.length > 1 ? 's' : ''} deleted`);
   bump();
+  void deleteNotifRows(ids);
 }
 export const NT_TABS: Record<string, (n: Notif) => boolean> = {
   All: () => true,
@@ -727,4 +719,4 @@ export const NT_TABS: Record<string, (n: Notif) => boolean> = {
   Learning: (n) => ['enrol', 'course', 'newcourse', 'material', 'live', 'mentor', 'rating'].includes(n.type) || n.cat === 'learning' || n.cat === 'mentorship',
   Mentions: (n) => ['mention', 'review', 'comment'].includes(n.type),
 };
-export { xaf, budgetNum };
+export { xaf, budgetNum, notify, ui, refreshBookings, refreshMine, L };

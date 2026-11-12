@@ -18,7 +18,8 @@ import { hasMapbox } from '../../src/lib/mapbox';
 import { coordOf } from '../../src/data/geo';
 import { db, Booking } from '../../src/data/db';
 import { bookingAmt } from '../../src/logic/wallet';
-import { openEscrowInfo, openFund } from '../../src/sheets/wallet';
+import { openEscrowInfo } from '../../src/sheets/wallet';
+import { MONEY_LIVE } from '../../src/logic/money';
 import { xaf } from '../../src/logic/core';
 
 const STEPS: [string, string, string][] = [
@@ -258,7 +259,6 @@ export default function Track() {
               <Rate r={o.rate} />
             </View>
           </View>
-          <IconBtn name="phone" label={`Call ${f}`} onPress={() => router.push(`/call?id=${oid}&type=voice` as any)} />
           <IconBtn name="chat" label={`Message ${f}`} onPress={() => openChat(oid)} />
         </View>
         <View style={{ padding: 14, borderRadius: 20, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, gap: 10 }}>
@@ -286,8 +286,8 @@ export default function Track() {
             </View>
           ))}
         </View>
-        <EscrowCard b={b} W={W} f={f} />
-        <View style={{ gap: 10 }}>{b.escrow === 'unfunded' && !W ? <Btn testID="tk-fund" variant="yellow" icon="lock" title={`Pay ${b.price} into escrow`} onPress={() => openFund(b.id)} /> : act}</View>
+        {MONEY_LIVE ? <EscrowCard b={b} W={W} f={f} /> : <Note icon="money">Pay {fname(o.name)} directly as you agreed. Payments through bolo are coming soon.</Note>}
+        <View style={{ gap: 10 }}>{act}</View>
       </ScrollView>
     </View>
   );

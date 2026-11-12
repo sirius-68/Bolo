@@ -924,3 +924,43 @@ create policy "chat files members read" on storage.objects for select to authent
 drop policy if exists "job photos own update" on storage.objects;
 create policy "job photos own update" on storage.objects for update to authenticated
   using (bucket_id = 'job-photos' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ================================================================ read models for the app (coordinates and counts in one request)
+-- security_invoker: each view follows the row rules of the tables underneath it.
+drop view if exists public.profile_cards;
+create view public.profile_cards with (security_invoker = true) as
+  select p.id, p.name, p.avatar_url, p.city, p.bio, p.role, p.biz_only, p.intents, p.skills, p.skill_list, p.level, p.years,
+         p.work_status, p.hire_status, p.area, p.experience, p.education, p.languages, p.services, p.verified, p.availability, p.created_at,
+         st_x(p.location_approx::geometry) as lng, st_y(p.location_approx::geometry) as lat,
+         coalesce(s.followers, 0) as followers, coalesce(s.following, 0) as following, coalesce(s.jobs_done, 0) as jobs_done,
+         coalesce(s.hires, 0) as hires, s.rating, coalesce(s.reviews, 0) as reviews
+  from public.profiles p left join public.profile_stats s on s.id = p.id
+  where p.deleted_at is null;
+
+drop view if exists public.post_feed;
+create view public.post_feed with (security_invoker = true) as
+  select p.id, p.author_id, p.business_id, p.kind, p.title, p.body, p.photos, p.cat, p.area, p.status, p.urgent, p.budget_num, p.data, p.created_at,
+         st_x(p.location::geometry) as lng, st_y(p.location::geometry) as lat,
+         coalesce(s.likes, 0) as likes, coalesce(s.comments, 0) as comments, coalesce(s.offers, 0) as offers
+  from public.posts p left join public.post_stats s on s.post_id = p.id;
+
+drop view if exists public.booking_cards;
+create view public.booking_cards with (security_invoker = true) as
+  select b.*, st_x(b.dest::geometry) as dest_lng, st_y(b.dest::geometry) as dest_lat
+  from public.bookings b;
+
+grant select on public.profile_cards, public.post_feed, public.booking_cards, public.profile_stats, public.post_stats to anon, authenticated;
+
+-- how many people joined (counts only; who joined stays private to the owner)
+drop view if exists public.opportunity_stats;
+create view public.opportunity_stats as
+  select o.id, (select count(*)::int from public.opportunity_applications a where a.opportunity_id = o.id and a.status <> 'dec') as joined
+  from public.opportunities o;
+drop view if exists public.mentorship_stats;
+create view public.mentorship_stats as
+  select m.id, (select count(*)::int from public.mentorship_members x where x.mentorship_id = m.id and x.status = 'yes') as joined
+  from public.mentorships m;
+grant select on public.opportunity_stats, public.mentorship_stats to anon, authenticated;
+
+-- messages carry an id made on the phone, so a message shown at once is never shown twice when it comes back
+grant insert (id) on public.messages to authenticated;

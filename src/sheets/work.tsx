@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { MONEY_LIVE } from '../logic/money';
 import { Pressable, Share, View } from 'react-native';
 import * as Linking from 'expo-linking';
 import { db, Post, CvFile } from '../data/db';
@@ -442,7 +443,7 @@ function ApplyForm({ po }: { po: Post }) {
           Priority application. You’ll show at the top of {c.name}’s list.
         </Note>
       ) : (
-        <Pressable onPress={() => openPro('regular', 'priority')} style={[S.row, { gap: 10, padding: 12, borderRadius: 14, backgroundColor: 'rgba(246,238,92,.1)' }]}>
+        !MONEY_LIVE ? null : <Pressable onPress={() => openPro('regular', 'priority')} style={[S.row, { gap: 10, padding: 12, borderRadius: 14, backgroundColor: 'rgba(246,238,92,.1)' }]}>
           <Icon name="rocket" size={18} color={C.yellow} />
           <Txt s={13} w={6} style={{ flex: 1 }}>
             Get to the top of the list with <Txt s={13} w={8}>Pro</Txt>

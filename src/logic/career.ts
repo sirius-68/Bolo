@@ -1,5 +1,5 @@
 /* Career: internships & programs, courses, mentorships, groups, ads. */
-import { db, ui, uid, Course, Mentorship, Opp, Ad, makeDb, NJEI_JOB } from '../data/db';
+import { db, ui, uid, Course, Mentorship, Opp, Ad, makeDb } from '../data/db';
 import { toast } from '../ui/overlay';
 import { logoPic } from '../ui/kit';
 import { bump, later, every } from './live';
@@ -242,14 +242,6 @@ export const tutorCourses = () => db.COURSES.filter((c) => c.mine && !c.biz);
 export const coursePct = (c: Course) => Math.round((Math.min(c.done || 0, lessonsOf(c).length) / lessonsOf(c).length) * 100);
 /** Minutes for each lesson (stable per course). */
 export const lessonMin = (c: Course, i: number) => 12 + ((c.id.length * 7 + i * 11) % 24);
-/** The job behind the Njeiforbi ad, for installs saved before it existed. */
-export function ensureAdJobs() {
-  if (db.P.b_njei && db.POSTS.some((p) => p.id === 'v_njei')) return;
-  const f = makeDb();
-  db.BIZ_SAMPLE.b_njei = db.BIZ_SAMPLE.b_njei || f.BIZ_SAMPLE.b_njei;
-  db.P.b_njei = db.P.b_njei || f.P.b_njei;
-  if (!db.POSTS.some((p) => p.id === 'v_njei')) db.POSTS.splice(1, 0, { ...NJEI_JOB });
-}
 /** Lessons shown on the course page, made from what the course teaches. */
 export const lessonsOf = (c: Course) => [...c.skills, 'Final project and certificate'];
 export function enrollPeople(c: Course, ids: string[]) {

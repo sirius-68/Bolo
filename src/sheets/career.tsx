@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { MONEY_LIVE } from '../logic/money';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -820,7 +821,7 @@ function CVSheet() {
   const [html, setHtml] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const t = tplOf(id);
-  const locked = t.pro && !pro;
+  const locked = MONEY_LIVE && t.pro && !pro;
   useEffect(() => {
     let on = true;
     setHtml(null);

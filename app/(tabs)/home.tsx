@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { MONEY_LIVE } from '../../src/logic/money';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -182,6 +183,8 @@ function BizHome() {
           <Btn small variant="yellow" title="Post a vacancy" style={{ marginTop: 12, alignSelf: 'center' }} onPress={() => router.push('/post-job')} />
         </Empty>
       )}
+      {MONEY_LIVE ? (
+        <>
       <Sec title="Ads" action={ads.length ? 'Manage' : undefined} onAction={() => router.push('/ads')} />
       <Card>
         <View style={[S.row, { gap: 8 }]}>
@@ -212,6 +215,8 @@ function BizHome() {
         )}
         <Btn small variant={live.length ? 'dark' : 'yellow'} icon="plus" title="Create an ad" style={{ marginTop: 12, alignSelf: 'flex-start' }} onPress={openAdCreate} />
       </Card>
+        </>
+      ) : null}
       <Sec title="Programs & internships" action="+ Create" onAction={() => openOppForm()} />
       {opps.length ? (
         <Rail>

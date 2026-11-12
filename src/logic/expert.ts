@@ -105,32 +105,25 @@ export function submitApplication() {
   E.status = 'submitted';
   E.submittedAt = new Date().toISOString();
   bump();
-  // Demo: walk through the review so the flow can be seen end to end. Real accounts wait for a reviewer.
-  if (db.demo) {
-    later(6000, () => {
-      if (db.EXPERT.status !== 'submitted') return;
-      db.EXPERT.status = 'review';
-      bump();
-      later(6000, () => {
-        if (db.EXPERT.status !== 'review') return;
-        db.EXPERT.status = 'interview';
-        bump();
-        toast('Your expert application passed review. Pick an interview time');
-      });
-    });
+  void saveApplication();
+}
+/** The application goes to bolo's reviewers; the status changes when they move it on. */
+async function saveApplication() {
+  const { status, step, ...data } = db.EXPERT;
+  const { supabase } = require('../lib/supabase');
+  const { error } = await supabase.from('experts').upsert({ user_id: db.uid, headline: data.headline || '', data });
+  if (error) {
+    db.EXPERT.status = 'none';
+    bump();
+    const { friendly } = require('./remote');
+    toast(friendly(error));
   }
 }
 export function bookInterview(slot: string) {
   db.EXPERT.slot = slot;
-  db.EXPERT.status = 'decision';
   bump();
-  if (db.demo)
-    later(8000, () => {
-      if (db.EXPERT.status !== 'decision') return;
-      db.EXPERT.status = 'approved';
-      bump();
-      toast('You’re now a bolo Career Expert 🎉');
-    });
+  void saveApplication();
+  toast('Interview time saved. A reviewer will confirm it');
 }
 export const isExpert = () => db.EXPERT.status === 'approved';
 export const applying = () => !['none', 'approved', 'declined'].includes(db.EXPERT.status);

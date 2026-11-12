@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { BackHandler, Pressable, View } from 'react-native';
-import { notify } from '../src/logic/notify';
 import { router } from 'expo-router';
 import { Btn, Check, Note, Page, Pict, Steps, Sub, Title, TopBar, Txt, tap } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { C, R, S } from '../src/ui/theme';
 import { db } from '../src/data/db';
-import { bump, later } from '../src/logic/live';
+import { bump } from '../src/logic/live';
+import { submitDocs } from '../src/logic/verify';
 import { pickImage } from '../src/logic/media';
 import { pick, toast } from '../src/ui/overlay';
 import { COUNTRIES, countryByIso, flag } from '../src/data/countries';
@@ -51,20 +51,15 @@ export default function IdVerify() {
     const p = await pickImage(gallery ? {} : { camera: true, front });
     if (p) set(p);
   };
-  const submit = () => {
-    db.PR.docs.id = 'review';
+  const [busy, setBusy] = useState(false);
+  const submit = async () => {
+    if (busy) return;
+    setBusy(true);
+    const e = await submitDocs([front, back, selfie].filter((x): x is string => !!x), 'id');
+    setBusy(false);
+    if (e) return toast(e);
     bump();
     setSent(true);
-    // Demo: approve after a short wait so the whole flow can be seen. Real accounts wait for a reviewer.
-    if (db.demo)
-      later(6000, () => {
-        if (db.PR.docs.id !== 'review') return;
-        db.PR.docs.id = 'verified';
-        db.user.verified = true;
-        notify({ type: 'verified', cat: 'account', key: 'verified:id', text: '', go: { k: 'me' } });
-        bump();
-        toast('Your identity is verified');
-      });
   };
 
   if (sent)
@@ -274,7 +269,7 @@ export default function IdVerify() {
       {step === 0 ? <Sub>A verified ID builds trust with the people you work with, and it’s required for Career Experts.</Sub> : null}
       {body}
       <View style={{ flex: 1, minHeight: 20 }} />
-      <Btn testID="idv-next" variant="yellow" disabled={!ok} title={step === 0 ? 'Start' : last ? 'Send for checking' : 'Continue'} onPress={() => (last ? submit() : go(step + 1))} style={{ marginTop: 20 }} />
+      <Btn testID="idv-next" variant="yellow" disabled={!ok || busy} title={step === 0 ? 'Start' : last ? (busy ? 'Sending…' : 'Send for checking') : 'Continue'} onPress={() => (last ? submit() : go(step + 1))} style={{ marginTop: 20 }} />
     </Page>
   );
 }

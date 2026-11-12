@@ -9,6 +9,7 @@ import { resumeSims, bizLog } from './work';
 import { clearSaved } from './persist';
 import { stopAdTicker } from './career';
 import { signOut } from './remote';
+import { MONEY_LIVE } from './money';
 
 export const wantsWork = () => db.user.intents.includes('find');
 
@@ -31,7 +32,7 @@ export function enterBusinessOnly() {
 }
 
 export async function logout() {
-  if (!db.demo) await signOut();
+  await signOut();
   cancelAll();
   stopAdTicker();
   await clearSaved();
@@ -67,7 +68,7 @@ export function useBiz(id: string) {
   bump();
 }
 export const MAX_FREE_BIZ = 2;
-export const canAddBiz = () => db.BIZ.list.length < MAX_FREE_BIZ || db.user.pro.business;
+export const canAddBiz = () => !MONEY_LIVE || db.BIZ.list.length < MAX_FREE_BIZ || db.user.pro.business;
 
 /* ---------------- businesses ---------------- */
 export function newBizDraft(): MyBiz {
@@ -89,11 +90,7 @@ export function saveBiz(b: MyBiz, opts: { submitDocs?: boolean } = {}) {
   db.user.role = 'client';
   if (opts.submitDocs && b.rccm && b.niu && b.verified === 'none') {
     b.verified = 'review';
-    // Demo: approve automatically. Real accounts wait for bolo staff to check the documents.
-    if (db.demo) later(5000, () => {
-      b.verified = 'verified';
-      toast(`✅ ${bizName(b)} is now a verified business`);
-    });
+    // bolo staff check RCCM and NIU (remote.ts asks the server for review when the page syncs)
   }
   bump();
   return isNew;

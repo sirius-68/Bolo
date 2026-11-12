@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { MONEY_LIVE } from '../logic/money';
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, ui, MyBiz } from '../data/db';
@@ -20,6 +21,7 @@ import { COUNTRIES, countryByIso, flag, showPhone } from '../data/countries';
 
 /* ---------------- Pro plans ---------------- */
 export function openPro(kind?: 'regular' | 'business', why?: string) {
+  if (!MONEY_LIVE) return toast('Pro plans start once payments are live. Until then, every feature is free.');
   const k = kind || (isW() ? 'regular' : 'business');
   sheet.show(() => <ProSheet kind={k} why={why} />, { full: true });
 }

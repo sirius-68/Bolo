@@ -9,7 +9,7 @@ import { C, S } from '../src/ui/theme';
 import { P, fname, xaf } from '../src/logic/core';
 import { useLive } from '../src/logic/live';
 import { MAX_TOPUP, MIN_TOPUP, balance, bookingAmt, topUp } from '../src/logic/wallet';
-import { bk, fundBooking } from '../src/logic/work';
+import { bk } from '../src/logic/work';
 import { methodByKey, methodLabel, pickMethod } from '../src/sheets/wallet';
 import { PayBadge, openPayments } from '../src/sheets/account';
 
@@ -46,7 +46,7 @@ export default function TopUp() {
     setStep('approve');
     topUp(n, m[0], () => {
       // Money in: pay the waiting job straight into escrow.
-      if (job && job.escrow === 'unfunded') setFunded(fundBooking(job.id));
+      if (job && job.escrow === 'unfunded') setFunded(false);
       setStep('done');
     });
   };

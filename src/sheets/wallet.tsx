@@ -5,12 +5,12 @@ import { db } from '../data/db';
 import { payOf } from '../data/payments';
 import { AlertIll, Avatar, Btn, Field, Input, Txt, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
-import { afterSheet, sheet, SheetTitle } from '../ui/overlay';
+import { afterSheet, sheet, SheetTitle, toast } from '../ui/overlay';
 import { C, S } from '../ui/theme';
 import { P, fname, xaf } from '../logic/core';
 import { useLive } from '../logic/live';
 import { balance, bookingAmt, withdraw } from '../logic/wallet';
-import { bk, fundBooking } from '../logic/work';
+import { bk } from '../logic/work';
 import { PayBadge, openPayments } from './account';
 
 const digits = (v: string) => v.replace(/[^\d]/g, '');
@@ -103,7 +103,7 @@ function Fund({ id }: { id: string }) {
       {short ? (
         <Btn testID="fund-topup" variant="yellow" icon="plus" title={`Add ${xaf(short)} and pay`} onPress={() => afterSheet(() => router.push(`/topup?amt=${Math.max(short, 500)}&fund=${b.id}` as any))} />
       ) : (
-        <Btn testID="fund-pay" variant="yellow" icon="lock" title={`Pay ${xaf(amt)} into escrow`} onPress={() => fundBooking(b.id)} />
+        <Btn testID="fund-pay" variant="yellow" icon="lock" title={`Pay ${xaf(amt)} into escrow`} onPress={() => toast('Payments through bolo are coming soon')} />
       )}
       <Pressable accessibilityRole="button" onPress={openEscrowInfo} style={{ alignSelf: 'center', padding: 6 }}>
         <Txt s={13} w={7} c={C.lav}>

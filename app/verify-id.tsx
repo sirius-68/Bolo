@@ -6,7 +6,7 @@ import { Btn, Grow, Page, Pict, Seg, Steps, Sub, TextLink, Title, TopBar, Txt } 
 import { Icon } from '../src/ui/Icon';
 import { C, R } from '../src/ui/theme';
 import { pickImage } from '../src/logic/media';
-import { toast } from '../src/ui/overlay';
+import { idShots } from '../src/logic/verify';
 
 export default function VerifyId() {
   const [doc, setDoc] = useState<'id' | 'pass' | 'lic'>('id');
@@ -78,18 +78,13 @@ export default function VerifyId() {
             We only use it to confirm it’s really you. Nobody else sees your documents.
           </Txt>
         </View>
-        <TextLink
-          title="No document handy? Use sample photos"
-          s={12}
-          style={{ alignSelf: 'center' }}
-          onPress={() => {
-            setShots(['sample', 'sample']);
-            toast('Sample documents added');
-          }}
-        />
       </View>
       <Grow />
-      <Btn testID="id-continue" title="Continue" disabled={!shots[0] || (doc !== 'pass' && !shots[1])} onPress={() => router.push('/selfie')} style={{ marginTop: 24 }} />
+      <Btn testID="id-continue" title="Continue" disabled={!shots[0] || (doc !== 'pass' && !shots[1])} onPress={() => {
+          idShots.doc = doc;
+          idShots.files = shots.filter((x): x is string => !!x && x !== 'sample');
+          router.push('/selfie');
+        }} style={{ marginTop: 24 }} />
     </Page>
   );
 }
