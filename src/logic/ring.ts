@@ -34,7 +34,6 @@ export function ring(kind: keyof typeof SOUNDS) {
     p.loop = kind !== 'end';
     p.volume = kind === 'in' ? 1 : 0.6;
     p.audioMixingMode = 'duckOthers';
-    p.staysActiveInBackground = kind !== 'end';
     p.play();
     player = p;
     playing = kind;

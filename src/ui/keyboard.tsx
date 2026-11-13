@@ -29,14 +29,22 @@ export function useKeyboardOpen() {
 function AndroidAvoid({ style, children, onLayout, ...rest }: ViewProps) {
   const [pad, setPad] = useState(0);
   const frame = useRef<{ y: number; height: number } | null>(null);
+  const kbTop = useRef<number | null>(null); // top edge of the open keyboard, null while it is closed
+  const fit = () => {
+    const f = frame.current;
+    const bottom = f ? f.y + f.height : Dimensions.get('window').height;
+    setPad(kbTop.current == null ? 0 : Math.max(0, Math.round(bottom - kbTop.current)));
+  };
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', (e) => {
-      const f = frame.current;
-      const bottom = f ? f.y + f.height : Dimensions.get('window').height;
       const top = e?.endCoordinates?.screenY;
-      setPad(typeof top === 'number' ? Math.max(0, Math.round(bottom - top)) : 0);
+      kbTop.current = typeof top === 'number' ? top : null;
+      fit();
     });
-    const hide = Keyboard.addListener('keyboardDidHide', () => setPad(0));
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      kbTop.current = null;
+      fit();
+    });
     return () => {
       show.remove();
       hide.remove();
@@ -48,6 +56,8 @@ function AndroidAvoid({ style, children, onLayout, ...rest }: ViewProps) {
       style={[style, { paddingBottom: pad }]}
       onLayout={(e: LayoutChangeEvent) => {
         frame.current = e.nativeEvent.layout;
+        // the screen itself changed size (rotation, or a phone that shrinks the window for the keyboard): measure again
+        if (kbTop.current != null) fit();
         onLayout?.(e);
       }}
     >
