@@ -60,12 +60,22 @@ GitHub → Settings → **Environments** → `production` (it appears after the 
 Actions → **Backend** → **Run workflow** → target `production`. This applies 0001 (already there; safe to repeat), 0002 (activity) and 0003 (foundations), and deploys the `delete-account` function.
 
 ### 7. Make yourself an admin
-After the production deploy, in Supabase → SQL Editor (this is the one manual step, because admins can't appoint themselves):
+Admins can't appoint themselves, so the first one is set at deploy time:
 
-```sql
-insert into public.admin_users (user_id, role)
-select id, 'owner' from auth.users where email = '<your login email>';
-```
+1. Sign up in the app with the email you want to manage bolo with.
+2. Add a **secret** named `ADMIN_EMAILS` (step 3's page) with that email. For several owners, separate them with commas.
+3. Run the production deploy again. It makes those accounts **owners** (`scripts/admins.sh`); the email is never printed.
+
+After that, owners add and remove other admins from the panel itself (Settings → Admins).
+
+### 8. The admin panel (a web page)
+The panel is the `admin/` folder, published by the **Admin panel** workflow on GitHub Pages at `https://sirius-68.github.io/Bolo/`.
+One-time: repo → Settings → Pages → **Source: GitHub Actions**. After that it republishes whenever `admin/` changes on `main`.
+
+- It holds no secrets: only the database address and public key (`SUPABASE_URL`, `SUPABASE_KEY`), the same two the app ships with.
+- You sign in with your bolo email and password. An account that is not in `admin_users` is signed straight out.
+- Every `admin_*` function checks the signed-in account in the database, so the page being public gives nobody anything.
+- The sign-in lasts until the tab is closed.
 
 ## What's in the database now
 
@@ -102,19 +112,28 @@ Set **secret** `SENTRY_AUTH_TOKEN` and **variables** `SENTRY_ORG`, `SENTRY_PROJE
 ### Testing with the emulator
 The emulator tour always checks the signed-out screens. To also tour the app signed in, create a test account in the app and add two GitHub secrets: `QA_EMAIL` and `QA_PASSWORD`.
 
-### Admin actions (sign in as an admin, call from the SQL Editor or the future admin site)
+### Admin panel functions (migration `0009_admin.sql`)
 
-| Function | Does |
-|---|---|
-| `admin_review_verification(id, approve, note)` | approves or rejects an ID or business check, sets the badge, notifies the person |
-| `admin_resolve_report(id, status, note)` | closes a report (`reviewing`, `actioned`, `dismissed`) |
-| `admin_set_pro(user, regular, business)` | gives or removes Pro until payments are live |
-| `admin_review_expert(user, status, note)` | moves a career expert application on (`review`, `interview`, `approved`, `declined`); approved experts show in Career |
+| Screen | Functions | Does |
+|---|---|---|
+| Overview | `admin_overview()` | totals, the last 14 days of sign-ups, and how many items wait in each queue |
+| ID checks | `admin_verifications(status)`, `admin_review_verification(id, approve, note)` | shows the documents (private, opened with short-lived links), approves or rejects, sets the badge, notifies the person |
+| Businesses | `admin_businesses(status)`, `admin_review_business(business, approve, note)` | business checks |
+| Reports | `admin_reports(status)`, `admin_resolve_report(id, status, note)`, `admin_remove_content(type, id, note)` | shows what was reported and by whom; dismiss, take the content down, or suspend its owner |
+| Feedback | `admin_feedback(status)`, `admin_set_feedback(id, status, note)` | messages sent from Settings → Help |
+| Experts | `admin_experts(status)`, `admin_review_expert(user, status, note)` | career expert applications |
+| People | `admin_people(query, filter, limit, offset)`, `admin_person(user)`, `admin_suspend(user, on, note)` | search, a person's page, suspend and restore |
+| Settings | `admin_set_config(key, value)`, `admin_admins()`, `admin_grant(email, role)`, `admin_revoke(user)` | minimum app version, the service notice, the admin team (owners only) |
+| Activity | `admin_audit(limit)` | every admin action; `audit_log` can't be edited or deleted |
 
-Each one writes `audit_log`, which nobody can edit or delete.
+`admin_set_pro(user, regular, business)` (gives or removes Pro until payments are live) has no screen yet.
 
-### Asking everyone to update the app
-Table Editor → `app_config` → `min_version` → set `android` to the build number of the release everyone must have (the number in the APK name, e.g. `112`). Older builds then show **Update bolo** when they open.
+**Suspended accounts** can still sign in and read, but can't post, message, offer, review or list anything; they leave search and the feed; they are told why and can still write to bolo from Settings → Help.
+
+### Asking everyone to update the app, or telling them something
+Admin panel → Settings:
+- **Ask older versions to update**: the build number of the release everyone must have (the number in the APK name, e.g. `144`). Older builds show **Update bolo** when they open.
+- **Service notice**: a short note shown each time the app opens (from the release after v1.0.144). Switch it off when it no longer applies.
 
 ## Tests
 

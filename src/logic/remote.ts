@@ -467,3 +467,14 @@ export async function updateRequired(platform: 'android' | 'ios', build: number)
     return null;
   }
 }
+
+/** A notice from the bolo team shown when the app opens (set from the admin panel: Settings → Service notice). */
+export async function serviceNotice(): Promise<string | null> {
+  try {
+    const { data } = await supabase.from('app_config').select('value').eq('key', 'maintenance').maybeSingle();
+    const v = data?.value as { on?: boolean; message?: string } | undefined;
+    return v?.on && v.message ? String(v.message).slice(0, 400) : null;
+  } catch {
+    return null;
+  }
+}

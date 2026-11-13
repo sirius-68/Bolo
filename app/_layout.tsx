@@ -24,7 +24,7 @@ import { StoryHost } from '../src/components/Stories';
 import { Linking, Platform, Pressable, Text, View } from 'react-native';
 import { resetTo } from '../src/logic/nav';
 import { report, setMonitorUser, startMonitoring } from '../src/lib/monitor';
-import { updateRequired } from '../src/logic/remote';
+import { serviceNotice, updateRequired } from '../src/logic/remote';
 import { confirm } from '../src/ui/overlay';
 
 startMonitoring();
@@ -35,7 +35,10 @@ const UPDATE_URL = process.env.EXPO_PUBLIC_UPDATE_URL || 'https://github.com/sir
 async function checkVersion() {
   if (Platform.OS !== 'android' && Platform.OS !== 'ios') return;
   const msg = await updateRequired(Platform.OS, BUILD);
-  if (msg) confirm({ title: 'Update bolo', text: msg, ok: 'Update', cancel: 'Later', icon: 'download', onOk: () => Linking.openURL(UPDATE_URL).catch(() => {}) });
+  if (msg) return confirm({ title: 'Update bolo', text: msg, ok: 'Update', cancel: 'Later', icon: 'download', onOk: () => Linking.openURL(UPDATE_URL).catch(() => {}) });
+  // a notice from the bolo team (for example planned maintenance)
+  const note = await serviceNotice();
+  if (note) confirm({ title: 'A note from bolo', text: note, ok: 'OK', icon: 'bell', onOk: () => {} });
 }
 
 /** Shown instead of a broken screen. Plain parts only, so it can't break too.

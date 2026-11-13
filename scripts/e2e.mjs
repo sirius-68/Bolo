@@ -267,6 +267,75 @@ if (ready) {
     return `${c.length} courses`;
   });
 
+  // ---- admin panel (the same calls the web panel makes)
+  await step('someone who is not an admin gets nothing from the admin panel', async () => {
+    const me = await A.sb.rpc('admin_me');
+    expect(!me.error && me.data === null, 'a normal account looks like an admin');
+    for (const fn of ['admin_overview', 'admin_people', 'admin_reports', 'admin_feedback', 'admin_audit']) {
+      const r = await A.sb.rpc(fn);
+      expect(r.error, `${fn} answered a normal account`);
+    }
+    const s = await A.sb.rpc('admin_suspend', { p_user: B.id, p_on: true, p_note: 'no' });
+    expect(s.error, 'a normal account could suspend someone');
+  });
+  const TOKEN = process.env.SUPABASE_ACCESS_TOKEN, REF = process.env.REF;
+  const sql = async (query) => {
+    const r = await fetch(`https://api.supabase.com/v1/projects/${REF}/database/query`, {
+      method: 'POST', headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ query }),
+    });
+    if (!r.ok) throw new Error(`database query failed (HTTP ${r.status})`);
+    return r.json();
+  };
+  let isAdmin = false;
+  await step('Ana is made an admin (test database only)', async () => {
+    if (!TOKEN || !REF) throw new Error('no access to the test database settings in this run');
+    if (!/^[0-9a-f-]{36}$/.test(A.id)) throw new Error('unexpected account id');
+    await sql(`insert into public.admin_users (user_id, role) values ('${A.id}', 'owner') on conflict (user_id) do update set role = 'owner'`);
+    const me = must(await A.sb.rpc('admin_me'));
+    expect(me?.role === 'owner', 'Ana is not an owner');
+    isAdmin = true;
+  }, { optional: true });
+  if (isAdmin) {
+    await step('admin: overview, people search and a person page', async () => {
+      const o = must(await A.sb.rpc('admin_overview'));
+      expect(o.people >= 2 && o.queue && o.queue.reports >= 1, 'overview numbers look wrong');
+      const list = must(await A.sb.rpc('admin_people', { p_query: 'E2E Ben', p_filter: 'all', p_limit: 20, p_offset: 0 }));
+      const rows = list.rows || list;
+      expect(rows.some((x) => x.id === B.id), 'search did not find Ben');
+      const one = must(await A.sb.rpc('admin_person', { p_user: B.id }));
+      expect(one?.profile?.id === B.id, 'person page is empty');
+      return `${o.people} people, ${o.queue.reports} open report(s)`;
+    });
+    await step('admin: the report and the feedback from this run are in the queues, and can be closed', async () => {
+      const reports = must(await A.sb.rpc('admin_reports', { p_status: 'open' }));
+      const rep = reports.find((x) => x.reporter_id === A.id && x.target_id === B.id);
+      expect(rep, 'the report is not in the queue');
+      must(await A.sb.rpc('admin_resolve_report', { p_id: rep.id, p_status: 'dismissed', p_note: 'e2e' }));
+      const fb = must(await A.sb.rpc('admin_feedback', { p_status: 'open' }));
+      const mine = fb.find((x) => x.user_id === A.id);
+      expect(mine, 'the feedback is not in the queue');
+      must(await A.sb.rpc('admin_set_feedback', { p_id: mine.id, p_status: 'closed', p_note: 'e2e' }));
+    });
+    await step('admin: a suspended person cannot post or message, and can again once restored', async () => {
+      must(await A.sb.rpc('admin_suspend', { p_user: B.id, p_on: true, p_note: 'e2e test' }));
+      const blocked = await B.sb.from('messages').insert({ id: randomUUID(), conversation_id: cid, kind: 'text', body: 'while suspended', data: {} });
+      expect(blocked.error, 'a suspended person could still message');
+      const hidden = must(await A.sb.from('profile_cards').select('id').eq('visible', true).eq('id', B.id));
+      expect(hidden.length === 0, 'a suspended person is still listed');
+      must(await A.sb.rpc('admin_suspend', { p_user: B.id, p_on: false }));
+      must(await B.sb.from('messages').insert({ id: randomUUID(), conversation_id: cid, kind: 'text', body: 'back again', data: {} }), 'message after restore');
+    });
+    await step('admin: the app notice can be set and cleared, and every action is in the activity list', async () => {
+      const before = must(await A.sb.from('app_config').select('value').eq('key', 'maintenance').maybeSingle());
+      must(await A.sb.rpc('admin_set_config', { p_key: 'maintenance', p_value: { on: true, message: 'e2e notice' } }));
+      const seen = must(await B.sb.from('app_config').select('value').eq('key', 'maintenance').maybeSingle());
+      expect(JSON.stringify(seen?.value || '').includes('e2e notice'), 'the app cannot read the notice');
+      must(await A.sb.rpc('admin_set_config', { p_key: 'maintenance', p_value: before?.value ?? { on: false, message: '' } }));
+      const log = must(await A.sb.rpc('admin_audit', { p_limit: 50 }));
+      expect(log.some((x) => String(x.action).includes('suspend')), 'the suspension is not in the activity list');
+    });
+  }
+
   if (live?.ch) await B.sb.removeChannel(live.ch);
 }
 

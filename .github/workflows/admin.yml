@@ -1,0 +1,84 @@
+name: Admin panel
+
+# Builds the web admin panel (admin/) and publishes it on GitHub Pages.
+# The site holds no secrets: only the database address and its public key, the same two the app ships with.
+# Everything it can do is decided by the database, which checks that the signed-in account is an admin.
+
+on:
+  push:
+    branches: [main]
+    paths: ['admin/**', '.github/workflows/admin.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: admin-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Put the site together
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ vars.SUPABASE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
+            echo "::error::SUPABASE_URL and SUPABASE_KEY (repository variables) are needed to publish the admin panel"; exit 1
+          fi
+          # the key must be the public one: a secret key must never be published
+          case "$SUPABASE_KEY" in
+            sb_secret_*) echo "::error::SUPABASE_KEY is a secret key. Use the publishable key."; exit 1 ;;
+          esac
+          role=$(printf '%s' "$SUPABASE_KEY" | cut -s -d. -f2 | tr '_-' '/+' | base64 -d 2>/dev/null | jq -r '.role // empty' 2>/dev/null || true)
+          if [ "$role" = "service_role" ]; then echo "::error::SUPABASE_KEY is the service key. Use the publishable key."; exit 1; fi
+
+          mkdir -p site/lib && cp admin/index.html admin/style.css admin/app.js site/
+          # the database library, bundled into one file so the page loads nothing from other sites
+          mkdir -p /tmp/lib && cd /tmp/lib
+          npm init -y > /dev/null
+          npm i --no-audit --no-fund @supabase/supabase-js@2 esbuild@0.24 > /dev/null
+          echo "export { createClient } from '@supabase/supabase-js';" > entry.js
+          npx esbuild entry.js --bundle --format=esm --target=es2020 --minify --legal-comments=none --outfile="$GITHUB_WORKSPACE/site/lib/supabase.js"
+          cd "$GITHUB_WORKSPACE"
+          printf 'window.BOLO = %s;\n' "$(jq -nc --arg url "$SUPABASE_URL" --arg key "$SUPABASE_KEY" '{url: $url, key: $key, env: "production"}')" > site/config.js
+          touch site/.nojekyll
+          printf 'User-agent: *\nDisallow: /\n' > site/robots.txt
+          cp site/index.html site/404.html
+      - name: Check the built site
+        run: |
+          set -euo pipefail
+          node --check site/app.js
+          node --check site/config.js
+          node --input-type=module -e "const m = await import('$GITHUB_WORKSPACE/site/lib/supabase.js'); if (typeof m.createClient !== 'function') { console.error('the database library did not build'); process.exit(1); }"
+          # nothing that must stay private may be in the published files
+          if grep -rIlE 'sb_secret_|service_role|xkeysib-|BEGIN PRIVATE KEY' site --exclude=supabase.js; then echo "::error::a private key is in the site"; exit 1; fi
+          ls -la site site/lib
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  publish:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.go.outputs.page_url }}
+    steps:
+      - id: go
+        uses: actions/deploy-pages@v4

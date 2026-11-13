@@ -114,12 +114,17 @@ jobs:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
           SMS_SENDER: ${{ vars.SMS_SENDER }}
         run: bash scripts/auth-config.sh "$REF" staging
+      - name: Admin panel owners (accounts listed in the ADMIN_EMAILS secret)
+        env:
+          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
+        run: bash scripts/admins.sh "$REF"
 
   e2e:
     name: End-to-end test on staging
     needs: staging
     if: ${{ vars.STAGING_SUPABASE_URL != '' }}
     runs-on: ubuntu-latest
+    environment: staging
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -130,6 +135,9 @@ jobs:
         env:
           SUPABASE_URL: ${{ vars.STAGING_SUPABASE_URL }}
           SUPABASE_KEY: ${{ vars.STAGING_SUPABASE_KEY }}
+          # only used to make one throwaway test account an admin on the test database
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ vars.STAGING_PROJECT_REF }}
         run: |
           set -o pipefail
           mkdir -p /tmp/e2e ci-out && cp scripts/e2e.mjs /tmp/e2e/ && cd /tmp/e2e
@@ -198,3 +206,7 @@ jobs:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
           SMS_SENDER: ${{ vars.SMS_SENDER }}
         run: bash scripts/auth-config.sh "$REF"
+      - name: Admin panel owners (accounts listed in the ADMIN_EMAILS secret)
+        env:
+          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
+        run: bash scripts/admins.sh "$REF"
