@@ -7,7 +7,7 @@ name: Admin panel
 on:
   push:
     branches: [main]
-    paths: ['admin/**', '.github/workflows/admin.yml']
+    paths: ['admin/**', 'scripts/admin-smoke.mjs', '.github/workflows/admin.yml']
   workflow_dispatch:
 
 permissions:
@@ -71,6 +71,11 @@ jobs:
           # nothing that must stay private may be in the published files
           if grep -rIlE 'sb_secret_|service_role|xkeysib-|BEGIN PRIVATE KEY' site --exclude=supabase.js; then echo "::error::a private key is in the site"; exit 1; fi
           ls -la site site/lib
+      - name: Open it in a browser (sign-in screen loads, no errors, talks to no other site)
+        run: |
+          set -euo pipefail
+          cd /tmp/lib && npm i --no-audit --no-fund playwright-core@1 > /dev/null
+          BROWSER_CHANNEL=chrome node "$GITHUB_WORKSPACE/scripts/admin-smoke.mjs" "$GITHUB_WORKSPACE/site"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
