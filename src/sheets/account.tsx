@@ -13,6 +13,9 @@ import { C, S } from '../ui/theme';
 import { bizLogo, bizName, bizPct, curBiz, myCity, isEmail, isPhone, isW, myPhoto, digits, xaf } from '../logic/core';
 import { canAddBiz, cancelPro, MAX_FREE_BIZ, newBizDraft, payPro, saveBiz, setRole, useBiz } from '../logic/account';
 import { bump } from '../logic/live';
+import { blockedList, ensurePeople } from '../logic/server';
+import { unblockPerson } from '../logic/work';
+import { friendly } from '../logic/remote';
 import { setCityManually, gpsCity } from '../logic/here';
 import { resetTo } from '../logic/nav';
 import { LogoPicker } from '../components/business';
@@ -666,30 +669,61 @@ export function openPrivacy() {
   sheet.show(() => {
     const P = () => {
       const [, f] = useState(0);
-      const sw = (k: 'visible' | 'phoneAfterHire' | 'twoStep', t: string, s: string) => (
-        <SwitchRow
-          title={t}
-          sub={s}
-          value={db.PREF[k]}
-          onChange={(v) => {
-            db.PREF[k] = v;
-            bump();
-            f((x) => x + 1);
-          }}
-        />
-      );
+      const n = blockedList().length;
       return (
         <View style={{ gap: 4 }}>
           <SheetTitle>Privacy & security</SheetTitle>
-          {sw('visible', 'Show my profile in search', 'People near you can find you on the map and feed')}
-          {sw('phoneAfterHire', 'Hide my phone until hired', 'Your number is shared only after a booking')}
-          {sw('twoStep', 'Two-step login', 'Get a code by SMS when you log in on a new phone')}
+          <SwitchRow
+            title="Show my profile in search"
+            sub={db.PREF.visible ? 'People can find you in the lists and on the map' : 'Hidden from the lists and the map. People you already chat or work with still see you'}
+            value={db.PREF.visible}
+            onChange={(v) => {
+              // saved to your profile on the server (the sync picks it up), where the lists respect it
+              db.PREF.visible = v;
+              bump();
+              f((x) => x + 1);
+            }}
+          />
+          <Note icon="lock">Your phone number and email are never shown on your profile. Share them in chat when you choose to.</Note>
           <OptRow icon="lock" bg="#fff" title="Change password" sub="We’ll send you a reset code" onPress={() => afterSheet(() => router.push('/forgot'))} />
-          <OptRow icon="eyeoff" bg={C.orange} title="Blocked users" sub="None" chev={false} onPress={() => toast('You haven’t blocked anyone')} />
+          <OptRow icon="eyeoff" bg={C.orange} title="Blocked people" sub={n ? `${n} blocked · tap to review` : 'None'} chev={!!n} onPress={() => (n ? openBlocked() : toast('You haven’t blocked anyone'))} />
         </View>
       );
     };
     return <P />;
+  });
+}
+/** People I blocked, with a way to unblock each one. */
+export function openBlocked() {
+  sheet.show(() => {
+    const B = () => {
+      const [, f] = useState(0);
+      const ids = blockedList();
+      React.useEffect(() => {
+        void ensurePeople(ids).then(() => f((x) => x + 1));
+      }, []);
+      return (
+        <View style={{ gap: 8 }}>
+          <SheetTitle sub="They can’t message you, comment on your posts or see your jobs.">Blocked people</SheetTitle>
+          {ids.length ? (
+            ids.map((id) => (
+              <View key={id} style={[S.row, { gap: 12, padding: 12, borderRadius: 14, backgroundColor: C.s2 }]}>
+                <Avatar pic={db.P[id]?.photo || null} size={40} />
+                <Txt s={14} w={7} style={{ flex: 1 }} lines={1}>
+                  {db.P[id]?.name || 'bolo member'}
+                </Txt>
+                <Btn small variant="ghost" title="Unblock" onPress={() => (unblockPerson(id), f((x) => x + 1))} />
+              </View>
+            ))
+          ) : (
+            <Txt s={13} c={C.muted}>
+              Nobody is blocked.
+            </Txt>
+          )}
+        </View>
+      );
+    };
+    return <B />;
   });
 }
 export function openLang() {
@@ -720,13 +754,53 @@ export function openLang() {
   ));
 }
 const FAQ: [string, string][] = [
-  ['How do I get paid?', 'When the client confirms the job is done, payment goes to your Mobile Money within minutes.'],
-  ['Is it free to post a job?', 'Yes. Regular profiles can post unlimited personal jobs. Business pages are free too.'],
-  ['What’s the difference between Regular and Business?', 'Your Regular profile is you: find work and hire for personal jobs. A business page recruits for a company: vacancies, internships, courses and contracts.'],
-  ['How do company contracts work?', 'Verified businesses send a contract in the app; both sides sign and the person appears under Team.'],
-  ['How do I verify my business?', 'Add your RCCM and NIU on your business page. Verification usually takes a few minutes.'],
+  ['How do I get paid?', 'For now you and the other person agree the price in chat and pay each other directly (cash or mobile money). Payments inside bolo are coming later; bolo never asks you to pay to get a job.'],
+  ['Is it free to post a job?', 'Yes. Posting jobs, sending offers, chatting and calling are all free.'],
+  ['What’s the difference between Regular and Business?', 'Your Regular profile is you: find work and hire for personal jobs. A business page recruits for a company: vacancies, internships and programs.'],
+  ['How do I get the verified badge?', 'Send a photo of your ID and a selfie from Profile → Verification. A person at bolo checks them; you get a notification when it’s done.'],
+  ['How do I verify my business?', 'Add your RCCM and NIU on your business page. A person at bolo checks them before the badge appears.'],
   ['When can I leave a review?', 'Only after the job is marked done and confirmed, so every review on bolo is from real work.'],
+  ['Someone is behaving badly. What can I do?', 'Open the ⋯ menu on their post or in the chat to report or block them. Reports go to the bolo team. Never send money to someone before the work, and meet in public places when you can.'],
 ];
+const TOPICS: [string, string][] = [
+  ['problem', 'Something isn’t working'],
+  ['idea', 'An idea'],
+  ['account', 'My account'],
+  ['safety', 'Safety'],
+  ['other', 'Something else'],
+];
+/** A message to the bolo team. It is stored on the server for the team to read; there is no live chat. */
+export function openFeedback() {
+  sheet.show(() => {
+    const F = () => {
+      const [topic, setTopic] = useState('problem');
+      const [body, setBody] = useState('');
+      const [busy, setBusy] = useState(false);
+      const ok = body.trim().length >= 5;
+      const send = async () => {
+        if (!ok || busy) return;
+        setBusy(true);
+        const { error } = await supabase.from('feedback').insert({ topic, body: body.trim(), app_version: `${process.env.EXPO_PUBLIC_BUILD || 'dev'}` });
+        setBusy(false);
+        if (error) return toast(friendly(error));
+        sheet.close('Sent. Thank you, the bolo team reads every message');
+      };
+      return (
+        <View style={{ gap: 14 }}>
+          <SheetTitle sub="Tell us what happened or what you’d like. We read every message and reply by email when we need more details.">Write to bolo</SheetTitle>
+          <Chips>
+            {TOPICS.map(([k, t]) => (
+              <Chip key={k} small label={t} on={topic === k} onPress={() => setTopic(k)} />
+            ))}
+          </Chips>
+          <Input testID="fb-body" multiline value={body} onChangeText={setBody} maxLength={2000} placeholder="Write your message" />
+          <Btn testID="fb-send" variant="yellow" icon="send" title="Send" loading={busy} disabled={!ok} onPress={send} />
+        </View>
+      );
+    };
+    return <F />;
+  }, { full: true });
+}
 export function openHelp() {
   sheet.show(() => {
     const H = () => {
@@ -749,7 +823,7 @@ export function openHelp() {
               ) : null}
             </Pressable>
           ))}
-          <Btn variant="yellow" icon="chat" title="Chat with bolo" style={{ marginTop: 8 }} onPress={() => sheet.close('A bolo agent will reply in a few minutes')} />
+          <Btn testID="help-write" variant="yellow" icon="chat" title="Write to bolo" style={{ marginTop: 8 }} onPress={() => afterSheet(openFeedback)} />
         </View>
       );
     };

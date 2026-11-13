@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { MONEY_LIVE } from '../src/logic/money';
 import { Pressable, View } from 'react-native';
 import { db } from '../src/data/db';
-import { Btn, Empty, Page, StatusPill, TopBar, Txt } from '../src/ui/kit';
+import { Btn, Empty, Page, StatusPill, TopBar, Txt, Missing } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { sheet, SheetTitle, toast } from '../src/ui/overlay';
 import { C, S } from '../src/ui/theme';
@@ -12,6 +13,8 @@ import { openAdCreate } from '../src/sheets/business';
 import { openPro } from '../src/sheets/account';
 
 export default function Ads() {
+  // Money isn't live yet: nothing in the app links here, and a stale link shouldn't show pretend balances.
+  if (!MONEY_LIVE) return <Missing bar="Ads" title="Payments are coming soon" text="For now, agree the price in chat and pay each other directly." />;
   useLive();
   if (isW() || !curBiz())
     return (

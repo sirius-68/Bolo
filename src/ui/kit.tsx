@@ -1208,3 +1208,27 @@ export function Rich({ text, s = 13, c = C.text, lines, style }: { text: string;
     </Txt>
   );
 }
+
+/** A whole screen for something that isn't there (deleted, or a stale link): always with a way back. */
+export function Missing({ title, text, bar }: { title: string; text?: string; bar?: string }) {
+  return (
+    <Page header={<TopBar title={bar} />}>
+      <Empty title={title} text={text} style={{ marginTop: 16 }}>
+        <Btn small variant="ghost" title="Go back" onPress={goBack} />
+      </Empty>
+    </Page>
+  );
+}
+/** A whole screen that is still fetching what it shows. */
+export function LoadingPage({ bar }: { bar?: string }) {
+  return (
+    <Page header={<TopBar title={bar} />}>
+      <View style={{ paddingTop: 80, alignItems: 'center', gap: 12 }} accessibilityLabel="Loading">
+        <ActivityIndicator color={C.yellow} />
+        <Txt s={13} c={C.muted}>
+          Loading…
+        </Txt>
+      </View>
+    </Page>
+  );
+}

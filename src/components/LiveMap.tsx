@@ -14,7 +14,8 @@ import { P } from '../logic/core';
 import { openProfile } from '../logic/nav';
 import { openJob } from '../sheets/work';
 
-const shortBudget = (b?: string) => (b || '').replace('XAF ', '').split(' · ')[0].replace(' / month', '/mo').replace(/ \+ .*/, '+').slice(0, 12);
+/** Short pin label: the amount, or "Offers" when the job has no set budget. */
+const shortBudget = (b?: string) => (/\d/.test(b || '') ? (b || '').replace('XAF ', '').split(' · ')[0].replace(' / month', '/mo').replace(/ \+ .*/, '+').slice(0, 12) : 'Offers');
 
 /** Real Mapbox map of jobs or people near you. `onLock` tells the parent scroll view to stop scrolling while the map is being dragged. */
 export function LiveMap({ mode, jobs, people, bottomInset = 64, topInset = 150, onLock, selected, onSelect, onBackground, max = 12 }: { mode: 'jobs' | 'people'; jobs: Post[]; people: string[]; bottomInset?: number; topInset?: number; onLock?: (locked: boolean) => void; selected?: string | null; onSelect?: (id: string) => void; onBackground?: () => void; max?: number }) {

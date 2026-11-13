@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { shareTail } from '../logic/links';
 import { MONEY_LIVE } from '../logic/money';
 import { loadPost } from '../logic/server';
 import { Pressable, Share, View } from 'react-native';
@@ -755,7 +756,7 @@ export async function shareJob(id: string) {
 }
 export async function sharePost(name?: string) {
   try {
-    await Share.share({ message: `Check out ${name ? name + ' ' : ''}on bolo, jobs, talent and careers near you. https://bolo.app` });
+    await Share.share({ message: `Check out ${name ? name + ' ' : ''}on bolo: jobs, talent and careers near you.\n${shareTail()}` });
   } catch {}
 }
 export { tx, myCity, ProTag, trOther, bizLogo, Check };

@@ -33,9 +33,9 @@ export const anchor = (): LngLat => (db.user.coord as LngLat | null) || BUEA;
 
 /** Where to draw a listing. The sample listings are laid out around the person's own position,
     keeping their distances from each other, so the map works in any city. */
-/** Real position when known (jobs and people rounded for privacy), otherwise an estimate from the area name. */
-export function placeOf(id: string, area?: string, real?: [number, number] | null): LngLat {
-  return real ? [real[0], real[1]] : coordOf(id, area);
+/** Where a job or person is on the map (already rounded for privacy on the server). Callers only pass ones with a real place. */
+export function placeOf(_id: string, _area?: string, real?: [number, number] | null): LngLat {
+  return real ? [real[0], real[1]] : anchor();
 }
 export function coordOf(id: string, area?: string): LngLat {
   const base = (area && (AREA_COORDS[area] || AREA_COORDS[area.split(' · ')[0]] || AREA_COORDS[area.split(',')[0]])) || BUEA;

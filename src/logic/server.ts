@@ -155,7 +155,7 @@ export async function ensurePeople(ids: (string | null | undefined)[]) {
   }
   // accounts that are gone: show a neutral placeholder rather than crash
   want.forEach((id) => {
-    if (!db.P[id]) db.P[id] = { name: 'Deleted account', role: 'Member', years: 0, rate: 0, dist: '', area: '', photo: facePic('?', id), jobs: 0, reviews: '0', followers: 0, uid: id } as Person;
+    if (!db.P[id]) db.P[id] = gone(id);
   });
 }
 /** Make sure these business pages (server ids) are in the local model. */
@@ -173,21 +173,35 @@ export async function ensureBiz(bids: (string | null | undefined)[]) {
 export async function loadPerson(id: string) {
   if (id === 'me' || id.startsWith('g_')) return;
   if (id.startsWith('b_')) {
-    delete db.P[id];
-    await ensureBiz([id.slice(2)]);
+    const bid = id.slice(2);
+    if (!isUuid(bid)) db.P[id] = gone(id);
+    else if (!myBizOf(bid)) {
+      const { data, error } = await supabase.from('businesses').select('id,owner_id,name,sector,size,city,area,about,logo_url,color,verified,web,email,phone').eq('id', bid).maybeSingle();
+      if (data) {
+        const { p, s } = bizFrom(data);
+        db.P[id] = p;
+        db.BIZ_SAMPLE[id] = s;
+      } else if (!error) db.P[id] = gone(id);
+    }
   } else {
-    const { data } = await supabase.from('profile_cards').select(PROFILE_COLS).eq('id', id).maybeSingle();
+    const real = isUuid(id);
+    const { data, error } = real ? await supabase.from('profile_cards').select(PROFILE_COLS).eq('id', id).maybeSingle() : { data: null, error: null };
     if (data) {
       db.P[id] = personFrom(data);
       PROFILE_RAW[id] = data;
-    }
+    } else if (!error) db.P[id] = gone(id); // asked and there is no such account
   }
-  await loadReviewsOf(id);
+  if (db.P[id] && db.P[id].name !== GONE) await loadReviewsOf(id);
   bump();
 }
+export const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s || '');
+/** Marker for an account that no longer exists (or never did): lists skip it, its profile says so. */
+export const GONE = 'Deleted account';
+const gone = (id: string): Person => ({ name: GONE, role: 'Member', years: 0, rate: 0, dist: '', area: '', photo: facePic('?', id), jobs: 0, reviews: '0', followers: 0, uid: id }) as Person;
+export const isGone = (id: string) => db.P[id]?.name === GONE;
 /** People to browse and hire: the newest members (nearest first in the lists). */
 async function loadPeople() {
-  const { data } = need(await supabase.from('profile_cards').select(PROFILE_COLS).neq('id', ME()).order('created_at', { ascending: false }).limit(400));
+  const { data } = need(await supabase.from('profile_cards').select(PROFILE_COLS).neq('id', ME()).eq('visible', true).order('created_at', { ascending: false }).limit(400));
   (data || []).forEach((r: any) => {
     db.P[r.id] = personFrom(r);
     PROFILE_RAW[r.id] = r;
@@ -197,7 +211,7 @@ async function loadPeople() {
 export async function searchPeople(q: string) {
   const term = q.replace(/[%,()]/g, ' ').trim();
   if (term.length < 2) return;
-  const { data } = await supabase.from('profile_cards').select(PROFILE_COLS).neq('id', ME()).or(`name.ilike.%${term}%,city.ilike.%${term}%`).limit(30);
+  const { data } = await supabase.from('profile_cards').select(PROFILE_COLS).neq('id', ME()).eq('visible', true).or(`name.ilike.%${term}%,city.ilike.%${term}%`).limit(30);
   (data || []).forEach((r: any) => {
     db.P[r.id] = personFrom(r);
     PROFILE_RAW[r.id] = r;
@@ -338,6 +352,8 @@ async function loadMine() {
   (blocks.data || []).forEach((x: any) => BLOCKED.add(x.blocked_id));
 }
 export const isBlocked = (id: string) => BLOCKED.has(R(id));
+/** The people I blocked (their ids). */
+export const blockedList = () => [...BLOCKED];
 /** My public numbers (followers, jobs done, rating) as others see them. */
 const MINE: { followers: number; following: number; jobs_done: number; hires: number; rating: number; reviews: number } = { followers: 0, following: 0, jobs_done: 0, hires: 0, rating: 0, reviews: 0 };
 export const myStats = () => MINE;

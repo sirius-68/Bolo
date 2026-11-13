@@ -3,7 +3,7 @@ import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Avatar, Btn, Empty, IconBtn, Note, Pict, Rate, Txt, Verified, goBack } from '../../src/ui/kit';
+import { Avatar, Btn, Empty, IconBtn, Note, Pict, Rate, Txt, Verified, goBack, Missing } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { confirm } from '../../src/ui/overlay';
 import { C, S } from '../../src/ui/theme';
@@ -86,9 +86,8 @@ export default function Track() {
   }, [id]);
   if (!b)
     return (
-      <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: ins.top, padding: 20 }}>
-        <IconBtn name="back" label="Back" onPress={goBack} />
-        <Empty title="Booking not found" text="It may have been cancelled." />
+      <View style={{ flex: 1 }}>
+        <Missing bar="Booking" title="Booking not found" text="It may have been cancelled." />
       </View>
     );
   const W = b.worker === 'me';
@@ -98,7 +97,8 @@ export default function Track() {
   const idx = STEPS.findIndex((s) => s[0] === b.state);
   const prog = b.state === 'booked' ? 0 : b.state === 'onway' ? Math.max(0.06, b.eta0 ? 1 - b.eta / b.eta0 : 0.1) : 1;
   // real positions: where the job is, and where the worker is now (live while on the way)
-  const dest = b.dest || (W ? undefined : db.user.coord || undefined) || coordOf(b.id, b.area);
+  // the real place only: where the job is (shared when it was booked), or the client's own position on their phone
+  const dest: [number, number] | null = b.dest || (W ? null : db.user.coord || null);
   const workerAt = b.state === 'onway' ? b.live || (W ? db.user.coord : P(b.worker).coord) || null : b.state === 'booked' ? (W ? db.user.coord : P(b.worker).coord) || null : dest;
   const fresh = b.liveAt ? Math.round((Date.now() - b.liveAt) / 1000) : null;
   const etaTxt = b.eta ? `${b.eta} min away` : b.live ? 'On the way' : 'Waiting for location';
@@ -202,7 +202,17 @@ export default function Track() {
       <View style={{ height: H + ins.top, overflow: 'hidden' }}>
         {hasMapbox ? (
           <View style={{ position: 'absolute', left: 0, right: 0, top: 0 }}>
-            <RouteMap from={workerAt || dest} to={dest} live={workerAt} progress={prog} workerPic={W ? myPhoto() : P(b.worker).photo} height={H + ins.top} />
+            {dest || workerAt ? (
+              <RouteMap from={workerAt || dest!} to={dest || workerAt!} live={workerAt} progress={prog} workerPic={W ? myPhoto() : P(b.worker).photo} height={H + ins.top} />
+            ) : (
+              // no place was shared for this job: no made-up pin, just say so
+              <View style={{ height: H + ins.top, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 40, backgroundColor: C.s1 }}>
+                <Icon name="pin" size={28} color={C.muted} />
+                <Txt s={13} c={C.muted} center>
+                  No exact place was shared for this job. Agree where to meet in chat.
+                </Txt>
+              </View>
+            )}
           </View>
         ) : (
           <>

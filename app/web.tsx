@@ -4,7 +4,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import * as Clipboard from 'expo-clipboard';
-import { AlertIll, Btn, IconBtn, OptRow, Txt } from '../src/ui/kit';
+import { AlertIll, Btn, IconBtn, OptRow, Txt, Missing } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { C, S } from '../src/ui/theme';
 import { afterSheet, sheet, SheetTitle, toast } from '../src/ui/overlay';
@@ -40,6 +40,10 @@ export default function Web() {
     }, [back]),
   );
   const outside = () => Linking.openURL(cur || url).catch(() => toast('Couldn’t open the browser'));
+  // Only a listed course's own site opens inside bolo. A link from outside the app can't use this screen
+  // to show some other website under bolo's name.
+  const safe = !!c && !!c.url && /^https:\/\//i.test(url || '') && domainOf(url) === domainOf(c.url);
+  if (!safe) return <Missing bar="Course" title="This page can’t be opened here" text="Open the course from Career → Courses." />;
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: ins.top }}>
       {/* header: close · title + site · save · more */}
@@ -47,7 +51,7 @@ export default function Web() {
         <IconBtn testID="web-close" name="x" label="Close" onPress={close} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Txt s={14} w={8} lines={1}>
-            {title || domainOf(cur)}
+            {c.title || title || domainOf(cur)}
           </Txt>
           <View style={[S.row, { gap: 4 }]}>
             <Icon name="lock" size={11} color={C.mint} />

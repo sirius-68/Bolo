@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Line, Path, Text as SvgText } from 'react-native-svg';
 import { StatusBar } from 'expo-status-bar';
 import { db, Course } from '../../src/data/db';
-import { Avatar, Empty, Txt, tap } from '../../src/ui/kit';
+import { Avatar, Empty, Txt, tap, Missing } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { C, S, tx } from '../../src/ui/theme';
 import { confirm, sheet, SheetTitle, toast } from '../../src/ui/overlay';
@@ -28,11 +28,7 @@ export default function LiveClass() {
   const c = db.COURSES.find((x) => x.id === id);
   const ins = useSafeAreaInsets();
   if (!c)
-    return (
-      <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: ins.top + 60 }}>
-        <Empty title="Class not found" />
-      </View>
-    );
+    return <Missing bar="Class" title="Class not found" text="It may have ended or been removed." />;
   // as=host: try the teacher's view of the demo class
   return <Room c={c} asHost={as === 'host'} />;
 }

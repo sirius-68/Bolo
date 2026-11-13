@@ -41,7 +41,7 @@ const SLIDES: Slide[] = [
     kicker: 'Teach something?',
     a: 'List your course',
     b: 'in one minute',
-    text: 'Add the link to your course page and we’ll send you learners. Schools with many courses: use bolo on the web.',
+    text: 'Add the link to your course page and we’ll send you learners. You can list as many courses as you like.',
     tiles: [
       ['plus', '#000', C.mint],
       ['cap', C.blue, '#fff'],

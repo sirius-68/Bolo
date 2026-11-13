@@ -209,6 +209,7 @@ export async function pull() {
       if (Array.isArray(r.services)) db.PR.services = r.services.filter(plainObj);
       db.PR.docs.id = r.verified ? 'verified' : db.PR.docs.id === 'review' ? 'review' : null;
       u.verified = !!r.verified;
+      if (typeof r.visible === 'boolean') db.PREF.visible = r.visible;
     }
     const q = pv.data;
     if (q) {
@@ -278,6 +279,7 @@ function profilePayload() {
   const u = db.user;
   return {
     name: u.name,
+    visible: db.PREF.visible !== false,
     avatar_url: u.avatar?.startsWith('uri:http') ? u.avatar.slice(4) : null,
     city: (u.city || '').replace(/ CM$/, ''),
     bio: u.bio,

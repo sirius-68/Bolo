@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { shareTail } from '../../src/logic/links';
 import { Pressable, Share, View } from 'react-native';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -70,7 +71,7 @@ function CoursePage() {
 
   const share = () => {
     tap();
-    Share.share({ message: `I’m learning “${c.title}” with ${c.prov.n} on bolo. Join me: https://bolo.app/c/${c.id}` }).catch(() => {});
+    Share.share({ message: `I’m learning “${c.title}” with ${c.prov.n} on bolo. Join me.\n${shareTail(`/course/${c.id}`)}` }).catch(() => {});
   };
   const menu = () =>
     sheet.show(() => (

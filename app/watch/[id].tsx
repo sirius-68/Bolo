@@ -3,7 +3,7 @@ import { ScrollView, View, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { Avatar, Btn, Empty, IconBtn, Input, Txt, goBack, tap } from '../../src/ui/kit';
+import { Avatar, Btn, Empty, IconBtn, Input, Txt, goBack, tap, Missing } from '../../src/ui/kit';
 import { RecRow } from '../../src/components/RecRow';
 import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
@@ -20,11 +20,7 @@ export default function Watch() {
   const r = recById(id);
   const c = r ? courseOfRec(r) : undefined;
   if (!r || !c)
-    return (
-      <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: ins.top + 60, paddingHorizontal: 20 }}>
-        <Empty title="Recording not found" text="It may have been removed by the trainer." />
-      </View>
-    );
+    return <Missing bar="Recording" title="Recording not found" text="It may have been removed by the trainer." />;
   return <Player key={r.id + (t || '')} r={r} start={t != null ? +t : progressOf(r.id)?.t || 0} width={width} top={ins.top} bottom={ins.bottom} fromShare={t != null} />;
 }
 

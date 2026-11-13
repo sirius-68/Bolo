@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { MONEY_LIVE } from '../src/logic/money';
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, Booking } from '../src/data/db';
-import { Avatar, IconBtn, Page, TopBar, Txt, tap } from '../src/ui/kit';
+import { Avatar, IconBtn, Page, TopBar, Txt, tap, Missing } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { C, S } from '../src/ui/theme';
 import { P, fname, xaf } from '../src/logic/core';
@@ -14,6 +15,8 @@ import { PayBadge, openPayments } from '../src/sheets/account';
 
 /** bolo wallet: balance first, then money that's protected in escrow, then the history. */
 export default function Wallet() {
+  // Money isn't live yet: nothing in the app links here, and a stale link shouldn't show pretend balances.
+  if (!MONEY_LIVE) return <Missing bar="Wallet" title="Payments are coming soon" text="For now, agree the price in chat and pay each other directly." />;
   useLive();
   const [hide, setHide] = useState(false);
   const bal = balance();

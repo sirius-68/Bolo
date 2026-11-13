@@ -4,7 +4,7 @@ import { fmtTs } from '../../src/logic/classes';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, Msg } from '../../src/data/db';
-import { Avatar, CoTag, Empty, IconBtn, Pict, Txt, Verified, goBack, tap } from '../../src/ui/kit';
+import { Avatar, CoTag, Empty, IconBtn, Pict, Txt, Verified, goBack, tap, Missing } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { toast } from '../../src/ui/overlay';
 import { C, S, tx } from '../../src/ui/theme';
@@ -39,12 +39,7 @@ export default function Chat() {
     if (th && isGroup(id) && !th.rulesOk && (groupOf(id)?.rules || []).length) setTimeout(() => openRules(id), 350);
   }, [id]);
   if (!th || !p?.name)
-    return (
-      <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: ins.top, padding: 20 }}>
-        <IconBtn name="back" label="Back" onPress={goBack} />
-        <Empty title="Chat not found" text="It may have been deleted." />
-      </View>
-    );
+    return <Missing bar="Chat" title="Chat not found" text="It may have been deleted." />;
   const grp = isGroup(id);
   const msgs = th.msgs;
   const rows: Row[] = msgs.map((m, i) => ({ m, i, grp: !m.d && !m.sys && !!msgs[i + 1] && msgs[i + 1].f === m.f && !msgs[i + 1].sys && !msgs[i + 1].d })).reverse();
