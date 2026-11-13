@@ -508,6 +508,7 @@ export type InputProps = {
   minHeight?: number;
   returnKeyType?: 'done' | 'next' | 'search' | 'send' | 'go';
   editable?: boolean;
+  onFocus?: () => void;
 };
 export function Input(p: InputProps) {
   const [focus, setFocus] = useState(false);
@@ -550,7 +551,7 @@ export function Input(p: InputProps) {
         editable={p.editable}
         autoCapitalize={p.autoCapitalize ?? (p.keyboardType === 'email-address' || p.secure ? 'none' : 'sentences')}
         autoCorrect={!(p.secure || p.keyboardType === 'email-address')}
-        onFocus={() => setFocus(true)}
+        onFocus={() => (setFocus(true), p.onFocus?.())}
         onBlur={() => setFocus(false)}
         onSubmitEditing={p.onSubmit}
         returnKeyType={p.returnKeyType}
