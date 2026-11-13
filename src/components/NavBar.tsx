@@ -6,7 +6,8 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { router } from 'expo-router';
 import { Icon } from '../ui/Icon';
 import { C, tx } from '../ui/theme';
-import { tap } from '../ui/kit';
+import { net, tap } from '../ui/kit';
+import { loadAll } from '../logic/server';
 import { useTick } from '../logic/live';
 import { isW } from '../logic/core';
 import { prItems } from '../logic/account';
@@ -63,6 +64,19 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
     <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ins.top, backgroundColor: 'rgba(0,0,0,0.94)' }} />
     {W && cur === 'feed' ? <NotchBubble /> : null}
     <LivePop />
+    {/* The last refresh couldn't reach bolo: say so (what's on screen is the saved copy) and let people retry */}
+    {net.offline ? (
+      <Pressable
+        testID="offline-pill"
+        accessibilityRole="button"
+        accessibilityLabel="No connection. Showing saved data. Tap to retry"
+        onPress={() => (tap(), void loadAll())}
+        style={{ position: 'absolute', bottom: 84 + ins.bottom, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, height: 36, borderRadius: 18, backgroundColor: '#2a2a2e', borderWidth: 1, borderColor: '#3a3a40' }}
+      >
+        <Icon name="warn" size={14} color={C.yellow} />
+        <Text style={tx(12, 7, C.text)}>No connection · showing saved data · Retry</Text>
+      </Pressable>
+    ) : null}
     <View
       style={{
         position: 'absolute',

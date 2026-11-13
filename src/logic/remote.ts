@@ -5,7 +5,7 @@ import { AppState } from 'react-native';
 import { File, Paths } from 'expo-file-system';
 import { supabase } from '../lib/supabase';
 import { setMonitorUser } from '../lib/monitor';
-import { checkRealtime, loadAll, startRealtime, stopRealtime } from './server';
+import { checkRealtime, loadAll, resetSession, startRealtime, stopRealtime } from './server';
 import { db, MyBiz } from '../data/db';
 import { bump, subscribe } from './live';
 import { fill } from './persist';
@@ -111,6 +111,12 @@ export async function signOut() {
   } catch {}
   lastSent = {};
   stopRealtime();
+  resetSession();
+  try {
+    require('./tracking').stopSharing();
+    const { CALLS } = require('./calls');
+    Object.keys(CALLS).forEach((k) => delete CALLS[k]);
+  } catch {}
   setMonitorUser(null);
 }
 /** After any successful sign-in: remember the user and load their saved profile. */

@@ -10,7 +10,7 @@ import { C, S } from '../../src/ui/theme';
 import { P, has, fname, myPhoto, postById, cityLabel, curBiz, bizName, fCount, isW, listJobs, listPeople, matchJob, matchPerson, postVisible, sortJobs, sortPeople } from '../../src/logic/core';
 import { bump, useLive } from '../../src/logic/live';
 import { openBrowse, openProfile } from '../../src/logic/nav';
-import { notchScale, Rail, SearchBar, Sec, TabHeader } from '../../src/components/common';
+import { notchScale, Rail, SearchBar, Sec, TabHeader, Pull } from '../../src/components/common';
 import { follow } from '../../src/logic/work';
 import { PersonRow, PostCard, RecCard, ReelThumb, ReqPost, JobCard } from '../../src/components/cards';
 import { onScrollFab } from '../../src/components/NavBar';
@@ -212,6 +212,7 @@ export default function Feed() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
     <FlatList
+      refreshControl={<Pull />}
       ref={list}
       style={{ flex: 1, backgroundColor: C.bg }}
       contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}

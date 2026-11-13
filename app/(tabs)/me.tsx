@@ -1,4 +1,5 @@
 import React from 'react';
+import { Pull } from '../../src/components/common';
 import { MONEY_LIVE } from '../../src/logic/money';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
@@ -263,7 +264,7 @@ function MeRegular() {
   if (!tabs.some((t) => t[0] === ui.meTab)) ui.meTab = 'Profile';
   const tab = ui.meTab;
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top, paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}>
+    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} refreshControl={<Pull />} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top, paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}>
       <TopRow />
       <Head
         pic={myPhoto()}
@@ -674,7 +675,7 @@ function MeBusiness() {
   const tab = ui.meTab;
   const pct = bizPct(b);
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top, paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}>
+    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} refreshControl={<Pull />} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top, paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}>
       <TopRow />
       <Head
         pic={bizLogo(b)}

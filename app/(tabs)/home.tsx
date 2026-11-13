@@ -11,7 +11,7 @@ import { C, S } from '../../src/ui/theme';
 import { P, WORKERS, bizPct, budgetNum, curBiz, greet, bizName, isW, myOpps, myPhoto, openJobs, xaf, matchPerson, matchJob, nowT } from '../../src/logic/core';
 import { useLive, bump } from '../../src/logic/live';
 import { openBrowse, openProfile } from '../../src/logic/nav';
-import { CatRail, LiveCards, Rail, Sec, TabHeader } from '../../src/components/common';
+import { CatRail, LiveCards, Rail, Sec, TabHeader, Pull } from '../../src/components/common';
 import { JobCard, OppCard, RecCard, WorkerCard } from '../../src/components/cards';
 import { onScrollFab } from '../../src/components/NavBar';
 import { openJob } from '../../src/sheets/work';
@@ -85,7 +85,7 @@ function BizHome() {
     </Pressable>
   );
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top, paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}>
+    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} refreshControl={<Pull />} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top, paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}>
       <TabHeader />
       <View style={[S.rowB, { marginTop: 12, alignItems: 'flex-end' }]}>
         <Txt s={26} w={8} style={{ flex: 1, lineHeight: 30 }}>

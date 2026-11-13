@@ -779,7 +779,20 @@ export function CoTag() {
   );
 }
 
+/** Connection state, set by the data loader: the first load is running / the last refresh couldn't reach bolo. */
+export const net = { loading: false, offline: false };
+
 export function Empty({ title, text, children, style }: { title: string; text?: string; children?: ReactNode; style?: any }) {
+  // While the very first load is running, "nothing here" would be a lie: show that it's loading.
+  if (net.loading)
+    return (
+      <View style={[{ paddingVertical: 30, paddingHorizontal: 18, borderRadius: 20, borderWidth: 1.5, borderStyle: 'dashed', borderColor: C.s3, alignItems: 'center', gap: 10 }, style]} accessibilityLabel="Loading">
+        <ActivityIndicator color={C.yellow} />
+        <Txt s={13} c={C.muted} center>
+          Loading…
+        </Txt>
+      </View>
+    );
   return (
     <View style={[{ paddingVertical: 30, paddingHorizontal: 18, borderRadius: 20, borderWidth: 1.5, borderStyle: 'dashed', borderColor: C.s3, alignItems: 'center' }, style]}>
       <Txt s={15} w={8} center>

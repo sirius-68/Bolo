@@ -8,7 +8,7 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { db, Booking, BizSample, Course, Mentorship, Msg, MyBiz, Notif, Opp, Person, Post, Review, Thread } from '../data/db';
 import type { Expert, Service as ExService } from '../data/experts';
-import { logoPic } from '../ui/kit';
+import { logoPic, net } from '../ui/kit';
 import { bump } from './live';
 import { fill } from './persist';
 
@@ -134,12 +134,20 @@ function bizFrom(b: any): { p: Person; s: BizSample } {
   return { p, s };
 }
 
+/** A read that failed (no connection, a server hiccup) must never be mistaken for "nothing there":
+    it throws, so the lists on screen stay as they were instead of going empty. */
+function need<T extends { error: any }>(r: T): T {
+  if (r.error) throw r.error;
+  return r;
+}
+
 /** Make sure these people (server ids) are in the local model. */
 export async function ensurePeople(ids: (string | null | undefined)[]) {
   const want = [...new Set(ids.filter((x): x is string => !!x && x !== db.uid && !db.P[x]))];
   if (!want.length) return;
   for (let i = 0; i < want.length; i += 100) {
-    const { data } = await supabase.from('profile_cards').select(PROFILE_COLS).in('id', want.slice(i, i + 100));
+    const { data, error } = await supabase.from('profile_cards').select(PROFILE_COLS).in('id', want.slice(i, i + 100));
+    if (error) return; // couldn't ask: leave them unknown (the placeholder shows) and try again later
     (data || []).forEach((r: any) => {
       db.P[r.id] = personFrom(r);
       PROFILE_RAW[r.id] = r;
@@ -179,7 +187,7 @@ export async function loadPerson(id: string) {
 }
 /** People to browse and hire: the newest members (nearest first in the lists). */
 async function loadPeople() {
-  const { data } = await supabase.from('profile_cards').select(PROFILE_COLS).neq('id', ME()).order('created_at', { ascending: false }).limit(400);
+  const { data } = need(await supabase.from('profile_cards').select(PROFILE_COLS).neq('id', ME()).order('created_at', { ascending: false }).limit(400));
   (data || []).forEach((r: any) => {
     db.P[r.id] = personFrom(r);
     PROFILE_RAW[r.id] = r;
@@ -256,8 +264,8 @@ export async function loadPost(id: string) {
 }
 async function loadPosts() {
   const [recent, mine] = await Promise.all([
-    supabase.from('post_feed').select(POST_COLS).neq('status', 'closed').order('created_at', { ascending: false }).limit(300),
-    supabase.from('post_feed').select(POST_COLS).eq('author_id', ME()).order('created_at', { ascending: false }).limit(200),
+    supabase.from('post_feed').select(POST_COLS).neq('status', 'closed').order('created_at', { ascending: false }).limit(300).then(need),
+    supabase.from('post_feed').select(POST_COLS).eq('author_id', ME()).order('created_at', { ascending: false }).limit(200).then(need),
   ]);
   const rows = [...(mine.data || []), ...(recent.data || [])].filter((r: any, i, a) => a.findIndex((x: any) => x.id === r.id) === i);
   await Promise.all([ensurePeople(rows.map((r: any) => r.author_id)), ensureBiz(rows.map((r: any) => r.business_id))]);
@@ -270,8 +278,8 @@ const blockedIds = () => BLOCKED;
 async function loadApplications() {
   const myPostIds = db.POSTS.filter((p) => p.mine && p.kind === 'request').map((p) => p.id);
   const [mineQ, onMine] = await Promise.all([
-    supabase.from('applications').select('id,post_id,price,when_text,msg,cv,stage,created_at').eq('applicant_id', ME()),
-    myPostIds.length ? supabase.from('applications').select('id,post_id,applicant_id,price,when_text,msg,cv,stage,created_at').in('post_id', myPostIds).neq('stage', 'withdrawn').order('created_at') : Promise.resolve({ data: [] as any[] }),
+    supabase.from('applications').select('id,post_id,price,when_text,msg,cv,stage,created_at').eq('applicant_id', ME()).then(need),
+    myPostIds.length ? supabase.from('applications').select('id,post_id,applicant_id,price,when_text,msg,cv,stage,created_at').in('post_id', myPostIds).neq('stage', 'withdrawn').order('created_at').then(need) : Promise.resolve({ data: [] as any[] }),
   ]);
   db.myOffers = {};
   (mineQ.data || []).forEach((a: any) => {
@@ -292,7 +300,7 @@ async function loadApplications() {
   // offers the other way round need their posts loaded (e.g. an old job not in the recent feed)
   const missing = (mineQ.data || []).map((a: any) => a.post_id).filter((id: string) => !db.POSTS.some((p) => p.id === id));
   if (missing.length) {
-    const { data } = await supabase.from('post_feed').select(POST_COLS).in('id', missing);
+    const { data } = need(await supabase.from('post_feed').select(POST_COLS).in('id', missing));
     await Promise.all([ensurePeople((data || []).map((r: any) => r.author_id)), ensureBiz((data || []).map((r: any) => r.business_id))]);
     (data || []).forEach((r: any) => db.POSTS.push(postFrom(r)));
   }
@@ -316,10 +324,10 @@ export function stageText(stage: string, app?: boolean) {
 export const SAVE_KIND: Record<string, string> = { savedJobs: 'job', saved: 'person', savedPosts: 'post', savedOpps: 'opp', savedCourses: 'course', savedCos: 'company', savedMentors: 'mentor' };
 async function loadMine() {
   const [likes, saves, follows, blocks] = await Promise.all([
-    supabase.from('post_likes').select('post_id').eq('user_id', ME()),
-    supabase.from('saves').select('kind,target_id').eq('user_id', ME()),
-    supabase.from('follows').select('followee_id').eq('follower_id', ME()),
-    supabase.from('blocks').select('blocked_id').eq('blocker_id', ME()),
+    supabase.from('post_likes').select('post_id').eq('user_id', ME()).then(need),
+    supabase.from('saves').select('kind,target_id').eq('user_id', ME()).then(need),
+    supabase.from('follows').select('followee_id').eq('follower_id', ME()).then(need),
+    supabase.from('blocks').select('blocked_id').eq('blocker_id', ME()).then(need),
   ]);
   db.liked = (likes.data || []).map((x: any) => x.post_id);
   Object.entries(SAVE_KIND).forEach(([list, kind]) => ((db as any)[list] = (saves.data || []).filter((x: any) => x.kind === kind).map((x: any) => L(x.target_id))));
@@ -334,9 +342,9 @@ export const isBlocked = (id: string) => BLOCKED.has(R(id));
 const MINE: { followers: number; following: number; jobs_done: number; hires: number; rating: number; reviews: number } = { followers: 0, following: 0, jobs_done: 0, hires: 0, rating: 0, reviews: 0 };
 export const myStats = () => MINE;
 async function loadMyStats() {
-  const { data } = await supabase.from('profile_stats').select('*').eq('id', ME()).maybeSingle();
+  const { data } = need(await supabase.from('profile_stats').select('*').eq('id', ME()).maybeSingle());
   if (data) Object.assign(MINE, { ...data, rating: Number(data.rating) || 0 });
-  const { data: p } = await supabase.from('profiles').select('verified').eq('id', ME()).maybeSingle();
+  const { data: p } = need(await supabase.from('profiles').select('verified').eq('id', ME()).maybeSingle());
   if (p) db.user.verified = !!p.verified;
 }
 /** People who follow me (app ids). */
@@ -469,7 +477,7 @@ function sortOrders() {
   db.ORDER_C.sort((a, b) => (db.THREADS_C[b]?.pinned || 0) - (db.THREADS_C[a]?.pinned || 0) || t('C', b) - t('C', a));
 }
 async function loadChats() {
-  const { data: convs } = await supabase.from('conversations').select('*').order('last_message_at', { ascending: false }).limit(200);
+  const { data: convs } = need(await supabase.from('conversations').select('*').order('last_message_at', { ascending: false }).limit(200));
   const ids = (convs || []).map((c: any) => c.id);
   if (!ids.length) {
     db.THREADS_W = Object.fromEntries(Object.entries(db.THREADS_W).filter(([, th]) => !th.cid));
@@ -480,8 +488,8 @@ async function loadChats() {
     return;
   }
   const [mem, msgs] = await Promise.all([
-    supabase.from('conversation_members').select('conversation_id,user_id,role,last_read_at,muted').in('conversation_id', ids),
-    supabase.from('messages').select('id,conversation_id,sender_id,kind,body,data,created_at').in('conversation_id', ids).order('created_at', { ascending: false }).limit(2000),
+    supabase.from('conversation_members').select('conversation_id,user_id,role,last_read_at,muted').in('conversation_id', ids).then(need),
+    supabase.from('messages').select('id,conversation_id,sender_id,kind,body,data,created_at').in('conversation_id', ids).order('created_at', { ascending: false }).limit(2000).then(need),
   ]);
   await signFiles(msgs.data || []);
   Object.keys(CONVS).forEach((k) => delete CONVS[k]);
@@ -573,11 +581,17 @@ export const membersOf = (cid: string) => MEMBERS[cid] || [];
 export const convRow = (cid: string) => CONVS[cid];
 
 let readTimer: Record<string, any> = {};
+let readMark: Record<string, string> = {};
 /** I've seen this chat: tell the server (read receipts), at most every few seconds. */
 export function markRead(cid: string) {
   const me = (MEMBERS[cid] || []).find((m) => m.user_id === db.uid);
   const now = new Date().toISOString();
   if (me) me.last_read_at = now;
+  // tell the server once per new message, not on every redraw of the chat
+  const L0 = RAW_MSGS[cid] || [];
+  const last = L0.length ? L0[L0.length - 1].id : '';
+  if (readMark[cid] === last) return;
+  readMark[cid] = last;
   if (readTimer[cid]) return;
   readTimer[cid] = setTimeout(async () => {
     delete readTimer[cid];
@@ -620,8 +634,8 @@ function bookingFrom(r: any): Booking {
 }
 async function loadBookings() {
   const [bq, rq] = await Promise.all([
-    supabase.from('booking_cards').select(BOOKING_COLS).neq('state', 'cancelled').order('created_at', { ascending: false }).limit(200),
-    supabase.from('reviews').select('booking_id').eq('reviewer_id', ME()),
+    supabase.from('booking_cards').select(BOOKING_COLS).neq('state', 'cancelled').order('created_at', { ascending: false }).limit(200).then(need),
+    supabase.from('reviews').select('booking_id').eq('reviewer_id', ME()).then(need),
   ]);
   REVIEWED.clear();
   (rq.data || []).forEach((r: any) => r.booking_id && REVIEWED.add(r.booking_id));
@@ -631,7 +645,7 @@ async function loadBookings() {
   db.hired = [...new Set(db.BOOKINGS.filter((b) => b.client === 'me' && b.state !== 'confirmed').map((b) => b.worker))];
   const onway = rows.filter((r: any) => r.state === 'onway').map((r: any) => r.id);
   if (onway.length) {
-    const { data } = await supabase.from('booking_locations').select('*').in('booking_id', onway);
+    const { data } = need(await supabase.from('booking_locations').select('*').in('booking_id', onway));
     (data || []).forEach(applyLocation);
   }
 }
@@ -711,7 +725,7 @@ function placeNotif(n: any) {
   N.unshift(notifFrom(n));
 }
 async function loadNotifs() {
-  const { data } = await supabase.from('notifications').select('*').eq('recipient_id', ME()).order('created_at', { ascending: false }).limit(200);
+  const { data } = need(await supabase.from('notifications').select('*').eq('recipient_id', ME()).order('created_at', { ascending: false }).limit(200));
   await Promise.all([ensurePeople((data || []).map((n: any) => n.actor_id))]);
   db.NOTIFS_W = [];
   db.NOTIFS_C = [];
@@ -754,14 +768,14 @@ function courseFrom(r: any): Course {
   } as Course;
 }
 async function loadCourses() {
-  const { data } = await supabase.from('course_listings').select('*').order('created_at', { ascending: false }).limit(500);
+  const { data } = need(await supabase.from('course_listings').select('*').order('created_at', { ascending: false }).limit(500));
   db.COURSES = (data || []).map(courseFrom).sort((a, b) => +!!b.mine - +!!a.mine);
 }
 async function loadOpps() {
   const [oq, sq, mineApps] = await Promise.all([
-    supabase.from('opportunities').select('*').eq('status', 'open').order('created_at', { ascending: false }).limit(200),
-    supabase.from('opportunity_stats').select('*'),
-    supabase.from('opportunity_applications').select('opportunity_id,user_id,status'),
+    supabase.from('opportunities').select('*').eq('status', 'open').order('created_at', { ascending: false }).limit(200).then(need),
+    supabase.from('opportunity_stats').select('*').then(need),
+    supabase.from('opportunity_applications').select('opportunity_id,user_id,status').then(need),
   ]);
   const joined: Record<string, number> = {};
   (sq.data || []).forEach((s: any) => (joined[s.id] = s.joined));
@@ -798,9 +812,9 @@ async function loadOpps() {
 }
 async function loadMentorships() {
   const [mq, sq, mem] = await Promise.all([
-    supabase.from('mentorships').select('*').order('created_at', { ascending: false }).limit(200),
-    supabase.from('mentorship_stats').select('*'),
-    supabase.from('mentorship_members').select('mentorship_id,user_id,status'),
+    supabase.from('mentorships').select('*').order('created_at', { ascending: false }).limit(200).then(need),
+    supabase.from('mentorship_stats').select('*').then(need),
+    supabase.from('mentorship_members').select('mentorship_id,user_id,status').then(need),
   ]);
   const joined: Record<string, number> = {};
   (sq.data || []).forEach((s: any) => (joined[s.id] = s.joined));
@@ -860,13 +874,13 @@ export function expertFrom(e: any, p?: any): Expert {
   };
 }
 async function loadExperts() {
-  const { data } = await supabase.from('experts').select('*').eq('status', 'approved').limit(200);
+  const { data } = need(await supabase.from('experts').select('*').eq('status', 'approved').limit(200));
   const ids = (data || []).map((e: any) => e.user_id);
-  const { data: cards } = ids.length ? await supabase.from('profile_cards').select(PROFILE_COLS).in('id', ids) : { data: [] as any[] };
+  const { data: cards } = ids.length ? need(await supabase.from('profile_cards').select(PROFILE_COLS).in('id', ids)) : { data: [] as any[] };
   (cards || []).forEach((r: any) => r.id !== db.uid && ((db.P[r.id] = personFrom(r)), (PROFILE_RAW[r.id] = r)));
   db.EXPERTS = (data || []).map((e: any) => expertFrom(e, (cards || []).find((c: any) => c.id === e.user_id)));
   // my own application
-  const { data: mine } = await supabase.from('experts').select('*').eq('user_id', ME()).maybeSingle();
+  const { data: mine } = need(await supabase.from('experts').select('*').eq('user_id', ME()).maybeSingle());
   if (mine) {
     const d = mine.data || {};
     db.EXPERT = { ...fill(db.EXPERT, d), status: mine.status === 'submitted' ? 'submitted' : mine.status, headline: mine.headline || d.headline || '' };
@@ -875,25 +889,55 @@ async function loadExperts() {
 
 /* ================================================================ load everything, keep it live */
 let loading: Promise<void> | null = null;
+let loadingFor = '';
+/** Signing out: forget everything kept in memory about the account, so nothing carries over to the next one. */
+export function resetSession() {
+  BLOCKED.clear();
+  REVIEWED.clear();
+  Object.assign(MINE, { followers: 0, following: 0, jobs_done: 0, hires: 0, rating: 0, reviews: 0 });
+  [RAW_MSGS, CONVS, MEMBERS, NOTIF_RAW, PROFILE_RAW].forEach((m) => Object.keys(m).forEach((k) => delete (m as any)[k]));
+  Object.values(readTimer).forEach((t) => clearTimeout(t));
+  readTimer = {};
+  readMark = {};
+  loadingFor = '';
+  net.offline = false;
+  net.loading = false;
+}
 /** Load (or refresh) everything for the signed-in account. Safe to call often. */
 export function loadAll(): Promise<void> {
   if (!db.uid) return Promise.resolve();
-  if (loading) return loading;
-  loading = (async () => {
+  const me = db.uid;
+  if (loading && loadingFor === me) return loading;
+  // a load still running for another account (just signed out) finishes first, then this one starts
+  const before = loading;
+  loadingFor = me;
+  let mine: Promise<void> | null = null;
+  mine = (async () => {
+    if (before) await before.catch(() => {});
+    if (db.uid !== me) return;
+    const failed: any[] = [];
+    // each part loads on its own: one that fails keeps what it had, and doesn't stop the others
+    const run = async (fns: (() => Promise<any>)[]) => {
+      const rs = await Promise.allSettled(fns.map((f) => f()));
+      rs.forEach((r) => r.status === 'rejected' && failed.push(r.reason));
+    };
+    net.loading = !db.syncedAt;
     try {
-      await loadMine();
-      await Promise.all([loadPeople(), loadPosts(), loadCourses(), loadMyStats()]);
-      await Promise.all([loadApplications(), loadMentorships(), loadOpps(), loadExperts()]);
-      await loadChats();
-      await Promise.all([loadBookings(), loadNotifs()]);
-      db.syncedAt = Date.now();
-      bump();
-    } catch (e) {
-      console.warn('bolo: loading failed', e);
+      await run([loadMine]);
+      await run([loadPeople, loadPosts, loadCourses, loadMyStats]);
+      await run([loadApplications, loadMentorships, loadOpps, loadExperts]);
+      await run([loadChats]);
+      await run([loadBookings, loadNotifs]);
+      if (!failed.length) db.syncedAt = Date.now();
+      else console.warn('bolo: loading failed', failed.length, String(failed[0]?.message || failed[0]));
+      net.offline = failed.length > 0;
     } finally {
-      loading = null;
+      net.loading = false;
+      if (loading === mine) loading = null;
+      bump();
     }
   })();
+  loading = mine;
   return loading;
 }
 export const refreshPosts = async () => (await loadPosts(), await loadApplications(), bump());

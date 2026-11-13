@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Animated, Easing, Pressable, ScrollView, TextInput, View, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { db, ui } from '../data/db';
@@ -358,3 +358,26 @@ export function Rail({ children }: { children: React.ReactNode }) {
   );
 }
 export { openCities, greet, fCount, ui, bump, R };
+
+/** Pull down to refresh: reloads everything from bolo. Use as refreshControl={<Pull />} on any list or scroll view.
+    (Android wraps the list inside this element, so style and children are passed through.) */
+export function Pull(props: any) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <RefreshControl
+      {...props}
+      refreshing={busy}
+      tintColor={C.yellow}
+      colors={['#000']}
+      progressBackgroundColor={C.yellow}
+      onRefresh={async () => {
+        setBusy(true);
+        try {
+          await require('../logic/server').loadAll();
+        } finally {
+          setBusy(false);
+        }
+      }}
+    />
+  );
+}
