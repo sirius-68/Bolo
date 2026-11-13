@@ -1,0 +1,63 @@
+Running on test
+ > Flow The job owner logs back in - sees the offer, accepts it, chats
+Run _login.yaml...
+  Launch app "cm.bolo.app" with clear state... COMPLETED
+  Run dismiss.yaml...
+    Run flow when "isn't responding" is visible...
+    Run flow when "isn't responding" is visible... SKIPPED
+    Run flow when "Not yet, something’s wrong" is visible...
+    Run flow when "Not yet, something’s wrong" is visible... SKIPPED
+    Run flow when id: story-close is visible...
+    Run flow when id: story-close is visible... SKIPPED
+  Run dismiss.yaml... COMPLETED
+  Assert that id: skip is visible... COMPLETED
+  Tap on id: skip... COMPLETED
+  Tap on id: have-account... COMPLETED
+  Tap on id: li-contact... COMPLETED
+  Input text ${EMAIL}... COMPLETED
+  Hide Keyboard... COMPLETED
+  Tap on id: li-pwd... COMPLETED
+  Input text ${TOUR_PASSWORD}... COMPLETED
+  Hide Keyboard... COMPLETED
+  Tap on id: li-submit... COMPLETED
+  Assert that id: tab-feed is visible... COMPLETED
+  Wait for animation to end... COMPLETED
+  Run dismiss.yaml...
+    Run flow when "isn't responding" is visible...
+    Run flow when "isn't responding" is visible... SKIPPED
+    Run flow when "Not yet, something’s wrong" is visible...
+    Run flow when "Not yet, something’s wrong" is visible... SKIPPED
+    Run flow when id: story-close is visible...
+    Run flow when id: story-close is visible... SKIPPED
+  Run dismiss.yaml... COMPLETED
+Run _login.yaml... COMPLETED
+Take screenshot a01-feed... COMPLETED
+Tap on "Notifications"... COMPLETED
+Wait for animation to end... COMPLETED
+Take screenshot a02-notifications... COMPLETED
+Press back... COMPLETED
+Tap on id: tab-me... COMPLETED
+Wait for animation to end... COMPLETED
+Tap on "My jobs.*"... COMPLETED
+Wait for animation to end... COMPLETED
+Assert that "Tour leaking tap ${RUN}" is visible... COMPLETED
+Tap on "Tour leaking tap ${RUN}"... COMPLETED
+Wait for animation to end... COMPLETED
+Take screenshot a03-my-job... COMPLETED
+Scrolling DOWN until "Accept" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... FAILED
+
+No visible element found: "Accept"
+
+Could not find a visible element matching selector: "Accept"
+Tip: Try adjusting the following settings to improve detection:
+- `timeout`: current = 20000ms → Increase if you need more time to find the element
+- `speed`: current = 40 (0-100 scale) → Increase for faster scrolling if element is far away
+- `waitToSettleTimeoutMs`: current = Not defined → Set this value (e.g., 500ms) if your UI updates frequently between scrolls
+- `visibilityPercentage`: current = 100% → Lower this value if you want to detect partially visible elements
+- `centerElement`: current = false → Enable if you want the element to be centered after finding it
+
+
+==== Debug output (logs & screenshots) ====
+
+/home/runner/.maestro/tests/2026-11-13_001438
+exit=1

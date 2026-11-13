@@ -1,0 +1,60 @@
+Running on test
+ > Flow New account that offers skills - sign-up, full onboarding, send an offer
+Run _signup.yaml...
+  Launch app "cm.bolo.app" with clear state... COMPLETED
+  Run dismiss.yaml...
+    Run flow when "isn't responding" is visible...
+    Run flow when "isn't responding" is visible... SKIPPED
+    Run flow when "Not yet, something’s wrong" is visible...
+    Run flow when "Not yet, something’s wrong" is visible... SKIPPED
+    Run flow when id: story-close is visible...
+    Run flow when id: story-close is visible... SKIPPED
+  Run dismiss.yaml... COMPLETED
+  Assert that id: skip is visible... COMPLETED
+  Tap on id: skip... COMPLETED
+  Tap on id: create-account... COMPLETED
+  Tap on id: intent-${INTENT == 'hire' ? 'find' : 'hire'}... COMPLETED
+  Tap on id: role-continue... COMPLETED
+  Tap on id: su-name... COMPLETED
+  Input text ${NAME}... COMPLETED
+  Hide Keyboard... COMPLETED
+  Tap on id: su-contact... COMPLETED
+  Input text ${EMAIL}... COMPLETED
+  Hide Keyboard... COMPLETED
+  Tap on id: su-pwd... COMPLETED
+  Input text ${TOUR_PASSWORD}... COMPLETED
+  Hide Keyboard... COMPLETED
+  Tap on id: su-terms... COMPLETED
+  Take screenshot ${SHOT}01-signup... COMPLETED
+  Tap on id: su-submit... COMPLETED
+  Assert that id: setup-continue is visible... COMPLETED
+  Take screenshot ${SHOT}02-setup... COMPLETED
+  Tap on id: setup-continue... COMPLETED
+  Assert that id: not-now is visible... COMPLETED
+  Take screenshot ${SHOT}03-location... COMPLETED
+  Tap on id: not-now... COMPLETED
+Run _signup.yaml... COMPLETED
+Assert that "What do you do?" is visible... COMPLETED
+Take screenshot w04-jobtypes... COMPLETED
+Tap on id: jt-IT & Software... COMPLETED
+Scrolling DOWN until id: jt-continue is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: jt-continue... COMPLETED
+Assert that "What are your skills?" is visible... COMPLETED
+Take screenshot w05-skills... COMPLETED
+Tap on "Search skills.*"... COMPLETED
+Hide Keyboard... COMPLETED
+Tap on "Web development"... FAILED
+
+Element not found: Text matching regex: Web development
+
+Element with Text matching regex: Web development not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state.
+- This could be a real regression that needs to be addressed.
+
+==== Debug output (logs & screenshots) ====
+
+/home/runner/.maestro/tests/2026-11-13_001218
+exit=1
