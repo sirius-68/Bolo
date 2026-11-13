@@ -36,7 +36,9 @@ jq '{external_email_enabled, mailer_autoconfirm, mailer_otp_length, smtp_host, s
 if [ -n "${BREVO_API_KEY:-}" ]; then
   # Free check with Brevo: is the key valid, and are there SMS credits? (prints only the plan, never the account email)
   bcode=$(curl -sS -o /tmp/brevo.json -w '%{http_code}' https://api.brevo.com/v3/account -H "api-key: $BREVO_API_KEY" -H 'Accept: application/json' || true)
+  BREVO_OK=""
   if [ "$bcode" = "200" ]; then
+    BREVO_OK=1
     echo "Brevo key works. Plan and credits:"
     jq -c '[.plan[]? | {type, creditsType, credits}]' /tmp/brevo.json
     sms=$(jq '[.plan[]? | select(.type == "sms") | .credits] | add // 0' /tmp/brevo.json)
@@ -45,15 +47,20 @@ if [ -n "${BREVO_API_KEY:-}" ]; then
     echo "::warning::Brevo did not accept BREVO_API_KEY (HTTP $bcode: $(jq -r '.code // .message // empty' /tmp/brevo.json 2>/dev/null | head -c 120)). Use an API key that starts with xkeysib-"
   fi
   rm -f /tmp/brevo.json
-  HOOK="v1,whsec_$(openssl rand -base64 32)"
-  echo "::add-mask::$HOOK"
-  supabase secrets set --yes --project-ref "$REF" "BREVO_API_KEY=$BREVO_API_KEY" "SEND_SMS_HOOK_SECRET=$HOOK" "SMS_SENDER=${SMS_SENDER:-bolo}"
-  sms=$(jq -nc --arg uri "https://$REF.supabase.co/functions/v1/send-sms" --arg s "$HOOK" \
-    '{external_phone_enabled: true, hook_send_sms_enabled: true, hook_send_sms_uri: $uri, hook_send_sms_secrets: $s}')
-  if patch "$sms"; then
-    echo "SMS codes are on (Brevo)."
+  if [ -n "$BREVO_OK" ]; then
+    HOOK="v1,whsec_$(openssl rand -base64 32)"
+    echo "::add-mask::$HOOK"
+    supabase secrets set --yes --project-ref "$REF" "BREVO_API_KEY=$BREVO_API_KEY" "SEND_SMS_HOOK_SECRET=$HOOK" "SMS_SENDER=${SMS_SENDER:-bolo}"
+    sms=$(jq -nc --arg uri "https://$REF.supabase.co/functions/v1/send-sms" --arg s "$HOOK" \
+      '{external_phone_enabled: true, hook_send_sms_enabled: true, hook_send_sms_uri: $uri, hook_send_sms_secrets: $s}')
+    if patch "$sms"; then
+      echo "SMS codes are on (Brevo)."
+    else
+      echo "::warning::Could not switch on SMS codes for $REF"
+    fi
   else
-    echo "::warning::Could not switch on SMS codes for $REF"
+    # a key Brevo refuses: keep phone codes off so the app doesn't offer them
+    patch '{"external_phone_enabled": false, "hook_send_sms_enabled": false}' && echo "SMS codes stay off until the Brevo key works."
   fi
 else
   echo "BREVO_API_KEY is not set: codes by SMS stay off."
