@@ -384,7 +384,7 @@ function msgFrom(m: any, conv: { kind: string }, others: any[]): Msg {
   const d = m.data || {};
   const base: Msg = { id: m.id, f: mine ? 'me' : 'them', at, ts0: +new Date(m.created_at) };
   if (m.kind === 'sys' || !m.sender_id) return { ...base, sys: m.body, f: undefined, call: d.call ? 1 : undefined, missed: d.call ? !!d.missed : undefined };
-  if (mine) base.st = others.some((o) => +new Date(o.last_read_at) >= +new Date(m.created_at)) ? 'read' : 'sent';
+  if (mine) base.st = m._st || (others.some((o) => +new Date(o.last_read_at) >= +new Date(m.created_at)) ? 'read' : 'sent');
   if (conv.kind === 'group' && !mine) base.by = L(m.sender_id);
   const who = conv.kind === 'group' && !mine ? (db.P[m.sender_id]?.name || 'Member').split(' ')[0] + ': ' : '';
   switch (m.kind) {
@@ -496,8 +496,14 @@ async function loadChats() {
   (convs || []).forEach((c: any) => (CONVS[c.id] = c));
   Object.keys(MEMBERS).forEach((k) => delete MEMBERS[k]);
   (mem.data || []).forEach((m: any) => (MEMBERS[m.conversation_id] = [...(MEMBERS[m.conversation_id] || []), m]));
+  // messages still being sent, or marked "Not sent", only exist on this phone: keep them through the reload
+  const unsent = Object.values(RAW_MSGS).flat().filter((m: any) => m._st);
   Object.keys(RAW_MSGS).forEach((k) => delete RAW_MSGS[k]);
   (msgs.data || []).reverse().forEach((m: any) => (RAW_MSGS[m.conversation_id] = [...(RAW_MSGS[m.conversation_id] || []), m]));
+  unsent.forEach((m: any) => {
+    const L0 = (RAW_MSGS[m.conversation_id] = RAW_MSGS[m.conversation_id] || []);
+    if (!L0.some((x) => x.id === m.id)) L0.push(m);
+  });
   await Promise.all([ensurePeople([...(mem.data || []).map((m: any) => m.user_id)]), ensureBiz((convs || []).map((c: any) => c.business_id))]);
   // keep pins and chats just opened that have no messages yet; rebuild everything else
   const pins: Record<string, number> = {};
@@ -548,7 +554,7 @@ export async function convFor(key: string, inbox: 'W' | 'C'): Promise<string> {
 export async function sendMessage(key: string, inbox: 'W' | 'C', kind: 'text' | 'offer' | 'img' | 'file' | 'loc' | 'contact', body: string, data: Record<string, any> = {}) {
   const cid = await convFor(key, inbox);
   const id = uuid();
-  const row = { id, conversation_id: cid, sender_id: db.uid, kind, body, data, created_at: new Date().toISOString() };
+  const row: any = { id, conversation_id: cid, sender_id: db.uid, kind, body, data, created_at: new Date().toISOString(), _st: 'sending' };
   RAW_MSGS[cid] = [...(RAW_MSGS[cid] || []), row];
   if (CONVS[cid]) CONVS[cid].last_message_at = row.created_at;
   buildThread(cid);
@@ -557,13 +563,37 @@ export async function sendMessage(key: string, inbox: 'W' | 'C', kind: 'text' | 
   // signed links expire: only the file's path is stored, each phone makes its own link
   const { url: _url, ...stored } = data;
   const { error } = await supabase.from('messages').insert({ id, conversation_id: cid, kind, body, data: stored });
-  if (error) {
-    RAW_MSGS[cid] = RAW_MSGS[cid].filter((m) => m.id !== id);
+  const mineRow = (RAW_MSGS[cid] || []).find((m) => m.id === id);
+  if (error && error.code !== '23505') {
+    // A text stays in the chat marked "Not sent" so it can be retried with a tap; other kinds are taken back.
+    if (kind === 'text' && mineRow) mineRow._st = 'failed';
+    else RAW_MSGS[cid] = (RAW_MSGS[cid] || []).filter((m) => m.id !== id);
     buildThread(cid);
     bump();
+    (error as any).kept = kind === 'text';
     throw error;
   }
+  if (mineRow) delete mineRow._st;
+  buildThread(cid);
+  bump();
   return id;
+}
+/** Try again to send a message that is marked "Not sent". */
+export async function retryMessage(cid: string, id: string) {
+  const row = (RAW_MSGS[cid] || []).find((m) => m.id === id);
+  if (!row || row._st !== 'failed') return;
+  row._st = 'sending';
+  row.created_at = new Date().toISOString();
+  buildThread(cid);
+  bump();
+  const { url: _url, ...stored } = row.data || {};
+  const { error } = await supabase.from('messages').insert({ id, conversation_id: cid, kind: row.kind, body: row.body, data: stored });
+  // "already there" means the first try did reach the server
+  if (error && error.code !== '23505') row._st = 'failed';
+  else delete row._st;
+  buildThread(cid);
+  bump();
+  if (row._st) throw error;
 }
 /** Upload a photo or file from the phone into a chat; returns its storage path. */
 export async function uploadChatFile(cid: string, localUri: string, ext: string, contentType: string) {
@@ -987,7 +1017,7 @@ export function startRealtime() {
       const L0 = RAW_MSGS[cid] || [];
       const i = L0.findIndex((x) => x.id === m.id);
       if (m.kind === 'img' || m.kind === 'file') await signFiles([m]);
-      if (i >= 0) L0[i] = { ...L0[i], ...m, data: m.kind === 'deleted' ? {} : { ...(L0[i].data || {}), ...(m.data || {}) } };
+      if (i >= 0) L0[i] = { ...L0[i], ...m, _st: undefined, data: m.kind === 'deleted' ? {} : { ...(L0[i].data || {}), ...(m.data || {}) } };
       else RAW_MSGS[cid] = [...L0, m];
       if (e.eventType === 'INSERT') CONVS[cid].last_message_at = m.created_at;
       if (m.sender_id && m.sender_id !== me) await ensurePeople([m.sender_id]);

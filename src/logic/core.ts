@@ -6,6 +6,22 @@ import { logoPic } from '../ui/kit';
 /* ---------------- formatting ---------------- */
 export const k = (n: number) => (n >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '') + 'M' : n >= 1000 ? (n / 1000).toFixed(n % 1000 >= 100 ? 1 : 0) + 'k' : String(n));
 export const xaf = (n: number | string) => 'XAF ' + Number(n || 0).toLocaleString('en-US');
+/** "Today" / "Tomorrow" / "This week" as a real date, so the text is still right when it's read on another day. */
+export function dayText(key: string, time?: string) {
+  const d = new Date();
+  const fmt = (x: Date) => x.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  const at = time ? ', ' + time : '';
+  if (key === 'Today') return fmt(d) + at;
+  if (key === 'Tomorrow') {
+    d.setDate(d.getDate() + 1);
+    return fmt(d) + at;
+  }
+  if (key === 'This week') {
+    d.setDate(d.getDate() + ((7 - d.getDay()) % 7));
+    return 'By ' + fmt(d);
+  }
+  return key + (key && time && !/flexible|soon|month/i.test(key) ? at : '');
+}
 export const nowT = () => {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;

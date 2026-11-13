@@ -12,7 +12,7 @@ import { P, THREADS, fname, isGroup, isW, postById } from '../../src/logic/core'
 import { hiringIn } from '../../src/logic/work';
 import { callsAvailable, startCall } from '../../src/logic/calls';
 import { useLive } from '../../src/logic/live';
-import { answerOffer, markChatRead, sendText } from '../../src/logic/work';
+import { answerOffer, markChatRead, retryText, sendText } from '../../src/logic/work';
 import { setViewing } from '../../src/logic/push';
 import { openProfile } from '../../src/logic/nav';
 import { groupOf } from '../../src/logic/career';
@@ -54,7 +54,8 @@ export default function Chat() {
     const t = text.trim();
     if (!t) return;
     setText('');
-    sendText(id, t);
+    // if it couldn't even be queued (no connection before the chat existed), give the words back
+    void sendText(id, t).then((ok) => !ok && setText((cur) => cur || t));
   };
   const job = th.job;
   const viewJob = () => {
@@ -355,14 +356,21 @@ function Bubble({ id, r, hiring }: { id: string; r: Row; hiring: boolean }) {
       </View>
     );
   return (
-    <Pressable onLongPress={() => (tap(), openMsgMenu(id, i))} delayLongPress={300} style={{ alignItems: me ? 'flex-end' : 'flex-start', marginTop: grp ? 2 : 8 }}>
+    <Pressable onPress={m.st === 'failed' && m.id ? () => (tap(), retryText(id, m.id!)) : undefined} onLongPress={() => (tap(), openMsgMenu(id, i))} delayLongPress={300} style={{ alignItems: me ? 'flex-end' : 'flex-start', marginTop: grp ? 2 : 8, opacity: m.st === 'sending' ? 0.7 : 1 }}>
       {body}
-      {!grp ? (
+      {m.st === 'failed' ? (
+        <View style={[S.row, { gap: 4, marginTop: 3, paddingHorizontal: 4 }]}>
+          <Icon name="warn" size={12} color={C.err} />
+          <Txt s={11} w={7} c={C.err}>
+            Not sent · Tap to retry
+          </Txt>
+        </View>
+      ) : !grp ? (
         <View style={[S.row, { gap: 3, marginTop: 3, paddingHorizontal: 4 }]}>
           <Txt s={10} c={C.faint}>
             {m.at || ''}
           </Txt>
-          {me ? <Icon name={m.st === 'read' ? 'check2' : 'check'} size={12} color={m.st === 'read' ? C.lav : C.faint} /> : null}
+          {me ? <Icon name={m.st === 'sending' ? 'clock' : m.st === 'read' ? 'check2' : 'check'} size={12} color={m.st === 'read' ? C.lav : C.faint} /> : null}
         </View>
       ) : null}
     </Pressable>

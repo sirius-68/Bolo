@@ -345,7 +345,15 @@ function OfferForm({ po }: { po: Post }) {
   const guess = ((po.budget!.match(/[\d.,]+k?/) || [''])[0] as string).replace('k', '000').replace(/[^\d]/g, '');
   const [price, setPrice] = useState(guess);
   const [when, setWhen] = useState('Tomorrow');
-  const [msg, setMsg] = useState(`Hi ${f}! I’m a ${mySkill().toLowerCase()} with ${db.user.years} years of experience near ${po.area}. I can take care of this.`);
+  const [msg, setMsg] = useState(() => {
+    // a ready-made opener from what the profile really says (no empty or odd parts)
+    const skill = mySkill().toLowerCase();
+    const y = db.user.years;
+    const who = skill ? `I’m ${/^[aeiou]/.test(skill) ? 'an' : 'a'} ${skill}` : 'I can help';
+    const exp = skill && y > 0 ? ` with ${y} year${y === 1 ? '' : 's'} of experience` : '';
+    const near = po.area ? ` near ${po.area}` : '';
+    return `Hi ${f}! ${who}${exp}${near}. I can take care of this.`;
+  });
   const [mode, setMode] = useState<CvMode>('profile');
   const [file, setFile] = useState<CvFile | null>(null);
   if (off)

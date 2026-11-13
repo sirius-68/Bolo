@@ -7,11 +7,10 @@ import { toast, undoBar } from '../ui/overlay';
 import { supabase } from '../lib/supabase';
 import { bump } from './live';
 import { notify } from './notify';
-import { P, isW, thread, nowT, fname, first, xaf, budgetNum, mySkill, cityLabel, THREADS, ORDER, NOTIFS, curBiz, postById, add, toggle, has } from './core';
+import { P, isW, thread, nowT, fname, first, xaf, budgetNum, mySkill, cityLabel, THREADS, ORDER, NOTIFS, curBiz, postById, add, toggle, has, dayText } from './core';
 import { friendly } from './remote';
 import {
-  R, L, SAVE_KIND, convFor, deleteNotifRows, markRead, markReviewed, refreshBooking, refreshBookings, refreshChats, refreshMine, refreshPosts, sendMessage, setNotifRead, uploadChatFile, uuid, convOfKey, rawMessage, membersOf,
-} from './server';
+  R, L, SAVE_KIND, convFor, deleteNotifRows, markRead, markReviewed, refreshBooking, refreshBookings, refreshChats, refreshMine, refreshPosts, sendMessage, setNotifRead, uploadChatFile, uuid, convOfKey, rawMessage, membersOf, retryMessage } from './server';
 import { startSharing, stopSharing } from './tracking';
 
 const fail = (e: any) => toast(friendly(e));
@@ -89,7 +88,8 @@ export function likeReel(i: number) {
 /** My position to send with a hire request, so the worker can find the place. */
 const myPlace = () => (db.user.coord ? { lng: db.user.coord[0], lat: db.user.coord[1] } : {});
 /** Sends a priced job request to a person in chat; when they accept, the job is booked. */
-export function sendHireRequest(id: string, job: string, price: string, when: string) {
+export function sendHireRequest(id: string, job: string, price: string, whenKey: string) {
+  const when = dayText(whenKey);
   add(db.hired, id); // shows as "Requested" until they answer
   bump();
   sendMessage(id, inboxNow(), 'offer', '', { job, price, when, dur: 'Hire request', worker: 'recipient', area: [db.PR.area.home, cityLabel()].filter(Boolean).join(', '), ...myPlace() })
@@ -155,7 +155,7 @@ export function postJob(f: JobForm): Post {
     title: f.title.trim(),
     text: f.text.trim(),
     budget: b ? `XAF ${(+b).toLocaleString('en-US')}${f.neg ? ' · negotiable' : ''}${!w ? ' / month' : ''}` : w ? 'Open to offers' : 'Salary negotiable',
-    when: f.when === 'Flexible' ? 'Flexible' : `${f.when}, ${f.time}`,
+    when: f.when === 'Flexible' ? 'Flexible' : dayText(f.when, f.time),
     area: f.area,
     type: f.type,
     as: w ? 'regular' : 'business',
@@ -275,7 +275,7 @@ export function closeJob(id: string) {
 export function sendOffer(id: string, price: string, whenKey: string, msg: string, cv: CvFile | null) {
   const po = postById(id)!;
   const p = `XAF ${(+price).toLocaleString('en-US')}`;
-  const when = whenKey === 'This week' ? 'This week' : `${whenKey}, 10:00`;
+  const when = dayText(whenKey);
   db.myOffers[id] = { price: p, when, state: 'sent', cv };
   bump();
   (async () => {
@@ -553,10 +553,22 @@ export function openThread(id: string) {
   markChatRead(id);
   bump();
 }
-export function sendText(id: string, t: string) {
+/** Sends a text. Resolves to false only when it could not even be put in the chat (so the caller can give the text back). */
+export async function sendText(id: string, t: string): Promise<boolean> {
   t = t.trim();
-  if (!t) return;
-  sendMessage(id, inboxNow(), 'text', t).catch(fail);
+  if (!t) return true;
+  try {
+    await sendMessage(id, inboxNow(), 'text', t);
+    return true;
+  } catch (e: any) {
+    if (e?.kept) toast('Not sent. Tap the message to try again');
+    else fail(e);
+    return !!e?.kept;
+  }
+}
+export function retryText(id: string, mid: string) {
+  const cid = THREADS()[id]?.cid;
+  if (cid) retryMessage(cid, mid).catch(() => toast('Still not sent. Check your connection and try again'));
 }
 /** Opening a chat clears its message notification. */
 export function readChatNotif(id: string) {
@@ -588,7 +600,7 @@ export function answerOffer(id: string, i: number, st: 'acc' | 'dec') {
   })();
 }
 export function sendQuote(id: string, job: string, price: string, whenKey: string, as?: 'worker' | 'client') {
-  const when = whenKey === 'This week' ? 'This week' : `${whenKey}, 10:00`;
+  const when = dayText(whenKey);
   const hiring = as ? as === 'client' : hiringIn(id);
   sendMessage(id, inboxNow(), 'offer', '', {
     job: job || 'Job',

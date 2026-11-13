@@ -84,7 +84,7 @@ export type Msg = {
   f?: 'me' | 'them';
   t?: string;
   at?: string;
-  st?: 'sent' | 'read';
+  st?: 'sent' | 'read' | 'sending' | 'failed';
   k?: 'offer' | 'voice' | 'file' | 'img' | 'loc' | 'ts';
   /** k='ts': a question asked at this second of recording `rec` */
   ts?: number;
