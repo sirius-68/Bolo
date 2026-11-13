@@ -86,11 +86,8 @@ function ServiceForm({ e }: { e: Service & { isNew?: number } }) {
 }
 function delService(id: string) {
   const L = services();
-  if (L.length <= 1) {
-    toast('Keep at least one service on your profile');
-    return;
-  }
-  const s = L.find((x) => x.id === id)!;
+  const s = L.find((x) => x.id === id);
+  if (!s) return;
   confirm({
     title: `Delete ${s.skill}?`,
     text: 'People won’t find this service any more.',
@@ -98,7 +95,7 @@ function delService(id: string) {
     danger: true,
     icon: 'trash',
     onOk: () => {
-      db.PR.services = L.filter((x) => x.id !== id);
+      db.PR.services = services().filter((x) => x.id !== id);
       bump();
       toast('Service deleted');
     },

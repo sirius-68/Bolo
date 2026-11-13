@@ -46,3 +46,23 @@ name: The job owner logs back in - sees the offer, accepts it, chats
 - hideKeyboard
 - waitForAnimationToEnd
 - takeScreenshot: a07-chat-sent
+# the message box goes back to the bottom once the keyboard is closed
+- takeScreenshot: a07b-keyboard-closed
+- back
+- back
+# like the worker's post: it must reach their notifications (that page used to break on a like)
+- tapOn:
+    id: "tab-feed"
+- waitForAnimationToEnd
+- tapOn: "Feed"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Tour work post ${RUN}"
+    timeout: 20000
+    optional: true
+- tapOn:
+    text: "Like"
+    below: "Tour work post ${RUN}"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: a08-liked

@@ -4,7 +4,7 @@ import { CATS, SKILLS, lvOf } from '../data/catalog';
 import { toast } from '../ui/overlay';
 import { notify } from './notify';
 import { bump, cancelAll, later } from './live';
-import { curBiz, bizName, cityLabel, isW, nowT, mySkill, ensureSkillList, add, P } from './core';
+import { curBiz, bizName, cityLabel, isW, nowT, mySkill, madeUpService, ensureSkillList, add, P } from './core';
 import { resumeSims, bizLog } from './work';
 import { clearSaved } from './persist';
 import { stopAdTicker } from './career';
@@ -135,14 +135,9 @@ export function cancelPro(kind: 'regular' | 'business') {
 
 /* ---------------- my profile data ---------------- */
 export function services(): Service[] {
-  if (!db.PR.services) {
-    const m = mySkill();
-    const o = CATS.map((c) => c[0]).find((n) => n !== m && !db.user.skills.includes(n)) || 'Cleaner';
-    db.PR.services = [
-      { id: 's1', skill: m, price: 5000, unit: 'per job', where: 'At the client’s place', desc: '', pub: true, boost: 0 },
-      { id: 's2', skill: o, price: 0, unit: 'per job', where: 'At the client’s place', desc: '', pub: false, draft: true, boost: 0 },
-    ];
-  }
+  // only what the person added themselves: nothing is listed, and no price is shown, on their behalf
+  if (!db.PR.services) db.PR.services = [];
+  if (db.PR.services.some(madeUpService)) db.PR.services = db.PR.services.filter((x) => !madeUpService(x));
   return db.PR.services;
 }
 export const passedTests = () => Object.keys(db.PR.tests).filter((k) => db.PR.tests[k] === 'passed');

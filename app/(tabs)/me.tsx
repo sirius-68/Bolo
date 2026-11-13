@@ -4,7 +4,7 @@ import { MONEY_LIVE } from '../../src/logic/money';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { db, ui, REELS } from '../../src/data/db';
+import { db, ui } from '../../src/data/db';
 import { myStats } from '../../src/logic/server';
 import { DOCS, ST_C, ST_W, catIcon } from '../../src/data/catalog';
 import { Avatar, Btn, Empty, IconBtn, PTabs, ProTag, Ring, StatusPill, Txt, Verified, tap } from '../../src/ui/kit';
@@ -16,7 +16,7 @@ import { balance, heldTotal } from '../../src/logic/wallet';
 import { myListings } from '../../src/logic/listings';
 import { followingCount, prItems, prPct, services } from '../../src/logic/account';
 import { openProfile } from '../../src/logic/nav';
-import { ListRow, ReelThumb } from '../../src/components/cards';
+import { ListRow } from '../../src/components/cards';
 import { onScrollFab } from '../../src/components/NavBar';
 import { openAccounts, openBizSetup, openEdit, openPro, openStatus, switchRole } from '../../src/sheets/account';
 import { openArea, openBoost, openContacts, openDoc, openEdu, openExp, openFollows, openJobHistory, openLangs, openService, openSvcMenu, openTest, openVideo } from '../../src/sheets/profile';
@@ -256,7 +256,7 @@ function MeRegular() {
   const tabs: [string, string, number | null][] = [
     ['Profile', 'Profile', null],
     ['My jobs', 'My jobs', mj.length],
-    ['Posts', 'Posts', mw.length + 4],
+    ['Posts', 'Posts', mw.length],
     ['Applications', 'Offers sent', offers.length],
     ...(hired.length ? ([['Hired', 'Hired', hired.length]] as [string, string, number][]) : []),
     ['Saved', 'Saved', savedN],
@@ -313,16 +313,7 @@ function MeRegular() {
             {mw.map((x) => (
               <ListRow key={x.id} icon={x.kind === 'avail' ? 'clock' : 'post'} title={x.kind === 'avail' ? 'Availability' : 'Post'} sub={(x.text || '').slice(0, 90)} onPress={() => router.push('/feed')} />
             ))}
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-              {(
-                [
-                  [0, 'Faucet repair'],
-                  [1, 'Deep clean'],
-                  [4, 'Brake service'],
-                  [2, 'Solar install'],
-                ] as [number, string][]
-              ).map(([r, t]) => (REELS[r] ? <ReelThumb key={r} r={REELS[r]} i={r} title={t} width={'48%' as any} onPress={() => router.push(`/reels?i=${r}` as any)} /> : null))}
-            </View>
+            {!mw.length ? <Empty title="No posts yet" text="Share a photo or a few words about a job you did. Posts help people trust your work." /> : null}
           </View>
         ) : null}
         {tab === 'Applications' ? (
@@ -411,6 +402,11 @@ function ProfilePanel() {
       </Card>
       <H t="My services" action="+ Add service" onAction={() => openService()} />
       <View style={{ gap: 10 }}>
+        {!sv.length ? (
+          <Empty title="No services yet" text="Add what you offer and your starting price so people can find and hire you.">
+            <Btn small variant="yellow" title="Add a service" onPress={() => openService()} />
+          </Empty>
+        ) : null}
         {sv.map((s) =>
           s.draft ? (
             <Card key={s.id}>

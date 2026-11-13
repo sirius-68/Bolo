@@ -107,6 +107,8 @@ export const bizPct = (b?: MyBiz | null) => {
 };
 export const isPro = () => (isW() ? db.user.pro.regular : db.user.pro.business);
 export const mySkill = () => db.user.skills[0] || 'Plumber';
+/** A placeholder service older versions added by themselves (a skill the person never chose, no price). */
+export const madeUpService = (x: any) => !!x && x.draft && !+x.price && x.id === 's2' && !db.user.skills.includes(x.skill);
 export const myName = () => db.user.name || 'You';
 export const myFirst = () => (db.user.name ? db.user.name.split(' ')[0] : '');
 export const myPhoto = () => db.user.avatar || 'img/me';

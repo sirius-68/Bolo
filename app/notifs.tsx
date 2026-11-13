@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, ui, Notif } from '../src/data/db';
 import { NT_ICON } from '../src/data/catalog';
-import { Avatar, Btn, Empty, PTabs, Pill, TopBar, Txt, Verified, tap } from '../src/ui/kit';
+import { Avatar, Btn, Empty, PTabs, Pill, Quiet, TopBar, Txt, Verified, tap } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { toast } from '../src/ui/overlay';
 import { C, S } from '../src/ui/theme';
@@ -116,7 +116,11 @@ export default function Notifs() {
             {section.title}
           </Txt>
         )}
-        renderItem={({ item }) => <Row n={item} sel={sel} onPress={() => open(item)} onLong={() => (tap(), setSel(sel ? sel : [item.id]))} />}
+        renderItem={({ item }) => (
+          <Quiet>
+            <Row n={item} sel={sel} onPress={() => open(item)} onLong={() => (tap(), setSel(sel ? sel : [item.id]))} />
+          </Quiet>
+        )}
         ListEmptyComponent={<Empty style={{ marginTop: 30 }} title="Nothing here" text={tab === 'Mentions' ? 'When someone mentions or reviews you, it’ll show up here.' : tab === 'Jobs' ? 'No job updates yet.' : 'New activity will show up here.'} />}
         initialNumToRender={10}
       />
@@ -167,18 +171,23 @@ function Row({ n, sel, onPress, onLong }: { n: Notif; sel: string[] | null; onPr
   switch (n.type) {
     case 'like':
     case 'offers': {
-      const ids = (n.who as string[]) || [];
-      pics = (
-        <View style={{ flexDirection: 'row' }}>
-          {ids.slice(0, 2).map((id, i) => (
-            <Avatar key={id} pic={P(id).photo} size={32} style={{ marginLeft: i ? -12 : 0, borderWidth: 2, borderColor: C.bg }} />
-          ))}
-        </View>
-      );
+      // one person (from the server) or several grouped together
+      const ids = (Array.isArray(n.who) ? n.who : who ? [who] : []).filter((x) => typeof x === 'string');
+      if (ids.length)
+        pics = (
+          <View style={{ flexDirection: 'row' }}>
+            {ids.slice(0, 2).map((id, i) => (
+              <Avatar key={id + i} pic={P(id).photo} size={ids.length > 1 ? 32 : 40} style={i ? { marginLeft: -12, borderWidth: 2, borderColor: C.bg } : undefined} />
+            ))}
+          </View>
+        );
+      const first = ids[0] ? fname(P(ids[0]).name || '') : '';
       text =
         n.type === 'like' ? (
           <Txt s={14}>
-            <B>{fname(P(ids[0])?.name)}</B> and {n.others} others liked your post{T}
+            {first ? <B>{first}</B> : 'Someone'}
+            {n.others ? ` and ${n.others} others liked your post` : ` ${n.text || 'liked your post'}`}
+            {T}
           </Txt>
         ) : (
           <Txt s={14}>
@@ -239,7 +248,7 @@ function Row({ n, sel, onPress, onLong }: { n: Notif; sel: string[] | null; onPr
       );
       extra = (
         <>
-          {quote(`${n.job} · ${n.price}`, n.when || '')}
+          {n.job || n.price ? quote([n.job, n.price].filter(Boolean).join(' · '), n.when || '') : null}
           {n.state
             ? done(n.state === 'acc' ? 'check' : 'x', n.state === 'acc' ? 'Quote accepted, job booked' : 'Quote declined')
             : acts(<Pill key="a" title="Accept" onPress={() => answerQuoteNotif(n.id, 'acc')} />, <Pill key="d" kind="outline" title="Decline" onPress={() => answerQuoteNotif(n.id, 'dec')} />, <Pill key="m" kind="dim" title="Message" onPress={() => openChat(who!)} />)}

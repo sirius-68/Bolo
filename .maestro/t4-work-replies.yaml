@@ -8,7 +8,12 @@ name: The worker logs back in - sees the booking and the message, replies
 - takeScreenshot: b01-feed
 - tapOn: "Notifications"
 - waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*liked your post.*"
+    timeout: 15000
+    optional: true
 - takeScreenshot: b02-notifications
+- assertNotVisible: "This screen hit a problem"
 - back
 - tapOn: "Messages"
 - waitForAnimationToEnd

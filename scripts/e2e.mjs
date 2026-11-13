@@ -216,6 +216,17 @@ if (ready) {
   });
 
   // ---- calls
+  await step('several taps on call are one call; missed calls are one notification that counts up', async () => {
+    const [a, b, c] = await Promise.all([1, 2, 3].map(() => A.sb.rpc('start_call', { p_conversation: cid, p_kind: 'voice' })));
+    const first = must(a);
+    expect(must(b) === first && must(c) === first, 'three taps started more than one call');
+    must(await A.sb.rpc('end_call', { p_call: first }));
+    const second = must(await A.sb.rpc('start_call', { p_conversation: cid, p_kind: 'voice' }));
+    expect(second !== first, 'a new call after hanging up reused the old one');
+    must(await A.sb.rpc('end_call', { p_call: second }));
+    const n = must(await B.sb.from('notifications').select('body,type').in('type', ['missed', 'call']));
+    expect(n.length === 1 && n[0].body === '2 missed calls', `expected one "2 missed calls" notification, got ${JSON.stringify(n)}`);
+  });
   await step('voice call: ring, answer, hang up', async () => {
     callId = must(await A.sb.rpc('start_call', { p_conversation: cid, p_kind: 'voice' }));
     const c = must(await B.sb.from('calls').select('status').eq('id', callId).maybeSingle());

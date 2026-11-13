@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { FlatList, Linking, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { KeyAvoid, useKeyboardOpen } from '../../src/ui/keyboard';
 import { fmtTs } from '../../src/logic/classes';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,6 +27,7 @@ export default function Chat() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const ins = useSafeAreaInsets();
   const [text, setText] = useState('');
+  const kbOpen = useKeyboardOpen();
   const th = THREADS()[id];
   const p = P(id);
   useEffect(() => {
@@ -61,7 +63,7 @@ export default function Chat() {
     else toast(job || 'No active job');
   };
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior="padding" keyboardVerticalOffset={0}>
+    <KeyAvoid style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={[S.row, { gap: 10, paddingTop: ins.top + 6, paddingHorizontal: 12, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: C.line, backgroundColor: C.bg }]}>
         <IconBtn name="back" label="Back" onPress={goBack} />
         <Pressable accessibilityRole="button" accessibilityLabel={grp ? 'Group info' : `${p.name}’s profile`} onPress={() => (grp ? router.push(`/group/${id}` as any) : openProfile(id))} style={[S.row, { gap: 10, flex: 1, minWidth: 0 }]}>
@@ -119,7 +121,8 @@ export default function Chat() {
         renderItem={({ item }) => <Bubble id={id} r={item} hiring={hiring} />}
         initialNumToRender={20}
       />
-      <ScrollView horizontal keyboardShouldPersistTaps="always" showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: 12, gap: 8, paddingBottom: 8 }}>
+      {/* quick replies and the message box sit together under one line, so nothing is cut by it */}
+      <ScrollView horizontal keyboardShouldPersistTaps="always" showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0, borderTopWidth: 1, borderTopColor: C.line }} contentContainerStyle={{ paddingHorizontal: 12, gap: 8, paddingTop: 10, paddingBottom: 4, alignItems: 'center' }}>
         {!grp && !hiring ? (
           <Pressable onPress={() => openQuote(id)} style={[S.row, { gap: 4, height: 34, paddingHorizontal: 12, borderRadius: 999, backgroundColor: C.yellow }]}>
             <Icon name="money" size={14} color="#000" />
@@ -136,9 +139,9 @@ export default function Chat() {
           </Pressable>
         ))}
       </ScrollView>
-      <View style={[S.row, { gap: 8, paddingHorizontal: 12, paddingTop: 6, paddingBottom: ins.bottom + 8, borderTopWidth: 1, borderTopColor: C.line }]}>
+      <View style={[S.row, { gap: 8, paddingHorizontal: 12, paddingTop: 6, paddingBottom: (kbOpen ? 0 : ins.bottom) + 8, alignItems: 'flex-end' }]}>
         <>
-            <Pressable accessibilityLabel="Attach" onPress={() => openAttach(id)} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
+            <Pressable accessibilityLabel="Attach" onPress={() => openAttach(id)} style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
               <Icon name="plus" size={22} color={C.text} />
             </Pressable>
             <TextInput
@@ -158,7 +161,7 @@ export default function Chat() {
             ) : null}
         </>
       </View>
-    </KeyboardAvoidingView>
+    </KeyAvoid>
   );
 }
 

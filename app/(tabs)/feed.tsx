@@ -3,7 +3,8 @@ import { Animated, FlatList, Pressable, ScrollView, View, useWindowDimensions } 
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, ui, REELS, Post } from '../../src/data/db';
-import { Avatar, Btn, Empty, Txt, tap } from '../../src/ui/kit';
+import { Avatar, Btn, Empty, Txt, net, tap } from '../../src/ui/kit';
+import { FeedSkeleton } from '../../src/ui/skeleton';
 import { showStories } from '../../src/components/Stories';
 import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
@@ -35,6 +36,19 @@ export default function Feed() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const lastY = useRef(0);
   const small = useRef(false);
+  // Just opened: show the loading layout until the first refresh lands. With a saved copy on the phone the wait is
+  // capped (a slow network shouldn't hide what is already there); with nothing saved it lasts until there is something to show.
+  useEffect(() => {
+    if (!net.opening) return;
+    const t = setTimeout(() => {
+      if (net.opening) {
+        net.opening = false;
+        bump();
+      }
+    }, db.syncedAt ? 2500 : 15000);
+    return () => clearTimeout(t);
+  }, []);
+  const opening = net.opening;
   // Four simple doors. Businesses don't take jobs, so they get Talent instead of Jobs and People.
   // Mentorship lives in Career (one place for it), not here.
   const views: [FV, string][] = w
@@ -138,7 +152,9 @@ export default function Feed() {
           </Pressable>
         </ScrollView>
       ) : null}
-      {v === 'all' ? (
+      {opening ? (
+        <FeedSkeleton />
+      ) : v === 'all' ? (
         <>
           {/* 1. What matters most for this person, 2. sponsored (after organic, like Indeed), 3. what's happening near them now */}
           <Sec title={findOnly ? 'Jobs for you' : w ? 'Recommended for you' : 'Talent near you'} action="See all" onAction={() => openBrowse(findOnly ? 'jobs' : 'people')} />
@@ -216,12 +232,12 @@ export default function Feed() {
       ref={list}
       style={{ flex: 1, backgroundColor: C.bg }}
       contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}
-      data={items}
+      data={opening ? [] : items}
       keyExtractor={(i) => i.k}
       renderItem={render}
       ListHeaderComponent={header}
       ListEmptyComponent={
-        <Empty title={filtered ? 'Nothing matches' : 'Nothing here yet'} text={filtered ? 'Try another word, category or fewer filters.' : undefined}>
+        opening ? null : <Empty title={filtered ? 'Nothing matches' : 'Nothing here yet'} text={filtered ? 'Try another word, category or fewer filters.' : undefined}>
           {filtered ? (
             <Btn
               small

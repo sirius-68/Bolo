@@ -9,6 +9,7 @@ import { checkRealtime, loadAll, resetSession, startRealtime, stopRealtime } fro
 import { db, MyBiz } from '../data/db';
 import { bump, subscribe } from './live';
 import { fill } from './persist';
+import { madeUpService } from './core';
 
 export const isReal = () => true;
 const digits = (s: string) => (s || '').replace(/\D/g, '');
@@ -206,7 +207,7 @@ export async function pull() {
       if (Array.isArray(r.experience) && r.experience.length) db.PR.exp = r.experience;
       if (plainObj(r.education)) db.PR.edu = fill(db.PR.edu, r.education);
       if (Array.isArray(r.languages) && r.languages.length) db.PR.langs = r.languages;
-      if (Array.isArray(r.services)) db.PR.services = r.services.filter(plainObj);
+      if (Array.isArray(r.services)) db.PR.services = r.services.filter(plainObj).filter((x: any) => !madeUpService(x));
       db.PR.docs.id = r.verified ? 'verified' : db.PR.docs.id === 'review' ? 'review' : null;
       u.verified = !!r.verified;
       if (typeof r.visible === 'boolean') db.PREF.visible = r.visible;

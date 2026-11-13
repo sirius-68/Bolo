@@ -9,7 +9,8 @@ import { toast } from '../src/ui/overlay';
 import { P, fname } from '../src/logic/core';
 import { useLive } from '../src/logic/live';
 import { db } from '../src/data/db';
-import { CALLS, Call, agora, answerCall, callPass, endCall, loadCall, onCall, otherOf } from '../src/logic/calls';
+import { CALLS, Call, agora, answerCall, callPass, endCall, loadCall, onCall, otherOf, setActiveCall } from '../src/logic/calls';
+import { ring, stopRing } from '../src/logic/ring';
 
 type Phase = 'loading' | 'incoming' | 'calling' | 'connecting' | 'live' | 'ended';
 const RING_LIMIT = 45_000;
@@ -37,11 +38,12 @@ export default function CallScreen() {
   const p = other ? P(other) : null;
 
   /** Leave Agora and close the screen. */
-  const finish = (text: string, tellServer: boolean) => {
+  const finish = (text: string, tellServer: boolean, close = true) => {
     if (done.current) return;
     done.current = true;
     setEndText(text);
     setPhase('ended');
+    ring('end');
     try {
       if (eng.current) {
         eng.current.leaveChannel();
@@ -50,14 +52,17 @@ export default function CallScreen() {
       }
     } catch {}
     eng.current = null;
+    setActiveCall(null, id);
     if (tellServer && id) void endCall(id);
-    setTimeout(() => (router.canGoBack() ? router.back() : router.replace('/inbox' as any)), 1200);
+    // (when the screen was already left with Back there is nothing to close: going back again would leave the chat too)
+    if (close) setTimeout(() => (router.canGoBack() ? router.back() : router.replace('/inbox' as any)), 1200);
   };
 
   /** Join the call's Agora channel with a pass from the server. */
   const join = async (kind: 'voice' | 'video') => {
     if (joined.current || !agora) return;
     joined.current = true;
+    stopRing();
     setPhase('connecting');
     if (Platform.OS === 'android') {
       const want = [PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, ...(kind === 'video' ? [PermissionsAndroid.PERMISSIONS.CAMERA] : [])];
@@ -109,6 +114,7 @@ export default function CallScreen() {
   // load the call, then follow it live
   useEffect(() => {
     let alive = true;
+    setActiveCall(id);
     (async () => {
       const c = CALLS[id] || (await loadCall(id));
       if (!alive) return;
@@ -130,10 +136,19 @@ export default function CallScreen() {
       alive = false;
       off();
       // leaving the screen hangs up
-      if (!done.current) finish('Call ended', true);
+      if (!done.current) finish('Call ended', true, false);
+      setActiveCall(null, id);
+      stopRing();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // the sound of the call: the tone while their phone rings, the ringtone while mine does
+  useEffect(() => {
+    if (phase === 'calling') ring('out');
+    else if (phase === 'incoming') ring('in');
+    else if (phase !== 'ended') stopRing();
+  }, [phase]);
 
   // nobody answers: give up after 45 seconds
   useEffect(() => {

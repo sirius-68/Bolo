@@ -10,6 +10,7 @@ import { bump } from './live';
 import { friendly } from './remote';
 import { L, convFor, ensurePeople } from './server';
 import { isW } from './core';
+import { ring, stopRing } from './ring';
 
 export type Call = { id: string; conversation_id: string; caller_id: string; callee_id: string; kind: 'voice' | 'video'; status: 'ringing' | 'accepted' | 'declined' | 'missed' | 'ended' | 'busy'; created_at: string; answered_at?: string | null; ended_at?: string | null };
 
@@ -33,10 +34,22 @@ export const agora: any = (() => {
 })();
 export const callsAvailable = () => !!agora;
 
+/** The call this phone is on right now (its screen is open). One at a time. */
+let active: string | null = null;
+let starting = false;
+export function setActiveCall(id: string | null, was?: string) {
+  if (id) active = id;
+  else if (!was || active === was) active = null;
+}
+export const activeCall = () => active;
+
 /** Call someone from a 1-to-1 chat (key = the chat's app id). */
 export async function startCall(key: string, kind: 'voice' | 'video') {
   if (!agora) return toast('Calls need the latest version of bolo');
   if (key.startsWith('g_')) return toast('Calls are for 1-to-1 chats');
+  // one call at a time: more taps while a call is starting or open do nothing
+  if (starting || active) return;
+  starting = true;
   try {
     const cid = await convFor(key, isW() ? 'W' : 'C');
     const { data, error } = await supabase.rpc('start_call', { p_conversation: cid, p_kind: kind });
@@ -45,19 +58,25 @@ export async function startCall(key: string, kind: 'voice' | 'video') {
     const { data: row } = await supabase.from('calls').select('*').eq('id', id).maybeSingle();
     if (row) CALLS[id] = row as Call;
     if (row?.status === 'busy') return toast('They’re on another call. Try again in a moment');
+    if (active) return;
+    active = id;
     router.push(`/call?id=${id}` as any);
   } catch (e) {
     toast(friendly(e));
+  } finally {
+    starting = false;
   }
 }
 export async function answerCall(id: string, accept: boolean) {
   Vibration.cancel();
+  stopRing();
   const { error } = await supabase.rpc('answer_call', { p_call: id, p_accept: accept });
   if (error) toast(friendly(error));
   return !error;
 }
 export async function endCall(id: string) {
   Vibration.cancel();
+  stopRing();
   await supabase.rpc('end_call', { p_call: id });
 }
 /** A pass to join the call's Agora channel. */
@@ -79,8 +98,12 @@ function incoming(c: Call) {
   if (c.callee_id !== db.uid || c.status !== 'ringing' || ringing === c.id) return;
   // ignore old rings (e.g. a missed call from when the app was closed)
   if (Date.now() - +new Date(c.created_at) > 45_000) return;
+  // already ringing or on a call: this one is not shown on top (it ends as a missed call)
+  if (ringing || active || starting) return;
   ringing = c.id;
+  active = c.id;
   Vibration.vibrate([0, 700, 500, 700, 500, 700, 500, 700, 500, 700], false);
+  ring('in');
   void ensurePeople([c.caller_id]).then(() => {
     bump();
     router.push(`/call?id=${c.id}&incoming=1` as any);
@@ -93,6 +116,7 @@ export function applyCallChange(row: any) {
   CALLS[c.id] = { ...(CALLS[c.id] || {}), ...c };
   if (c.status !== 'ringing' && ringing === c.id) {
     Vibration.cancel();
+    stopRing();
     ringing = null;
   }
   incoming(CALLS[c.id]);

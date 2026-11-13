@@ -88,3 +88,31 @@ name: New account that offers skills - sign-up, full onboarding, send an offer
     id: "tab-me"
 - waitForAnimationToEnd
 - takeScreenshot: w13-me
+# share a work post (the job owner likes it later, which must show in this account's notifications)
+- tapOn: "Posts.*"
+- waitForAnimationToEnd
+- takeScreenshot: w14-posts-empty
+- tapOn: "Share your work"
+- waitForAnimationToEnd
+- tapOn:
+    id: "post-text"
+- inputText: "Tour work post ${RUN}"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "post-submit"
+    direction: DOWN
+- tapOn:
+    id: "post-submit"
+- waitForAnimationToEnd
+- takeScreenshot: w15-posted
+# services: nothing is listed that this person did not add
+- tapOn:
+    id: "tab-me"
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: "My services"
+    direction: DOWN
+    optional: true
+- takeScreenshot: w16-services
+- assertNotVisible: "Not published"

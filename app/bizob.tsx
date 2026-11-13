@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Platform, Pressable, ScrollView, View } from 'react-native';
+import { KeyAvoid } from '../src/ui/keyboard';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AREAS, BO_HIRE, BZCOLORS, CITIES, SIZES } from '../src/data/catalog';
@@ -266,7 +267,7 @@ export default function BizOnboarding() {
     );
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'android' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: C.bg, paddingTop: ins.top }}>
+    <KeyAvoid style={{ flex: 1, backgroundColor: C.bg, paddingTop: ins.top }}>
       {step < 5 ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, height: 56, marginTop: 4 }}>
           <IconBtn name="back" label="Back" onPress={back} />
@@ -282,6 +283,6 @@ export default function BizOnboarding() {
         {body}
       </ScrollView>
       <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: ins.bottom + 16, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.bg }}>{actions}</View>
-    </KeyboardAvoidingView>
+    </KeyAvoid>
   );
 }

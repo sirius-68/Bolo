@@ -5,7 +5,6 @@ import {
   Dimensions,
   Easing,
   Keyboard,
-  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -15,7 +14,8 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTick } from '../logic/live';
+import { bump, useTick } from '../logic/live';
+import { KeyAvoid } from './keyboard';
 import { Icon } from './Icon';
 import { C, R, tx } from './theme';
 import { AlertIll, Btn } from './kit';
@@ -60,6 +60,8 @@ export const sheet = {
     sheetState = { render: null, opts: {}, key: sheetState.key };
     emitSheet();
     cb?.();
+    // whatever the sheet changed shows on the screen behind it and is saved, without each sheet having to ask
+    bump();
     if (msg) toast(msg);
     if (held) setTimeout(flushHeld, 500);
   },
@@ -117,7 +119,7 @@ function SheetHost() {
       <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,.6)', opacity: y.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }}>
         <Pressable style={{ flex: 1 }} onPress={() => sheet.close()} accessibilityLabel="Close" />
       </Animated.View>
-      <KeyboardAvoidingView behavior="padding" style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }} pointerEvents="box-none">
+      <KeyAvoid style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }} pointerEvents="box-none">
         <Animated.View
           style={{
             maxHeight: Math.min(H * (cur.opts.full ? 0.94 : 0.9), room),
@@ -142,7 +144,7 @@ function SheetHost() {
           </ScrollView>
           {cur.opts.footer ? <View style={{ paddingHorizontal: 20, paddingTop: 8 }}>{cur.opts.footer()}</View> : null}
         </Animated.View>
-      </KeyboardAvoidingView>
+      </KeyAvoid>
       <PickerHost />
       <ToastHost inModal />
     </Modal>

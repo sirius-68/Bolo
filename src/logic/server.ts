@@ -643,7 +643,8 @@ export function markRead(cid: string) {
   readTimer[cid] = setTimeout(async () => {
     delete readTimer[cid];
     await supabase.from('conversation_members').update({ last_read_at: new Date().toISOString() }).eq('conversation_id', cid).eq('user_id', ME());
-    await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('recipient_id', ME()).eq('event_key', 'msg:' + cid).is('read_at', null);
+    // opening the chat also clears its notifications: new messages and missed calls
+    await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('recipient_id', ME()).in('event_key', ['msg:' + cid, 'missed:' + cid]).is('read_at', null);
   }, 1500);
 }
 
@@ -951,6 +952,7 @@ export function resetSession() {
   loadedAt = 0;
   net.offline = false;
   net.loading = false;
+  net.opening = true;
 }
 /** Load (or refresh) everything for the signed-in account. Safe to call often. */
 export function loadAll(force = false): Promise<void> {
@@ -984,6 +986,7 @@ export function loadAll(force = false): Promise<void> {
       net.offline = failed.length > 0;
     } finally {
       net.loading = false;
+      if (db.uid === me) net.opening = false;
       if (loading === mine) loading = null;
       bump();
     }

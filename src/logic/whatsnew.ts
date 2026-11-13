@@ -5,12 +5,14 @@ import { db, ui } from '../data/db';
 import { showStories, Story } from '../components/Stories';
 import { openNotifSettings, openPayments } from '../sheets/account';
 
-export const WHATS_NEW_ID = '2026-11-13';
+export const WHATS_NEW_ID = '2026-11-14';
 
 /** Slides added in the latest update. */
-const LATEST = ['push', 'steady', 'honest'];
+const LATEST = ['ring', 'tidy'];
 
 export const WHATS_NEW: Story[] = [
+  { key: 'ring', colors: ['#7c5cff', '#3b1fa8'], icon: 'phone', chip: 'Calls', title: 'Calls that ring', text: 'You now hear a tone while the other phone rings, and a ringtone when someone calls you. One tap starts one call, and missed calls from the same person show as a single notification.' },
+  { key: 'tidy', colors: ['#f6ee5c', '#e3c400'], icon: 'sparkle', chip: 'Smoother', title: 'Faster to open, easier to trust', text: 'Home shows its layout while it loads. The notifications page, the message box and your service list are fixed, and your profile only counts what is really yours.', dark: true },
   { key: 'steady', colors: ['#3d5af1', '#1b2a9b'], icon: 'shield', chip: 'Reliability', title: 'Steadier everywhere', text: 'Pull down to refresh. If your connection drops, bolo keeps what you had on screen and messages wait with “Tap to retry”. Sign-up, log-in and password reset are smoother too.' },
   { key: 'honest', colors: ['#2fbf7a', '#0f6e45'], icon: 'eyeoff', chip: 'Privacy', title: 'You choose who finds you', text: 'Hide your profile from search in Settings → Privacy & security, review the people you blocked, and write to the bolo team from Help.', cta: 'Open settings', onCta: () => router.push('/settings' as any) },
   { key: 'push', colors: ['#f6ee5c', '#e3c400'], icon: 'bell', chip: 'Notifications', title: 'Never miss a message', text: 'New messages, offers, booking updates and calls now pop up on your phone, even when bolo is closed. Tap one to go straight there. Choose what you get in Settings → Notifications.', cta: 'Notification settings', onCta: () => openNotifSettings(), dark: true },

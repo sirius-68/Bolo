@@ -1,4 +1,5 @@
 import React, { memo, ReactNode, useEffect, useRef, useState } from 'react';
+import { KeyAvoid } from './keyboard';
 import {
   ActivityIndicator,
   Animated,
@@ -12,7 +13,7 @@ import {
   TextStyle,
   View,
   ViewStyle,
-  KeyboardAvoidingView, Platform,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
@@ -787,8 +788,23 @@ export function CoTag() {
 }
 
 /** Connection state, set by the data loader: the first load is running / the last refresh couldn't reach bolo. */
-export const net = { loading: false, offline: false };
+/** loading: the very first load of an account. offline: the last load failed.
+    opening: the app has just been opened and its first refresh hasn't finished (home shows its loading layout). */
+export const net = { loading: false, offline: false, opening: true };
 
+/** One broken item must never take the whole screen down: it is left out, and the rest shows. */
+export class Quiet extends React.Component<{ children: ReactNode }, { bad: boolean }> {
+  state = { bad: false };
+  static getDerivedStateFromError() {
+    return { bad: true };
+  }
+  componentDidCatch(e: unknown) {
+    console.warn('item left out', e);
+  }
+  render() {
+    return this.state.bad ? null : this.props.children;
+  }
+}
 export function Empty({ title, text, children, style }: { title: string; text?: string; children?: ReactNode; style?: any }) {
   // While the very first load is running, "nothing here" would be a lie: show that it's loading.
   if (net.loading)
@@ -983,7 +999,7 @@ export function Page({
   const ins = useSafeAreaInsets();
   const inner = { paddingHorizontal: pad ? 20 : 0, paddingBottom: bottom + ins.bottom };
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'android' ? 'padding' : undefined} style={[{ flex: 1, backgroundColor: bg, paddingTop: ins.top }, style]}>
+    <KeyAvoid style={[{ flex: 1, backgroundColor: bg, paddingTop: ins.top }, style]}>
       {header ? <View style={{ paddingHorizontal: pad ? 20 : 0 }}>{header}</View> : null}
       {scroll ? (
         <ScrollView
@@ -999,7 +1015,7 @@ export function Page({
       ) : (
         <View style={[{ flex: 1 }, inner, contentStyle]}>{children}</View>
       )}
-    </KeyboardAvoidingView>
+    </KeyAvoid>
   );
 }
 

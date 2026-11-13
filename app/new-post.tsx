@@ -55,7 +55,7 @@ export default function NewPost() {
           </View>
         )}
         <Field label="Caption">
-          <Input multiline value={text} onChangeText={setText} maxLength={300} placeholder={w ? 'e.g. Fixed a leaking kitchen faucet today, 40 minutes, no mess.' : 'e.g. We’re hiring 3 sales reps. Apply on bolo!'} />
+          <Input testID="post-text" multiline value={text} onChangeText={setText} maxLength={300} placeholder={w ? 'e.g. Fixed a leaking kitchen faucet today, 40 minutes, no mess.' : 'e.g. We’re hiring 3 sales reps. Apply on bolo!'} />
         </Field>
         <View>
           <Label>Tags</Label>
@@ -71,6 +71,7 @@ export default function NewPost() {
           </Field>
         ) : null}
         <Btn
+          testID="post-submit"
           variant="yellow"
           title="Post"
           disabled={!ok}
