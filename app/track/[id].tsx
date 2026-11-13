@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -69,6 +69,17 @@ export default function Track() {
   const ins = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const b = bk(id);
+  // one step at a time: the button shows it's working, and a second tap can't send the step twice
+  const [busy, setBusy] = useState(false);
+  const run = async (fn: () => Promise<any>) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await fn();
+    } finally {
+      setBusy(false);
+    }
+  };
   // opened from a notification before the booking was loaded
   useEffect(() => {
     if (id && !bk(id)) void refreshBooking(id);
@@ -114,14 +125,9 @@ export default function Track() {
   let act: React.ReactNode = null;
   if (W)
     act = {
-      booked: <Btn variant="yellow" icon="nav" title="Start trip" onPress={() => wStart(b.id)} testID="tk-start" />,
-      onway: (
-        <>
-          <Note icon="lock">Ask {f} for their 4-digit code when you arrive.</Note>
-          <Btn variant="yellow" icon="flag" title="I’ve arrived, start job" onPress={() => wArrive(b.id)} />
-        </>
-      ),
-      working: <Btn variant="yellow" icon="checkc" title="Mark job as done" onPress={() => wDone(b.id)} />,
+      booked: <Btn variant="yellow" icon="nav" title="Start trip" loading={busy} onPress={() => run(() => wStart(b.id))} testID="tk-start" />,
+      onway: <Btn variant="yellow" icon="flag" title="I’ve arrived, start job" loading={busy} onPress={() => run(() => wArrive(b.id))} />,
+      working: <Btn variant="yellow" icon="checkc" title="Mark job as done" loading={busy} onPress={() => run(() => wDone(b.id))} />,
       done: <Btn disabled icon="timer" title={`Waiting for ${f} to confirm…`} />,
       confirmed: (
         <>

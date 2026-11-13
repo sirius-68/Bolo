@@ -41,7 +41,13 @@ export async function startSharing(b: Booking, resume = false): Promise<number |
       if (!resume) toast('Location is off: the client won’t see you on the map. You can turn it on in your phone settings.');
       return null;
     }
-    const first = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    // a GPS fix can take very long indoors: wait up to 10 seconds, then use the last known position
+    const first =
+      (await Promise.race([Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }), new Promise<null>((r) => setTimeout(() => r(null), 10000))]).catch(() => null)) ||
+      (await Location.getLastKnownPositionAsync().catch(() => null));
+    if (!first) {
+      if (!resume) toast('Couldn’t get your location yet. The trip starts and the map follows when GPS is ready.');
+    }
     stopSharing();
     current = b.id;
     last = null;
@@ -53,9 +59,9 @@ export async function startSharing(b: Booking, resume = false): Promise<number |
     // the first position goes out as soon as the booking is "on the way" on the server
     setTimeout(() => {
       const live = db.BOOKINGS.find((x) => x.id === b.id);
-      if (live) void push(live, first, true);
+      if (live && first) void push(live, first, true);
     }, resume ? 0 : 1200);
-    return etaMin(b, [first.coords.longitude, first.coords.latitude]);
+    return first ? etaMin(b, [first.coords.longitude, first.coords.latitude]) : null;
   } catch {
     if (!resume) toast('Couldn’t get your location. The trip starts without the map.');
     return null;
