@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState } from 'react-native';
 import { db, makeDb, setDb, DB } from '../data/db';
 import { subscribe } from './live';
 
@@ -29,7 +30,9 @@ export async function bootGuard(): Promise<boolean> {
   try {
     const n = Number((await AsyncStorage.getItem(BOOT)) || 0);
     await AsyncStorage.setItem(BOOT, String(n + 1));
-    setTimeout(() => void AsyncStorage.setItem(BOOT, '0').catch(() => {}), 12000);
+    // "survived" = still running after 12 seconds, or put in the background by the person (a crash does neither)
+    setTimeout(bootOk, 12000);
+    AppState.addEventListener('change', (st) => st !== 'active' && bootOk());
     if (n >= 2) {
       await AsyncStorage.removeItem(KEY);
       await AsyncStorage.setItem(BOOT, '0');
@@ -38,8 +41,10 @@ export async function bootGuard(): Promise<boolean> {
   } catch {}
   return false;
 }
-/** The app is running fine (called when a crash screen is dismissed successfully or on normal use). */
-export const bootOk = () => void AsyncStorage.setItem(BOOT, '0').catch(() => {});
+/** The app is running fine. */
+export function bootOk() {
+  void AsyncStorage.setItem(BOOT, '0').catch(() => {});
+}
 
 /** Load the saved model (if any). Called once before the first screen renders. */
 export async function restore(): Promise<boolean> {
