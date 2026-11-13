@@ -142,8 +142,9 @@ export function startServer() {
   if (!db.uid) return;
   startRealtime();
   void require('./push').registerPush();
-  // fill in the city: quietly when location is already allowed; with the phone's question only when there is no city yet
-  void require('./here').locate(!db.user.city);
+  // fill in the city quietly when location is already allowed. The phone's permission question is never raised here:
+  // it would cover whatever opens at start (What's new, a call). It is asked during sign-up, on the map, and from "Use my current location".
+  void require('./here').locate(false);
   void loadAll(true).then(() => {
     const { resumeSims } = require('./work');
     resumeSims();
