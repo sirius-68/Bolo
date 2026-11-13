@@ -170,6 +170,11 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
+      - name: Picture storage before this deploy (are photos open to everyone?)
+        continue-on-error: true
+        run: |
+          curl -sS -X POST "https://api.supabase.com/v1/projects/$REF/database/query" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
+            -d '{"query":"select id, public, (select count(*) from storage.objects o where o.bucket_id = b.id) as files from storage.buckets b order by id"}' | jq -c '.[]? // .' || true
       - name: Apply migrations and functions
         run: |
           # CLI 3: the database password comes from SUPABASE_DB_PASSWORD; --remote targets the linked project
