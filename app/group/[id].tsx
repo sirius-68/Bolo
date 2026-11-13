@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import { shareTail } from '../../src/logic/links';
 import { LayoutAnimation, Modal, Platform, Pressable, ScrollView, Share, UIManager, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import { db } from '../../src/data/db';
-import { Avatar, Empty, Pict, Txt, tap } from '../../src/ui/kit';
+import { Avatar, Empty, Pict, Txt, tap, Missing } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
 import { P, THREADS, myPhoto } from '../../src/logic/core';
@@ -33,11 +34,12 @@ export default function GroupInfo() {
   const [big, setBig] = useState(false);
   const [tab, setTab] = useState<Tab>('Members');
   const [menu, setMenu] = useState(false);
-  if (!th || !p) return <Empty title="Group not found" />;
+  if (!th || !p) return <Missing bar="Group" title="Group not found" text="It may have been deleted, or you’re no longer a member." />;
   const owner = m ? (m.by ? m.by : m.mine ? 'me' : null) : null;
   const members = ['me', ...(th.members || []).filter((x) => x !== 'me')];
   const online = Math.max(1, Math.round(members.length * 0.38));
-  const link = `bolo.app/g/${(p.name || 'group').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24)}`;
+  // Groups are joined by being added by a member (there is no join-by-link yet): the invite brings people to bolo.
+  const invite = `Join me in “${p.name}” on bolo. Get the app, then tell me your name there and I’ll add you.\n${shareTail()}`;
   const desc = m?.desc || `${p.name} on bolo. Share updates, files and questions with everyone in the group.`;
   const rules = (m?.rules || []).map((r) => RULES[r]?.[0]).filter(Boolean);
   const toggleBig = () => {
@@ -137,20 +139,20 @@ export default function GroupInfo() {
             <Pressable
               accessibilityRole="button"
               onPress={async () => {
-                await Clipboard.setStringAsync('https://' + link);
-                toast('Invite link copied');
+                await Clipboard.setStringAsync(invite);
+                toast('Invite copied. Paste it to your friends');
               }}
               style={[S.rowB, { padding: 16 }]}
             >
               <View style={{ flex: 1 }}>
                 <Txt s={15} lines={1}>
-                  {link}
+                  Invite people to this group
                 </Txt>
                 <Txt s={12} c={C.faint} style={{ marginTop: 2 }}>
-                  Invite link · tap to copy
+                  Tap to copy an invite · add them under Members once they’ve joined bolo
                 </Txt>
               </View>
-              <Pressable accessibilityLabel="Share invite link" hitSlop={10} onPress={() => Share.share({ message: `Join “${p.name}” on bolo: https://${link}` })} style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
+              <Pressable accessibilityLabel="Share invite link" hitSlop={10} onPress={() => Share.share({ message: invite }).catch(() => {})} style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
                 <Icon name="share" size={18} color={C.text} />
               </Pressable>
             </Pressable>
@@ -258,7 +260,7 @@ export default function GroupInfo() {
             {(
               [
                 ['pushpin', th.pinned ? 'Unpin chat' : 'Pin chat', () => ((th.pinned = th.pinned ? 0 : 1), bump(), toast(th.pinned ? 'Chat pinned' : 'Chat unpinned'))],
-                ['share', 'Share group', () => Share.share({ message: `Join “${p.name}” on bolo: https://${link}` })],
+                ['share', 'Share group', () => Share.share({ message: invite }).catch(() => {})],
                 ...(rules.length ? ([['shield', 'Group rules', () => openRules(id, true)]] as [string, string, () => void][]) : []),
                 ['logout', 'Leave group', leave],
               ] as [string, string, () => void][]

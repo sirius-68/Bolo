@@ -8,8 +8,9 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { db, Booking, BizSample, Course, Mentorship, Msg, MyBiz, Notif, Opp, Person, Post, Review, Thread } from '../data/db';
 import type { Expert, Service as ExService } from '../data/experts';
-import { logoPic } from '../ui/kit';
+import { logoPic, net } from '../ui/kit';
 import { bump } from './live';
+import { fill } from './persist';
 
 /* ================================================================ ids and small helpers */
 export const ME = () => db.uid || '';
@@ -97,14 +98,15 @@ const pic = (url?: string | null) => (url ? 'uri:' + url : null);
 const PROFILE_COLS = 'id,name,avatar_url,city,bio,role,biz_only,intents,skills,skill_list,level,years,work_status,hire_status,area,experience,education,languages,services,verified,availability,created_at,lng,lat,followers,following,jobs_done,hires,rating,reviews';
 export function personFrom(r: any): Person {
   const skills: string[] = r.skills || [];
-  const client = r.role === 'client' && !skills.length;
+  // someone who lists no skills is here to hire (or just looking): no "Hire" button, no years of experience
+  const client = !skills.length;
   const name = r.name || 'bolo member';
   const photo = pic(r.avatar_url) || facePic(name, r.id);
   return {
     name,
-    role: skills[0] || (client ? 'Client' : 'Member'),
+    role: skills[0] || 'Member',
     tag: skills.slice(1, 3).join(' · ') || undefined,
-    years: r.years || 0,
+    years: skills.length ? r.years || 0 : 0,
     rate: Number(r.rating) || 0,
     dist: kmFromMe(r.lng, r.lat),
     area: r.area?.home || r.city || '',
@@ -133,12 +135,20 @@ function bizFrom(b: any): { p: Person; s: BizSample } {
   return { p, s };
 }
 
+/** A read that failed (no connection, a server hiccup) must never be mistaken for "nothing there":
+    it throws, so the lists on screen stay as they were instead of going empty. */
+function need<T extends { error: any }>(r: T): T {
+  if (r.error) throw r.error;
+  return r;
+}
+
 /** Make sure these people (server ids) are in the local model. */
 export async function ensurePeople(ids: (string | null | undefined)[]) {
   const want = [...new Set(ids.filter((x): x is string => !!x && x !== db.uid && !db.P[x]))];
   if (!want.length) return;
   for (let i = 0; i < want.length; i += 100) {
-    const { data } = await supabase.from('profile_cards').select(PROFILE_COLS).in('id', want.slice(i, i + 100));
+    const { data, error } = await supabase.from('profile_cards').select(PROFILE_COLS).in('id', want.slice(i, i + 100));
+    if (error) return; // couldn't ask: leave them unknown (the placeholder shows) and try again later
     (data || []).forEach((r: any) => {
       db.P[r.id] = personFrom(r);
       PROFILE_RAW[r.id] = r;
@@ -146,7 +156,7 @@ export async function ensurePeople(ids: (string | null | undefined)[]) {
   }
   // accounts that are gone: show a neutral placeholder rather than crash
   want.forEach((id) => {
-    if (!db.P[id]) db.P[id] = { name: 'Deleted account', role: 'Member', years: 0, rate: 0, dist: '', area: '', photo: facePic('?', id), jobs: 0, reviews: '0', followers: 0, uid: id } as Person;
+    if (!db.P[id]) db.P[id] = gone(id);
   });
 }
 /** Make sure these business pages (server ids) are in the local model. */
@@ -164,21 +174,35 @@ export async function ensureBiz(bids: (string | null | undefined)[]) {
 export async function loadPerson(id: string) {
   if (id === 'me' || id.startsWith('g_')) return;
   if (id.startsWith('b_')) {
-    delete db.P[id];
-    await ensureBiz([id.slice(2)]);
+    const bid = id.slice(2);
+    if (!isUuid(bid)) db.P[id] = gone(id);
+    else if (!myBizOf(bid)) {
+      const { data, error } = await supabase.from('businesses').select('id,owner_id,name,sector,size,city,area,about,logo_url,color,verified,web,email,phone').eq('id', bid).maybeSingle();
+      if (data) {
+        const { p, s } = bizFrom(data);
+        db.P[id] = p;
+        db.BIZ_SAMPLE[id] = s;
+      } else if (!error) db.P[id] = gone(id);
+    }
   } else {
-    const { data } = await supabase.from('profile_cards').select(PROFILE_COLS).eq('id', id).maybeSingle();
+    const real = isUuid(id);
+    const { data, error } = real ? await supabase.from('profile_cards').select(PROFILE_COLS).eq('id', id).maybeSingle() : { data: null, error: null };
     if (data) {
       db.P[id] = personFrom(data);
       PROFILE_RAW[id] = data;
-    }
+    } else if (!error) db.P[id] = gone(id); // asked and there is no such account
   }
-  await loadReviewsOf(id);
+  if (db.P[id] && db.P[id].name !== GONE) await loadReviewsOf(id);
   bump();
 }
+export const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s || '');
+/** Marker for an account that no longer exists (or never did): lists skip it, its profile says so. */
+export const GONE = 'Deleted account';
+const gone = (id: string): Person => ({ name: GONE, role: 'Member', years: 0, rate: 0, dist: '', area: '', photo: facePic('?', id), jobs: 0, reviews: '0', followers: 0, uid: id }) as Person;
+export const isGone = (id: string) => db.P[id]?.name === GONE;
 /** People to browse and hire: the newest members (nearest first in the lists). */
 async function loadPeople() {
-  const { data } = await supabase.from('profile_cards').select(PROFILE_COLS).neq('id', ME()).order('created_at', { ascending: false }).limit(400);
+  const { data } = need(await supabase.from('profile_cards').select(PROFILE_COLS).neq('id', ME()).eq('visible', true).order('created_at', { ascending: false }).limit(400));
   (data || []).forEach((r: any) => {
     db.P[r.id] = personFrom(r);
     PROFILE_RAW[r.id] = r;
@@ -188,7 +212,7 @@ async function loadPeople() {
 export async function searchPeople(q: string) {
   const term = q.replace(/[%,()]/g, ' ').trim();
   if (term.length < 2) return;
-  const { data } = await supabase.from('profile_cards').select(PROFILE_COLS).neq('id', ME()).or(`name.ilike.%${term}%,city.ilike.%${term}%`).limit(30);
+  const { data } = await supabase.from('profile_cards').select(PROFILE_COLS).neq('id', ME()).eq('visible', true).or(`name.ilike.%${term}%,city.ilike.%${term}%`).limit(30);
   (data || []).forEach((r: any) => {
     db.P[r.id] = personFrom(r);
     PROFILE_RAW[r.id] = r;
@@ -255,8 +279,8 @@ export async function loadPost(id: string) {
 }
 async function loadPosts() {
   const [recent, mine] = await Promise.all([
-    supabase.from('post_feed').select(POST_COLS).neq('status', 'closed').order('created_at', { ascending: false }).limit(300),
-    supabase.from('post_feed').select(POST_COLS).eq('author_id', ME()).order('created_at', { ascending: false }).limit(200),
+    supabase.from('post_feed').select(POST_COLS).neq('status', 'closed').order('created_at', { ascending: false }).limit(300).then(need),
+    supabase.from('post_feed').select(POST_COLS).eq('author_id', ME()).order('created_at', { ascending: false }).limit(200).then(need),
   ]);
   const rows = [...(mine.data || []), ...(recent.data || [])].filter((r: any, i, a) => a.findIndex((x: any) => x.id === r.id) === i);
   await Promise.all([ensurePeople(rows.map((r: any) => r.author_id)), ensureBiz(rows.map((r: any) => r.business_id))]);
@@ -269,8 +293,8 @@ const blockedIds = () => BLOCKED;
 async function loadApplications() {
   const myPostIds = db.POSTS.filter((p) => p.mine && p.kind === 'request').map((p) => p.id);
   const [mineQ, onMine] = await Promise.all([
-    supabase.from('applications').select('id,post_id,price,when_text,msg,cv,stage,created_at').eq('applicant_id', ME()),
-    myPostIds.length ? supabase.from('applications').select('id,post_id,applicant_id,price,when_text,msg,cv,stage,created_at').in('post_id', myPostIds).neq('stage', 'withdrawn').order('created_at') : Promise.resolve({ data: [] as any[] }),
+    supabase.from('applications').select('id,post_id,price,when_text,msg,cv,stage,created_at').eq('applicant_id', ME()).then(need),
+    myPostIds.length ? supabase.from('applications').select('id,post_id,applicant_id,price,when_text,msg,cv,stage,created_at').in('post_id', myPostIds).neq('stage', 'withdrawn').order('created_at').then(need) : Promise.resolve({ data: [] as any[] }),
   ]);
   db.myOffers = {};
   (mineQ.data || []).forEach((a: any) => {
@@ -291,7 +315,7 @@ async function loadApplications() {
   // offers the other way round need their posts loaded (e.g. an old job not in the recent feed)
   const missing = (mineQ.data || []).map((a: any) => a.post_id).filter((id: string) => !db.POSTS.some((p) => p.id === id));
   if (missing.length) {
-    const { data } = await supabase.from('post_feed').select(POST_COLS).in('id', missing);
+    const { data } = need(await supabase.from('post_feed').select(POST_COLS).in('id', missing));
     await Promise.all([ensurePeople((data || []).map((r: any) => r.author_id)), ensureBiz((data || []).map((r: any) => r.business_id))]);
     (data || []).forEach((r: any) => db.POSTS.push(postFrom(r)));
   }
@@ -315,10 +339,10 @@ export function stageText(stage: string, app?: boolean) {
 export const SAVE_KIND: Record<string, string> = { savedJobs: 'job', saved: 'person', savedPosts: 'post', savedOpps: 'opp', savedCourses: 'course', savedCos: 'company', savedMentors: 'mentor' };
 async function loadMine() {
   const [likes, saves, follows, blocks] = await Promise.all([
-    supabase.from('post_likes').select('post_id').eq('user_id', ME()),
-    supabase.from('saves').select('kind,target_id').eq('user_id', ME()),
-    supabase.from('follows').select('followee_id').eq('follower_id', ME()),
-    supabase.from('blocks').select('blocked_id').eq('blocker_id', ME()),
+    supabase.from('post_likes').select('post_id').eq('user_id', ME()).then(need),
+    supabase.from('saves').select('kind,target_id').eq('user_id', ME()).then(need),
+    supabase.from('follows').select('followee_id').eq('follower_id', ME()).then(need),
+    supabase.from('blocks').select('blocked_id').eq('blocker_id', ME()).then(need),
   ]);
   db.liked = (likes.data || []).map((x: any) => x.post_id);
   Object.entries(SAVE_KIND).forEach(([list, kind]) => ((db as any)[list] = (saves.data || []).filter((x: any) => x.kind === kind).map((x: any) => L(x.target_id))));
@@ -329,13 +353,15 @@ async function loadMine() {
   (blocks.data || []).forEach((x: any) => BLOCKED.add(x.blocked_id));
 }
 export const isBlocked = (id: string) => BLOCKED.has(R(id));
+/** The people I blocked (their ids). */
+export const blockedList = () => [...BLOCKED];
 /** My public numbers (followers, jobs done, rating) as others see them. */
 const MINE: { followers: number; following: number; jobs_done: number; hires: number; rating: number; reviews: number } = { followers: 0, following: 0, jobs_done: 0, hires: 0, rating: 0, reviews: 0 };
 export const myStats = () => MINE;
 async function loadMyStats() {
-  const { data } = await supabase.from('profile_stats').select('*').eq('id', ME()).maybeSingle();
+  const { data } = need(await supabase.from('profile_stats').select('*').eq('id', ME()).maybeSingle());
   if (data) Object.assign(MINE, { ...data, rating: Number(data.rating) || 0 });
-  const { data: p } = await supabase.from('profiles').select('verified').eq('id', ME()).maybeSingle();
+  const { data: p } = need(await supabase.from('profiles').select('verified').eq('id', ME()).maybeSingle());
   if (p) db.user.verified = !!p.verified;
 }
 /** People who follow me (app ids). */
@@ -375,7 +401,7 @@ function msgFrom(m: any, conv: { kind: string }, others: any[]): Msg {
   const d = m.data || {};
   const base: Msg = { id: m.id, f: mine ? 'me' : 'them', at, ts0: +new Date(m.created_at) };
   if (m.kind === 'sys' || !m.sender_id) return { ...base, sys: m.body, f: undefined, call: d.call ? 1 : undefined, missed: d.call ? !!d.missed : undefined };
-  if (mine) base.st = others.some((o) => +new Date(o.last_read_at) >= +new Date(m.created_at)) ? 'read' : 'sent';
+  if (mine) base.st = m._st || (others.some((o) => +new Date(o.last_read_at) >= +new Date(m.created_at)) ? 'read' : 'sent');
   if (conv.kind === 'group' && !mine) base.by = L(m.sender_id);
   const who = conv.kind === 'group' && !mine ? (db.P[m.sender_id]?.name || 'Member').split(' ')[0] + ': ' : '';
   switch (m.kind) {
@@ -468,7 +494,7 @@ function sortOrders() {
   db.ORDER_C.sort((a, b) => (db.THREADS_C[b]?.pinned || 0) - (db.THREADS_C[a]?.pinned || 0) || t('C', b) - t('C', a));
 }
 async function loadChats() {
-  const { data: convs } = await supabase.from('conversations').select('*').order('last_message_at', { ascending: false }).limit(200);
+  const { data: convs } = need(await supabase.from('conversations').select('*').order('last_message_at', { ascending: false }).limit(200));
   const ids = (convs || []).map((c: any) => c.id);
   if (!ids.length) {
     db.THREADS_W = Object.fromEntries(Object.entries(db.THREADS_W).filter(([, th]) => !th.cid));
@@ -479,16 +505,22 @@ async function loadChats() {
     return;
   }
   const [mem, msgs] = await Promise.all([
-    supabase.from('conversation_members').select('conversation_id,user_id,role,last_read_at,muted').in('conversation_id', ids),
-    supabase.from('messages').select('id,conversation_id,sender_id,kind,body,data,created_at').in('conversation_id', ids).order('created_at', { ascending: false }).limit(2000),
+    supabase.from('conversation_members').select('conversation_id,user_id,role,last_read_at,muted').in('conversation_id', ids).then(need),
+    supabase.from('messages').select('id,conversation_id,sender_id,kind,body,data,created_at').in('conversation_id', ids).order('created_at', { ascending: false }).limit(2000).then(need),
   ]);
   await signFiles(msgs.data || []);
   Object.keys(CONVS).forEach((k) => delete CONVS[k]);
   (convs || []).forEach((c: any) => (CONVS[c.id] = c));
   Object.keys(MEMBERS).forEach((k) => delete MEMBERS[k]);
   (mem.data || []).forEach((m: any) => (MEMBERS[m.conversation_id] = [...(MEMBERS[m.conversation_id] || []), m]));
+  // messages still being sent, or marked "Not sent", only exist on this phone: keep them through the reload
+  const unsent = Object.values(RAW_MSGS).flat().filter((m: any) => m._st);
   Object.keys(RAW_MSGS).forEach((k) => delete RAW_MSGS[k]);
   (msgs.data || []).reverse().forEach((m: any) => (RAW_MSGS[m.conversation_id] = [...(RAW_MSGS[m.conversation_id] || []), m]));
+  unsent.forEach((m: any) => {
+    const L0 = (RAW_MSGS[m.conversation_id] = RAW_MSGS[m.conversation_id] || []);
+    if (!L0.some((x) => x.id === m.id)) L0.push(m);
+  });
   await Promise.all([ensurePeople([...(mem.data || []).map((m: any) => m.user_id)]), ensureBiz((convs || []).map((c: any) => c.business_id))]);
   // keep pins and chats just opened that have no messages yet; rebuild everything else
   const pins: Record<string, number> = {};
@@ -539,7 +571,7 @@ export async function convFor(key: string, inbox: 'W' | 'C'): Promise<string> {
 export async function sendMessage(key: string, inbox: 'W' | 'C', kind: 'text' | 'offer' | 'img' | 'file' | 'loc' | 'contact', body: string, data: Record<string, any> = {}) {
   const cid = await convFor(key, inbox);
   const id = uuid();
-  const row = { id, conversation_id: cid, sender_id: db.uid, kind, body, data, created_at: new Date().toISOString() };
+  const row: any = { id, conversation_id: cid, sender_id: db.uid, kind, body, data, created_at: new Date().toISOString(), _st: 'sending' };
   RAW_MSGS[cid] = [...(RAW_MSGS[cid] || []), row];
   if (CONVS[cid]) CONVS[cid].last_message_at = row.created_at;
   buildThread(cid);
@@ -548,13 +580,37 @@ export async function sendMessage(key: string, inbox: 'W' | 'C', kind: 'text' | 
   // signed links expire: only the file's path is stored, each phone makes its own link
   const { url: _url, ...stored } = data;
   const { error } = await supabase.from('messages').insert({ id, conversation_id: cid, kind, body, data: stored });
-  if (error) {
-    RAW_MSGS[cid] = RAW_MSGS[cid].filter((m) => m.id !== id);
+  const mineRow = (RAW_MSGS[cid] || []).find((m) => m.id === id);
+  if (error && error.code !== '23505') {
+    // A text stays in the chat marked "Not sent" so it can be retried with a tap; other kinds are taken back.
+    if (kind === 'text' && mineRow) mineRow._st = 'failed';
+    else RAW_MSGS[cid] = (RAW_MSGS[cid] || []).filter((m) => m.id !== id);
     buildThread(cid);
     bump();
+    (error as any).kept = kind === 'text';
     throw error;
   }
+  if (mineRow) delete mineRow._st;
+  buildThread(cid);
+  bump();
   return id;
+}
+/** Try again to send a message that is marked "Not sent". */
+export async function retryMessage(cid: string, id: string) {
+  const row = (RAW_MSGS[cid] || []).find((m) => m.id === id);
+  if (!row || row._st !== 'failed') return;
+  row._st = 'sending';
+  row.created_at = new Date().toISOString();
+  buildThread(cid);
+  bump();
+  const { url: _url, ...stored } = row.data || {};
+  const { error } = await supabase.from('messages').insert({ id, conversation_id: cid, kind: row.kind, body: row.body, data: stored });
+  // "already there" means the first try did reach the server
+  if (error && error.code !== '23505') row._st = 'failed';
+  else delete row._st;
+  buildThread(cid);
+  bump();
+  if (row._st) throw error;
 }
 /** Upload a photo or file from the phone into a chat; returns its storage path. */
 export async function uploadChatFile(cid: string, localUri: string, ext: string, contentType: string) {
@@ -572,11 +628,17 @@ export const membersOf = (cid: string) => MEMBERS[cid] || [];
 export const convRow = (cid: string) => CONVS[cid];
 
 let readTimer: Record<string, any> = {};
+let readMark: Record<string, string> = {};
 /** I've seen this chat: tell the server (read receipts), at most every few seconds. */
 export function markRead(cid: string) {
   const me = (MEMBERS[cid] || []).find((m) => m.user_id === db.uid);
   const now = new Date().toISOString();
   if (me) me.last_read_at = now;
+  // tell the server once per new message, not on every redraw of the chat
+  const L0 = RAW_MSGS[cid] || [];
+  const last = L0.length ? L0[L0.length - 1].id : '';
+  if (readMark[cid] === last) return;
+  readMark[cid] = last;
   if (readTimer[cid]) return;
   readTimer[cid] = setTimeout(async () => {
     delete readTimer[cid];
@@ -619,8 +681,8 @@ function bookingFrom(r: any): Booking {
 }
 async function loadBookings() {
   const [bq, rq] = await Promise.all([
-    supabase.from('booking_cards').select(BOOKING_COLS).neq('state', 'cancelled').order('created_at', { ascending: false }).limit(200),
-    supabase.from('reviews').select('booking_id').eq('reviewer_id', ME()),
+    supabase.from('booking_cards').select(BOOKING_COLS).neq('state', 'cancelled').order('created_at', { ascending: false }).limit(200).then(need),
+    supabase.from('reviews').select('booking_id').eq('reviewer_id', ME()).then(need),
   ]);
   REVIEWED.clear();
   (rq.data || []).forEach((r: any) => r.booking_id && REVIEWED.add(r.booking_id));
@@ -630,7 +692,7 @@ async function loadBookings() {
   db.hired = [...new Set(db.BOOKINGS.filter((b) => b.client === 'me' && b.state !== 'confirmed').map((b) => b.worker))];
   const onway = rows.filter((r: any) => r.state === 'onway').map((r: any) => r.id);
   if (onway.length) {
-    const { data } = await supabase.from('booking_locations').select('*').in('booking_id', onway);
+    const { data } = need(await supabase.from('booking_locations').select('*').in('booking_id', onway));
     (data || []).forEach(applyLocation);
   }
 }
@@ -710,7 +772,7 @@ function placeNotif(n: any) {
   N.unshift(notifFrom(n));
 }
 async function loadNotifs() {
-  const { data } = await supabase.from('notifications').select('*').eq('recipient_id', ME()).order('created_at', { ascending: false }).limit(200);
+  const { data } = need(await supabase.from('notifications').select('*').eq('recipient_id', ME()).order('created_at', { ascending: false }).limit(200));
   await Promise.all([ensurePeople((data || []).map((n: any) => n.actor_id))]);
   db.NOTIFS_W = [];
   db.NOTIFS_C = [];
@@ -753,14 +815,14 @@ function courseFrom(r: any): Course {
   } as Course;
 }
 async function loadCourses() {
-  const { data } = await supabase.from('course_listings').select('*').order('created_at', { ascending: false }).limit(500);
+  const { data } = need(await supabase.from('course_listings').select('*').order('created_at', { ascending: false }).limit(500));
   db.COURSES = (data || []).map(courseFrom).sort((a, b) => +!!b.mine - +!!a.mine);
 }
 async function loadOpps() {
   const [oq, sq, mineApps] = await Promise.all([
-    supabase.from('opportunities').select('*').eq('status', 'open').order('created_at', { ascending: false }).limit(200),
-    supabase.from('opportunity_stats').select('*'),
-    supabase.from('opportunity_applications').select('opportunity_id,user_id,status'),
+    supabase.from('opportunities').select('*').eq('status', 'open').order('created_at', { ascending: false }).limit(200).then(need),
+    supabase.from('opportunity_stats').select('*').then(need),
+    supabase.from('opportunity_applications').select('opportunity_id,user_id,status').then(need),
   ]);
   const joined: Record<string, number> = {};
   (sq.data || []).forEach((s: any) => (joined[s.id] = s.joined));
@@ -797,9 +859,9 @@ async function loadOpps() {
 }
 async function loadMentorships() {
   const [mq, sq, mem] = await Promise.all([
-    supabase.from('mentorships').select('*').order('created_at', { ascending: false }).limit(200),
-    supabase.from('mentorship_stats').select('*'),
-    supabase.from('mentorship_members').select('mentorship_id,user_id,status'),
+    supabase.from('mentorships').select('*').order('created_at', { ascending: false }).limit(200).then(need),
+    supabase.from('mentorship_stats').select('*').then(need),
+    supabase.from('mentorship_members').select('mentorship_id,user_id,status').then(need),
   ]);
   const joined: Record<string, number> = {};
   (sq.data || []).forEach((s: any) => (joined[s.id] = s.joined));
@@ -859,40 +921,74 @@ export function expertFrom(e: any, p?: any): Expert {
   };
 }
 async function loadExperts() {
-  const { data } = await supabase.from('experts').select('*').eq('status', 'approved').limit(200);
+  const { data } = need(await supabase.from('experts').select('*').eq('status', 'approved').limit(200));
   const ids = (data || []).map((e: any) => e.user_id);
-  const { data: cards } = ids.length ? await supabase.from('profile_cards').select(PROFILE_COLS).in('id', ids) : { data: [] as any[] };
+  const { data: cards } = ids.length ? need(await supabase.from('profile_cards').select(PROFILE_COLS).in('id', ids)) : { data: [] as any[] };
   (cards || []).forEach((r: any) => r.id !== db.uid && ((db.P[r.id] = personFrom(r)), (PROFILE_RAW[r.id] = r)));
   db.EXPERTS = (data || []).map((e: any) => expertFrom(e, (cards || []).find((c: any) => c.id === e.user_id)));
   // my own application
-  const { data: mine } = await supabase.from('experts').select('*').eq('user_id', ME()).maybeSingle();
+  const { data: mine } = need(await supabase.from('experts').select('*').eq('user_id', ME()).maybeSingle());
   if (mine) {
     const d = mine.data || {};
-    db.EXPERT = { ...db.EXPERT, ...d, status: mine.status === 'submitted' ? 'submitted' : mine.status, headline: mine.headline || d.headline || '' };
+    db.EXPERT = { ...fill(db.EXPERT, d), status: mine.status === 'submitted' ? 'submitted' : mine.status, headline: mine.headline || d.headline || '' };
   }
 }
 
 /* ================================================================ load everything, keep it live */
 let loading: Promise<void> | null = null;
+let loadingFor = '';
+let loadedAt = 0;
+/** Signing out: forget everything kept in memory about the account, so nothing carries over to the next one. */
+export function resetSession() {
+  BLOCKED.clear();
+  REVIEWED.clear();
+  Object.assign(MINE, { followers: 0, following: 0, jobs_done: 0, hires: 0, rating: 0, reviews: 0 });
+  [RAW_MSGS, CONVS, MEMBERS, NOTIF_RAW, PROFILE_RAW].forEach((m) => Object.keys(m).forEach((k) => delete (m as any)[k]));
+  Object.values(readTimer).forEach((t) => clearTimeout(t));
+  readTimer = {};
+  readMark = {};
+  loadingFor = '';
+  loadedAt = 0;
+  net.offline = false;
+  net.loading = false;
+}
 /** Load (or refresh) everything for the signed-in account. Safe to call often. */
-export function loadAll(): Promise<void> {
+export function loadAll(force = false): Promise<void> {
   if (!db.uid) return Promise.resolve();
-  if (loading) return loading;
-  loading = (async () => {
+  const me = db.uid;
+  if (loading && loadingFor === me) return loading;
+  // coming back to the app again and again doesn't reload everything each time: live updates cover the gap
+  if (!force && loadingFor === me && !net.offline && Date.now() - loadedAt < 45000) return Promise.resolve();
+  // a load still running for another account (just signed out) finishes first, then this one starts
+  const before = loading;
+  loadingFor = me;
+  let mine: Promise<void> | null = null;
+  mine = (async () => {
+    if (before) await before.catch(() => {});
+    if (db.uid !== me) return;
+    const failed: any[] = [];
+    // each part loads on its own: one that fails keeps what it had, and doesn't stop the others
+    const run = async (fns: (() => Promise<any>)[]) => {
+      const rs = await Promise.allSettled(fns.map((f) => f()));
+      rs.forEach((r) => r.status === 'rejected' && failed.push(r.reason));
+    };
+    net.loading = !db.syncedAt;
     try {
-      await loadMine();
-      await Promise.all([loadPeople(), loadPosts(), loadCourses(), loadMyStats()]);
-      await Promise.all([loadApplications(), loadMentorships(), loadOpps(), loadExperts()]);
-      await loadChats();
-      await Promise.all([loadBookings(), loadNotifs()]);
-      db.syncedAt = Date.now();
-      bump();
-    } catch (e) {
-      console.warn('bolo: loading failed', e);
+      await run([loadMine]);
+      await run([loadPeople, loadPosts, loadCourses, loadMyStats]);
+      await run([loadApplications, loadMentorships, loadOpps, loadExperts]);
+      await run([loadChats]);
+      await run([loadBookings, loadNotifs]);
+      if (!failed.length) db.syncedAt = loadedAt = Date.now();
+      else console.warn('bolo: loading failed', failed.length, String(failed[0]?.message || failed[0]));
+      net.offline = failed.length > 0;
     } finally {
-      loading = null;
+      net.loading = false;
+      if (loading === mine) loading = null;
+      bump();
     }
   })();
+  loading = mine;
   return loading;
 }
 export const refreshPosts = async () => (await loadPosts(), await loadApplications(), bump());
@@ -942,7 +1038,7 @@ export function startRealtime() {
       const L0 = RAW_MSGS[cid] || [];
       const i = L0.findIndex((x) => x.id === m.id);
       if (m.kind === 'img' || m.kind === 'file') await signFiles([m]);
-      if (i >= 0) L0[i] = { ...L0[i], ...m, data: m.kind === 'deleted' ? {} : { ...(L0[i].data || {}), ...(m.data || {}) } };
+      if (i >= 0) L0[i] = { ...L0[i], ...m, _st: undefined, data: m.kind === 'deleted' ? {} : { ...(L0[i].data || {}), ...(m.data || {}) } };
       else RAW_MSGS[cid] = [...L0, m];
       if (e.eventType === 'INSERT') CONVS[cid].last_message_at = m.created_at;
       if (m.sender_id && m.sender_id !== me) await ensurePeople([m.sender_id]);
@@ -1000,7 +1096,7 @@ export function startRealtime() {
         // anything that happened while we were disconnected
         if (dropped) {
           dropped = false;
-          void loadAll();
+          void loadAll(true);
         }
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') restartSoon();
     });

@@ -33,8 +33,9 @@ export function MapScreen() {
   const [sel, setSel] = useState<string | null>(null);
   const [closed, setClosed] = useState(false);
   const ql = q.trim().toLowerCase();
-  const jobs = openJobs().filter((p) => matchJob(p, ql, cat));
-  const people = WORKERS().filter((id) => matchPerson(id, ql, cat));
+  // the map only shows what has a real place: jobs posted with a location, people who share their area
+  const jobs = openJobs().filter((p) => !!p.coord && matchJob(p, ql, cat));
+  const people = WORKERS().filter((id) => !!P(id).coord && matchPerson(id, ql, cat));
   const nf = fCount();
   const n = mode === 'jobs' ? jobs.length : people.length;
   const count = mode === 'jobs' ? `${n} ${n === 1 ? 'job' : 'jobs'} near you` : `${n} ${n === 1 ? 'person' : 'people'} near you`;

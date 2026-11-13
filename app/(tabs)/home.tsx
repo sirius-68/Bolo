@@ -11,7 +11,7 @@ import { C, S } from '../../src/ui/theme';
 import { P, WORKERS, bizPct, budgetNum, curBiz, greet, bizName, isW, myOpps, myPhoto, openJobs, xaf, matchPerson, matchJob, nowT } from '../../src/logic/core';
 import { useLive, bump } from '../../src/logic/live';
 import { openBrowse, openProfile } from '../../src/logic/nav';
-import { CatRail, LiveCards, Rail, Sec, TabHeader } from '../../src/components/common';
+import { CatRail, LiveCards, Rail, Sec, TabHeader, Pull } from '../../src/components/common';
 import { JobCard, OppCard, RecCard, WorkerCard } from '../../src/components/cards';
 import { onScrollFab } from '../../src/components/NavBar';
 import { openJob } from '../../src/sheets/work';
@@ -50,7 +50,7 @@ function BizHome() {
   const st = ST_C.find((s) => s[0] === db.PR.cst) || ST_C[0];
   const todo: [string, string, () => void][] = [
     ...(b.verified !== 'verified'
-      ? ([[b.verified === 'review' ? 'timer' : 'verified', b.verified === 'review' ? 'Business verification in progress' : 'Verify your business to unlock contracts', () => (b.verified === 'review' ? toast('Usually takes a few minutes') : openBizSetup('edit', 3))]] as [string, string, () => void][])
+      ? ([[b.verified === 'review' ? 'timer' : 'verified', b.verified === 'review' ? 'Business verification in progress' : 'Verify your business to unlock contracts', () => (b.verified === 'review' ? toast('A person at bolo is checking your documents') : openBizSetup('edit', 3))]] as [string, string, () => void][])
       : []),
     ...vac
       .filter((po) => (po.offerList || []).some((o) => o.stage === 'applied'))
@@ -85,7 +85,7 @@ function BizHome() {
     </Pressable>
   );
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top, paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}>
+    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} refreshControl={<Pull />} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top, paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}>
       <TabHeader />
       <View style={[S.rowB, { marginTop: 12, alignItems: 'flex-end' }]}>
         <Txt s={26} w={8} style={{ flex: 1, lineHeight: 30 }}>
@@ -106,7 +106,7 @@ function BizHome() {
             ['job', 'Vacancy', () => router.push('/post-job')],
             ['cap', 'Internship', () => openOppForm('Internship')],
             ['sparkle', 'Program', () => openOppForm('Training program')],
-            ['follow', 'Recruiter', openInvite],
+            ['search', 'Find talent', () => openBrowse('people')],
           ] as [string, string, () => void][]
         ).map(([i, t, f]) => (
           <Pressable key={t} accessibilityRole="button" accessibilityLabel={`New ${t.toLowerCase()}`} onPress={() => (tap(), f())} style={({ pressed }) => ({ flex: 1, alignItems: 'center', gap: 6, paddingVertical: 12, borderRadius: 16, backgroundColor: pressed ? C.s2 : C.s1, borderWidth: 1, borderColor: C.line })}>

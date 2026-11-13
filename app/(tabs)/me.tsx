@@ -1,4 +1,5 @@
 import React from 'react';
+import { Pull } from '../../src/components/common';
 import { MONEY_LIVE } from '../../src/logic/money';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
@@ -263,7 +264,7 @@ function MeRegular() {
   if (!tabs.some((t) => t[0] === ui.meTab)) ui.meTab = 'Profile';
   const tab = ui.meTab;
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top, paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}>
+    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} refreshControl={<Pull />} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top, paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}>
       <TopRow />
       <Head
         pic={myPhoto()}
@@ -372,7 +373,7 @@ function ProfilePanel() {
             {pct === 100 ? 'Your profile is complete 🎉' : 'Complete your profile'}
           </Txt>
           <Txt s={12} c={C.muted}>
-            {pct === 100 ? 'People see you as a top, trusted profile.' : 'Complete profiles get up to 3× more job offers.'}
+            {pct === 100 ? 'People see you as a top, trusted profile.' : 'A complete profile helps people decide to hire you.'}
           </Txt>
         </View>
       </Card>
@@ -388,10 +389,10 @@ function ProfilePanel() {
           ))}
         </View>
       ) : null}
-      <H t="Skill verification" />
+      <H t="Skill quiz" />
       <Card>
         <Txt s={13} c={C.muted}>
-          Pass a short test, verified skills get a badge and rank higher.
+          Check yourself with a short practice quiz for each skill. The result shows on your own profile for now.
         </Txt>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
           {db.user.skills.map((s) => (
@@ -674,7 +675,7 @@ function MeBusiness() {
   const tab = ui.meTab;
   const pct = bizPct(b);
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top, paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}>
+    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} refreshControl={<Pull />} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top, paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}>
       <TopRow />
       <Head
         pic={bizLogo(b)}
@@ -717,14 +718,14 @@ function MeBusiness() {
                     Finish your business page
                   </Txt>
                   <Txt s={12} c={C.muted}>
-                    Complete pages get up to 5× more applicants
+                    A complete page helps people decide to apply
                   </Txt>
                 </View>
                 <Icon name="chev" size={18} color={C.faint} />
               </Pressable>
             ) : null}
             {b.verified !== 'verified' ? (
-              <Pressable onPress={() => (b.verified === 'review' ? toast('We’re checking your documents, usually a few minutes') : openBizSetup('edit', 3))} style={[S.row, { gap: 12, padding: 14, borderRadius: 20, backgroundColor: 'rgba(255,179,122,.12)', borderWidth: 1, borderColor: 'rgba(255,179,122,.4)' }]}>
+              <Pressable onPress={() => (b.verified === 'review' ? toast('A person at bolo is checking your documents') : openBizSetup('edit', 3))} style={[S.row, { gap: 12, padding: 14, borderRadius: 20, backgroundColor: 'rgba(255,179,122,.12)', borderWidth: 1, borderColor: 'rgba(255,179,122,.4)' }]}>
                 <Icon name={b.verified === 'review' ? 'timer' : 'verified'} size={22} color={C.orange} />
                 <View style={{ flex: 1 }}>
                   <Txt s={14} w={8}>
@@ -739,15 +740,16 @@ function MeBusiness() {
             ) : null}
             <H t="Company page" action="Edit" onAction={() => openBizSetup('edit', 1)} />
             <Card>
-              <KV k="Sector · size" v={`${b.sector || 'Add a sector'} · ${b.size || 'Team size'}`} mute={!b.sector} />
+              <KV k="Sector · size" v={[b.sector || 'Add a sector', b.size ? (b.size === 'Just me' ? 'Just me' : b.size + ' people') : ''].filter(Boolean).join(' · ')} mute={!b.sector} />
               <KV k="About" v={b.about || 'Tell candidates what you do'} mute={!b.about} />
               <KV k="Location" v={`${b.address ? b.address + ', ' : ''}${b.area ? b.area + ', ' : ''}${b.city}`} />
               <KV k="Contact" v={[b.phone ? showPhone(b.phone) : '', b.email, b.web].filter(Boolean).join(' · ') || 'Add a phone or email'} mute={!b.phone && !b.email} />
               <KV k="Registration" v={b.rccm ? `RCCM ${b.rccm} · NIU ${b.niu.replace(/.(?=.{4})/g, '•')}` : 'Not added yet'} mute={!b.rccm} />
             </Card>
-            <H t="Recruiters" action="+ Invite" onAction={openInvite} />
+            {/* Team accounts (recruiters, admins) need shared access on the server: until then only the owner manages the page. */}
+            <H t="Who manages this page" />
             <Card>
-              {[{ n: db.user.name || 'You', r: 'Owner', pending: 0 }, ...b.recruiters].map((m, i) => (
+              {[{ n: db.user.name || 'You', r: 'Owner', pending: 0 }].map((m, i) => (
                 <View key={i} style={[S.row, { gap: 12 }]}>
                   <Avatar pic={i === 0 ? myPhoto() : null} size={38} />
                   <View style={{ flex: 1 }}>

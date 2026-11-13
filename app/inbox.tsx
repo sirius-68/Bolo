@@ -11,7 +11,7 @@ import { ORDER, P, THREADS, fname } from '../src/logic/core';
 import { bump, useLive } from '../src/logic/live';
 import { deleteChat, preview } from '../src/logic/work';
 import { openChat, openCompose } from '../src/sheets/chat';
-import { SearchBar } from '../src/components/common';
+import { SearchBar, Pull } from '../src/components/common';
 import { goBack } from '../src/ui/kit';
 
 const TABS: Record<string, (id: string) => boolean> = {
@@ -41,6 +41,7 @@ export default function Inbox() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: ins.top }}>
       <FlatList
+        refreshControl={<Pull />}
         data={ids}
         keyExtractor={(id) => id}
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 + ins.bottom }}

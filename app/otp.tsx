@@ -20,7 +20,7 @@ function maskPhone(p: string) {
 export default function Otp() {
   const [v, setV] = useState('');
   const [bad, setBad] = useState(false);
-  const [t, setT] = useState(30);
+  const [t, setT] = useState(60);
   const [busy, setBusy] = useState(false);
   const real = isReal();
   const LEN = real ? 6 : 4;
@@ -121,7 +121,7 @@ export default function Otp() {
       <View style={{ alignItems: 'center', marginTop: 18 }}>
         {t > 0 ? (
           <Txt s={13} c={C.muted}>
-            Resend code in <Txt s={13} w={8}>0:{String(t).padStart(2, '0')}</Txt>
+            Resend code in <Txt s={13} w={8}>{Math.floor(t / 60)}:{String(t % 60).padStart(2, '0')}</Txt>
           </Txt>
         ) : (
           <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -129,7 +129,7 @@ export default function Otp() {
             <TextLink
               title="Resend code"
               onPress={async () => {
-                setT(30);
+                setT(60);
                 if (real) {
                   const e = await resendCode(c, reset ? 'recovery' : 'signup');
                   if (e) return toast(e);

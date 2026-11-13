@@ -1,0 +1,73 @@
+appId: cm.bolo.app
+name: Update test, part 2 - the new version opens over the old data, shows What's new once, and never again after restart or log out / log in
+---
+# the new version was installed over the old one (data kept): it must open, still signed in
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "tab-feed"
+    timeout: 60000
+- assertNotVisible: "This screen hit a problem"
+# What's new appears once after the update
+- extendedWaitUntil:
+    visible:
+      id: "story-close"
+    timeout: 20000
+- takeScreenshot: u05-whats-new-after-update
+- tapOn:
+    id: "story-close"
+- waitForAnimationToEnd
+- takeScreenshot: u06-home-after-update
+# restart: not shown again
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "tab-feed"
+    timeout: 60000
+- extendedWaitUntil:
+    visible:
+      id: "story-close"
+    timeout: 8000
+    optional: true
+- assertNotVisible:
+    id: "story-close"
+- takeScreenshot: u07-restart-no-whats-new
+# log out and back in: still not shown
+- openLink: "bolo://settings"
+- scrollUntilVisible:
+    element: "Log out"
+    direction: DOWN
+- tapOn: "Log out"
+- waitForAnimationToEnd
+- tapOn:
+    id: "confirm-ok"
+- extendedWaitUntil:
+    visible:
+      id: "have-account"
+    timeout: 30000
+- takeScreenshot: u08-logged-out
+- tapOn:
+    id: "have-account"
+- tapOn:
+    id: "li-contact"
+- inputText: ${UPD_EMAIL}
+- hideKeyboard
+- tapOn:
+    id: "li-pwd"
+- inputText: ${TOUR_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "li-submit"
+- extendedWaitUntil:
+    visible:
+      id: "tab-feed"
+    timeout: 40000
+- extendedWaitUntil:
+    visible:
+      id: "story-close"
+    timeout: 8000
+    optional: true
+- assertNotVisible:
+    id: "story-close"
+- takeScreenshot: u09-login-no-whats-new

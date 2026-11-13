@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Line, Path, Text as SvgText } from 'react-native-svg';
 import { StatusBar } from 'expo-status-bar';
 import { db, Course } from '../../src/data/db';
-import { Avatar, Empty, Txt, tap } from '../../src/ui/kit';
+import { Avatar, Empty, Txt, tap, Missing } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { C, S, tx } from '../../src/ui/theme';
 import { confirm, sheet, SheetTitle, toast } from '../../src/ui/overlay';
@@ -23,16 +23,18 @@ const nowHM = () => new Date().toLocaleTimeString('en-GB', { hour: '2-digit', mi
 
 /** Live class (mobile). Teacher = the course is yours: board pen, record, mute all, hands, end class.
     Student: watch, raise hand, chat and ask questions. Audio/video streams connect when the video service is on. */
-export default function LiveClass() {
+/** Live classes aren't on the server yet (this screen was a prototype with pretend participants), so the
+    route says so honestly instead of showing a class that isn't happening. */
+export default function LiveSoon() {
+  return <Missing bar="Class" title="Live classes are coming later" text="For now, courses open on the school’s own website from Career → Courses." />;
+}
+// kept for when live classes are built on the server
+export function LiveClass() {
   const { id, as } = useLocalSearchParams<{ id: string; as?: string }>();
   const c = db.COURSES.find((x) => x.id === id);
   const ins = useSafeAreaInsets();
   if (!c)
-    return (
-      <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: ins.top + 60 }}>
-        <Empty title="Class not found" />
-      </View>
-    );
+    return <Missing bar="Class" title="Class not found" text="It may have ended or been removed." />;
   // as=host: try the teacher's view of the demo class
   return <Room c={c} asHost={as === 'host'} />;
 }

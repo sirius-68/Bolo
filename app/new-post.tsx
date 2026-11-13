@@ -28,7 +28,7 @@ export default function NewPost() {
   return (
     <Page keyboard header={<TopBar title={w ? 'Share your work' : 'Company update'} />}>
       <Title sm>{w ? 'Show people what you can do' : `News from ${bizName(curBiz())}`}</Title>
-      <Sub>{w ? 'Posts with a photo get up to 4× more hires.' : 'Updates show in the feed with your logo. Photos get more views.'}</Sub>
+      <Sub>{w ? 'A photo of real work says more than words.' : 'Updates show in the feed with your logo. Photos get more views.'}</Sub>
       <View style={{ gap: 18, marginTop: 20 }}>
         {src ? (
           <View>

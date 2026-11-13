@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FlatList, Pressable, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,6 +32,11 @@ export default function Browse() {
         ['companies', 'Companies'],
       ];
   const [mode, setMode] = useState<M>(modes.some((x) => x[0] === p.mode) ? (p.mode as M) : modes[0][0]);
+  // opened again with another tab asked for (a link, or a shortcut on the home screen)
+  useEffect(() => {
+    if (p.mode && modes.some((x) => x[0] === p.mode)) setMode(p.mode as M);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.mode]);
   const [q, setQ] = useState('');
   const [cat, setCat] = useState<string | null>(ui.cat);
   const qq = q.trim().toLowerCase();

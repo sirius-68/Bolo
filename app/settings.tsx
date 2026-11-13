@@ -90,14 +90,14 @@ export default function Settings() {
       </Box>
       <G t="Privacy & safety" />
       <Box>
-        <OptRow icon="shield" bg={C.orange} title="Privacy & security" sub="Visibility, phone number, two-step login" onPress={openPrivacy} />
+        <OptRow icon="shield" bg={C.orange} title="Privacy & security" sub="Who can find you, password, blocked people" onPress={openPrivacy} />
         <OptRow icon="idcard" bg={C.mint} title="Verification" sub={b ? 'RCCM and NIU' : 'ID, documents and badges'} onPress={() => (b ? openBizSetup('edit', 3) : openDoc('id'))} />
         <OptRow testID="set-export" icon="download" bg={C.s3} iconColor="#fff" title="Download my data" sub="Everything bolo stores about you" onPress={downloadData} />
         <OptRow testID="set-delete" icon="trash" bg="#3a1a1a" iconColor={C.err} title="Delete account" sub="Remove your account and data for good" onPress={askDelete} />
       </Box>
       <G t="Support" />
       <Box>
-        <OptRow icon="help" bg="#fff" title="Help & support" sub="FAQs and chat with bolo" onPress={openHelp} />
+        <OptRow icon="help" bg="#fff" title="Help & support" sub="Common questions, write to bolo" onPress={openHelp} />
         <OptRow icon="file" bg={C.s3} iconColor="#fff" title="Terms & privacy policy" sub="How we use your data" onPress={() => toast('Terms open in your browser on the live app')} />
       </Box>
       <View style={{ marginTop: 22 }}>

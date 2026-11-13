@@ -14,7 +14,7 @@ import { C, S } from '../../src/ui/theme';
 import { bizName, curBiz, isW } from '../../src/logic/core';
 import { useLive } from '../../src/logic/live';
 import { openCourses, openProfile } from '../../src/logic/nav';
-import { Rail, Sec, TabHeader } from '../../src/components/common';
+import { Rail, Sec, TabHeader, Pull } from '../../src/components/common';
 import { ListRow, MentorCard, OppCard } from '../../src/components/cards';
 import { onScrollFab } from '../../src/components/NavBar';
 import { openOpp, crSee, openArticles, openExperts, openMentor, openMentorForm, openOppForm, openPaths, openSalaries, openCV } from '../../src/sheets/career';
@@ -69,7 +69,7 @@ export default function Career() {
     </Txt>
   );
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top, paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}>
+    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} refreshControl={<Pull />} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top, paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}>
       <TabHeader hello={false} />
       <Txt s={28} w={8} style={{ marginTop: 14 }}>
         Career

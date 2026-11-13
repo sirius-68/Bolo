@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Pull } from '../src/components/common';
 import { Pressable, SectionList, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -105,6 +106,7 @@ export default function Notifs() {
         />
       </View>
       <SectionList
+        refreshControl={<Pull />}
         sections={sections}
         keyExtractor={(n) => n.id}
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 + ins.bottom }}

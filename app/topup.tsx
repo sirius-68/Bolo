@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { MONEY_LIVE } from '../src/logic/money';
 import { Animated, BackHandler, Easing, Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { payOf } from '../src/data/payments';
-import { Btn, IconBtn, Txt, goBack, tap } from '../src/ui/kit';
+import { Btn, IconBtn, Txt, goBack, tap, Missing } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { C, S } from '../src/ui/theme';
 import { P, fname, xaf } from '../src/logic/core';
@@ -19,6 +20,8 @@ const QUICK = [5000, 10000, 25000, 50000];
 
 /** Add money to the bolo wallet. Opened from the Wallet, or from a booking that needs paying into escrow (fund=bookingId). */
 export default function TopUp() {
+  // Money isn't live yet: nothing in the app links here, and a stale link shouldn't show pretend balances.
+  if (!MONEY_LIVE) return <Missing bar="Add money" title="Payments are coming soon" text="For now, agree the price in chat and pay each other directly." />;
   useLive();
   const ins = useSafeAreaInsets();
   const { amt: a0, fund } = useLocalSearchParams<{ amt?: string; fund?: string }>();

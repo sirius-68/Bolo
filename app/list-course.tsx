@@ -32,25 +32,6 @@ export default function ListCourse() {
   };
   return (
     <Page header={<TopBar title={existing ? 'Edit listing' : 'List your course'} />} keyboard bottom={28}>
-      {/* the web is the better place for course creators */}
-      <Pressable testID="lc-web" accessibilityRole="link" onPress={() => (tap(), Linking.openURL(WEB_TEACH).catch(() => {}))} style={({ pressed }) => [{ marginTop: 4, padding: 16, borderRadius: 22, backgroundColor: C.lav, gap: 6, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-        <View style={S.rowB}>
-          <View style={[S.row, { gap: 6 }]}>
-            <Icon name="globe" size={16} color="#000" />
-            <Txt s={12} w={8} c="#000">
-              BEST ON THE WEB
-            </Txt>
-          </View>
-          <Icon name="arrow" size={16} color="#000" style={{ transform: [{ rotate: '-45deg' }] }} />
-        </View>
-        <Txt s={16} w={8} c="#000">
-          Offering several courses? Use bolo on the web
-        </Txt>
-        <Txt s={13} c="#26294a">
-          Cover images, many courses at once, sign-up stats and promo codes at {domainOf(WEB_TEACH)}/teach. Here you can list one in a minute.
-        </Txt>
-      </Pressable>
-
       {existing ? (
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
           {(

@@ -4,12 +4,12 @@ import { useLocalSearchParams } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { db, Review } from '../../src/data/db';
 import { catIcon } from '../../src/data/catalog';
-import { Avatar, Btn, Empty, IconBtn, PTabs, Page, Pict, Rate, Rich, StatusPill, TopBar, Txt, Verified, CoTag } from '../../src/ui/kit';
+import { Avatar, Btn, Empty, IconBtn, PTabs, Page, Pict, Rate, Rich, StatusPill, TopBar, Txt, Verified, CoTag, Missing, LoadingPage } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { pick, toast } from '../../src/ui/overlay';
 import { C, S } from '../../src/ui/theme';
 import { P, aboutOf, fname, has, isW, k, myVacancies, profileRaw } from '../../src/logic/core';
-import { loadPerson } from '../../src/logic/server';
+import { loadPerson, isGone, isUuid } from '../../src/logic/server';
 import { useLive, bump } from '../../src/logic/live';
 import { follow, hireState, reviewable, saveToggle, sendText } from '../../src/logic/work';
 import { openHire, openReview, openMedia } from '../../src/sheets/work';
@@ -29,12 +29,9 @@ export default function Profile() {
   useEffect(() => {
     if (id && id !== 'me') void loadPerson(id);
   }, [id]);
-  if (!p?.name)
-    return (
-      <Page header={<TopBar title="Profile" />}>
-        <Empty title="Profile not found" text="This account may have been removed." />
-      </Page>
-    );
+  // not loaded yet → loading; asked and it isn't there (deleted, or a bad link) → say so, with no actions
+  if (id !== 'me' && !db.P[id]) return isUuid(id) || (id.startsWith('b_') && isUuid(id.slice(2))) ? <LoadingPage bar="Profile" /> : <Missing bar="Profile" title="This profile isn’t available" text="The account may have been deleted, or the link is wrong." />;
+  if (isGone(id)) return <Missing bar="Profile" title="This profile isn’t available" text="The account may have been deleted, or the link is wrong." />;
   const kind = p.biz ? 'company' : p.client ? 'client' : 'worker';
   const tabs: string[] = kind === 'company' ? ['About', 'Jobs', 'Posts', 'Activity'] : kind === 'client' ? ['About', 'Jobs', 'Reviews'] : ['About', 'Services', 'Posts', 'Reviews', 'Schedule', 'CV'];
   const t = tabs.includes(tab) ? tab : 'About';

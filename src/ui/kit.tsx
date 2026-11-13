@@ -43,6 +43,8 @@ export function Txt({ s = 14, w = 5, c = C.text, center, lines, style, children,
       onPress={onPress}
       selectable={selectable}
       numberOfLines={lines}
+      // follow the phone's text-size setting, up to a point where the layouts still hold
+      maxFontSizeMultiplier={1.3}
       style={[tx(s, w, c), center && { textAlign: 'center' }, style]}
     >
       {children}
@@ -140,13 +142,18 @@ export function Btn({
     blue: C.blue,
   }[variant];
   const fg = variant === 'ghost' || variant === 'dark' || variant === 'soft' || variant === 'danger' || variant === 'blue' ? C.white : C.black;
+  const lastPress = useRef(0);
   return (
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      accessibilityState={{ disabled: !!disabled }}
+      accessibilityState={{ disabled: !!disabled, busy: !!loading }}
       disabled={disabled || loading}
       onPress={() => {
+        // a double tap is one press (no double posts, double bookings or two screens opening)
+        const now = Date.now();
+        if (now - lastPress.current < 450) return;
+        lastPress.current = now;
         tap();
         onPress?.();
       }}
@@ -168,7 +175,7 @@ export function Btn({
       ]}
     >
       {loading ? <ActivityIndicator color={fg} /> : icon ? <Icon name={icon} size={18} color={fg} /> : null}
-      <Text style={tx(small ? 13 : 14, 7, fg)} numberOfLines={1}>
+      <Text style={tx(small ? 13 : 14, 7, fg)} numberOfLines={1} maxFontSizeMultiplier={1.3}>
         {title}
       </Text>
     </Pressable>
@@ -779,7 +786,20 @@ export function CoTag() {
   );
 }
 
+/** Connection state, set by the data loader: the first load is running / the last refresh couldn't reach bolo. */
+export const net = { loading: false, offline: false };
+
 export function Empty({ title, text, children, style }: { title: string; text?: string; children?: ReactNode; style?: any }) {
+  // While the very first load is running, "nothing here" would be a lie: show that it's loading.
+  if (net.loading)
+    return (
+      <View style={[{ paddingVertical: 30, paddingHorizontal: 18, borderRadius: 20, borderWidth: 1.5, borderStyle: 'dashed', borderColor: C.s3, alignItems: 'center', gap: 10 }, style]} accessibilityLabel="Loading">
+        <ActivityIndicator color={C.yellow} />
+        <Txt s={13} c={C.muted} center>
+          Loading…
+        </Txt>
+      </View>
+    );
   return (
     <View style={[{ paddingVertical: 30, paddingHorizontal: 18, borderRadius: 20, borderWidth: 1.5, borderStyle: 'dashed', borderColor: C.s3, alignItems: 'center' }, style]}>
       <Txt s={15} w={8} center>
@@ -1193,5 +1213,29 @@ export function Rich({ text, s = 13, c = C.text, lines, style }: { text: string;
         ),
       )}
     </Txt>
+  );
+}
+
+/** A whole screen for something that isn't there (deleted, or a stale link): always with a way back. */
+export function Missing({ title, text, bar }: { title: string; text?: string; bar?: string }) {
+  return (
+    <Page header={<TopBar title={bar} />}>
+      <Empty title={title} text={text} style={{ marginTop: 16 }}>
+        <Btn small variant="ghost" title="Go back" onPress={goBack} />
+      </Empty>
+    </Page>
+  );
+}
+/** A whole screen that is still fetching what it shows. */
+export function LoadingPage({ bar }: { bar?: string }) {
+  return (
+    <Page header={<TopBar title={bar} />}>
+      <View style={{ paddingTop: 80, alignItems: 'center', gap: 12 }} accessibilityLabel="Loading">
+        <ActivityIndicator color={C.yellow} />
+        <Txt s={13} c={C.muted}>
+          Loading…
+        </Txt>
+      </View>
+    </Page>
   );
 }

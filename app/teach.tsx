@@ -41,22 +41,6 @@ export default function Teach() {
         </Pressable>
       </View>
 
-      {/* web first */}
-      <Pressable testID="teach-web" accessibilityRole="link" onPress={() => (tap(), Linking.openURL(WEB_TEACH).catch(() => {}))} style={({ pressed }) => [S.row, { gap: 12, marginTop: 12, padding: 16, borderRadius: 22, backgroundColor: pressed ? C.s2 : C.s1, borderWidth: 1, borderColor: C.line }]}>
-        <View style={{ width: 44, height: 44, borderRadius: 15, backgroundColor: C.blue, alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name="globe" size={22} color="#fff" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Txt s={15} w={8}>
-            Best on the web
-          </Txt>
-          <Txt s={12} c={C.muted}>
-            Schools and trainers with several courses: manage them all, add cover images, promo codes and sign-up stats at {domainOf(WEB_TEACH)}/teach
-          </Txt>
-        </View>
-        <Icon name="arrow" size={16} color={C.muted} style={{ transform: [{ rotate: '-45deg' }] }} />
-      </Pressable>
-
       {/* your listings */}
       {mine.length ? (
         <>

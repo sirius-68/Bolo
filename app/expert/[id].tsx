@@ -1,4 +1,5 @@
 import React from 'react';
+import { shareTail } from '../../src/logic/links';
 import { Pressable, Share, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Avatar, Btn, Empty, IconBtn, Page, TopBar, Txt, tap } from '../../src/ui/kit';
@@ -23,7 +24,7 @@ export default function ExpertProfile() {
   const { n } = exRating(e);
   const R = reviewsOfEx(e);
   const mine = exBookingsWith(e).filter((b) => b.state !== 'done' || !b.rated);
-  const share = () => Share.share({ message: `${e.name}, ${e.head}. Book a session on bolo: https://bolo.app/experts/${e.id}` }).catch(() => {});
+  const share = () => Share.share({ message: `${e.name}, ${e.head}. Book a session on bolo.\n${shareTail(`/expert/${e.id}`)}` }).catch(() => {});
   return (
     <Page header={<TopBar right={<IconBtn name="share" label="Share expert" onPress={share} />} />} bottom={32}>
       {/* who */}

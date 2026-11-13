@@ -4,10 +4,10 @@ import { router } from 'expo-router';
 import { Btn, Field, Grow, Input, Page, Pict, TextLink, TopBar, Txt } from '../src/ui/kit';
 import { C } from '../src/ui/theme';
 import { db } from '../src/data/db';
-import { ContactField, firstMode, Divider, Mode, Socials, contactOk, contactValue } from '../src/components/auth';
+import { ContactField, firstMode, Divider, Mode, Socials, contactOk, contactValue, signup } from '../src/components/auth';
 import { startApp } from '../src/logic/account';
 import { resetTo } from '../src/logic/nav';
-import { isReal, signIn } from '../src/logic/remote';
+import { isReal, resendCode, signIn } from '../src/logic/remote';
 
 export default function Login() {
   const [mode, setMode] = useState<Mode>(firstMode());
@@ -33,6 +33,18 @@ export default function Login() {
     setBusy(true);
     const e = await signIn(c, pwd);
     setBusy(false);
+    if (e && /confirm your email/i.test(e)) {
+      // the account exists but its code was never entered: send a fresh code and finish that step here
+      signup.otpMode = 'signup';
+      signup.contact = c;
+      signup.pwd = pwd;
+      signup.next = () => {
+        db.user.contact = db.user.contact || c;
+        enter();
+      };
+      void resendCode(c, 'signup');
+      return router.push('/otp');
+    }
     if (e) return setErr(e);
     db.user.contact = db.user.contact || c;
     enter();

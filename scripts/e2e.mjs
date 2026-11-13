@@ -245,6 +245,19 @@ if (ready) {
     const d = must(await A.sb.rpc('export_my_data'));
     expect(d && typeof d === 'object', 'empty export');
   });
+  await step('hiding a profile takes it out of the people list (it can still be opened)', async () => {
+    must(await A.sb.from('profiles').update({ visible: false }).eq('id', A.id));
+    const list = must(await B.sb.from('profile_cards').select('id').eq('visible', true).eq('id', A.id));
+    expect(list.length === 0, 'a hidden profile is still listed');
+    const direct = must(await B.sb.from('profile_cards').select('id,lng,lat').eq('id', A.id).maybeSingle());
+    expect(direct && direct.lng === null, 'a hidden profile still shares a position');
+    must(await A.sb.from('profiles').update({ visible: true }).eq('id', A.id));
+  });
+  await step('feedback reaches the team and stays private', async () => {
+    must(await A.sb.from('feedback').insert({ topic: 'idea', body: 'e2e: feedback works', app_version: 'e2e' }));
+    const seen = must(await B.sb.from('feedback').select('id'));
+    expect(seen.length === 0, 'someone else can read feedback');
+  });
   await step('app config is readable', async () => void must(await A.sb.from('app_config').select('key,value')));
   await step('career lists load', async () => {
     const c = must(await A.sb.from('course_listings').select('id').limit(50));
