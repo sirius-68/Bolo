@@ -22,8 +22,16 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
     steps:
       - uses: actions/checkout@v4
+      # switches GitHub Pages on the first time, when GitHub allows it; otherwise: Settings → Pages → Source: GitHub Actions
+      - uses: actions/configure-pages@v5
+        continue-on-error: true
+        with:
+          enablement: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
