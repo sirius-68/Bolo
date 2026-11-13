@@ -508,6 +508,7 @@ export type InputProps = {
   minHeight?: number;
   returnKeyType?: 'done' | 'next' | 'search' | 'send' | 'go';
   editable?: boolean;
+  onFocus?: () => void;
 };
 export function Input(p: InputProps) {
   const [focus, setFocus] = useState(false);
@@ -550,7 +551,7 @@ export function Input(p: InputProps) {
         editable={p.editable}
         autoCapitalize={p.autoCapitalize ?? (p.keyboardType === 'email-address' || p.secure ? 'none' : 'sentences')}
         autoCorrect={!(p.secure || p.keyboardType === 'email-address')}
-        onFocus={() => setFocus(true)}
+        onFocus={() => (setFocus(true), p.onFocus?.())}
         onBlur={() => setFocus(false)}
         onSubmitEditing={p.onSubmit}
         returnKeyType={p.returnKeyType}
@@ -600,9 +601,9 @@ export function SelectBox({ value, placeholder, icon, onPress, invalid, testID }
   );
 }
 
-export function Check({ on, onPress, children }: { on: boolean; onPress: () => void; children: ReactNode }) {
+export function Check({ on, onPress, children, testID }: { on: boolean; onPress: () => void; children: ReactNode; testID?: string }) {
   return (
-    <Pressable onPress={onPress} style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 4 }} accessibilityRole="checkbox" accessibilityState={{ checked: on }}>
+    <Pressable testID={testID} onPress={onPress} style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 4 }} accessibilityRole="checkbox" accessibilityState={{ checked: on }}>
       <View style={{ width: 22, height: 22, borderRadius: 7, borderWidth: 1.5, borderColor: on ? C.yellow : C.s3, backgroundColor: on ? C.yellow : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
         {on ? <Icon name="check" size={14} color="#000" /> : null}
       </View>

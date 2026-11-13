@@ -7,9 +7,9 @@ name: Backend
 on:
   push:
     branches: [main]
-    paths: ["supabase/**", ".github/workflows/backend.yml"]
+    paths: ["supabase/**", "scripts/**", ".github/workflows/backend.yml"]
   pull_request:
-    paths: ["supabase/**", ".github/workflows/backend.yml"]
+    paths: ["supabase/**", "scripts/**", ".github/workflows/backend.yml"]
   workflow_dispatch:
     inputs:
       target:
@@ -71,6 +71,7 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
       AGORA_APP_ID: ${{ vars.STAGING_AGORA_APP_ID || vars.AGORA_APP_ID }}
       AGORA_APP_CERTIFICATE: ${{ secrets.STAGING_AGORA_APP_CERTIFICATE || secrets.AGORA_APP_CERTIFICATE }}
+      FCM_SERVICE_ACCOUNT: ${{ secrets.FCM_SERVICE_ACCOUNT }}
       REF: ${{ vars.STAGING_PROJECT_REF }}
     steps:
       - uses: actions/checkout@v4
@@ -88,7 +89,59 @@ jobs:
             supabase secrets set --yes --project-ref "$REF" "AGORA_APP_ID=$AGORA_APP_ID" "AGORA_APP_CERTIFICATE=$AGORA_APP_CERTIFICATE" \
               || supabase secrets set --yes "AGORA_APP_ID=$AGORA_APP_ID" "AGORA_APP_CERTIFICATE=$AGORA_APP_CERTIFICATE"
           fi
+          # Push notifications: the Firebase service account and a fresh shared secret go into the functions' secrets
+          if [ -n "$FCM_SERVICE_ACCOUNT" ]; then
+            FCM_B64=$(printf '%s' "$FCM_SERVICE_ACCOUNT" | base64 -w0)
+            PUSH_SECRET=$(openssl rand -hex 32)
+            echo "::add-mask::$FCM_B64"
+            echo "::add-mask::$PUSH_SECRET"
+            supabase secrets set --yes --project-ref "$REF" "FCM_SERVICE_ACCOUNT_B64=$FCM_B64" "PUSH_SECRET=$PUSH_SECRET"
+          fi
           supabase functions deploy --remote --yes
+          if [ -n "$FCM_SERVICE_ACCOUNT" ]; then
+            # tell the database where to send new notifications (retries while the new function starts)
+            for i in 1 2 3 4 5 6; do
+              code=$(curl -s -o /tmp/push.json -w '%{http_code}' -X POST "https://$REF.supabase.co/functions/v1/push" \
+                -H 'Content-Type: application/json' -H "x-push-secret: $PUSH_SECRET" -d '{"setup":true}')
+              cat /tmp/push.json; echo
+              [ "$code" = "200" ] && break
+              sleep 10
+            done
+            [ "$code" = "200" ] || { echo "push setup failed ($code)"; exit 1; }
+          fi
+      - name: Sign-in settings (codes by email and SMS; test sign-ups on staging)
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          SMS_SENDER: ${{ vars.SMS_SENDER }}
+        run: bash scripts/auth-config.sh "$REF" staging
+
+  e2e:
+    name: End-to-end test on staging
+    needs: staging
+    if: ${{ vars.STAGING_SUPABASE_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Two test accounts go through the app's main flows
+        env:
+          SUPABASE_URL: ${{ vars.STAGING_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ vars.STAGING_SUPABASE_KEY }}
+        run: |
+          set -o pipefail
+          mkdir -p /tmp/e2e ci-out && cp scripts/e2e.mjs /tmp/e2e/ && cd /tmp/e2e
+          npm init -y > /dev/null && npm i --no-audit --no-fund @supabase/supabase-js@2 > /dev/null
+          node e2e.mjs 2>&1 | tee "$GITHUB_WORKSPACE/ci-out/e2e.log"
+      - name: Publish result
+        if: always()
+        run: |
+          mkdir -p /tmp/pub && cp -r ci-out/. /tmp/pub/ 2>/dev/null || true
+          cd /tmp/pub && git init -q && git checkout -q -b logs && git add -A
+          git -c user.name=ci -c user.email=ci@bolo.app commit -qm "e2e ${{ github.run_id }}" || true
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" logs:refs/heads/ci-logs/e2e-latest || true
 
   production:
     name: Deploy to production
@@ -102,6 +155,7 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
       AGORA_APP_ID: ${{ vars.AGORA_APP_ID }}
       AGORA_APP_CERTIFICATE: ${{ secrets.AGORA_APP_CERTIFICATE }}
+      FCM_SERVICE_ACCOUNT: ${{ secrets.FCM_SERVICE_ACCOUNT }}
       REF: ${{ vars.PROD_PROJECT_REF }}
     steps:
       - uses: actions/checkout@v4
@@ -119,4 +173,28 @@ jobs:
             supabase secrets set --yes --project-ref "$REF" "AGORA_APP_ID=$AGORA_APP_ID" "AGORA_APP_CERTIFICATE=$AGORA_APP_CERTIFICATE" \
               || supabase secrets set --yes "AGORA_APP_ID=$AGORA_APP_ID" "AGORA_APP_CERTIFICATE=$AGORA_APP_CERTIFICATE"
           fi
+          # Push notifications: the Firebase service account and a fresh shared secret go into the functions' secrets
+          if [ -n "$FCM_SERVICE_ACCOUNT" ]; then
+            FCM_B64=$(printf '%s' "$FCM_SERVICE_ACCOUNT" | base64 -w0)
+            PUSH_SECRET=$(openssl rand -hex 32)
+            echo "::add-mask::$FCM_B64"
+            echo "::add-mask::$PUSH_SECRET"
+            supabase secrets set --yes --project-ref "$REF" "FCM_SERVICE_ACCOUNT_B64=$FCM_B64" "PUSH_SECRET=$PUSH_SECRET"
+          fi
           supabase functions deploy --remote --yes
+          if [ -n "$FCM_SERVICE_ACCOUNT" ]; then
+            # tell the database where to send new notifications (retries while the new function starts)
+            for i in 1 2 3 4 5 6; do
+              code=$(curl -s -o /tmp/push.json -w '%{http_code}' -X POST "https://$REF.supabase.co/functions/v1/push" \
+                -H 'Content-Type: application/json' -H "x-push-secret: $PUSH_SECRET" -d '{"setup":true}')
+              cat /tmp/push.json; echo
+              [ "$code" = "200" ] && break
+              sleep 10
+            done
+            [ "$code" = "200" ] || { echo "push setup failed ($code)"; exit 1; }
+          fi
+      - name: Sign-in settings (codes by email and SMS)
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          SMS_SENDER: ${{ vars.SMS_SENDER }}
+        run: bash scripts/auth-config.sh "$REF"

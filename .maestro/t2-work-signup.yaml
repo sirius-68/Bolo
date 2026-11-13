@@ -1,0 +1,90 @@
+appId: cm.bolo.app
+name: New account that offers skills - sign-up, full onboarding, send an offer
+---
+- runFlow:
+    file: _signup.yaml
+    env:
+      INTENT: find
+      NAME: "Tour Wanda"
+      EMAIL: ${WORK_EMAIL}
+      SHOT: w
+- extendedWaitUntil:
+    visible: "What do you do?"
+    timeout: 15000
+- takeScreenshot: w04-jobtypes
+- tapOn:
+    id: "jt-IT & Software"
+- scrollUntilVisible:
+    element:
+      id: "jt-continue"
+    direction: DOWN
+- tapOn:
+    id: "jt-continue"
+- extendedWaitUntil:
+    visible: "What are your skills?"
+    timeout: 15000
+- takeScreenshot: w05-skills
+- tapOn: "Search skills.*"
+- inputText: "Web dev"
+- hideKeyboard
+- tapOn: "Web development"
+- waitForAnimationToEnd
+- takeScreenshot: w06-skill-picked
+- scrollUntilVisible:
+    element:
+      id: "skills-continue"
+    direction: DOWN
+- tapOn:
+    id: "skills-continue"
+- extendedWaitUntil:
+    visible: "Upload your ID"
+    timeout: 15000
+- takeScreenshot: w07-verify-id
+- tapOn: "Later"
+- extendedWaitUntil:
+    visible:
+      id: "start-exploring"
+    timeout: 15000
+- takeScreenshot: w08-done
+- tapOn:
+    id: "start-exploring"
+- extendedWaitUntil:
+    visible:
+      id: "tab-feed"
+    timeout: 20000
+- waitForAnimationToEnd
+- runFlow: dismiss.yaml
+- takeScreenshot: w09-feed
+- tapOn: "Jobs"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Tour leaking tap ${RUN}"
+    timeout: 20000
+- takeScreenshot: w10-jobs
+- tapOn: "Tour leaking tap ${RUN}"
+- waitForAnimationToEnd
+- takeScreenshot: w11-job
+- scrollUntilVisible:
+    element:
+      id: "offer-price"
+    direction: DOWN
+- tapOn:
+    id: "offer-price"
+- inputText: "7500"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "send-offer"
+    direction: DOWN
+- tapOn:
+    id: "send-offer"
+- waitForAnimationToEnd
+- takeScreenshot: w12-offer-sent
+- extendedWaitUntil:
+    visible: "Offer sent.*"
+    timeout: 15000
+- back
+- tapOn:
+    id: "tab-me"
+- waitForAnimationToEnd
+- takeScreenshot: w13-me

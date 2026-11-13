@@ -5,7 +5,7 @@ import { AppState } from 'react-native';
 import { File, Paths } from 'expo-file-system';
 import { supabase } from '../lib/supabase';
 import { setMonitorUser } from '../lib/monitor';
-import { loadAll, startRealtime, stopRealtime } from './server';
+import { checkRealtime, loadAll, startRealtime, stopRealtime } from './server';
 import { db, MyBiz } from '../data/db';
 import { bump, subscribe } from './live';
 
@@ -103,6 +103,9 @@ export async function updatePassword(password: string): Promise<string | null> {
 }
 export async function signOut() {
   try {
+    await require('./push').unregisterPush();
+  } catch {}
+  try {
     await supabase.auth.signOut();
   } catch {}
   lastSent = {};
@@ -124,6 +127,7 @@ async function afterAuth() {
 export function startServer() {
   if (!db.uid) return;
   startRealtime();
+  void require('./push').registerPush();
   void loadAll().then(() => {
     const { resumeSims } = require('./work');
     resumeSims();
@@ -395,6 +399,7 @@ export function startSync() {
   AppState.addEventListener('change', (s) => {
     if (s === 'active' && db.uid && db.loggedIn) {
       pull();
+      checkRealtime();
       void loadAll();
     }
   });

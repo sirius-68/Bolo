@@ -4,13 +4,13 @@ import { router } from 'expo-router';
 import { Btn, Field, Grow, Input, Page, Pict, TextLink, TopBar, Txt } from '../src/ui/kit';
 import { C } from '../src/ui/theme';
 import { db } from '../src/data/db';
-import { ContactField, Divider, Mode, Socials, contactOk, contactValue } from '../src/components/auth';
+import { ContactField, firstMode, Divider, Mode, Socials, contactOk, contactValue } from '../src/components/auth';
 import { startApp } from '../src/logic/account';
 import { resetTo } from '../src/logic/nav';
 import { isReal, signIn } from '../src/logic/remote';
 
 export default function Login() {
-  const [mode, setMode] = useState<Mode>('phone');
+  const [mode, setMode] = useState<Mode>(firstMode());
   const [contact, setContact] = useState('');
   const [pwd, setPwd] = useState('');
   const [tried, setTried] = useState(false);

@@ -13,6 +13,7 @@ import { hiringIn } from '../../src/logic/work';
 import { callsAvailable, startCall } from '../../src/logic/calls';
 import { useLive } from '../../src/logic/live';
 import { answerOffer, markChatRead, sendText } from '../../src/logic/work';
+import { setViewing } from '../../src/logic/push';
 import { openProfile } from '../../src/logic/nav';
 import { groupOf } from '../../src/logic/career';
 import { openAttach, openChatMenu, openMsgMenu, openQuote, openRules } from '../../src/sheets/chat';
@@ -30,6 +31,10 @@ export default function Chat() {
   useEffect(() => {
     markChatRead(id);
   });
+  useEffect(() => {
+    setViewing(th?.cid);
+    return () => setViewing(undefined);
+  }, [th?.cid]);
   useEffect(() => {
     if (th && isGroup(id) && !th.rulesOk && (groupOf(id)?.rules || []).length) setTimeout(() => openRules(id), 350);
   }, [id]);

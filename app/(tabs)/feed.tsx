@@ -15,7 +15,7 @@ import { follow } from '../../src/logic/work';
 import { PersonRow, PostCard, RecCard, ReelThumb, ReqPost, JobCard } from '../../src/components/cards';
 import { onScrollFab } from '../../src/components/NavBar';
 import { activeFilters, openFilters, resetFilters } from '../../src/sheets/filters';
-import { openService } from '../../src/sheets/profile';
+import { openDoc, openService } from '../../src/sheets/profile';
 import { openJob } from '../../src/sheets/work';
 import { openOpp } from '../../src/sheets/career';
 import { services } from '../../src/logic/account';
@@ -249,26 +249,16 @@ export default function Feed() {
   );
 }
 
-type Ad = { id: string; who: string; title: string; text: string; cta: string; bg: string; fg: string; sub: string; grad: [string, string]; icon: string; skip: number; job?: string; opp?: string };
-/** Every ad leads to the real listing: a job you can apply to, or a program you can join. */
-const ADS: Ad[] = [
-  { id: 'njei', who: 'b_njei', job: 'v_njei', title: 'Njeiforbi is hiring', text: 'Sales reps and delivery riders near you. Apply in minutes.', cta: 'See job', bg: C.blue, fg: '#fff', sub: '#e3e7ff', grad: ['#3d5af1', '#1b2a9b'], icon: 'job', skip: 5 },
-  { id: 'care', who: 'b_care', job: 'v3', title: 'CarePlus Clinic needs nurses', text: 'Day shifts in Great Soppo. Interviews this week.', cta: 'Apply', bg: C.mint, fg: '#000', sub: '#1d3b2b', grad: ['#2fbf7a', '#0f6e45'], icon: 'cat-health', skip: 3 },
-  { id: 'sma', who: 'b_sma', opp: 'o4', title: 'Frontend bootcamp, 8 weeks', text: 'Free sponsored places at Silicon Mountain Academy.', cta: 'Join', bg: C.lav, fg: '#000', sub: '#26294a', grad: ['#7c5cff', '#3b1fa8'], icon: 'cap', skip: 0 },
-  { id: 'sav', who: 'b_savanna', job: 'v2_4', title: 'Drivers wanted', text: 'Savanna Logistics: licence C, regular routes, monthly pay.', cta: 'See role', bg: C.orange, fg: '#000', sub: '#3b1d0c', grad: ['#ff8a3d', '#c2410c'], icon: 'cat-driver', skip: 5 },
-  { id: 'volta', who: 'b_volta', job: 'v2_3', title: 'Solar installers wanted', text: 'Volta Solar trains you on the job. Start next month.', cta: 'Apply', bg: C.yellow, fg: '#000', sub: '#3a3815', grad: ['#f6ee5c', '#e3c400'], icon: 'cat-electrician', skip: 3 },
+type Tip = { id: string; title: string; text: string; cta: string; bg: string; fg: string; sub: string; icon: string; go: () => void };
+/** Tips from bolo itself: each one opens a real part of the app. (Ads from businesses come with payments.) */
+const TIPS: Tip[] = [
+  { id: 'post', title: 'Need something done?', text: 'Post a job in a minute. People near you send offers and you choose.', cta: 'Post a job', bg: C.blue, fg: '#fff', sub: '#e3e7ff', icon: 'job', go: () => router.push('/post-job') },
+  { id: 'work', title: 'Show your work', text: 'Share a photo of a job you did. People hire who they can see.', cta: 'Share', bg: C.yellow, fg: '#000', sub: '#3a3815', icon: 'image', go: () => router.push('/new-post' as any) },
+  { id: 'verify', title: 'Get the verified badge', text: 'Send your ID once. A bolo reviewer checks it and people trust you faster.', cta: 'Verify', bg: C.mint, fg: '#000', sub: '#1d3b2b', icon: 'verified', go: () => openDoc('id') },
+  { id: 'learn', title: 'Learn a new skill', text: 'Courses picked by bolo, many of them free. Open one and start today.', cta: 'Courses', bg: C.lav, fg: '#000', sub: '#26294a', icon: 'cap', go: () => router.push('/courses' as any) },
 ];
-/** Opens the job (apply) or program (join) page behind an ad. */
-function goAd(a: Ad) {
-  if (a.opp) openOpp(a.opp);
-  else if (a.job && postById(a.job)) openJob(a.job);
-  else openProfile(a.who);
-}
-function openAd(a: Ad) {
-  showStories([{ key: a.id, colors: a.grad, icon: a.icon, sponsor: { name: P(a.who).name, pic: P(a.who).photo }, chip: 'Sponsored', title: a.title, text: a.text, cta: a.cta, onCta: () => goAd(a), dark: a.bg === C.yellow }], { closeAfter: a.skip });
-}
 
-/** Sponsored ads from businesses, as a swipeable carousel that moves on by itself. */
+/** Tips from bolo, as a swipeable carousel that moves on by itself. */
 function Promo() {
   const w = isW();
   const { width } = useWindowDimensions();
@@ -281,7 +271,7 @@ function Promo() {
     const t = setInterval(() => {
       if (held.current) return;
       setAt((i) => {
-        const n = (i + 1) % ADS.length;
+        const n = (i + 1) % TIPS.length;
         ref.current?.scrollTo({ x: n * (cardW + 10), animated: true });
         return n;
       });
@@ -306,7 +296,7 @@ function Promo() {
     <View style={{ marginTop: 16 }}>
       <ScrollView
         ref={ref}
-        testID="ads-carousel"
+        testID="tips-carousel"
         horizontal
         showsHorizontalScrollIndicator={false}
         snapToInterval={cardW + 10}
@@ -320,14 +310,14 @@ function Promo() {
           held.current = false;
         }}
       >
-        {ADS.map((a) => (
-          <Pressable key={a.id} accessibilityRole="button" accessibilityLabel={`Sponsored. ${a.title}. ${a.text}`} onPress={() => (tap(), openAd(a))} style={[S.row, { width: cardW, minHeight: 116, gap: 12, padding: 16, borderRadius: 22, backgroundColor: a.bg }]}>
+        {TIPS.map((a) => (
+          <Pressable key={a.id} accessibilityRole="button" accessibilityLabel={`${a.title}. ${a.text}`} onPress={() => (tap(), a.go())} style={[S.row, { width: cardW, minHeight: 116, gap: 12, padding: 16, borderRadius: 22, backgroundColor: a.bg }]}>
             <View style={{ flex: 1 }}>
               <View style={[S.row, { gap: 8, marginBottom: 6 }]}>
-                <Avatar pic={P(a.who).photo} square size={24} />
+                <Icon name={a.icon} size={20} color={a.fg} />
                 <View style={{ paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, backgroundColor: a.fg === '#fff' ? 'rgba(255,255,255,.25)' : 'rgba(0,0,0,.12)' }}>
                   <Txt s={10} w={8} c={a.fg}>
-                    Sponsored
+                    Tip from bolo
                   </Txt>
                 </View>
               </View>
@@ -338,16 +328,16 @@ function Promo() {
                 {a.text}
               </Txt>
             </View>
-            <Pressable testID={`ad-cta-${a.id}`} accessibilityRole="button" accessibilityLabel={`${a.cta}: ${a.title}`} hitSlop={6} onPress={() => (tap(), goAd(a))} style={({ pressed }) => ({ paddingHorizontal: 16, height: 40, borderRadius: 20, backgroundColor: a.bg === C.blue ? C.yellow : '#000', justifyContent: 'center', transform: [{ scale: pressed ? 0.95 : 1 }] })}>
+            <View testID={`tip-cta-${a.id}`} style={{ paddingHorizontal: 16, height: 40, borderRadius: 20, backgroundColor: a.bg === C.blue ? C.yellow : '#000', alignItems: 'center', justifyContent: 'center' }}>
               <Txt s={13} w={8} c={a.bg === C.blue ? '#000' : '#fff'}>
                 {a.cta}
               </Txt>
-            </Pressable>
+            </View>
           </Pressable>
         ))}
       </ScrollView>
       <View style={[S.row, { justifyContent: 'center', gap: 5, marginTop: 10 }]}>
-        {ADS.map((a, i) => (
+        {TIPS.map((a, i) => (
           <View key={a.id} style={{ width: i === at ? 18 : 6, height: 6, borderRadius: 3, backgroundColor: i === at ? C.text : C.s3 }} />
         ))}
       </View>

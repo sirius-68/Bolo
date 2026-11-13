@@ -1053,16 +1053,24 @@ function openPath(k: number) {
           </Txt>
         </View>
       ))}
-      <H4 t="Courses" />
-      {cs.map((id) => {
-        const c = db.COURSES.find((x) => x.id === id)!;
-        return <ListRow key={id} pic={c.prov.logo} square title={c.title} sub={`${c.prov.n} · ${c.price ? xaf(c.price) : 'Free'}`} onPress={() => openCourse(id)} />;
-      })}
-      <H4 t="Internships & programs" />
-      {os.map((id) => {
-        const o = db.OPPS.find((x) => x.id === id)!;
-        return <ListRow key={id} pic={oppBiz(o).logo} square title={o.title} sub={`${o.kind} · ${o.pay}`} onPress={() => openOpp(id)} />;
-      })}
+      {(() => {
+        // only listings that really exist (the picks are refreshed by bolo)
+        const courses = cs.map((id) => db.COURSES.find((x) => x.id === id)).filter(Boolean) as typeof db.COURSES;
+        const opps = os.map((id) => db.OPPS.find((x) => x.id === id)).filter(Boolean) as typeof db.OPPS;
+        return (
+          <>
+            {courses.length ? <H4 t="Courses" /> : null}
+            {courses.map((c) => (
+              <ListRow key={c.id} pic={c.prov.logo} square title={c.title} sub={`${c.prov.n} · ${c.price ? xaf(c.price) : 'Free'}`} onPress={() => openCourse(c.id)} />
+            ))}
+            {opps.length ? <H4 t="Internships & programs" /> : null}
+            {opps.map((o) => (
+              <ListRow key={o.id} pic={oppBiz(o).logo} square title={o.title} sub={`${o.kind} · ${o.pay}`} onPress={() => openOpp(o.id)} />
+            ))}
+            {!courses.length ? <Btn variant="ghost" title="Explore courses" style={{ marginTop: 10 }} onPress={() => afterSheet(() => router.push('/courses' as any))} /> : null}
+          </>
+        );
+      })()}
     </View>
   ));
 }

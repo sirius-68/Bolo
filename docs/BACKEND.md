@@ -77,10 +77,16 @@ select id, 'owner' from auth.users where email = '<your login email>';
 | 0004 marketplace | posts and jobs (with ~500 m job location), likes, saves, follows, offers/applications, chat (1-to-1, business and group, private files bucket), bookings with each step checked on the server, live location while the worker is on the way, reviews after confirmed jobs, course listings and their ratings, internships/programs and applications, mentorships with their group chat, career experts (approved by bolo), realtime on chat, bookings, location, offers and notifications |
 | 0005 course seed | the 17 real courses picked by bolo (links to the provider's site) |
 | 0006 calls | voice and video calls in 1-to-1 chats: ringing, accepted, ended, missed; the call log in the chat; rate limits |
+| 0007 push | every new notification row asks the `push` server function (through pg_net) to send a phone pop-up; the function's address and secret are set by the function at deploy |
 
 ### Calls (Agora)
 Media goes through Agora. The `agora-token` server function gives a 2-hour pass for one call, only to its two people.
-Set **variable** `AGORA_APP_ID` and **secret** `AGORA_APP_CERTIFICATE` (Agora console → project in Secured mode); the Backend deploy copies them into the server functions' secrets. Without them, calls say "Calls aren't switched on yet". Incoming calls ring while bolo is open; ringing a closed app needs push notifications.
+Set **variable** `AGORA_APP_ID` and **secret** `AGORA_APP_CERTIFICATE` (Agora console → project in Secured mode); the Backend deploy copies them into the server functions' secrets. Without them, calls say "Calls aren't switched on yet". Incoming calls ring while bolo is open; when bolo is closed, a call pop-up opens the call screen.
+
+### Push notifications (Firebase)
+`google-services.json` (Firebase project `bolo-d659c`, app `cm.bolo.app`) is in the repo: it holds no secrets.
+Set **secret** `FCM_SERVICE_ACCOUNT` to the whole service-account file (Firebase → Project settings → Service accounts → Generate new private key). The Backend deploy stores it in the server functions' secrets with a fresh `PUSH_SECRET`, deploys the `push` function and tells the database its address.
+Pop-ups follow Settings → Notifications and muted chats (those rows are never made). Phones register at sign-in (`register_push_token`) and remove their token at sign-out; tokens Firebase reports as gone are deleted.
 
 ### Errors (Sentry)
 Set **secret** `SENTRY_AUTH_TOKEN` and **variables** `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_DSN`. Release builds report crashes; the **Sentry report** workflow (daily, or Run workflow) saves the latest issues to the branch `ci-logs/sentry-latest`.

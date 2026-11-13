@@ -378,7 +378,7 @@ function OfferForm({ po }: { po: Post }) {
     <View style={{ marginTop: 16, gap: 14 }}>
       <SecH title="Send an offer" />
       <Field label="Your price">
-        <Input value={price} onChangeText={(v) => setPrice(digits(v))} prefix="XAF" keyboardType="number-pad" placeholder="e.g. 12,000" />
+        <Input testID="offer-price" value={price} onChangeText={(v) => setPrice(digits(v))} prefix="XAF" keyboardType="number-pad" placeholder="e.g. 12,000" />
       </Field>
       <View>
         <Label>When can you do it?</Label>

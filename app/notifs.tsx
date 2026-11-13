@@ -14,51 +14,8 @@ import { answerQuoteNotif, bk, confirmDone, deleteNotifs, follow, markAllRead, N
 import { openMe, openProfile, openTrack } from '../src/logic/nav';
 import { openComments, openJob } from '../src/sheets/work';
 import { openChat } from '../src/sheets/chat';
-import { openCV, openCourse, openMentor, openOpp } from '../src/sheets/career';
-import { Go } from '../src/logic/notify';
+import { goTo } from '../src/sheets/goto';
 import { openNotifSettings } from '../src/sheets/account';
-
-/** Opens the screen a notification is about. */
-function goTo(g: Go) {
-  switch (g.k) {
-    case 'job':
-      return postById(g.id) ? openJob(g.id) : toast('This job is no longer available');
-    case 'opp':
-      return openOpp(g.id);
-    case 'course':
-      return openCourse(g.id);
-    case 'coursePage':
-      return router.push(`/course/${g.id}` as any);
-    case 'live':
-      return router.push(`/live/${g.id}` as any);
-    case 'watch':
-      return router.push(`/watch/${g.id}${g.t ? `?t=${g.t}` : ''}` as any);
-    case 'mentor':
-      return openMentor(g.id);
-    case 'chat':
-      return openChat(g.id);
-    case 'profile':
-      return openProfile(g.id);
-    case 'track':
-      return openTrack(g.id);
-    case 'post':
-      return openComments(g.id);
-    case 'wallet':
-      return router.push('/wallet' as any);
-    case 'teach':
-      return router.push('/teach' as any);
-    case 'courses':
-      return router.push('/courses?tab=saved' as any);
-    case 'cv':
-      return openCV();
-    case 'expert':
-      return router.push(`/expert/${g.id}` as any);
-    case 'experts':
-      return router.push('/experts' as any);
-    default:
-      return openMe();
-  }
-}
 
 export default function Notifs() {
   useLive();

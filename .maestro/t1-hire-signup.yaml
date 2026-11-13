@@ -1,0 +1,68 @@
+appId: cm.bolo.app
+name: New account that needs something done - sign-up, onboarding, post a job
+---
+- runFlow:
+    file: _signup.yaml
+    env:
+      INTENT: hire
+      NAME: "Tour Hira"
+      EMAIL: ${HIRE_EMAIL}
+      SHOT: h
+- extendedWaitUntil:
+    visible:
+      id: "done-post"
+    timeout: 15000
+- takeScreenshot: h04-done
+- tapOn:
+    id: "done-post"
+- extendedWaitUntil:
+    visible:
+      id: "pj-title"
+    timeout: 20000
+- tapOn:
+    id: "pj-title"
+- inputText: "Tour leaking tap ${RUN}"
+- hideKeyboard
+- takeScreenshot: h05-post-job
+- scrollUntilVisible:
+    element:
+      id: "pj-submit"
+    direction: DOWN
+- tapOn:
+    id: "pj-submit"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Tour leaking tap ${RUN}"
+    timeout: 15000
+- takeScreenshot: h06-job-posted
+- back
+- extendedWaitUntil:
+    visible:
+      id: "tab-feed"
+    timeout: 15000
+- runFlow: dismiss.yaml
+- takeScreenshot: h07-feed
+- tapOn: "Jobs"
+- waitForAnimationToEnd
+- takeScreenshot: h08-jobs
+- tapOn: "People"
+- waitForAnimationToEnd
+- takeScreenshot: h09-people
+- tapOn:
+    id: "tab-career"
+- waitForAnimationToEnd
+- runFlow: dismiss.yaml
+- takeScreenshot: h10-career
+- tapOn:
+    id: "tab-me"
+- waitForAnimationToEnd
+- takeScreenshot: h11-me
+- tapOn:
+    id: "tab-feed"
+- tapOn: "Messages"
+- waitForAnimationToEnd
+- takeScreenshot: h12-inbox
+- back
+- tapOn: "Notifications"
+- waitForAnimationToEnd
+- takeScreenshot: h13-notifications

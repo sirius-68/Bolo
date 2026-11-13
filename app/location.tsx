@@ -4,18 +4,18 @@ import { router } from 'expo-router';
 import * as Location from 'expo-location';
 import { locate } from '../src/logic/here';
 import { cityLabel } from '../src/logic/core';
-import { Avatar, Btn, Grow, Page, Sub, Title, TopBar, Txt } from '../src/ui/kit';
+import { Btn, Grow, Page, Sub, Title, TopBar, Txt } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { C } from '../src/ui/theme';
-import { db } from '../src/data/db';
 import { toast } from '../src/ui/overlay';
 import { wantsWork } from '../src/logic/account';
 
-const PINS: [string, number, number][] = [
-  ['yann', 0.08, 0.22],
-  ['njinda', 0.72, 0.1],
-  ['grace', 0.04, 0.7],
-  ['samuel', 0.78, 0.66],
+// Kinds of help around you (an illustration: no real people are shown before location is allowed).
+const PINS: [string, string, number, number][] = [
+  ['cat-plumber', 'Plumber', 0.08, 0.22],
+  ['cat-electrician', 'Electrician', 0.7, 0.1],
+  ['cat-cleaner', 'Cleaner', 0.04, 0.7],
+  ['cat-tailor', 'Tailor', 0.76, 0.66],
 ];
 
 export default function LocationScreen() {
@@ -51,11 +51,13 @@ export default function LocationScreen() {
         <View style={{ position: 'absolute', top: '50%', left: '50%', marginLeft: -42, marginTop: -42, width: 84, height: 84, borderRadius: 42, backgroundColor: C.yellow, borderWidth: 3, borderColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="pin" size={36} color="#000" />
         </View>
-        {PINS.map(([id, x, y], i) => (
-          <Animated.View key={id} style={{ position: 'absolute', left: (`${x * 100}%` as any), top: (`${y * 100}%` as any), alignItems: 'center', gap: 4, transform: [{ scale: pop[i] }] }}>
-            <Avatar pic={db.P[id].pin} size={44} ring="#fff" />
+        {PINS.map(([icon, label, x, y], i) => (
+          <Animated.View key={icon} style={{ position: 'absolute', left: (`${x * 100}%` as any), top: (`${y * 100}%` as any), alignItems: 'center', gap: 4, transform: [{ scale: pop[i] }] }}>
+            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#fff', borderWidth: 2, borderColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name={icon as any} size={22} color="#000" />
+            </View>
             <Txt s={11} w={7}>
-              {db.P[id].name.split(' ')[0]}
+              {label}
             </Txt>
           </Animated.View>
         ))}

@@ -1,0 +1,48 @@
+appId: cm.bolo.app
+name: The job owner logs back in - sees the offer, accepts it, chats
+---
+- runFlow:
+    file: _login.yaml
+    env:
+      EMAIL: ${HIRE_EMAIL}
+- takeScreenshot: a01-feed
+- tapOn: "Notifications"
+- waitForAnimationToEnd
+- takeScreenshot: a02-notifications
+- back
+# my own jobs live on my profile (the Jobs tab shows other people's)
+- tapOn:
+    id: "tab-me"
+- waitForAnimationToEnd
+- tapOn: "My jobs.*"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Tour leaking tap ${RUN}"
+    timeout: 20000
+- tapOn: "Tour leaking tap ${RUN}"
+- waitForAnimationToEnd
+- takeScreenshot: a03-my-job
+- scrollUntilVisible:
+    element: "Accept"
+    direction: DOWN
+- takeScreenshot: a04-offers
+- tapOn: "Accept"
+- waitForAnimationToEnd
+- takeScreenshot: a05-accepted
+- back
+- runFlow: dismiss.yaml
+- tapOn:
+    id: "tab-feed"
+- tapOn: "Messages"
+- waitForAnimationToEnd
+- takeScreenshot: a06-inbox
+- tapOn: "Tour Wanda"
+- waitForAnimationToEnd
+- tapOn:
+    id: "chat-input"
+- inputText: "Hello from the tour ${RUN}"
+- tapOn:
+    id: "chat-send"
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: a07-chat-sent

@@ -97,6 +97,7 @@ export function SkillCombo({ taken, onPick, placeholder, autoFocus }: { taken: s
           setOpen(true);
         }}
         icon="search"
+        onFocus={() => setOpen(true)}
         placeholder={placeholder || 'Search skills: e.g. Plumbing, Python, Accounting'}
         autoFocus={autoFocus}
         autoCapitalize="none"
