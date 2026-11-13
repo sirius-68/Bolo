@@ -1,0 +1,116 @@
+Running on test
+ > Flow New account that offers skills - sign-up, full onboarding, send an offer
+Run _signup.yaml...
+  Launch app "cm.bolo.app" with clear state... COMPLETED
+  Run dismiss.yaml...
+    Run flow when "isn't responding" is visible...
+    Run flow when "isn't responding" is visible... SKIPPED
+    Run flow when "Not yet, something’s wrong" is visible...
+    Run flow when "Not yet, something’s wrong" is visible... SKIPPED
+    Run flow when id: story-close is visible...
+    Run flow when id: story-close is visible... SKIPPED
+  Run dismiss.yaml... COMPLETED
+  Assert that id: skip is visible... COMPLETED
+  Tap on id: skip... COMPLETED
+  Tap on id: create-account... COMPLETED
+  Tap on id: intent-${INTENT == 'hire' ? 'find' : 'hire'}... COMPLETED
+  Tap on id: role-continue... COMPLETED
+  Tap on id: su-name... COMPLETED
+  Input text ${NAME}... COMPLETED
+  Hide Keyboard... COMPLETED
+  Tap on id: su-contact... COMPLETED
+  Input text ${EMAIL}... COMPLETED
+  Hide Keyboard... COMPLETED
+  Tap on id: su-pwd... COMPLETED
+  Input text ${TOUR_PASSWORD}... COMPLETED
+  Hide Keyboard... COMPLETED
+  Tap on id: su-terms... COMPLETED
+  Take screenshot ${SHOT}01-signup... COMPLETED
+  Tap on id: su-submit... COMPLETED
+  Assert that id: setup-continue is visible... COMPLETED
+  Take screenshot ${SHOT}02-setup... COMPLETED
+  Tap on id: setup-continue... COMPLETED
+  Assert that id: not-now is visible... COMPLETED
+  Take screenshot ${SHOT}03-location... COMPLETED
+  Tap on id: not-now... COMPLETED
+Run _signup.yaml... COMPLETED
+Assert that "What do you do?" is visible... COMPLETED
+Take screenshot w04-jobtypes... COMPLETED
+Tap on id: jt-IT & Software... COMPLETED
+Scrolling DOWN until id: jt-continue is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: jt-continue... COMPLETED
+Assert that "What are your skills?" is visible... COMPLETED
+Take screenshot w05-skills... COMPLETED
+Tap on "Search skills.*"... COMPLETED
+Input text Web dev... COMPLETED
+Hide Keyboard... COMPLETED
+Tap on "Web development"... COMPLETED
+Wait for animation to end... COMPLETED
+Take screenshot w06-skill-picked... COMPLETED
+Scrolling DOWN until id: skills-continue is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: skills-continue... COMPLETED
+Assert that "Upload your ID" is visible... COMPLETED
+Take screenshot w07-verify-id... COMPLETED
+Tap on "Later"... COMPLETED
+Assert that id: start-exploring is visible... COMPLETED
+Take screenshot w08-done... COMPLETED
+Tap on id: start-exploring... COMPLETED
+Assert that id: tab-feed is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run dismiss.yaml...
+  Run flow when "isn't responding" is visible...
+  Run flow when "isn't responding" is visible... SKIPPED
+  Run flow when "Not yet, something’s wrong" is visible...
+  Run flow when "Not yet, something’s wrong" is visible... SKIPPED
+  Run flow when id: story-close is visible...
+  Run flow when id: story-close is visible... SKIPPED
+Run dismiss.yaml... COMPLETED
+Take screenshot w09-feed... COMPLETED
+Tap on id: hdr-city... COMPLETED
+Wait for animation to end... COMPLETED
+Tap on id: city-input... COMPLETED
+Input text Kazan... COMPLETED
+Take screenshot w09b-city-typed... COMPLETED
+Tap on id: city-save... COMPLETED
+Wait for animation to end... COMPLETED
+Assert that "Kazan" is visible... COMPLETED
+Take screenshot w09c-city-saved... COMPLETED
+Tap on "Jobs"... COMPLETED
+Wait for animation to end... COMPLETED
+Assert that "Tour leaking tap ${RUN}" is visible... COMPLETED
+Take screenshot w10-jobs... COMPLETED
+Tap on "Tour leaking tap ${RUN}"... COMPLETED
+Wait for animation to end... COMPLETED
+Take screenshot w11-job... COMPLETED
+Scrolling DOWN until id: offer-price is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: offer-price... COMPLETED
+Input text 7500... COMPLETED
+Hide Keyboard... COMPLETED
+Scrolling DOWN until id: send-offer is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: send-offer... COMPLETED
+Wait for animation to end... COMPLETED
+Take screenshot w12-offer-sent... COMPLETED
+Assert that "Offer sent.*" is visible... COMPLETED
+Press back... COMPLETED
+Tap on id: tab-me... COMPLETED
+Wait for animation to end... COMPLETED
+Take screenshot w13-me... COMPLETED
+Tap on "Posts.*"... COMPLETED
+Wait for animation to end... COMPLETED
+Take screenshot w14-posts-empty... COMPLETED
+Tap on "Share your work"... COMPLETED
+Wait for animation to end... COMPLETED
+Tap on id: post-text... COMPLETED
+Input text Tour work post ${RUN}... COMPLETED
+Hide Keyboard... COMPLETED
+Scrolling DOWN until id: post-submit is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: post-submit... COMPLETED
+Wait for animation to end... COMPLETED
+Take screenshot w15-posted... COMPLETED
+Tap on id: tab-me... COMPLETED
+Wait for animation to end... COMPLETED
+Tap on (Optional) "Profile", Index: 0... COMPLETED
+Scrolling DOWN until "My services" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Take screenshot w16-services... COMPLETED
+Assert that "Not published" is not visible... COMPLETED
+exit=0
