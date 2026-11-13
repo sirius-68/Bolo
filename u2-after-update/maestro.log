@@ -1,0 +1,42 @@
+Running on test
+ > Flow Update test, part 2 - the new version opens over the old data, shows What's new once, and never again after restart or log out / log in
+Launch app "cm.bolo.app"... COMPLETED
+Assert that id: tab-feed is visible... COMPLETED
+Assert that "This screen hit a problem" is not visible... COMPLETED
+Assert that id: story-close is visible... COMPLETED
+Take screenshot u05-whats-new-after-update... COMPLETED
+Tap on id: story-close... COMPLETED
+Wait for animation to end... COMPLETED
+Take screenshot u06-home-after-update... COMPLETED
+Stop cm.bolo.app... COMPLETED
+Launch app "cm.bolo.app"... COMPLETED
+Assert that id: tab-feed is visible... COMPLETED
+Assert that (Optional) id: story-close is visible... WARNED
+
+
+ Warning: Assertion is false: id: story-close is visible
+Assert that id: story-close is not visible... COMPLETED
+Take screenshot u07-restart-no-whats-new... COMPLETED
+Open bolo://settings... COMPLETED
+Scrolling DOWN until "Log out" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "Log out"... COMPLETED
+Wait for animation to end... COMPLETED
+Tap on id: confirm-ok... COMPLETED
+Assert that id: have-account is visible... COMPLETED
+Take screenshot u08-logged-out... COMPLETED
+Tap on id: have-account... COMPLETED
+Tap on id: li-contact... COMPLETED
+Input text ${UPD_EMAIL}... COMPLETED
+Hide Keyboard... COMPLETED
+Tap on id: li-pwd... COMPLETED
+Input text ${TOUR_PASSWORD}... COMPLETED
+Hide Keyboard... COMPLETED
+Tap on id: li-submit... COMPLETED
+Assert that id: tab-feed is visible... COMPLETED
+Assert that (Optional) id: story-close is visible... WARNED
+
+
+ Warning: Assertion is false: id: story-close is visible
+Assert that id: story-close is not visible... COMPLETED
+Take screenshot u09-login-no-whats-new... COMPLETED
+exit=0
