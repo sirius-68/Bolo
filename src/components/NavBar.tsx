@@ -70,7 +70,7 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
         testID="offline-pill"
         accessibilityRole="button"
         accessibilityLabel="No connection. Showing saved data. Tap to retry"
-        onPress={() => (tap(), void loadAll())}
+        onPress={() => (tap(), void loadAll(true))}
         style={{ position: 'absolute', bottom: 84 + ins.bottom, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, height: 36, borderRadius: 18, backgroundColor: '#2a2a2e', borderWidth: 1, borderColor: '#3a3a40' }}
       >
         <Icon name="warn" size={14} color={C.yellow} />

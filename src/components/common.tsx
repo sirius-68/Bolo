@@ -373,7 +373,7 @@ export function Pull(props: any) {
       onRefresh={async () => {
         setBusy(true);
         try {
-          await require('../logic/server').loadAll();
+          await require('../logic/server').loadAll(true);
         } finally {
           setBusy(false);
         }

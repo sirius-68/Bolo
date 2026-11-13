@@ -937,6 +937,7 @@ async function loadExperts() {
 /* ================================================================ load everything, keep it live */
 let loading: Promise<void> | null = null;
 let loadingFor = '';
+let loadedAt = 0;
 /** Signing out: forget everything kept in memory about the account, so nothing carries over to the next one. */
 export function resetSession() {
   BLOCKED.clear();
@@ -947,14 +948,17 @@ export function resetSession() {
   readTimer = {};
   readMark = {};
   loadingFor = '';
+  loadedAt = 0;
   net.offline = false;
   net.loading = false;
 }
 /** Load (or refresh) everything for the signed-in account. Safe to call often. */
-export function loadAll(): Promise<void> {
+export function loadAll(force = false): Promise<void> {
   if (!db.uid) return Promise.resolve();
   const me = db.uid;
   if (loading && loadingFor === me) return loading;
+  // coming back to the app again and again doesn't reload everything each time: live updates cover the gap
+  if (!force && loadingFor === me && !net.offline && Date.now() - loadedAt < 45000) return Promise.resolve();
   // a load still running for another account (just signed out) finishes first, then this one starts
   const before = loading;
   loadingFor = me;
@@ -975,7 +979,7 @@ export function loadAll(): Promise<void> {
       await run([loadApplications, loadMentorships, loadOpps, loadExperts]);
       await run([loadChats]);
       await run([loadBookings, loadNotifs]);
-      if (!failed.length) db.syncedAt = Date.now();
+      if (!failed.length) db.syncedAt = loadedAt = Date.now();
       else console.warn('bolo: loading failed', failed.length, String(failed[0]?.message || failed[0]));
       net.offline = failed.length > 0;
     } finally {
@@ -1092,7 +1096,7 @@ export function startRealtime() {
         // anything that happened while we were disconnected
         if (dropped) {
           dropped = false;
-          void loadAll();
+          void loadAll(true);
         }
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') restartSoon();
     });

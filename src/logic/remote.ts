@@ -137,7 +137,7 @@ export function startServer() {
   if (!db.uid) return;
   startRealtime();
   void require('./push').registerPush();
-  void loadAll().then(() => {
+  void loadAll(true).then(() => {
     const { resumeSims } = require('./work');
     resumeSims();
   });
