@@ -146,7 +146,7 @@ function Boost({ id }: { id: string }) {
   return (
     <View>
       <AlertIll icon="rocket" />
-      <SheetTitle center sub={`Show up first on the map and feed around ${db.PR.area.home || myCity()}. Boosted profiles get about 4× more views.`}>
+      <SheetTitle center sub={`Show up first on the map and feed around ${db.PR.area.home || myCity()}. `}>
         Boost your {s.skill.toLowerCase()} service
       </SheetTitle>
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
@@ -205,7 +205,7 @@ function Quiz({ q }: { q: { skill: string; i: number; score: number; pick: numbe
     return (
       <View>
         <AlertIll icon="exam" bg={C.lav} />
-        <SheetTitle center sub={`${Q.length} quick questions · about 1 minute. Get ${Q.length - 1} right to earn a verified badge.`}>
+        <SheetTitle center sub={`${Q.length} quick questions · about 1 minute. Get ${Q.length - 1} right to pass. A practice quiz for now: the result shows on your own profile.`}>
           Skill test
         </SheetTitle>
         <Label>Choose a skill</Label>
@@ -227,8 +227,8 @@ function Quiz({ q }: { q: { skill: string; i: number; score: number; pick: numbe
     return (
       <View>
         <AlertIll icon={ok ? 'verified' : 'x'} bg={ok ? C.ok : C.errSoft} />
-        <SheetTitle center sub={`You got ${q.score} of ${Q.length} right. ${ok ? 'Your skill now shows a verified badge.' : `Review the basics and try again. You need ${Q.length - 1} of ${Q.length}.`}`}>
-          {ok ? `${q.skill} verified!` : 'Not quite this time'}
+        <SheetTitle center sub={`You got ${q.score} of ${Q.length} right. ${ok ? 'Passed. It shows on your own profile.' : `Review the basics and try again. You need ${Q.length - 1} of ${Q.length}.`}`}>
+          {ok ? `${q.skill}: quiz passed` : 'Not quite this time'}
         </SheetTitle>
         <Btn variant="yellow" style={{ marginTop: 16 }} title={ok ? 'Done' : 'Try again'} onPress={() => (ok ? sheet.close() : ((q.i = 0), (q.score = 0), (q.pick = null), re()))} />
         {ok && more ? <Btn variant="ghost" style={{ marginTop: 10 }} title="Test another skill" onPress={() => openTest()} /> : null}
@@ -518,7 +518,7 @@ function DocSheet({ k }: { k: string }) {
     return (
       <View>
         <AlertIll icon={st === 'verified' ? 'verified' : 'timer'} bg={st === 'verified' ? C.ok : C.s3} color={st === 'verified' ? '#000' : '#fff'} />
-        <SheetTitle center sub={st === 'verified' ? 'Checked by bolo. People see a verified badge on your profile.' : 'We’re checking your document. This usually takes a few minutes.'}>
+        <SheetTitle center sub={st === 'verified' ? 'Checked by bolo. People see a verified badge on your profile.' : 'A person at bolo is checking your document. You’ll get a notification when it’s done.'}>
           {t}
         </SheetTitle>
         <Btn style={{ marginTop: 16 }} title="OK" onPress={() => sheet.close()} />

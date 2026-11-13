@@ -23,7 +23,13 @@ const nowHM = () => new Date().toLocaleTimeString('en-GB', { hour: '2-digit', mi
 
 /** Live class (mobile). Teacher = the course is yours: board pen, record, mute all, hands, end class.
     Student: watch, raise hand, chat and ask questions. Audio/video streams connect when the video service is on. */
-export default function LiveClass() {
+/** Live classes aren't on the server yet (this screen was a prototype with pretend participants), so the
+    route says so honestly instead of showing a class that isn't happening. */
+export default function LiveSoon() {
+  return <Missing bar="Class" title="Live classes are coming later" text="For now, courses open on the school’s own website from Career → Courses." />;
+}
+// kept for when live classes are built on the server
+export function LiveClass() {
   const { id, as } = useLocalSearchParams<{ id: string; as?: string }>();
   const c = db.COURSES.find((x) => x.id === id);
   const ins = useSafeAreaInsets();

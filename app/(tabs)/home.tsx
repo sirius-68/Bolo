@@ -50,7 +50,7 @@ function BizHome() {
   const st = ST_C.find((s) => s[0] === db.PR.cst) || ST_C[0];
   const todo: [string, string, () => void][] = [
     ...(b.verified !== 'verified'
-      ? ([[b.verified === 'review' ? 'timer' : 'verified', b.verified === 'review' ? 'Business verification in progress' : 'Verify your business to unlock contracts', () => (b.verified === 'review' ? toast('Usually takes a few minutes') : openBizSetup('edit', 3))]] as [string, string, () => void][])
+      ? ([[b.verified === 'review' ? 'timer' : 'verified', b.verified === 'review' ? 'Business verification in progress' : 'Verify your business to unlock contracts', () => (b.verified === 'review' ? toast('A person at bolo is checking your documents') : openBizSetup('edit', 3))]] as [string, string, () => void][])
       : []),
     ...vac
       .filter((po) => (po.offerList || []).some((o) => o.stage === 'applied'))

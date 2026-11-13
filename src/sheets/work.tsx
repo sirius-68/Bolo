@@ -177,7 +177,7 @@ function MyJobOffers({ po }: { po: Post }) {
           })}
         </View>
       ) : (
-        <Empty title="Waiting for offers" text={`People near ${po.area} have been notified. Offers usually arrive within minutes.`} />
+        <Empty title="Waiting for offers" text="Your job is live: people looking for work can see it and send offers. You’ll get a notification for each one." />
       )}
       {b ? <Btn variant="yellow" icon="nav" title="Track the job" style={{ marginTop: 14 }} onPress={() => afterSheet(() => openTrack(b.id))} /> : null}
       {!po.booked ? <Btn variant="ghost" title="Close this job" style={{ marginTop: 14 }} onPress={() => (closeJob(po.id), sheet.close())} /> : null}

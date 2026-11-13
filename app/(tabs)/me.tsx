@@ -373,7 +373,7 @@ function ProfilePanel() {
             {pct === 100 ? 'Your profile is complete 🎉' : 'Complete your profile'}
           </Txt>
           <Txt s={12} c={C.muted}>
-            {pct === 100 ? 'People see you as a top, trusted profile.' : 'Complete profiles get up to 3× more job offers.'}
+            {pct === 100 ? 'People see you as a top, trusted profile.' : 'A complete profile helps people decide to hire you.'}
           </Txt>
         </View>
       </Card>
@@ -389,10 +389,10 @@ function ProfilePanel() {
           ))}
         </View>
       ) : null}
-      <H t="Skill verification" />
+      <H t="Skill quiz" />
       <Card>
         <Txt s={13} c={C.muted}>
-          Pass a short test, verified skills get a badge and rank higher.
+          Check yourself with a short practice quiz for each skill. The result shows on your own profile for now.
         </Txt>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
           {db.user.skills.map((s) => (
@@ -718,14 +718,14 @@ function MeBusiness() {
                     Finish your business page
                   </Txt>
                   <Txt s={12} c={C.muted}>
-                    Complete pages get up to 5× more applicants
+                    A complete page helps people decide to apply
                   </Txt>
                 </View>
                 <Icon name="chev" size={18} color={C.faint} />
               </Pressable>
             ) : null}
             {b.verified !== 'verified' ? (
-              <Pressable onPress={() => (b.verified === 'review' ? toast('We’re checking your documents, usually a few minutes') : openBizSetup('edit', 3))} style={[S.row, { gap: 12, padding: 14, borderRadius: 20, backgroundColor: 'rgba(255,179,122,.12)', borderWidth: 1, borderColor: 'rgba(255,179,122,.4)' }]}>
+              <Pressable onPress={() => (b.verified === 'review' ? toast('A person at bolo is checking your documents') : openBizSetup('edit', 3))} style={[S.row, { gap: 12, padding: 14, borderRadius: 20, backgroundColor: 'rgba(255,179,122,.12)', borderWidth: 1, borderColor: 'rgba(255,179,122,.4)' }]}>
                 <Icon name={b.verified === 'review' ? 'timer' : 'verified'} size={22} color={C.orange} />
                 <View style={{ flex: 1 }}>
                   <Txt s={14} w={8}>

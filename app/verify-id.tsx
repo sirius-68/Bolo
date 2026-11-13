@@ -56,7 +56,7 @@ export default function VerifyId() {
       <TopBar title="Verify identity" right={<TextLink title="Later" onPress={() => (ui.verifyReturn ? (router.dismissTo(ui.verifyReturn as any), (ui.verifyReturn = '')) : router.push('/done'))} />} />
       <Steps total={7} on={6} />
       <Title sm>Upload your ID</Title>
-      <Sub>Verified profiles get a badge and up to 3× more hires.</Sub>
+      <Sub>Verified profiles get a badge, so people know who they’re dealing with.</Sub>
       <View style={{ gap: 16, marginTop: 28 }}>
         <Seg
           items={[

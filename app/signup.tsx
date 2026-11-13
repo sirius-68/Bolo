@@ -43,7 +43,7 @@ export default function Signup() {
       <TopBar title="Create account" />
       <Steps total={wantsWork() ? 7 : 3} on={1} />
       <Title sm>Let’s get you started</Title>
-      <Sub>{wantsWork() ? 'Get hired by people and businesses around you.' : 'Hire trusted people around you in minutes.'}</Sub>
+      <Sub>{wantsWork() ? 'Get hired by people and businesses around you.' : 'Find and hire people around you.'}</Sub>
       <View style={{ gap: 16, marginTop: 28 }}>
         <Field label="Full name" error={bad.name && 'Enter your full name'}>
           <Input testID="su-name" value={name} onChangeText={setName} icon="user" placeholder="e.g. Edward Isle" invalid={bad.name} autoCapitalize="words" />

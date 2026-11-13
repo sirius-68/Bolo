@@ -287,7 +287,7 @@ function Promo() {
             {`Hiring for ${bizName(curBiz())}?`}
           </Txt>
           <Txt s={12} c="#e3e7ff">
-            Post a vacancy or create an internship. People near you apply in minutes.
+            Post a vacancy or create an internship. People looking for work can apply right away.
           </Txt>
         </View>
         <Btn small variant="yellow" title="Post" onPress={() => router.push('/post-job')} />

@@ -98,14 +98,15 @@ const pic = (url?: string | null) => (url ? 'uri:' + url : null);
 const PROFILE_COLS = 'id,name,avatar_url,city,bio,role,biz_only,intents,skills,skill_list,level,years,work_status,hire_status,area,experience,education,languages,services,verified,availability,created_at,lng,lat,followers,following,jobs_done,hires,rating,reviews';
 export function personFrom(r: any): Person {
   const skills: string[] = r.skills || [];
-  const client = r.role === 'client' && !skills.length;
+  // someone who lists no skills is here to hire (or just looking): no "Hire" button, no years of experience
+  const client = !skills.length;
   const name = r.name || 'bolo member';
   const photo = pic(r.avatar_url) || facePic(name, r.id);
   return {
     name,
-    role: skills[0] || (client ? 'Client' : 'Member'),
+    role: skills[0] || 'Member',
     tag: skills.slice(1, 3).join(' · ') || undefined,
-    years: r.years || 0,
+    years: skills.length ? r.years || 0 : 0,
     rate: Number(r.rating) || 0,
     dist: kmFromMe(r.lng, r.lat),
     area: r.area?.home || r.city || '',
