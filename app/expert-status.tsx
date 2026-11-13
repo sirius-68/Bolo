@@ -72,7 +72,6 @@ export default function ExpertStatus() {
               onPress={() => {
                 tap();
                 bookInterview(sl);
-                toast(`Interview booked · ${sl}`);
               }}
               style={[S.rowB, { padding: 16, borderRadius: 16, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }]}
             >

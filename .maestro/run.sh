@@ -15,7 +15,7 @@ FLOWS="signedout"
 # Test builds talk to staging, where new accounts are confirmed at once: two fresh accounts sign up,
 # go through onboarding, and do a job together (post, offer, accept, chat).
 RUN="${GITHUB_RUN_ID:-$(date +%s)}"
-[ -n "$TOUR_SIGNUP" ] && FLOWS="$FLOWS t1-hire-signup t2-work-signup t3-hire-accepts t4-work-replies t5-business-signup"
+[ -n "$TOUR_SIGNUP" ] && FLOWS="$FLOWS t1-hire-signup t2-work-signup t3-hire-accepts t4-work-replies t5-business-signup t6-sweep-regular t7-sweep-business"
 for f in $FLOWS; do
   mkdir -p qa-out/$f
   (cd qa-out/$f && maestro test -e QA_EMAIL="$QA_EMAIL" -e QA_PASSWORD="$QA_PASSWORD" \

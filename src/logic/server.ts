@@ -10,6 +10,7 @@ import { db, Booking, BizSample, Course, Mentorship, Msg, MyBiz, Notif, Opp, Per
 import type { Expert, Service as ExService } from '../data/experts';
 import { logoPic } from '../ui/kit';
 import { bump } from './live';
+import { fill } from './persist';
 
 /* ================================================================ ids and small helpers */
 export const ME = () => db.uid || '';
@@ -868,7 +869,7 @@ async function loadExperts() {
   const { data: mine } = await supabase.from('experts').select('*').eq('user_id', ME()).maybeSingle();
   if (mine) {
     const d = mine.data || {};
-    db.EXPERT = { ...db.EXPERT, ...d, status: mine.status === 'submitted' ? 'submitted' : mine.status, headline: mine.headline || d.headline || '' };
+    db.EXPERT = { ...fill(db.EXPERT, d), status: mine.status === 'submitted' ? 'submitted' : mine.status, headline: mine.headline || d.headline || '' };
   }
 }
 

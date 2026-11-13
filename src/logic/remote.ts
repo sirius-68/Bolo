@@ -8,6 +8,7 @@ import { setMonitorUser } from '../lib/monitor';
 import { checkRealtime, loadAll, startRealtime, stopRealtime } from './server';
 import { db, MyBiz } from '../data/db';
 import { bump, subscribe } from './live';
+import { fill } from './persist';
 
 export const isReal = () => true;
 const digits = (s: string) => (s || '').replace(/\D/g, '');
@@ -136,12 +137,15 @@ export function startServer() {
 /** App opened with a saved session but no saved copy of the app's data (first start after an update). */
 export async function resumeSession(): Promise<boolean> {
   try {
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) return false;
-    db.uid = data.user.id;
-    db.user.contact = data.user.email || data.user.phone || db.user.contact;
-    await pull();
+    // the saved session is enough to know who this is (works offline too)
+    const { data } = await supabase.auth.getSession();
+    const u = data.session?.user;
+    if (!u) return false;
+    db.uid = u.id;
+    db.user.contact = u.email || u.phone || db.user.contact;
     db.loggedIn = true;
+    // profile from the server, without holding the start screen for long on a slow network
+    await Promise.race([pull().catch(() => {}), new Promise((r) => setTimeout(r, 6000))]);
     return true;
   } catch {
     return false;
@@ -160,6 +164,7 @@ export async function hasSession() {
 /* ---------------------------------------------------------------- pull: server → app */
 const city = (c?: string | null) => c || db.user.city;
 const pic = (url?: string | null) => (url ? 'uri:' + url : null);
+const plainObj = (x: any) => !!x && typeof x === 'object' && !Array.isArray(x);
 
 export async function pull() {
   if (!db.uid) return;
@@ -182,27 +187,28 @@ export async function pull() {
       u.bizOnly = !!r.biz_only || u.bizOnly;
       if (r.intents?.length) u.intents = r.intents;
       if (r.skills?.length) u.skills = r.skills;
-      if (r.skill_list) u.skillList = r.skill_list;
+      if (plainObj(r.skill_list)) u.skillList = r.skill_list;
       if (r.level) u.level = r.level;
       if (r.years) u.years = r.years;
       u.pro = { regular: !!r.pro_regular, business: !!r.pro_business };
       db.PR.wst = r.work_status || db.PR.wst;
       db.PR.cst = r.hire_status || db.PR.cst;
-      if (r.area) db.PR.area = r.area;
+      // saved by any version of the app: missing or odd parts fall back to what this version expects
+      if (plainObj(r.area)) db.PR.area = fill(db.PR.area, r.area);
       if (Array.isArray(r.experience) && r.experience.length) db.PR.exp = r.experience;
-      if (r.education) db.PR.edu = r.education;
+      if (plainObj(r.education)) db.PR.edu = fill(db.PR.edu, r.education);
       if (Array.isArray(r.languages) && r.languages.length) db.PR.langs = r.languages;
-      if (r.services) db.PR.services = r.services;
+      if (Array.isArray(r.services)) db.PR.services = r.services.filter(plainObj);
       db.PR.docs.id = r.verified ? 'verified' : db.PR.docs.id === 'review' ? 'review' : null;
       u.verified = !!r.verified;
     }
     const q = pv.data;
     if (q) {
-      db.PR.ct = { ...db.PR.ct, ...(q.contacts || {}) };
+      db.PR.ct = fill(db.PR.ct, { ...db.PR.ct, ...(plainObj(q.contacts) ? q.contacts : {}) });
       if (q.phone && !db.PR.ct.phone) db.PR.ct.phone = '+' + digits(q.phone);
       if (q.email && !db.PR.ct.email) db.PR.ct.email = q.email;
       db.user.contact = db.user.contact || q.email || (q.phone ? '+' + digits(q.phone) : '');
-      if (q.cv) {
+      if (plainObj(q.cv)) {
         db.user.cv = q.cv;
         db.user.cvDone = true;
       }
@@ -215,24 +221,24 @@ export async function pull() {
         const b: MyBiz = {
           id: x.client_id,
           remoteId: x.id,
-          name: x.name,
-          sector: x.sector,
-          size: x.size,
-          city: x.city,
-          area: x.area,
-          address: x.address,
-          phone: x.phone,
-          email: x.email,
-          web: x.web,
-          about: x.about,
+          name: x.name || '',
+          sector: x.sector || '',
+          size: x.size || '',
+          city: x.city || '',
+          area: x.area || '',
+          address: x.address || '',
+          phone: x.phone || '',
+          email: x.email || '',
+          web: x.web || '',
+          about: x.about || '',
           rccm: docs?.rccm || old?.rccm || '',
           niu: docs?.niu || old?.niu || '',
           logo: pic(x.logo_url) || (old?.logo?.startsWith('uri:') ? old.logo : null),
           color: x.color,
           verified: x.verified,
-          recruiters: x.recruiters || [],
-          hires: x.hire_areas,
-          hireTypes: x.hire_types,
+          recruiters: Array.isArray(x.recruiters) ? x.recruiters : [],
+          hires: Array.isArray(x.hire_areas) ? x.hire_areas : [],
+          hireTypes: Array.isArray(x.hire_types) ? x.hire_types : [],
           team: old?.team || [],
           contracts: old?.contracts || [],
           events: old?.events || [],

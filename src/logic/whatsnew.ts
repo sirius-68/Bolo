@@ -1,7 +1,7 @@
 /* "What's new" stories, shown once after an update. Add a slide here with every release. */
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db, ui } from '../data/db';
-import { bump } from './live';
 import { showStories, Story } from '../components/Stories';
 import { openNotifSettings, openPayments } from '../sheets/account';
 
@@ -29,15 +29,26 @@ export const WHATS_NEW: Story[] = [
   { key: 'world', colors: ['#7c5cff', '#3b1fa8'], icon: 'globe', chip: 'Everywhere', title: 'Every country, every city', text: 'Pick your country and city anywhere in the world. The map, distances and phone numbers follow you.' },
 ];
 
-/** Show the latest "What's new" once. */
-export function maybeShowWhatsNew() {
-  const seen = (db.PREF as any).seenNew;
-  if (seen === WHATS_NEW_ID) return;
-  (db.PREF as any).seenNew = WHATS_NEW_ID;
-  bump();
-  // Only for people updating the app; a fresh install has nothing "new" to compare with.
-  if (!ui.returning) return;
-  // Saw the previous update's stories already → only this update's slides.
-  showStories(seen ? WHATS_NEW.filter((x) => LATEST.includes(x.key)) : WHATS_NEW, { label: 'What’s new on bolo' });
+const SEEN_KEY = 'bolo.seenNew';
+let checking = false;
+/** Show this update's "What's new" once per phone. The mark is kept on the phone itself (not in the account's
+    data), so logging out and back in never shows it again; only a newer update does. */
+export async function maybeShowWhatsNew() {
+  if (checking) return;
+  checking = true;
+  try {
+    // older versions kept the mark with the account data: carry it over
+    const seen = (await AsyncStorage.getItem(SEEN_KEY)) || ((db.PREF as any).seenNew as string | undefined) || '';
+    if (seen === WHATS_NEW_ID) return;
+    await AsyncStorage.setItem(SEEN_KEY, WHATS_NEW_ID);
+    // A fresh install (or a first log-in on this phone) has nothing "new" to compare with.
+    if (!seen && !ui.returning) return;
+    const slides = WHATS_NEW.filter((x) => LATEST.includes(x.key));
+    if (slides.length) showStories(slides, { label: 'What’s new on bolo' });
+  } catch {
+    // storage unavailable: better to skip than to show it on every start
+  } finally {
+    checking = false;
+  }
 }
 export const openWhatsNew = () => showStories(WHATS_NEW, { label: 'What’s new on bolo' });

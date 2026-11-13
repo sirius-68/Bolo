@@ -1,0 +1,619 @@
+appId: cm.bolo.app
+name: Every screen, signed in as a regular account (plus links to things that do not exist)
+---
+- runFlow:
+    file: _login.yaml
+    env:
+      EMAIL: ${WORK_EMAIL}
+- openLink: "bolo://feed"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x00-feed
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x00-feed
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://home"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x01-home
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x01-home
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://career"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x02-career
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x02-career
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://me"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x03-me
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x03-me
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://inbox"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x04-inbox
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x04-inbox
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://notifs"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x05-notifs
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x05-notifs
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://settings"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x06-settings
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x06-settings
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://browse"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x07-browse
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x07-browse
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://browse?mode=people"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x08-browse_mode-people
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x08-browse_mode-people
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://browse?mode=jobs"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x09-browse_mode-jobs
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x09-browse_mode-jobs
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://browse?mode=companies"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x10-browse_mode-companies
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x10-browse_mode-companies
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://courses"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x11-courses
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x11-courses
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://courses?tab=saved"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x12-courses_tab-saved
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x12-courses_tab-saved
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://mentors"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x13-mentors
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x13-mentors
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://opps"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x14-opps
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x14-opps
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://experts"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x15-experts
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x15-experts
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://expert-filters"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x16-expert-filters
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x16-expert-filters
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://expert-apply"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x17-expert-apply
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x17-expert-apply
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://expert-status"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x18-expert-status
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x18-expert-status
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://teach"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x19-teach
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x19-teach
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://list-course"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x20-list-course
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x20-list-course
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://post-job"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x21-post-job
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x21-post-job
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://new-post"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x22-new-post
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x22-new-post
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://cvflow"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x23-cvflow
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x23-cvflow
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://skills?mode=edit"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x24-skills_mode-edit
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x24-skills_mode-edit
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://id-verify"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x25-id-verify
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x25-id-verify
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://wallet"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x26-wallet
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x26-wallet
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://topup"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x27-topup
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x27-topup
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://ads"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x28-ads
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x28-ads
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://reels"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x29-reels
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x29-reels
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://jobtypes"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x30-jobtypes
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x30-jobtypes
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://verify-id"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x31-verify-id
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x31-verify-id
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://selfie"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x32-selfie
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x32-selfie
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://profile/nope"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x33-profile_nope
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x33-profile_nope
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://profile/00000000-0000-4000-8000-000000000000"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x34-profile_00000000-0000-4000-8000-000000000000
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x34-profile_00000000-0000-4000-8000-000000000000
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://chat/nope"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x35-chat_nope
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x35-chat_nope
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://group/nope"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x36-group_nope
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x36-group_nope
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://track/nope"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x37-track_nope
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x37-track_nope
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://job/nope"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x38-job_nope
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x38-job_nope
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://course/nope"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x39-course_nope
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x39-course_nope
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://live/nope"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x40-live_nope
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x40-live_nope
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://watch/nope"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x41-watch_nope
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x41-watch_nope
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://mentor/nope"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x42-mentor_nope
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x42-mentor_nope
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://opp/nope"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x43-opp_nope
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x43-opp_nope
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://expert/nope"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x44-expert_nope
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x44-expert_nope
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://expert-book"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x45-expert-book
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x45-expert-book
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://expert-book?e=nope&s=nope"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x46-expert-book_e-nope_s-nope
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x46-expert-book_e-nope_s-nope
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://call?id=nope"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x47-call_id-nope
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x47-call_id-nope
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://web"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x48-web
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x48-web
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://list-course?id=nope"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x49-list-course_id-nope
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x49-list-course_id-nope
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
+- openLink: "bolo://reels?i=99"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: x50-reels_i-99
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-x50-reels_i-99
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd

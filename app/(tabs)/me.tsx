@@ -745,9 +745,10 @@ function MeBusiness() {
               <KV k="Contact" v={[b.phone ? showPhone(b.phone) : '', b.email, b.web].filter(Boolean).join(' · ') || 'Add a phone or email'} mute={!b.phone && !b.email} />
               <KV k="Registration" v={b.rccm ? `RCCM ${b.rccm} · NIU ${b.niu.replace(/.(?=.{4})/g, '•')}` : 'Not added yet'} mute={!b.rccm} />
             </Card>
-            <H t="Recruiters" action="+ Invite" onAction={openInvite} />
+            {/* Team accounts (recruiters, admins) need shared access on the server: until then only the owner manages the page. */}
+            <H t="Who manages this page" />
             <Card>
-              {[{ n: db.user.name || 'You', r: 'Owner', pending: 0 }, ...b.recruiters].map((m, i) => (
+              {[{ n: db.user.name || 'You', r: 'Owner', pending: 0 }].map((m, i) => (
                 <View key={i} style={[S.row, { gap: 12 }]}>
                   <Avatar pic={i === 0 ? myPhoto() : null} size={38} />
                   <View style={{ flex: 1 }}>

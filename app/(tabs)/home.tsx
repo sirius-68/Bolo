@@ -106,7 +106,7 @@ function BizHome() {
             ['job', 'Vacancy', () => router.push('/post-job')],
             ['cap', 'Internship', () => openOppForm('Internship')],
             ['sparkle', 'Program', () => openOppForm('Training program')],
-            ['follow', 'Recruiter', openInvite],
+            ['search', 'Find talent', () => openBrowse('people')],
           ] as [string, string, () => void][]
         ).map(([i, t, f]) => (
           <Pressable key={t} accessibilityRole="button" accessibilityLabel={`New ${t.toLowerCase()}`} onPress={() => (tap(), f())} style={({ pressed }) => ({ flex: 1, alignItems: 'center', gap: 6, paddingVertical: 12, borderRadius: 16, backgroundColor: pressed ? C.s2 : C.s1, borderWidth: 1, borderColor: C.line })}>
