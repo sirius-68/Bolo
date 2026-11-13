@@ -45,7 +45,11 @@ if [ -n "${BREVO_API_KEY:-}" ]; then
     echo "Brevo key works. Plan and credits:"
     jq -c '[.plan[]? | {type, creditsType, credits}]' /tmp/brevo.json
     sms=$(jq '[.plan[]? | select(.type == "sms") | .credits] | add // 0' /tmp/brevo.json)
-    [ "${sms%.*}" -gt 0 ] 2>/dev/null || echo "::warning::Brevo has no SMS credits yet: texts will be refused until you add some"
+    if ! [ "${sms%.*}" -gt 0 ] 2>/dev/null; then
+      # no credits: Brevo would refuse every text, so keep phone codes off for now
+      BREVO_OK=""
+      echo "::warning::Brevo has no SMS credits yet: phone codes stay off until you add some"
+    fi
   else
     echo "::warning::Brevo did not accept BREVO_API_KEY (HTTP $bcode: $(jq -r '[.code, .message] | map(select(. != null)) | join(" - ")' /tmp/brevo.json 2>/dev/null | head -c 300)). Use an API key that starts with xkeysib-"
   fi
@@ -62,8 +66,8 @@ if [ -n "${BREVO_API_KEY:-}" ]; then
       echo "::warning::Could not switch on SMS codes for $REF"
     fi
   else
-    # a key Brevo refuses: keep phone codes off so the app doesn't offer them
-    patch '{"external_phone_enabled": false, "hook_send_sms_enabled": false}' && echo "SMS codes stay off until the Brevo key works."
+    # a key Brevo refuses, or no SMS credits: keep phone codes off so the app doesn't offer them
+    patch '{"external_phone_enabled": false, "hook_send_sms_enabled": false}' && echo "SMS codes stay off (Brevo key or SMS credits missing)."
   fi
 else
   echo "BREVO_API_KEY is not set: codes by SMS stay off."
