@@ -22,16 +22,8 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions:
-      contents: read
-      pages: write
     steps:
       - uses: actions/checkout@v4
-      # switches GitHub Pages on the first time, when GitHub allows it; otherwise: Settings → Pages → Source: GitHub Actions
-      - uses: actions/configure-pages@v5
-        continue-on-error: true
-        with:
-          enablement: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -41,9 +33,16 @@ jobs:
           SUPABASE_KEY: ${{ vars.SUPABASE_KEY }}
         run: |
           set -euo pipefail
+          # same rule as the app: the repository variables if set, otherwise the address and public key built into the app
+          SUPABASE_URL=${SUPABASE_URL:-$(grep -oP "EXPO_PUBLIC_SUPABASE_URL \|\| '\K[^']+" src/lib/supabase.ts || true)}
+          SUPABASE_KEY=${SUPABASE_KEY:-$(grep -oP "EXPO_PUBLIC_SUPABASE_KEY \|\| '\K[^']+" src/lib/supabase.ts || true)}
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
-            echo "::error::SUPABASE_URL and SUPABASE_KEY (repository variables) are needed to publish the admin panel"; exit 1
+            echo "::error::no database address or public key found for the admin panel"; exit 1
           fi
+          case "$SUPABASE_URL" in
+            https://*.supabase.co) ;;
+            *) echo "::error::the database address does not look right"; exit 1 ;;
+          esac
           # the key must be the public one: a secret key must never be published
           case "$SUPABASE_KEY" in
             sb_secret_*) echo "::error::SUPABASE_KEY is a secret key. Use the publishable key."; exit 1 ;;
