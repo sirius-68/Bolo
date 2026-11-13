@@ -33,7 +33,10 @@ patch '{"mailer_otp_length": 6}' || true
 echo "Current sign-in settings (no secrets):"
 jq '{external_email_enabled, mailer_autoconfirm, mailer_otp_length, smtp_host, smtp_sender_name, rate_limit_email_sent, external_phone_enabled, sms_provider, hook_send_sms_enabled, site_url}' /tmp/auth.json
 
+# a key pasted with a space or line break around it still works
+BREVO_API_KEY=$(printf '%s' "${BREVO_API_KEY:-}" | tr -d '[:space:]')
 if [ -n "${BREVO_API_KEY:-}" ]; then
+  case "$BREVO_API_KEY" in xkeysib-*) ;; *) echo "::warning::BREVO_API_KEY doesn't start with xkeysib- (starts with \"${BREVO_API_KEY:0:8}\")";; esac
   # Free check with Brevo: is the key valid, and are there SMS credits? (prints only the plan, never the account email)
   bcode=$(curl -sS -o /tmp/brevo.json -w '%{http_code}' https://api.brevo.com/v3/account -H "api-key: $BREVO_API_KEY" -H 'Accept: application/json' || true)
   BREVO_OK=""
@@ -44,7 +47,7 @@ if [ -n "${BREVO_API_KEY:-}" ]; then
     sms=$(jq '[.plan[]? | select(.type == "sms") | .credits] | add // 0' /tmp/brevo.json)
     [ "${sms%.*}" -gt 0 ] 2>/dev/null || echo "::warning::Brevo has no SMS credits yet: texts will be refused until you add some"
   else
-    echo "::warning::Brevo did not accept BREVO_API_KEY (HTTP $bcode: $(jq -r '.code // .message // empty' /tmp/brevo.json 2>/dev/null | head -c 120)). Use an API key that starts with xkeysib-"
+    echo "::warning::Brevo did not accept BREVO_API_KEY (HTTP $bcode: $(jq -r '[.code, .message] | map(select(. != null)) | join(" - ")' /tmp/brevo.json 2>/dev/null | head -c 300)). Use an API key that starts with xkeysib-"
   fi
   rm -f /tmp/brevo.json
   if [ -n "$BREVO_OK" ]; then
