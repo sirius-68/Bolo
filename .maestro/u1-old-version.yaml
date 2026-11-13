@@ -1,0 +1,27 @@
+appId: cm.bolo.app
+name: Update test, part 1 - on the previous version, a new account signs up and reaches the home screen
+---
+- runFlow:
+    file: _signup.yaml
+    env:
+      INTENT: hire
+      NAME: "Tour Updater"
+      EMAIL: ${UPD_EMAIL}
+      SHOT: u
+- extendedWaitUntil:
+    visible:
+      id: "start-exploring"
+    timeout: 15000
+- tapOn:
+    id: "start-exploring"
+- extendedWaitUntil:
+    visible:
+      id: "tab-feed"
+    timeout: 30000
+- waitForAnimationToEnd
+- takeScreenshot: u04-old-version-home
+# give the app a moment to save its copy of the data
+- swipe:
+    direction: UP
+- swipe:
+    direction: DOWN

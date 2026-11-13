@@ -359,7 +359,7 @@ export function confirm(o: { title: string; text?: string; ok: string; cancel?: 
       <SheetTitle center={!!o.icon} sub={o.text}>
         {o.title}
       </SheetTitle>
-      <Btn title={o.ok} variant={o.danger ? 'danger' : 'yellow'} onPress={() => {
+      <Btn testID="confirm-ok" title={o.ok} variant={o.danger ? 'danger' : 'yellow'} onPress={() => {
         sheet.close();
         o.onOk();
       }} style={{ marginTop: 8 }} />
