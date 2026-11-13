@@ -58,7 +58,9 @@ export async function verifyCode(contact: string, token: string, purpose: 'signu
   try {
     const email = isEmail(contact);
     const type = email ? (purpose === 'recovery' ? 'recovery' : 'email') : 'sms';
-    const { error } = await supabase.auth.verifyOtp({ ...(cred(contact) as any), token: token.trim(), type } as any);
+    let { error } = await supabase.auth.verifyOtp({ ...(cred(contact) as any), token: token.trim(), type } as any);
+    // sign-up codes are accepted under either name, depending on the server version
+    if (error && email && purpose === 'signup') ({ error } = await supabase.auth.verifyOtp({ email: contact.trim().toLowerCase(), token: token.trim(), type: 'signup' }));
     if (error) return friendly(error);
     await afterAuth();
     return null;
