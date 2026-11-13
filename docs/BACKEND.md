@@ -78,6 +78,7 @@ select id, 'owner' from auth.users where email = '<your login email>';
 | 0005 course seed | the 17 real courses picked by bolo (links to the provider's site) |
 | 0006 calls | voice and video calls in 1-to-1 chats: ringing, accepted, ended, missed; the call log in the chat; rate limits |
 | 0007 push | every new notification row asks the `push` server function (through pg_net) to send a phone pop-up; the function's address and secret are set by the function at deploy |
+| 0008 privacy, feedback | `profiles.visible` (hidden profiles leave the people lists and share no position, but can still be opened by people who deal with them); `feedback` (messages to the bolo team from Settings → Help, readable by admins only, 5 an hour) |
 
 ### Calls (Agora)
 Media goes through Agora. The `agora-token` server function gives a 2-hour pass for one call, only to its two people.

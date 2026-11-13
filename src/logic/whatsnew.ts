@@ -5,12 +5,14 @@ import { db, ui } from '../data/db';
 import { showStories, Story } from '../components/Stories';
 import { openNotifSettings, openPayments } from '../sheets/account';
 
-export const WHATS_NEW_ID = '2026-11-12b';
+export const WHATS_NEW_ID = '2026-11-13';
 
 /** Slides added in the latest update. */
-const LATEST = ['push'];
+const LATEST = ['push', 'steady', 'honest'];
 
 export const WHATS_NEW: Story[] = [
+  { key: 'steady', colors: ['#3d5af1', '#1b2a9b'], icon: 'shield', chip: 'Reliability', title: 'Steadier everywhere', text: 'Pull down to refresh. If your connection drops, bolo keeps what you had on screen and messages wait with “Tap to retry”. Sign-up, log-in and password reset are smoother too.' },
+  { key: 'honest', colors: ['#2fbf7a', '#0f6e45'], icon: 'eyeoff', chip: 'Privacy', title: 'You choose who finds you', text: 'Hide your profile from search in Settings → Privacy & security, review the people you blocked, and write to the bolo team from Help.', cta: 'Open settings', onCta: () => router.push('/settings' as any) },
   { key: 'push', colors: ['#f6ee5c', '#e3c400'], icon: 'bell', chip: 'Notifications', title: 'Never miss a message', text: 'New messages, offers, booking updates and calls now pop up on your phone, even when bolo is closed. Tap one to go straight there. Choose what you get in Settings → Notifications.', cta: 'Notification settings', onCta: () => openNotifSettings(), dark: true },
   { key: 'live', colors: ['#f6ee5c', '#e3c400'], icon: 'sparkle', chip: 'bolo is live', title: 'Real people, real jobs', text: 'Everything you see is now from real bolo members: jobs, people, posts and courses. Post a job or share your work and people near you see it right away.', dark: true },
   { key: 'chatlive', colors: ['#3d5af1', '#1b2a9b'], icon: 'chat', chip: 'Messages', title: 'Chat in real time', text: 'Messages arrive instantly, with read ticks. Send photos, documents and your location, or a quote that books the job when it’s accepted.', cta: 'Open messages', onCta: () => router.push('/inbox') },
