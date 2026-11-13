@@ -43,6 +43,8 @@ export function Txt({ s = 14, w = 5, c = C.text, center, lines, style, children,
       onPress={onPress}
       selectable={selectable}
       numberOfLines={lines}
+      // follow the phone's text-size setting, up to a point where the layouts still hold
+      maxFontSizeMultiplier={1.3}
       style={[tx(s, w, c), center && { textAlign: 'center' }, style]}
     >
       {children}
@@ -140,13 +142,18 @@ export function Btn({
     blue: C.blue,
   }[variant];
   const fg = variant === 'ghost' || variant === 'dark' || variant === 'soft' || variant === 'danger' || variant === 'blue' ? C.white : C.black;
+  const lastPress = useRef(0);
   return (
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      accessibilityState={{ disabled: !!disabled }}
+      accessibilityState={{ disabled: !!disabled, busy: !!loading }}
       disabled={disabled || loading}
       onPress={() => {
+        // a double tap is one press (no double posts, double bookings or two screens opening)
+        const now = Date.now();
+        if (now - lastPress.current < 450) return;
+        lastPress.current = now;
         tap();
         onPress?.();
       }}
@@ -168,7 +175,7 @@ export function Btn({
       ]}
     >
       {loading ? <ActivityIndicator color={fg} /> : icon ? <Icon name={icon} size={18} color={fg} /> : null}
-      <Text style={tx(small ? 13 : 14, 7, fg)} numberOfLines={1}>
+      <Text style={tx(small ? 13 : 14, 7, fg)} numberOfLines={1} maxFontSizeMultiplier={1.3}>
         {title}
       </Text>
     </Pressable>

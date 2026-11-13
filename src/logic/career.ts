@@ -400,7 +400,6 @@ export function deleteGroup(gid: string) {
 /** Groups with the "no private messages" rule: you can still message the mentor; please keep to the rules. */
 export function requestDM(mid: string) {
   db.DMREQ[mid] = 'ok';
-  toast('You can message them now. Please keep to the group rules');
   bump();
 }
 /** Is messaging this person blocked by a group rule? */

@@ -22,21 +22,21 @@ import { openMentorForm } from './career';
 export function openChat(id: string) {
   const m = dmBlocked(id);
   if (m) {
-    const pend = db.DMREQ[m.id] === 'pending';
     sheet.show(() => (
       <View style={{ gap: 10 }}>
         <AlertIll icon="lock" bg={C.lav} />
-        <SheetTitle center sub={`${mOwner(m).name} asks mentees to request permission before sending private messages.`}>
-          Ask before messaging
+        <SheetTitle center sub={`${mOwner(m).name} asks mentees to keep private messages for things that can’t go in the group. Please respect that.`}>
+          Before you message
         </SheetTitle>
         <Btn
           variant="yellow"
-          title={pend ? 'Request sent' : 'Request to message'}
-          disabled={pend}
+          title="OK, message them"
           style={{ marginTop: 8 }}
           onPress={() => {
             requestDM(m.id);
             sheet.close();
+            openThread(id);
+            router.push(`/chat/${id}` as any);
           }}
         />
         <Btn variant="ghost" title="Not now" onPress={() => sheet.close()} />
