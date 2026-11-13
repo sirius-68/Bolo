@@ -261,7 +261,7 @@ function Applicants({ po, initialStage }: { po: Post; initialStage?: string }) {
 
 /* ---------- CV attached to an offer/application ---------- */
 function CvChip({ o }: { o: { by: string; price?: string; cv?: CvFile | null } }) {
-  if (o.cv === undefined) o.cv = (o.by.length + (o.price || '').length) % 3 !== 0 ? { name: `${P(o.by).name.replace(/[^A-Za-z]+/g, '_').replace(/_$/, '')}_CV.pdf`, kb: 120 + ((o.by.length * 37) % 260) } : null;
+  // only what the person really attached (nothing is made up)
   if (!o.cv) return <Txt s={12} c={C.faint} style={{ marginTop: 4 }}>No CV attached</Txt>;
   const cv = o.cv;
   return (
@@ -270,9 +270,11 @@ function CvChip({ o }: { o: { by: string; price?: string; cv?: CvFile | null } }
       <Txt s={12} w={7} lines={1} style={{ maxWidth: 170 }}>
         {cv.name}
       </Txt>
-      <Txt s={11} c={C.muted}>
-        {cv.kb} KB
-      </Txt>
+      {cv.kb ? (
+        <Txt s={11} c={C.muted}>
+          {cv.kb} KB
+        </Txt>
+      ) : null}
     </Pressable>
   );
 }
@@ -292,11 +294,11 @@ export function viewCV(id: string, cv: CvFile) {
             {cv.name}
           </Txt>
           <Txt s={12} c={C.muted}>
-            {cv.kb} KB · attached to {self ? 'your application' : 'their application'}
+            {cv.src === 'profile' ? 'Made on bolo' : `${cv.kb ? cv.kb + ' KB · ' : ''}sent as a file in your chat`}
           </Txt>
         </View>
       </View>
-      {self ? <MyCV /> : <PersonCV id={id} />}
+      {cv.src === 'profile' ? self ? <MyCV /> : <PersonCV id={id} /> : <Note icon="file">The file itself is in the chat{self ? '' : ` with ${fname(P(id).name)}`}: open it from there.</Note>}
       {!self ? <Btn variant="yellow" icon="chat" title={`Message ${fname(P(id).name)}`} onPress={() => afterSheet(() => openChat(id))} /> : null}
     </View>
   ));
@@ -315,7 +317,10 @@ function CvPicker({ mode, setMode, file, setFile }: { mode: CvMode; setMode: (m:
             ['upload', 'Upload a file'],
             ['none', 'No CV'],
           ] as [CvMode, string][]
-        ).map(([m, l]) => (
+        )
+          // "My bolo CV" only when one has been made
+          .filter(([m]) => m !== 'profile' || !!db.user.cvDone)
+          .map(([m, l]) => (
           <Chip key={m} small label={l} on={mode === m} onPress={() => setMode(m)} />
         ))}
       </Chips>
@@ -323,7 +328,7 @@ function CvPicker({ mode, setMode, file, setFile }: { mode: CvMode; setMode: (m:
         <Pressable
           onPress={async () => {
             const d = await pickDocument();
-            if (d) setFile({ name: d.name, kb: Math.max(1, Math.round(d.size / 1024)) });
+            if (d) setFile({ name: d.name, kb: Math.max(1, Math.round(d.size / 1024)), src: 'file', uri: d.uri, mime: d.mime });
           }}
           style={[S.row, { gap: 10, marginTop: 10, height: 50, paddingHorizontal: 14, borderRadius: R.md, borderWidth: 1.5, borderStyle: 'dashed', borderColor: C.s3 }]}
         >
@@ -336,7 +341,7 @@ function CvPicker({ mode, setMode, file, setFile }: { mode: CvMode; setMode: (m:
     </View>
   );
 }
-const cvFor = (mode: CvMode, file: CvFile | null): CvFile | null => (mode === 'none' ? null : mode === 'upload' ? file : { name: `${myName().replace(/[^A-Za-z]+/g, '_').replace(/_$/, '')}_CV.pdf`, kb: 96, src: 'profile' });
+const cvFor = (mode: CvMode, file: CvFile | null): CvFile | null => (mode === 'none' ? null : mode === 'upload' ? file : db.user.cvDone ? { name: `${myName()} · bolo CV`, kb: 0, src: 'profile' } : null);
 
 /* ---------- send an offer on a personal job ---------- */
 function OfferForm({ po }: { po: Post }) {
@@ -355,7 +360,7 @@ function OfferForm({ po }: { po: Post }) {
     const near = po.area ? ` near ${po.area}` : '';
     return `Hi ${f}! ${who}${exp}${near}. I can take care of this.`;
   });
-  const [mode, setMode] = useState<CvMode>('profile');
+  const [mode, setMode] = useState<CvMode>(db.user.cvDone ? 'profile' : 'none');
   const [file, setFile] = useState<CvFile | null>(null);
   if (off)
     return (
@@ -411,7 +416,7 @@ function ApplyForm({ po }: { po: Post }) {
   const off = db.myOffers[po.id];
   const c = P(po.client!);
   const [msg, setMsg] = useState(`Hello ${c.name} team, I’m interested in the ${po.title} role. I have ${db.user.years} years of experience as ${((db.user.skillList && db.user.skillList[0]?.n) || mySkill()).toLowerCase()}.`);
-  const [mode, setMode] = useState<CvMode>('profile');
+  const [mode, setMode] = useState<CvMode>(db.user.cvDone ? 'profile' : 'none');
   const [file, setFile] = useState<CvFile | null>(null);
   if (off)
     return (

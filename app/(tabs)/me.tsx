@@ -740,7 +740,7 @@ function MeBusiness() {
             ) : null}
             <H t="Company page" action="Edit" onAction={() => openBizSetup('edit', 1)} />
             <Card>
-              <KV k="Sector · size" v={[b.sector || 'Add a sector', b.size ? b.size + ' people' : ''].filter(Boolean).join(' · ')} mute={!b.sector} />
+              <KV k="Sector · size" v={[b.sector || 'Add a sector', b.size ? (b.size === 'Just me' ? 'Just me' : b.size + ' people') : ''].filter(Boolean).join(' · ')} mute={!b.sector} />
               <KV k="About" v={b.about || 'Tell candidates what you do'} mute={!b.about} />
               <KV k="Location" v={`${b.address ? b.address + ', ' : ''}${b.area ? b.area + ', ' : ''}${b.city}`} />
               <KV k="Contact" v={[b.phone ? showPhone(b.phone) : '', b.email, b.web].filter(Boolean).join(' · ') || 'Add a phone or email'} mute={!b.phone && !b.email} />

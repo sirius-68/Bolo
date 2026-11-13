@@ -271,6 +271,9 @@ export function closeJob(id: string) {
     });
 }
 
+/** What the server keeps about an attached CV (never the phone's own file path). */
+const cvStored = (cv: CvFile | null) => (cv ? { name: cv.name, kb: cv.kb, src: cv.src || 'file' } : null);
+
 /* =========================== offers (Regular finds work) =========================== */
 export function sendOffer(id: string, price: string, whenKey: string, msg: string, cv: CvFile | null) {
   const po = postById(id)!;
@@ -279,7 +282,7 @@ export function sendOffer(id: string, price: string, whenKey: string, msg: strin
   db.myOffers[id] = { price: p, when, state: 'sent', cv };
   bump();
   (async () => {
-    const { data, error } = await supabase.from('applications').insert({ post_id: id, price: p, when_text: when, msg: msg.trim(), cv }).select('id').single();
+    const { data, error } = await supabase.from('applications').insert({ post_id: id, price: p, when_text: when, msg: msg.trim(), cv: cvStored(cv) }).select('id').single();
     if (error) {
       delete db.myOffers[id];
       bump();
@@ -290,6 +293,7 @@ export function sendOffer(id: string, price: string, whenKey: string, msg: strin
     // the conversation about this job, with the offer in it, so you can talk it through
     try {
       await sendMessage(po.client!, 'W', 'text', `Hi! I sent an offer on “${po.title}”: ${p}, ${when}.${msg.trim() ? ' ' + msg.trim() : ''}`);
+      if (cv?.uri) await sendFile(po.client!, cv.name, cv.kb * 1024, cv.uri, cv.mime);
     } catch {}
   })();
 }
@@ -327,7 +331,7 @@ export function applyVac(id: string, msg: string, cv: CvFile | null) {
   db.myOffers[id] = { price: po.budget!, when: po.type!, state: 'sent', app: 1, stage: 'Application sent' + (db.user.pro.regular ? ' · priority' : ''), cv };
   bump();
   (async () => {
-    const { data, error } = await supabase.from('applications').insert({ post_id: id, price: po.budget || '', when_text: po.type || '', msg: msg.trim(), cv }).select('id').single();
+    const { data, error } = await supabase.from('applications').insert({ post_id: id, price: po.budget || '', when_text: po.type || '', msg: msg.trim(), cv: cvStored(cv) }).select('id').single();
     if (error) {
       delete db.myOffers[id];
       bump();
@@ -335,11 +339,11 @@ export function applyVac(id: string, msg: string, cv: CvFile | null) {
     }
     db.myOffers[id].id = data.id;
     toast(`Application sent to ${P(po.client!).name}`);
-    if (msg.trim()) {
-      try {
-        await sendMessage(po.client!, 'W', 'text', msg.trim());
-      } catch {}
-    }
+    try {
+      if (msg.trim()) await sendMessage(po.client!, 'W', 'text', msg.trim());
+      // a CV file picked on the phone travels as a file in the chat with the employer
+      if (cv?.uri) await sendFile(po.client!, cv.name, cv.kb * 1024, cv.uri, cv.mime);
+    } catch {}
   })();
 }
 export function withdrawApplication(id: string) {

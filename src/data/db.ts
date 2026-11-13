@@ -35,7 +35,8 @@ export type Person = {
   skills?: string[];
 };
 export type Offer = { by: string; price: string; when: string; msg: string; stage?: string; cv?: CvFile | null; seen?: number; pro?: number; id?: string };
-export type CvFile = { name: string; kb: number; src?: string };
+/** A CV attached to an offer: the person's bolo CV (src 'profile'), or a file they picked (sent in the chat; uri/mime only exist on the sender's phone). */
+export type CvFile = { name: string; kb: number; src?: string; uri?: string; mime?: string };
 export type Post = {
   id: string;
   kind: 'image' | 'request' | 'job' | 'avail' | 'art' | 'photo' | 'text';
