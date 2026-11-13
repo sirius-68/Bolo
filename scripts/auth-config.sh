@@ -34,6 +34,17 @@ echo "Current sign-in settings (no secrets):"
 jq '{external_email_enabled, mailer_autoconfirm, mailer_otp_length, smtp_host, smtp_sender_name, rate_limit_email_sent, external_phone_enabled, sms_provider, hook_send_sms_enabled, site_url}' /tmp/auth.json
 
 if [ -n "${BREVO_API_KEY:-}" ]; then
+  # Free check with Brevo: is the key valid, and are there SMS credits? (prints only the plan, never the account email)
+  bcode=$(curl -sS -o /tmp/brevo.json -w '%{http_code}' https://api.brevo.com/v3/account -H "api-key: $BREVO_API_KEY" -H 'Accept: application/json' || true)
+  if [ "$bcode" = "200" ]; then
+    echo "Brevo key works. Plan and credits:"
+    jq -c '[.plan[]? | {type, creditsType, credits}]' /tmp/brevo.json
+    sms=$(jq '[.plan[]? | select(.type == "sms") | .credits] | add // 0' /tmp/brevo.json)
+    [ "${sms%.*}" -gt 0 ] 2>/dev/null || echo "::warning::Brevo has no SMS credits yet: texts will be refused until you add some"
+  else
+    echo "::warning::Brevo did not accept BREVO_API_KEY (HTTP $bcode: $(jq -r '.code // .message // empty' /tmp/brevo.json 2>/dev/null | head -c 120)). Use an API key that starts with xkeysib-"
+  fi
+  rm -f /tmp/brevo.json
   HOOK="v1,whsec_$(openssl rand -base64 32)"
   echo "::add-mask::$HOOK"
   supabase secrets set --yes --project-ref "$REF" "BREVO_API_KEY=$BREVO_API_KEY" "SEND_SMS_HOOK_SECRET=$HOOK" "SMS_SENDER=${SMS_SENDER:-bolo}"
