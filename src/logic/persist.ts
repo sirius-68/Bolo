@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppState } from 'react-native';
+import { AppState, InteractionManager } from 'react-native';
 import { db, makeDb, setDb, DB } from '../data/db';
 import { subscribe } from './live';
 
@@ -69,7 +69,8 @@ export function startAutosave() {
   enabled = true;
   subscribe(() => {
     if (timer) clearTimeout(timer);
-    timer = setTimeout(save, 800);
+    // writing the whole saved copy takes a moment: wait for a pause, and never do it in the middle of a scroll or an animation
+    timer = setTimeout(() => InteractionManager.runAfterInteractions(() => void save()), 2500);
   });
 }
 export async function save() {

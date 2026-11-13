@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { shareTail } from '../../src/logic/links';
-import { LayoutAnimation, Modal, Platform, Pressable, ScrollView, Share, UIManager, View } from 'react-native';
+import { Animated, Easing, Modal, Pressable, ScrollView, Share, Text, View, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import { db } from '../../src/data/db';
 import { Avatar, Empty, Pict, Txt, tap, Missing } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
-import { C, S } from '../../src/ui/theme';
+import { C, S, tx } from '../../src/ui/theme';
 import { P, THREADS, myPhoto } from '../../src/logic/core';
 import { bump, useLive } from '../../src/logic/live';
 import { groupOf } from '../../src/logic/career';
@@ -17,13 +17,11 @@ import { openRules } from '../../src/sheets/chat';
 import { openProfile } from '../../src/logic/nav';
 import { RULES } from '../../src/data/catalog';
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) UIManager.setLayoutAnimationEnabledExperimental(true);
-
 const TABS = ['Members', 'Media', 'Files', 'Links', 'Voice'] as const;
 type Tab = (typeof TABS)[number];
-const LAST = ['online', 'last seen recently', 'last seen today', 'online', 'last seen yesterday', 'last seen recently'];
 
-/** Group info: tap the group's name in a chat. Big photo that expands, actions, description, invite link, members and shared content. */
+/** Group info: tap the group's name in a chat. Pull down (or tap the picture) and it grows into a full-width photo;
+    scroll up and it shrinks back. Then actions, description, invite link, members and shared content. */
 export default function GroupInfo() {
   useLive();
   const ins = useSafeAreaInsets();
@@ -31,22 +29,40 @@ export default function GroupInfo() {
   const th = THREADS()[id];
   const p = P(id);
   const m = groupOf(id);
+  const { width: W } = useWindowDimensions();
   const [big, setBig] = useState(false);
+  // 0 = small round picture with the name under it, 1 = full-width photo with the name on it
+  const grow = useRef(new Animated.Value(0)).current;
+  const bigRef = useRef(false);
+  const scrollY = useRef(0);
+  const touch = useRef<{ y: number; atTop: boolean } | null>(null);
+  const setGrown = (on: boolean) => {
+    if (bigRef.current === on) return;
+    bigRef.current = on;
+    setBig(on);
+    Animated.timing(grow, { toValue: on ? 1 : 0, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+  };
   const [tab, setTab] = useState<Tab>('Members');
   const [menu, setMenu] = useState(false);
   if (!th || !p) return <Missing bar="Group" title="Group not found" text="It may have been deleted, or you’re no longer a member." />;
   const owner = m ? (m.by ? m.by : m.mine ? 'me' : null) : null;
   const members = ['me', ...(th.members || []).filter((x) => x !== 'me')];
-  const online = Math.max(1, Math.round(members.length * 0.38));
   // Groups are joined by being added by a member (there is no join-by-link yet): the invite brings people to bolo.
   const invite = `Join me in “${p.name}” on bolo. Get the app, then tell me your name there and I’ll add you.\n${shareTail()}`;
   const desc = m?.desc || `${p.name} on bolo. Share updates, files and questions with everyone in the group.`;
   const rules = (m?.rules || []).map((r) => RULES[r]?.[0]).filter(Boolean);
   const toggleBig = () => {
     tap();
-    LayoutAnimation.configureNext(LayoutAnimation.create(260, 'easeInEaseOut', 'scaleXY'));
-    setBig(!big);
+    setGrown(!bigRef.current);
   };
+  const count = `${members.length} member${members.length === 1 ? '' : 's'}`;
+  // sizes of the picture in its two states
+  const SMALL = 112;
+  const HERO = Math.min(W, 440);
+  const topSmall = ins.top + 56;
+  const headSmall = topSmall + SMALL + 14 + 62; // picture, gap, name and count
+  const lerp = (a: number, b: number) => grow.interpolate({ inputRange: [0, 1], outputRange: [a, b] });
+  const logo = typeof p.photo === 'string' && p.photo.startsWith('logo:') ? p.photo.slice(5).split('|') : null;
   const mute = () => {
     th.muted = th.muted ? 0 : 1;
     bump();
@@ -82,43 +98,78 @@ export default function GroupInfo() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 + ins.bottom }} showsVerticalScrollIndicator={false}>
-        {/* hero */}
-        <View style={{ paddingTop: ins.top + 56, paddingBottom: 18, paddingHorizontal: 16, backgroundColor: big ? C.blue : C.bg }}>
-          {big ? (
-            <Pressable onPress={toggleBig} accessibilityLabel="Make photo smaller" style={{ marginHorizontal: -16, marginTop: -(ins.top + 56), height: 360 + ins.top, justifyContent: 'flex-end' }}>
-              <Pict pic={p.photo} style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }} />
-              <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 140, backgroundColor: 'rgba(0,0,0,.35)' }} />
-              <View style={{ paddingHorizontal: 16, paddingBottom: 14 }}>
-                <Txt s={28} w={8}>
-                  {p.name}
-                </Txt>
-                <Txt s={14} c="#e3e7ff">
-                  {members.length} members, {online} online
-                </Txt>
-              </View>
-            </Pressable>
-          ) : (
-            <View style={{ alignItems: 'center' }}>
-              <Pressable onPress={toggleBig} accessibilityLabel="Show photo full size">
-                <Avatar pic={p.photo} size={112} />
-              </Pressable>
-              <Txt s={24} w={8} center style={{ marginTop: 14 }} lines={2}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 40 + ins.bottom }}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={(e) => {
+          scrollY.current = e.nativeEvent.contentOffset.y;
+          // reading on: the photo gets out of the way
+          if (bigRef.current && scrollY.current > 36) setGrown(false);
+        }}
+        // a pull down while already at the top opens the photo (Android gives no scroll event for that, so the finger is followed)
+        onTouchStart={(e) => (touch.current = { y: e.nativeEvent.pageY, atTop: scrollY.current <= 0 })}
+        onTouchMove={(e) => {
+          const t = touch.current;
+          if (!t || !t.atTop || bigRef.current) return;
+          if (e.nativeEvent.pageY - t.y > 48 && scrollY.current <= 0) {
+            touch.current = null;
+            tap();
+            setGrown(true);
+          }
+        }}
+        onTouchEnd={() => (touch.current = null)}
+      >
+        {/* hero: one picture that changes size, so there is no jump between two layouts */}
+        <Animated.View style={{ height: lerp(headSmall, HERO), backgroundColor: C.bg }}>
+          <Pressable onPress={toggleBig} accessibilityRole="imagebutton" accessibilityLabel={big ? 'Make the picture smaller' : 'Show the picture full size'} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}>
+            <Animated.View
+              style={{
+                position: 'absolute',
+                top: lerp(topSmall, 0),
+                left: lerp((W - SMALL) / 2, (W - HERO) / 2),
+                width: lerp(SMALL, HERO),
+                height: lerp(SMALL, HERO),
+                borderRadius: lerp(SMALL / 2, 0),
+                overflow: 'hidden',
+                backgroundColor: logo ? logo[1] || C.lav : C.s2,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {logo ? (
+                <Animated.Text style={[tx(40, 8, logo[2] || '#000'), { fontSize: lerp(40, 120) }]} numberOfLines={1}>
+                  {logo[0]}
+                </Animated.Text>
+              ) : (
+                <Pict pic={p.photo} style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }} />
+              )}
+              {/* shade under the name when the photo is open */}
+              <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 130, backgroundColor: 'rgba(0,0,0,.38)', opacity: grow }} />
+            </Animated.View>
+            {/* name under the small picture */}
+            <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 16, right: 16, top: topSmall + SMALL + 14, alignItems: 'center', opacity: grow.interpolate({ inputRange: [0, 0.5], outputRange: [1, 0], extrapolate: 'clamp' }) }}>
+              <Text style={tx(24, 8, C.text, { textAlign: 'center' })} numberOfLines={1}>
                 {p.name}
-              </Txt>
-              <Txt s={14} c={C.muted} style={{ marginTop: 2 }}>
-                {members.length} members, {online} online
-              </Txt>
-            </View>
-          )}
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
-            <Action testID="grp-message" icon="chat" label="Message" onPress={() => router.back()} />
-            <Action testID="grp-mute" icon={th.muted ? 'bell' : 'speaker'} label={th.muted ? 'Unmute' : 'Mute'} onPress={mute} />
-            <Action testID="grp-leave" icon="logout" label="Leave" onPress={leave} />
-          </View>
+              </Text>
+              <Text style={tx(14, 5, C.muted, { marginTop: 2 })}>{count}</Text>
+            </Animated.View>
+            {/* name on the open photo */}
+            <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 16, right: 16, bottom: 14, opacity: grow.interpolate({ inputRange: [0.5, 1], outputRange: [0, 1], extrapolate: 'clamp' }) }}>
+              <Text style={tx(28, 8, '#fff')} numberOfLines={2}>
+                {p.name}
+              </Text>
+              <Text style={tx(14, 5, '#e3e7ff')}>{count}</Text>
+            </Animated.View>
+          </Pressable>
+        </Animated.View>
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: 14, marginBottom: 18, paddingHorizontal: 16 }}>
+          <Action testID="grp-message" icon="chat" label="Message" onPress={() => router.back()} />
+          <Action testID="grp-mute" icon={th.muted ? 'bell' : 'speaker'} label={th.muted ? 'Unmute' : 'Mute'} onPress={mute} />
+          <Action testID="grp-leave" icon="logout" label="Leave" onPress={leave} />
         </View>
 
-        <View style={{ paddingHorizontal: 16, gap: 14, marginTop: big ? 14 : 0 }}>
+        <View style={{ paddingHorizontal: 16, gap: 14 }}>
           {/* description + invite link */}
           <View style={{ borderRadius: 22, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, overflow: 'hidden' }}>
             <View style={{ padding: 16 }}>
@@ -186,12 +237,9 @@ export default function GroupInfo() {
                 const me = mid === 'me';
                 const who = me ? { name: db.user.name || 'You', photo: myPhoto() } : P(mid);
                 const badge = mid === owner ? (m?.plain ? 'Owner' : 'Mentor') : me ? 'You' : i === 1 && !owner ? 'Admin' : null;
-                const st = me ? 'online' : LAST[i % LAST.length];
                 return (
                   <Pressable key={mid} onPress={() => (me ? null : openProfile(mid))} style={({ pressed }) => [S.row, { gap: 12, paddingVertical: 10, paddingHorizontal: 14, backgroundColor: pressed ? C.s2 : 'transparent' }]}>
-                    <View style={{ borderRadius: 26, borderWidth: st === 'online' ? 2 : 0, borderColor: C.ok, padding: st === 'online' ? 2 : 0 }}>
-                      <Avatar pic={who.photo} size={44} />
-                    </View>
+                    <Avatar pic={who.photo} size={44} />
                     <View style={{ flex: 1, minWidth: 0, borderBottomWidth: i < members.length - 1 ? 1 : 0, borderColor: C.line, paddingBottom: 10, marginBottom: -10 }}>
                       <View style={S.rowB}>
                         <Txt s={15} w={8} lines={1} style={{ flexShrink: 1 }}>
@@ -205,9 +253,11 @@ export default function GroupInfo() {
                           </View>
                         ) : null}
                       </View>
-                      <Txt s={12} c={st === 'online' ? C.lav : C.muted}>
-                        {st}
-                      </Txt>
+                      {!me && (P(mid) as any).role ? (
+                        <Txt s={12} c={C.muted} lines={1}>
+                          {(P(mid) as any).role}
+                        </Txt>
+                      ) : null}
                     </View>
                   </Pressable>
                 );

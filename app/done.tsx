@@ -36,7 +36,7 @@ export default function Done() {
       <Grow />
       <View style={{ gap: 12 }}>
         {work ? (
-          <Btn testID="done-service" variant="yellow" icon="wrench" title={`Add my ${mySkill().toLowerCase()} service`} onPress={() => enter(() => afterSheet(() => openService(), 0))} />
+          <Btn testID="done-service" variant="yellow" icon="wrench" title={mySkill() ? `Add my ${mySkill().toLowerCase()} service` : 'Add my first service'} onPress={() => enter(() => afterSheet(() => openService(), 0))} />
         ) : (
           <Btn testID="done-post" variant="yellow" icon="job" title="Post what I need" onPress={() => enter(() => router.push('/post-job'))} />
         )}

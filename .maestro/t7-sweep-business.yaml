@@ -77,6 +77,18 @@ name: Every screen, signed in as a business account (plus links to things that d
       - takeScreenshot: CRASH-y05-notifs
       - tapOn: "Go to home"
       - waitForAnimationToEnd
+- openLink: "bolo://calls"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow: dismiss.yaml
+- takeScreenshot: y05b-calls
+- runFlow:
+    when:
+      visible: "This screen hit a problem"
+    commands:
+      - takeScreenshot: CRASH-y05b-calls
+      - tapOn: "Go to home"
+      - waitForAnimationToEnd
 - openLink: "bolo://settings"
 - waitForAnimationToEnd:
     timeout: 4000

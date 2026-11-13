@@ -150,6 +150,8 @@ export type Notif = {
   /** event key: the same event is never notified twice */
   key?: string;
   cat?: string;
+  /** how many events this one line stands for (missed calls from the same person) */
+  count?: number;
 };
 export type Booking = {
   id: string;

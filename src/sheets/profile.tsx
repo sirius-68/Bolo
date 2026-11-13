@@ -189,7 +189,7 @@ function Boost({ id }: { id: string }) {
 
 /* ---------------- skill test ---------------- */
 export function openTest(sk?: string) {
-  const skills = db.user.skills.length ? db.user.skills : [mySkill()];
+  const skills = db.user.skills.length ? db.user.skills : ['General'];
   const q = { skill: sk || skills.find((s) => db.PR.tests[s] !== 'passed') || skills[0], i: -1, score: 0, pick: null as number | null };
   sheet.show(() => <Quiz q={q} />);
 }
@@ -197,7 +197,7 @@ function Quiz({ q }: { q: { skill: string; i: number; score: number; pick: numbe
   const [, f] = useState(0);
   const re = () => f((x) => x + 1);
   const Q = QUIZ[q.skill] || QUIZ.General;
-  const skills = db.user.skills.length ? db.user.skills : [mySkill()];
+  const skills = db.user.skills.length ? db.user.skills : ['General'];
   if (q.i < 0)
     return (
       <View>

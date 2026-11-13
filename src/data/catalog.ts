@@ -494,6 +494,8 @@ export const NT_ICON: Record<string, [string, string]> = {
   arrived: ['wrench', C.yellow],
   jobdone: ['flag', C.ok],
   message: ['chat', C.lav],
+  missed: ['missed', C.err],
+  call: ['phone', C.ok],
   comment: ['comment', C.lav],
   enrol: ['cap', C.mint],
   course: ['cap', C.yellow],

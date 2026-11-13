@@ -62,11 +62,29 @@ export function locate(ask = false): Promise<LngLat | null> {
   return busy;
 }
 
-/** Person picked a city by hand: stop overwriting it from GPS. */
-export function setCityManually(city: string) {
-  db.user.city = city;
+/** Person picked a city by hand: stop overwriting it from GPS.
+    The city is also looked up on the map (when the phone can), so distances and "near you" follow it
+    even without GPS. If the lookup fails, the name is kept as typed. */
+export function setCityManually(city: string, iso?: string, country?: string) {
+  const name = city.trim().replace(/\s+/g, ' ');
+  if (!name) return;
+  db.user.city = name;
   db.user.cityAuto = false;
+  if (iso) db.user.country = iso;
   bump();
+  void (async () => {
+    try {
+      const hit = (await Location.geocodeAsync(country ? `${name}, ${country}` : name))[0];
+      if (!hit || db.user.city !== name) return;
+      // GPS, when it is on, knows better than a city centre
+      if (await locGranted()) return;
+      const c: LngLat = [hit.longitude, hit.latitude];
+      db.user.coord = c;
+      lastSaved = null;
+      saveLocation(c);
+      bump();
+    } catch {}
+  })();
 }
 /** Go back to the city from GPS. */
 export async function gpsCity(): Promise<boolean> {

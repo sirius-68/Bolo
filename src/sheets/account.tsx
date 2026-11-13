@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MONEY_LIVE } from '../logic/money';
 import { NCAT_PREF } from '../logic/notify';
 import { supabase } from '../lib/supabase';
-import { Pressable, View } from 'react-native';
+import { Keyboard, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, ui, MyBiz } from '../data/db';
 import { AREAS, CITIES, SIZES, ST_C, ST_W } from '../data/catalog';
@@ -22,7 +22,7 @@ import { LogoPicker } from '../components/business';
 import { pickImage } from '../logic/media';
 import { PhoneInput, intlPhone } from '../components/auth';
 import { PAY_METHODS, KIND_LABEL, payOf } from '../data/payments';
-import { COUNTRIES, countryByIso, flag, showPhone } from '../data/countries';
+import { COUNTRIES, countryByIso, deviceCountry, flag, showPhone } from '../data/countries';
 
 /* ---------------- Pro plans ---------------- */
 export function openPro(kind?: 'regular' | 'business', why?: string) {
@@ -877,22 +877,37 @@ export function openCities(onPick?: (c: string) => void, current?: string) {
 function CitySheet({ onPick, current }: { onPick?: (c: string) => void; current: string }) {
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
-  const [iso, setIso] = useState((db.user.country || 'CM').toUpperCase());
-  const ctry = countryByIso(iso) || countryByIso('CM')!;
+  const [iso, setIso] = useState((db.user.country || deviceCountry().iso).toUpperCase());
+  const ctry = countryByIso(iso) || deviceCountry();
+  const typed = q.trim().replace(/\s+/g, ' ');
   const done = (c: string, auto = false) => {
+    Keyboard.dismiss();
     sheet.close();
     if (onPick) return onPick(c);
-    if (!auto) setCityManually(c);
-    toast('Location: ' + c);
+    if (!auto) setCityManually(c, ctry.iso, ctry.name);
+    toast('Location saved: ' + c);
   };
   // Suggestions are Cameroonian cities; elsewhere people type their city.
-  const sugg = (iso === 'CM' ? CITIES.map(([c]) => c) : []).filter((c) => !q || c.toLowerCase().includes(q.trim().toLowerCase()));
+  const sugg = (iso === 'CM' ? CITIES.map(([c]) => c) : []).filter((c) => !typed || c.toLowerCase().includes(typed.toLowerCase()));
   return (
     <View style={{ gap: 14 }}>
-      <SheetTitle sub={current ? `Now: ${current}` : 'Used for the map, distances and what’s near you.'}>Your location</SheetTitle>
+      <SheetTitle sub={current && current !== 'your area' ? `Now: ${current}` : 'Used for the map, distances and what’s near you.'}>Your location</SheetTitle>
+      <Field label="City or town">
+        <Input testID="city-input" value={q} onChangeText={setQ} icon="pin" placeholder="e.g. Moscow, Lagos, Douala" autoCapitalize="words" returnKeyType="done" onSubmit={() => typed && done(typed)} />
+      </Field>
+      {/* the button sits right under the box, so it stays in view above the keyboard */}
+      {typed ? <Btn testID="city-save" variant="yellow" icon="check" title={`Save “${typed.length > 28 ? typed.slice(0, 27) + '…' : typed}”`} onPress={() => done(typed)} /> : null}
+      {sugg.length ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {sugg.slice(0, 8).map((c) => (
+            <Chip key={c} label={c} on={c === current} onPress={() => done(c)} />
+          ))}
+        </View>
+      ) : null}
       <Pressable
         testID="city-country"
         accessibilityRole="button"
+        accessibilityLabel={`Country: ${ctry.name}. Change`}
         onPress={() => pickCountry('Country', ctry.name, (_, k) => k && (setIso(k), (db.user.country = k), bump()))}
         style={[S.rowB, { height: 54, paddingHorizontal: 16, borderRadius: 16, backgroundColor: C.s2 }]}
       >
@@ -911,6 +926,7 @@ function CitySheet({ onPick, current }: { onPick?: (c: string) => void; current:
       </Pressable>
       <Btn
         testID="city-gps"
+        variant={typed ? 'dark' : 'white'}
         title="Use my current location"
         icon="gpsfix"
         loading={busy}
@@ -922,15 +938,6 @@ function CitySheet({ onPick, current }: { onPick?: (c: string) => void; current:
           done(myCity(), true);
         }}
       />
-      <Field label="Or type your city">
-        <Input testID="city-input" value={q} onChangeText={setQ} icon="pin" placeholder="e.g. Moscow, Lagos, Douala" autoCapitalize="words" returnKeyType="done" onSubmit={() => q.trim() && done(q.trim())} />
-      </Field>
-      {q.trim() && !sugg.some((c) => c.toLowerCase() === q.trim().toLowerCase()) ? <OptRow icon="pin" title={q.trim()} sub="Use this city" onPress={() => done(q.trim())} /> : null}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {sugg.slice(0, 8).map((c) => (
-          <Chip key={c} label={c} on={c === current} onPress={() => done(c)} />
-        ))}
-      </View>
     </View>
   );
 }

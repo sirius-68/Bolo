@@ -107,7 +107,56 @@ export const Avatar = memo(function Avatar({
 });
 
 export function Pict({ pic, style, fit = 'cover' }: { pic: Pic; style?: any; fit?: 'cover' | 'contain' }) {
+  // photos from the server take a moment (or fail on a bad connection): they get a visible place, and a way to try again
+  if (typeof pic === 'string' && pic.startsWith('uri:http')) return <RemotePict uri={pic.slice(4)} style={style} fit={fit} />;
   return <Image source={picSource(pic)} style={style} contentFit={fit} transition={0} />;
+}
+function RemotePict({ uri, style, fit }: { uri: string; style?: any; fit: 'cover' | 'contain' }) {
+  const [state, setState] = useState<'loading' | 'ok' | 'failed'>('loading');
+  const [tries, setTries] = useState(0);
+  const auto = useRef(0);
+  useEffect(() => {
+    setState('loading');
+    auto.current = 0;
+  }, [uri]);
+  return (
+    <View style={[{ backgroundColor: fit === 'contain' ? 'transparent' : C.s2, overflow: 'hidden' }, style]}>
+      <Image
+        key={tries}
+        source={{ uri }}
+        style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }}
+        contentFit={fit}
+        transition={160}
+        cachePolicy="memory-disk"
+        recyclingKey={uri}
+        onLoad={() => setState('ok')}
+        onError={() => {
+          // one quiet retry (a dropped connection is the usual reason), then say so
+          if (auto.current < 1) {
+            auto.current++;
+            setTimeout(() => setTries((t) => t + 1), 1200);
+          } else setState('failed');
+        }}
+      />
+      {state === 'failed' ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Photo didn’t load. Try again"
+          onPress={() => {
+            auto.current = 0;
+            setState('loading');
+            setTries((t) => t + 1);
+          }}
+          style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, padding: 6 }}
+        >
+          <Icon name="image" size={20} color={C.faint} />
+          <Text style={tx(11, 6, C.muted, { textAlign: 'center' })} numberOfLines={2}>
+            Photo didn’t load · tap to retry
+          </Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
 }
 
 /* ---------------- buttons ---------------- */

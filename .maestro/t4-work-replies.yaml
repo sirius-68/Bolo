@@ -47,3 +47,19 @@ name: The worker logs back in - sees the booking and the message, replies
     id: "tab-me"
 - waitForAnimationToEnd
 - takeScreenshot: b06-me
+# the city typed by hand in the first worker tour came back from the server after this fresh log-in
+- tapOn:
+    id: "tab-feed"
+- waitForAnimationToEnd
+- takeScreenshot: b07-city-after-login
+- extendedWaitUntil:
+    visible: "Kazan"
+    timeout: 15000
+# Calls screen opens from Messages
+- tapOn: "Messages"
+- waitForAnimationToEnd
+- tapOn:
+    id: "open-calls"
+- waitForAnimationToEnd
+- takeScreenshot: b08-calls
+- assertNotVisible: "This screen hit a problem"

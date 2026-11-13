@@ -758,6 +758,7 @@ function notifFrom(n: any): Notif {
     go: goFrom(n.target),
     key: n.event_key,
     cat: n.category,
+    count: Number(n.target?.n) || undefined,
   } as Notif;
 }
 const NOTIF_RAW: Record<string, any> = {};

@@ -7,8 +7,10 @@ import { Btn, Chip, Chips, Field, Grow, Input, Label, Page, Pict, SelectBox, Ste
 import { Icon } from '../src/ui/Icon';
 import { confirm, pick, sheet, SheetTitle, toast } from '../src/ui/overlay';
 import { C, S } from '../src/ui/theme';
-import { digits, ensureSkillList, isEmail, isPhone, myCity } from '../src/logic/core';
+import { cityLabel, dateMask, digits, dobIso, ensureSkillList, isEmail, isPhone, isoToDmy } from '../src/logic/core';
+import { countryByIso, deviceCountry } from '../src/data/countries';
 import { syncContacts } from '../src/logic/account';
+import { setCityManually } from '../src/logic/here';
 import { bump, later } from '../src/logic/live';
 import { openCV } from '../src/sheets/career';
 import { PhoneInput } from '../src/components/auth';
@@ -22,6 +24,7 @@ function initial(): CVF {
   ensureSkillList();
   syncContacts();
   const nm = (db.user.name || '').trim().split(/\s+/);
+  const home = (countryByIso(db.user.country) || deviceCountry()).name;
   return {
     prof: db.user.cv?.prof || db.user.skillList?.[0]?.n || '',
     any: false,
@@ -31,9 +34,10 @@ function initial(): CVF {
     dob: db.user.cv?.dob || '',
     email: db.PR.ct.email || '',
     phone: db.PR.ct.phone || '',
-    city: myCity(),
-    cit: db.user.cv?.cit || 'Cameroon',
-    permit: db.user.cv?.permit || 'Cameroon',
+    city: cityLabel(),
+    // the person's own country as a starting point (it was always Cameroon before)
+    cit: db.user.cv?.cit || home,
+    permit: db.user.cv?.permit || home,
     edu: db.PR.edu.courses.map((c) => ({ lv: db.PR.edu.level, name: c.name, org: c.org, year: c.year })),
     skills: [...(db.user.cv?.skills || [])],
     exp: db.PR.exp.map((e) => ({ ...e })),
@@ -48,6 +52,7 @@ export default function CVFlow() {
   const { edit } = useLocalSearchParams<{ edit?: string }>();
   const editing = !!edit && !!db.user.cvDone;
   const [c] = useState<CVF>(initial);
+  const [dobText, setDobText] = useState(() => isoToDmy(c.dob));
   const snap = useRef(JSON.stringify(c));
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<null | 'edu' | 'exp'>(null);
@@ -78,7 +83,10 @@ export default function CVFlow() {
   const finish = () => {
     db.user.name = [c.first, c.last].filter(Boolean).join(' ') || db.user.name;
     db.PR.ct.email = c.email.trim();
-    db.PR.ct.phone = digits(c.phone).replace(/^237/, '');
+    // the full international number, as typed with its country code (it used to be cut down to a Cameroon-style local number)
+    db.PR.ct.phone = c.phone ? '+' + digits(c.phone) : '';
+    // the city chosen here is the person's city everywhere (it used to be dropped)
+    if (c.city && c.city !== cityLabel()) setCityManually(c.city);
     db.user.cv = { prof: c.any ? 'Open to any job' : c.prof, gender: c.gender, dob: c.dob, cit: c.cit, permit: c.permit, skills: [...c.skills], noExp: c.noExp && !c.exp.length };
     if (c.edu.length) {
       db.PR.edu.courses = c.edu.map((e) => ({ name: e.name, org: e.org, year: e.year }));
@@ -133,7 +141,7 @@ export default function CVFlow() {
   if (step === 1) {
     const mailBad = !!c.email && !isEmail(c.email);
     const phoneBad = !!c.phone && !isPhone(c.phone);
-    const okDate = !c.dob || /^\d{4}-\d{2}-\d{2}$/.test(c.dob);
+    const okDate = !dobText || !!dobIso(dobText);
     body = (
       <View style={{ gap: 14 }}>
         <Txt s={26} w={8} style={{ marginTop: 18 }}>
@@ -148,8 +156,22 @@ export default function CVFlow() {
         <Field label="Gender · optional">
           <SelectBox value={c.gender} placeholder="Gender" onPress={() => pick('Gender', ['Male', 'Female', 'Prefer not to say'], c.gender, (v) => ((c.gender = v), re()))} />
         </Field>
-        <Field label="Date of birth · optional" error={!okDate && 'Use YYYY-MM-DD, e.g. 1998-04-21'}>
-          <Input value={c.dob} onChangeText={(v) => ((c.dob = v), re())} placeholder="YYYY-MM-DD" keyboardType="numbers-and-punctuation" invalid={!okDate} />
+        <Field label="Date of birth · optional" error={!okDate && (dobText.length < 10 ? 'Day, month and year, e.g. 21/04/1998' : 'That date doesn’t look right')}>
+          <Input
+            testID="cv-dob"
+            value={dobText}
+            onChangeText={(v) => {
+              // only digits are typed: the slashes are added (and removed) for the person
+              const t = dateMask(v, dobText);
+              setDobText(t);
+              c.dob = dobIso(t) || '';
+              re();
+            }}
+            placeholder="DD/MM/YYYY"
+            keyboardType="number-pad"
+            maxLength={10}
+            invalid={!okDate && dobText.length === 10}
+          />
         </Field>
         <Field label="Email address" error={mailBad && 'That email doesn’t look right'}>
           <Input value={c.email} onChangeText={(v) => ((c.email = v), re())} keyboardType="email-address" autoCapitalize="none" invalid={mailBad} />

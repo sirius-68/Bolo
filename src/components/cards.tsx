@@ -236,8 +236,11 @@ export function ReqPost({ po }: { po: Post }) {
         <View style={{ height: 12 }} />
         {(po.photos || []).length ? (
           <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12 }}>
-            {po.photos!.map((s) => (
-              <Pict key={s} pic={s} style={{ flex: 1, aspectRatio: 1, borderRadius: 10 }} />
+            {po.photos!.slice(0, 4).map((s) => (
+              <Pressable key={s} accessibilityRole="imagebutton" accessibilityLabel="Open photo" onPress={() => openMedia(s)} style={{ flex: 1 }}>
+                {/* one photo is a wide banner, several are squares side by side */}
+                <Pict pic={s} style={{ width: '100%', aspectRatio: po.photos!.length === 1 ? 16 / 10 : 1, borderRadius: 12 }} />
+              </Pressable>
             ))}
           </View>
         ) : null}

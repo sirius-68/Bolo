@@ -113,6 +113,7 @@ export async function signOut() {
     await supabase.auth.signOut();
   } catch {}
   lastSent = {};
+  pulledFor = '';
   stopRealtime();
   resetSession();
   try {
@@ -129,7 +130,10 @@ async function afterAuth() {
   const fresh = db.uid !== data.user.id;
   db.uid = data.user.id;
   setMonitorUser(db.uid);
-  if (fresh) lastSent = {};
+  if (fresh) {
+    lastSent = {};
+    pulledFor = '';
+  }
   await pull();
   startServer();
 }
@@ -138,6 +142,8 @@ export function startServer() {
   if (!db.uid) return;
   startRealtime();
   void require('./push').registerPush();
+  // fill in the city: quietly when location is already allowed; with the phone's question only when there is no city yet
+  void require('./here').locate(!db.user.city);
   void loadAll(true).then(() => {
     const { resumeSims } = require('./work');
     resumeSims();
@@ -175,14 +181,43 @@ const city = (c?: string | null) => c || db.user.city;
 const pic = (url?: string | null) => (url ? 'uri:' + url : null);
 const plainObj = (x: any) => !!x && typeof x === 'object' && !Array.isArray(x);
 
+/** The account whose server profile has been read in this run of the app. Until then nothing is sent:
+    a phone that has only defaults (just signed in, or its saved copy was dropped) must not overwrite the real profile. */
+let pulledFor = '';
+/** Same content, whatever the key order, and with "nothing" written any way (null, '', [], {}). */
+function stable(x: any): string {
+  if (x === null || x === undefined || x === '') return 'null';
+  if (Array.isArray(x)) return x.length ? '[' + x.map(stable).join(',') + ']' : 'null';
+  if (typeof x === 'object') {
+    const ks = Object.keys(x)
+      .filter((k) => stable(x[k]) !== 'null')
+      .sort();
+    return ks.length ? '{' + ks.map((k) => JSON.stringify(k) + ':' + stable(x[k])).join(',') + '}' : 'null';
+  }
+  return JSON.stringify(x);
+}
+const rowPayload = (r: any) => ({
+  name: r.name, visible: r.visible !== false, avatar_url: r.avatar_url, city: r.city, bio: r.bio, role: r.role, intents: r.intents, skills: r.skills, skill_list: r.skill_list,
+  level: r.level, years: r.years, work_status: r.work_status, hire_status: r.hire_status, area: r.area, experience: r.experience, education: r.education, languages: r.languages, services: r.services,
+});
+
 export async function pull() {
   if (!db.uid) return;
+  // changes made on this phone that are still waiting go up first, so the fresh copy from the server can't undo them
+  if (pulledFor === db.uid && timer) {
+    clearTimeout(timer);
+    timer = null;
+    await push();
+  }
+  const me = db.uid;
   try {
     const [p, pv, bz] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', db.uid).maybeSingle(),
       supabase.from('profiles_private').select('*').eq('id', db.uid).maybeSingle(),
       supabase.from('businesses').select('*, business_private(rccm, niu)').eq('owner_id', db.uid).order('created_at'),
     ]);
+    // no answer from the server (offline): nothing is changed and nothing is sent; the next change or return to the app tries again
+    if (p.error) return;
     const r = p.data;
     if (r) {
       const u = db.user;
@@ -196,7 +231,8 @@ export async function pull() {
       u.bizOnly = !!r.biz_only || u.bizOnly;
       if (r.intents?.length) u.intents = r.intents;
       if (r.skills?.length) u.skills = r.skills;
-      if (plainObj(r.skill_list)) u.skillList = r.skill_list;
+      // (the list is an array: it used to be skipped here, so a phone without a saved copy rebuilt it from guesses)
+      if (Array.isArray(r.skill_list) && r.skill_list.length) u.skillList = r.skill_list.filter(plainObj);
       if (r.level) u.level = r.level;
       if (r.years) u.years = r.years;
       u.pro = { regular: !!r.pro_regular, business: !!r.pro_business };
@@ -221,6 +257,11 @@ export async function pull() {
       if (plainObj(q.cv)) {
         db.user.cv = q.cv;
         db.user.cvDone = true;
+      }
+      // a city typed by hand stays the person's city on every phone (GPS only fills it in while they haven't chosen)
+      if (plainObj(q.prefs)) {
+        if (typeof q.prefs.cityAuto === 'boolean') db.user.cityAuto = q.prefs.cityAuto;
+        if (typeof q.prefs.country === 'string' && q.prefs.country && !db.user.country) db.user.country = q.prefs.country;
       }
     }
     if (bz.data) {
@@ -265,13 +306,19 @@ export async function pull() {
       if (!db.BIZ.list.some((b) => b.id === db.BIZ.active)) db.BIZ.active = db.BIZ.list[0]?.id || null;
       if (db.user.role === 'client' && !db.BIZ.active) db.user.role = 'worker';
     }
-    lastSent.profile = JSON.stringify(profilePayload());
+    if (db.uid !== me) return;
+    // What this phone has that the server doesn't (a city found by GPS before the profile arrived, details typed
+    // during sign-up) still has to be sent: only call it "sent" when the two really are the same.
+    if (r && stable(profilePayload()) === stable(rowPayload(r))) lastSent.profile = JSON.stringify(profilePayload());
+    else delete lastSent.profile;
+    pulledFor = me;
     bump();
   } catch {}
 }
 
 /* ---------------------------------------------------------------- push: app → server */
 let lastSent: Record<string, string> = {};
+let pulling = false;
 let busy = false;
 let again = false;
 let timer: any = null;
@@ -300,7 +347,7 @@ function profilePayload() {
   };
 }
 function privatePayload() {
-  return { id: db.uid, contacts: db.PR.ct, cv: db.user.cv, prefs: { visible: db.PREF.visible, phoneAfterHire: db.PREF.phoneAfterHire, notif: db.PREF.notif, lang: db.PREF.lang } };
+  return { id: db.uid, contacts: db.PR.ct, cv: db.user.cv, prefs: { visible: db.PREF.visible, phoneAfterHire: db.PREF.phoneAfterHire, notif: db.PREF.notif, lang: db.PREF.lang, cityAuto: db.user.cityAuto !== false, country: db.user.country || undefined } };
 }
 function bizPayload(b: MyBiz) {
   return {
@@ -339,6 +386,14 @@ const isLocalPic = (p?: string | null) => !!p && p.startsWith('uri:') && !p.star
 
 export async function push() {
   if (!isReal() || !db.uid || !db.loggedIn) return;
+  if (pulledFor !== db.uid) {
+    // read the server's copy first (its end triggers the next push)
+    if (!pulling) {
+      pulling = true;
+      void pull().finally(() => (pulling = false));
+    }
+    return;
+  }
   if (busy) {
     again = true;
     return;

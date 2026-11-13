@@ -610,7 +610,7 @@ export function sendQuote(id: string, job: string, price: string, whenKey: strin
     job: job || 'Job',
     price: `XAF ${(+price).toLocaleString('en-US')}`,
     when,
-    dur: hiring ? 'Price offered by you' : `${mySkill()} · ${db.user.years} yrs experience`,
+    dur: hiring ? 'Price offered by you' : [mySkill(), `${db.user.years} yrs experience`].filter(Boolean).join(' · '),
     worker: hiring ? 'recipient' : 'sender',
     area: [db.PR.area.home, cityLabel()].filter(Boolean).join(', '),
     ...(hiring ? myPlace() : {}),

@@ -106,9 +106,33 @@ export const bizPct = (b?: MyBiz | null) => {
   return Math.round((f.filter(Boolean).length / f.length) * 100);
 };
 export const isPro = () => (isW() ? db.user.pro.regular : db.user.pro.business);
-export const mySkill = () => db.user.skills[0] || 'Plumber';
+/** The person's main skill, or '' when they haven't picked one (nothing is assumed for them). */
+export const mySkill = () => db.user.skills[0] || '';
 /** A placeholder service older versions added by themselves (a skill the person never chose, no price). */
 export const madeUpService = (x: any) => !!x && x.draft && !+x.price && x.id === 's2' && !db.user.skills.includes(x.skill);
+/** Date typing help: the person types digits only and gets DD/MM/YYYY. `prev` is what was in the box before. */
+export function dateMask(v: string, prev = '') {
+  const d = (v || '').replace(/\D/g, '').slice(0, 8);
+  let out = d.slice(0, 2);
+  if (d.length > 2) out += '/' + d.slice(2, 4);
+  if (d.length > 4) out += '/' + d.slice(4);
+  // typing forward: the slash appears as soon as the day or the month is complete
+  if (v.length > prev.length && (d.length === 2 || d.length === 4)) out += '/';
+  return out;
+}
+/** DD/MM/YYYY → YYYY-MM-DD when it is a real date of birth; otherwise null. */
+export function dobIso(t: string): string | null {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec((t || '').trim());
+  if (!m) return null;
+  const [dd, mm, yy] = [+m[1], +m[2], +m[3]];
+  const dt = new Date(Date.UTC(yy, mm - 1, dd));
+  if (dt.getUTCFullYear() !== yy || dt.getUTCMonth() !== mm - 1 || dt.getUTCDate() !== dd) return null;
+  const now = new Date().getFullYear();
+  if (yy < 1900 || yy > now - 10) return null;
+  return `${m[3]}-${m[2]}-${m[1]}`;
+}
+/** YYYY-MM-DD → DD/MM/YYYY (for showing a saved date in the box). */
+export const isoToDmy = (iso?: string | null) => (/^\d{4}-\d{2}-\d{2}$/.test(iso || '') ? `${iso!.slice(8, 10)}/${iso!.slice(5, 7)}/${iso!.slice(0, 4)}` : '');
 export const myName = () => db.user.name || 'You';
 export const myFirst = () => (db.user.name ? db.user.name.split(' ')[0] : '');
 export const myPhoto = () => db.user.avatar || 'img/me';
@@ -121,7 +145,7 @@ export const myHandle = () => '@' + (db.user.name ? db.user.name.toLowerCase().r
 export function me(): Person {
   const u = db.user;
   const st = require('./server').myStats();
-  const base: Person = { name: u.name || 'You', role: isW() ? mySkill() : 'Client', tag: 'You', years: u.years, rate: st.rating, dist: 'You', area: myCity(), photo: myPhoto(), verified: u.verified ? 1 : 0, jobs: st.jobs_done, reviews: String(st.reviews), followers: st.followers, self: 1 };
+  const base: Person = { name: u.name || 'You', role: isW() ? mySkill() || 'Member' : 'Client', tag: 'You', years: u.years, rate: st.rating, dist: 'You', area: myCity(), photo: myPhoto(), verified: u.verified ? 1 : 0, jobs: st.jobs_done, reviews: String(st.reviews), followers: st.followers, self: 1 };
   if (!isW()) {
     const b = curBiz();
     if (b) Object.assign(base, { name: bizName(b), role: 'Business', photo: bizLogo(b), client: 1, biz: 1, area: b.area || b.city || '', verified: b.verified === 'verified' ? 1 : 0 });
@@ -136,7 +160,7 @@ export function meAs(as?: string, bizId?: string | number | null): Person {
     if (b) return { ...me(), name: bizName(b), role: 'Business', photo: bizLogo(b), pin: bizLogo(b), client: 1, biz: 1, area: b.area || b.city || '', verified: b.verified === 'verified' ? 1 : 0 };
   }
   const u = db.user;
-  return { ...me(), name: u.name || 'You', role: mySkill(), photo: myPhoto(), pin: myPhoto(), client: undefined, biz: undefined, area: myCity(), verified: 1 };
+  return { ...me(), name: u.name || 'You', role: mySkill() || 'Member', photo: myPhoto(), pin: myPhoto(), client: undefined, biz: undefined, area: myCity(), verified: 1 };
 }
 /** Other people you can hire (not clients, businesses or groups). */
 export const WORKERS = () => Object.keys(db.P).filter((id) => id !== 'me' && !db.P[id].client && !db.P[id].group && db.P[id].name !== 'Deleted account' && !require('./server').isBlocked(id));
@@ -145,19 +169,20 @@ export const isBiz = (id: string) => !!db.P[id]?.biz;
 /** Chat side: true when I'm the one hiring in this conversation. */
 export const hiringSide = (id: string): boolean => require('./work').hiringIn(id);
 
+/** An entry older versions added by themselves: "Plumbing" with nothing filled in, for someone who isn't a plumber. */
+const madeUpSkill = (e: any, skills: string[]) => !!e && e.n === 'Plumbing' && !e.custom && e.lv === 'Intermediate' && !Object.keys(e.x || {}).length && !Object.keys(e.xo || {}).length && (e.c !== 'Plumber' || !skills.includes('Plumber'));
+/** The person's skills in detail, kept in step with the skill categories on their profile.
+    Only what they chose: an empty list stays empty. */
 export function ensureSkillList() {
   const u = db.user;
-  if (!u.skillList) u.skillList = [];
+  if (!Array.isArray(u.skillList)) u.skillList = [];
+  if (u.skillList.some((e) => madeUpSkill(e, u.skills))) u.skillList = u.skillList.filter((e) => !madeUpSkill(e, u.skills));
   u.skills.forEach((c) => {
-    if (!u.skillList!.some((e) => e.c === c)) {
-      const s = SKILLS.find((x) => x.c === c) || SKILLS[0];
-      u.skillList!.push({ si: s.i, n: s.n, a: s.a, c, x: {}, xo: {}, lv: 'Intermediate' });
-    }
+    if (u.skillList!.some((e) => e.c === c)) return;
+    // the skill they named for their CV when it belongs to this category, otherwise the category itself
+    const s = SKILLS.find((x) => x.c === c && x.n === u.cv?.prof) || SKILLS.find((x) => x.c === c && x.n.toLowerCase() === c.toLowerCase());
+    u.skillList!.push(s ? { si: s.i, n: s.n, a: s.a, c, x: {}, xo: {}, lv: 'Intermediate' } : { si: -1, n: c, a: SKILLS.find((x) => x.c === c)?.a || 'Other', c, x: {}, xo: {}, lv: 'Intermediate', custom: 1 });
   });
-  if (!u.skillList.length) {
-    const s = SKILLS.find((x) => x.n === 'Plumbing')!;
-    u.skillList.push({ si: s.i, n: s.n, a: s.a, c: s.c, x: {}, xo: {}, lv: 'Intermediate' });
-  }
   return u.skillList;
 }
 export const myLevel = () => db.user.level || lvOf(db.user.years);

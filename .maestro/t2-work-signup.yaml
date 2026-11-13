@@ -55,6 +55,21 @@ name: New account that offers skills - sign-up, full onboarding, send an offer
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - takeScreenshot: w09-feed
+# type a city by hand and save it (it must still be there after logging in again, see the end of the next worker tour)
+- tapOn:
+    id: "hdr-city"
+- waitForAnimationToEnd
+- tapOn:
+    id: "city-input"
+- inputText: "Kazan"
+- takeScreenshot: w09b-city-typed
+- tapOn:
+    id: "city-save"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Kazan"
+    timeout: 8000
+- takeScreenshot: w09c-city-saved
 - tapOn: "Jobs"
 - waitForAnimationToEnd
 - extendedWaitUntil:
@@ -110,6 +125,10 @@ name: New account that offers skills - sign-up, full onboarding, send an offer
 - tapOn:
     id: "tab-me"
 - waitForAnimationToEnd
+- tapOn:
+    text: "Profile"
+    index: 0
+    optional: true
 - scrollUntilVisible:
     element: "My services"
     direction: DOWN

@@ -76,7 +76,7 @@ export default function NewPost() {
           title="Post"
           disabled={!ok}
           onPress={() => {
-            createPost({ kind: src ? 'photo' : 'text', src: src || undefined, text: text.trim() || (w ? `Another ${mySkill().toLowerCase()} job done ✅` : 'Update'), tags, job: link || undefined });
+            createPost({ kind: src ? 'photo' : 'text', src: src || undefined, text: text.trim() || (w ? `Another ${mySkill() ? mySkill().toLowerCase() + ' ' : ''}job done ✅` : 'Update'), tags, job: link || undefined });
             ui.feedView = 'all';
             bump();
             toast('Posted to the feed');

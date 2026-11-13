@@ -171,6 +171,18 @@ if (ready) {
     const s = must(await B.sb.storage.from('chat').createSignedUrl(path, 60), 'signed link');
     expect(s?.signedUrl, 'no signed link');
   });
+  await step('a job photo uploads and opens for anyone through its public address', async () => {
+    const path = `${A.id}/${randomUUID()}.jpg`;
+    const jpeg = Uint8Array.from(atob('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/yQALCAABAAEBAREA/8wABgAQEAX/2gAIAQEAAD8A0s8g/9k='), (c) => c.charCodeAt(0));
+    must(await A.sb.storage.from('job-photos').upload(path, jpeg, { contentType: 'image/jpeg' }), 'upload');
+    const url = A.sb.storage.from('job-photos').getPublicUrl(path).data.publicUrl;
+    const r = await fetch(url);
+    expect(r.ok, `the public address answered ${r.status}`);
+    expect(String(r.headers.get('content-type')).startsWith('image/'), 'the public address did not return a picture');
+    const other = await B.sb.storage.from('job-photos').upload(`${A.id}/${randomUUID()}.jpg`, jpeg, { contentType: 'image/jpeg' });
+    expect(other.error, 'someone could upload into another person’s folder');
+    must(await A.sb.storage.from('job-photos').remove([path]), 'remove');
+  });
   await step('a quote sent in chat can be declined by the other person only', async () => {
     const qid = randomUUID();
     must(await B.sb.from('messages').insert({ id: qid, conversation_id: cid, kind: 'offer', body: '', data: { job: 'Extra pipe', price: 'XAF 3,000', when: 'Tomorrow', worker: 'sender' } }));

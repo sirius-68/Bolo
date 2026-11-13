@@ -127,3 +127,54 @@ export async function loadCall(id: string) {
   if (data) applyCallChange(data);
   return data as Call | null;
 }
+
+/* ---------------------------------------------------------------- call history (the Calls screen) */
+export type CallLine = { id: string; who: string; out: boolean; missed: boolean; kind: 'voice' | 'video'; status: Call['status']; at: string; secs: number; n: number; ids: string[] };
+let HISTORY: Call[] = [];
+let historyFor = '';
+/** The last 100 calls I made or received (newest first). */
+export async function loadCalls(): Promise<void> {
+  const me = db.uid;
+  if (!me) return;
+  const { data, error } = await supabase.from('calls').select('*').or(`caller_id.eq.${me},callee_id.eq.${me}`).order('created_at', { ascending: false }).limit(100);
+  if (error || db.uid !== me) return;
+  HISTORY = (data || []) as Call[];
+  historyFor = me;
+  HISTORY.forEach((c) => (CALLS[c.id] = { ...(CALLS[c.id] || {}), ...c }));
+  await ensurePeople(HISTORY.map((c) => (c.caller_id === me ? c.callee_id : c.caller_id)));
+  bump();
+}
+/** Call history as the Calls screen shows it: calls in a row with the same person and the same outcome are one line with a count. */
+export function callLines(only?: 'missed'): CallLine[] {
+  if (historyFor !== db.uid) return [];
+  const out: CallLine[] = [];
+  for (const raw of HISTORY) {
+    const c = CALLS[raw.id] || raw;
+    if (c.status === 'ringing') continue;
+    const mine = c.caller_id === db.uid;
+    // "missed" is a call that came to me and wasn't answered; one I made that got no answer is "no answer"
+    const missed = !mine && (c.status === 'missed' || c.status === 'busy');
+    if (only === 'missed' && !missed) continue;
+    const secs = c.answered_at && c.ended_at ? Math.max(0, Math.round((+new Date(c.ended_at) - +new Date(c.answered_at)) / 1000)) : 0;
+    const who = L(mine ? c.callee_id : c.caller_id);
+    const last = out[out.length - 1];
+    if (last && last.who === who && last.out === mine && last.missed === missed && last.status === c.status && !secs && !last.secs && last.kind === c.kind) {
+      last.n++;
+      last.ids.push(c.id);
+      continue;
+    }
+    out.push({ id: c.id, who, out: mine, missed, kind: c.kind, status: c.status, at: c.created_at, secs, n: 1, ids: [c.id] });
+  }
+  return out;
+}
+/** Missed calls I haven't looked at yet (the badge on the Calls button). */
+export function missedUnseen(): number {
+  return [...db.NOTIFS_W, ...db.NOTIFS_C].filter((n) => n.type === 'missed' && !n.read).reduce((a, n) => a + Math.max(1, n.count || 1), 0);
+}
+/** Opening the Calls screen counts as having seen the missed calls. */
+export function seenMissed() {
+  const ids = [...db.NOTIFS_W, ...db.NOTIFS_C].filter((n) => n.type === 'missed' && !n.read).map((n) => ((n.read = 1), n.id));
+  if (!ids.length) return;
+  bump();
+  void supabase.from('notifications').update({ read_at: new Date().toISOString() }).in('id', ids).is('read_at', null);
+}

@@ -178,7 +178,6 @@ export function saveSkills(d: { main: any; others: any[]; level: string; years: 
   db.user.level = d.level;
   db.user.years = d.years;
   db.PR.langs = d.langs.map((x) => [...x] as [string, string]);
-  if (db.PR.services && db.PR.services[0]) db.PR.services[0].skill = mySkill();
   bump();
 }
 export { lvOf, SKILLS };

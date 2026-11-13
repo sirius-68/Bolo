@@ -5,12 +5,15 @@ import { db, ui } from '../data/db';
 import { showStories, Story } from '../components/Stories';
 import { openNotifSettings, openPayments } from '../sheets/account';
 
-export const WHATS_NEW_ID = '2026-11-14';
+export const WHATS_NEW_ID = '2026-11-15';
 
 /** Slides added in the latest update. */
-const LATEST = ['ring', 'tidy'];
+const LATEST = ['callslist', 'yours', 'photos'];
 
 export const WHATS_NEW: Story[] = [
+  { key: 'callslist', colors: ['#7c5cff', '#3b1fa8'], icon: 'phone', chip: 'Calls', title: 'All your calls in one place', text: 'Open Messages and tap the phone button to see every call: made, received and missed. Several missed calls from one person show as one line with a count. Tap a call to open the chat, or call back in one tap.', cta: 'Open calls', onCta: () => router.push('/calls' as any) },
+  { key: 'yours', colors: ['#2fbf7a', '#0f6e45'], icon: 'pin', chip: 'Your details', title: 'Your city and your CV, as you set them', text: 'Type your city and tap Save: it now stays, on every phone you log in on. The date of birth adds its own slashes, and your CV shows your own profession and skills.' },
+  { key: 'photos', colors: ['#f6ee5c', '#e3c400'], icon: 'image', chip: 'Faster', title: 'Photos that load', text: 'Photos are made lighter before they are sent, so posts and jobs with pictures appear quickly. In a group, pull down to see its picture large. Mentorships and programs can now run for any length you choose.', dark: true },
   { key: 'ring', colors: ['#7c5cff', '#3b1fa8'], icon: 'phone', chip: 'Calls', title: 'Calls that ring', text: 'You now hear a tone while the other phone rings, and a ringtone when someone calls you. One tap starts one call, and missed calls from the same person show as a single notification.' },
   { key: 'tidy', colors: ['#f6ee5c', '#e3c400'], icon: 'sparkle', chip: 'Smoother', title: 'Faster to open, easier to trust', text: 'Home shows its layout while it loads. The notifications page, the message box and your service list are fixed, and your profile only counts what is really yours.', dark: true },
   { key: 'steady', colors: ['#3d5af1', '#1b2a9b'], icon: 'shield', chip: 'Reliability', title: 'Steadier everywhere', text: 'Pull down to refresh. If your connection drops, bolo keeps what you had on screen and messages wait with “Tap to retry”. Sign-up, log-in and password reset are smoother too.' },

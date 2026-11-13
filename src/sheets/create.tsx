@@ -120,7 +120,7 @@ function Availability() {
         disabled={!sel.length}
         onPress={() => {
           const slots = SLOTS.filter((s) => sel.includes(s) && (day === 'Today' || s !== 'Now'));
-          createPost({ kind: 'avail', text: `Available ${day.toLowerCase()} for ${mySkill().toLowerCase()} jobs around ${myCity()}. Book a slot below.`, slots });
+          createPost({ kind: 'avail', text: `Available ${day.toLowerCase()} for ${mySkill() ? mySkill().toLowerCase() + ' ' : ''}jobs around ${myCity()}. Book a slot below.`, slots });
           ui.feedView = 'all';
           bump();
           sheet.close();

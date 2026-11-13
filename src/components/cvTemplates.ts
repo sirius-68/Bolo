@@ -9,7 +9,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { db } from '../data/db';
 import { showPhone } from '../data/countries';
-import { ensureSkillList, myCity, myLevel, myPhoto } from '../logic/core';
+import { cityLabel, ensureSkillList, myLevel, myPhoto } from '../logic/core';
 import { syncContacts } from '../logic/account';
 import { lessonsOf } from '../logic/career';
 import { exSummary } from './skills';
@@ -48,6 +48,15 @@ export type CvData = {
 const LV: Record<string, number> = { Beginner: 40, Junior: 45, Intermediate: 62, Middle: 62, Advanced: 80, Senior: 85, Expert: 95, Native: 100, Fluent: 90, Good: 70, Basic: 40 };
 const pctOf = (l?: string) => LV[l || ''] ?? 70;
 
+/** A short profile line for someone who hasn't written a bio, from their own profession, years and city. */
+export function aboutLine() {
+  const u = db.user;
+  const job = u.cv?.prof && u.cv.prof !== 'Open to any job' ? u.cv.prof : u.skillList?.[0]?.n || '';
+  const where = cityLabel() ? `based in ${cityLabel()}` : '';
+  const exp = db.PR.exp.length || u.skills.length ? `${u.years} year${u.years === 1 ? '' : 's'} of experience` : '';
+  const lead = job ? (exp ? `${job} with ${exp}` : job) : exp ? `${exp[0].toUpperCase()}${exp.slice(1)}` : '';
+  return [[lead, where].filter(Boolean).join(', ')].filter(Boolean).map((x) => x + '.').join('') || '';
+}
 /** Everything a template shows, taken from the user's profile and CV answers. */
 export async function cvData(): Promise<CvData> {
   ensureSkillList();
@@ -60,11 +69,12 @@ export async function cvData(): Promise<CvData> {
   return {
     first: nm[0],
     last: nm.slice(1).join(' '),
-    title: cv?.prof || `${s[0]?.n || 'Professional'} · ${myLevel()}`,
+    title: cv?.prof || (s[0]?.n ? `${s[0].n} · ${myLevel()}` : ''),
     phone: db.PR.ct.phone ? showPhone(db.PR.ct.phone) : '',
     email: db.PR.ct.email || '',
-    city: myCity(),
-    about: u.bio || `${s[0]?.n || 'Professional'} with ${u.years} years of experience, based in ${myCity()}. Reliable, careful with details and easy to work with.`,
+    city: cityLabel(),
+    // their own words; otherwise one plain line from what they told us (never a trade they didn't pick)
+    about: u.bio || aboutLine(),
     skills: s.map((e) => ({ n: e.n, pct: pctOf(e.lv), note: exSummary(e) })),
     keySkills: [...new Set([...(cv?.skills || []), ...s.map((e) => e.n)])].slice(0, 12),
     exp: db.PR.exp.map((e) => ({ role: e.role, org: e.org, from: String(e.from), to: e.to ? String(e.to) : 'Present', desc: e.desc })),

@@ -13,6 +13,8 @@ import { deleteChat, preview } from '../src/logic/work';
 import { openChat, openCompose } from '../src/sheets/chat';
 import { SearchBar, Pull } from '../src/components/common';
 import { goBack } from '../src/ui/kit';
+import { router } from 'expo-router';
+import { missedUnseen } from '../src/logic/calls';
 
 const TABS: Record<string, (id: string) => boolean> = {
   All: () => true,
@@ -34,6 +36,7 @@ export default function Inbox() {
     .sort((a, b) => (T[b].pinned || 0) - (T[a].pinned || 0));
   const online = O.filter((id) => T[id].on);
   const unread = O.reduce((a, id) => a + (T[id].unread || 0), 0);
+  const missed = missedUnseen();
   const menu = (id: string) => {
     tap();
     openChatMenu(id);
@@ -60,6 +63,7 @@ export default function Inbox() {
                   {unread ? ` · ${unread} unread` : ''}
                 </Txt>
               </View>
+              <IconBtn testID="open-calls" name="phone" label={missed ? `Calls, ${missed} missed` : 'Calls'} count={missed || undefined} onPress={() => router.push('/calls' as any)} />
               <IconBtn
                 name="check2"
                 label="Mark all as read"

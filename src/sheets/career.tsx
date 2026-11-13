@@ -11,7 +11,7 @@ import { CourseReviews, RatingBadge } from '../components/Reviews';
 import { ratingOf } from '../logic/reviews';
 import { CV_TEMPLATES, CvKind, CvTpl, cvData, cvHtml, tplOf } from '../components/cvTemplates';
 import { ARTICLES, CATS, EXPERTS, OPP_KINDS, PATHS, RULES, SALARIES, catIcon } from '../data/catalog';
-import { OptRow, AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Meta, Note, PTabs, Pill, ProTag, Rate, SelectBox, StatusPill, Stepper, Steps, Txt, Verified, tap } from '../ui/kit';
+import { OptRow, AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Meta, Note, PTabs, Pill, ProTag, Rate, Seg, SelectBox, StatusPill, Stepper, Steps, Txt, Verified, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { afterSheet, pick, sheet, SheetTitle, toast } from '../ui/overlay';
 import { C, R, S } from '../ui/theme';
@@ -258,14 +258,7 @@ function OppFormSheet({ f }: { f: OF }) {
           </Chips>
         </View>
       ) : null}
-      <View>
-        <Label>Duration</Label>
-        <Chips>
-          {['2 weeks', '1 month', '3 months', '6 months', '12 months'].map((x) => (
-            <Chip key={x} small label={x} on={f.dur === x} onPress={() => (set('dur', x), re())} />
-          ))}
-        </Chips>
-      </View>
+      <LengthPicker label="Duration" value={f.dur === '12 months' ? '1 year' : f.dur} onChange={(v) => (set('dur', v), re())} />
       <View>
         <Label>Where</Label>
         <Chips>
@@ -409,6 +402,59 @@ export function MentorSheet({ id }: { id: string }) {
     </View>
   );
 }
+/* How long something runs: common lengths in one tap, or any length (a number of weeks, months or years), or no end date. */
+const LENGTHS = ['2 weeks', '1 month', '3 months', '6 months', '1 year'];
+type LUnit = 'week' | 'month' | 'year';
+const LMAX: Record<LUnit, number> = { week: 52, month: 36, year: 5 };
+export function LengthPicker({ value, onChange, label = 'Length' }: { value: string; onChange: (v: string) => void; label?: string }) {
+  const m = /^(\d+)\s+(week|month|year)s?$/.exec(value);
+  const [custom, setCustom] = useState(!LENGTHS.includes(value) && value !== 'Ongoing');
+  const n = m ? +m[1] : 1;
+  const unit: LUnit = m ? (m[2] as LUnit) : 'month';
+  const put = (k: number, u: LUnit) => onChange(`${Math.min(Math.max(1, k), LMAX[u])} ${u}${k === 1 ? '' : 's'}`);
+  const weeks = unit === 'week' ? n : unit === 'month' ? Math.round(n * 4.35) : n * 52;
+  return (
+    <View>
+      <Label>{label}</Label>
+      <Chips>
+        {LENGTHS.map((x) => (
+          <Chip key={x} small label={x} on={!custom && value === x} onPress={() => (setCustom(false), onChange(x))} />
+        ))}
+        <Chip small label="Ongoing" on={!custom && value === 'Ongoing'} onPress={() => (setCustom(false), onChange('Ongoing'))} />
+        <Chip
+          small
+          label="Custom"
+          on={custom}
+          onPress={() => {
+            setCustom(true);
+            if (!m) put(2, 'month');
+          }}
+        />
+      </Chips>
+      {custom ? (
+        <View style={{ marginTop: 10, padding: 12, borderRadius: 18, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, gap: 10 }}>
+          <Seg<LUnit>
+            items={[
+              ['week', 'Weeks'],
+              ['month', 'Months'],
+              ['year', 'Years'],
+            ]}
+            value={unit}
+            onChange={(u) => put(Math.min(n, LMAX[u]), u)}
+          />
+          <Stepper testID="len-n" label={`Number of ${unit}s`} value={n} min={1} max={LMAX[unit]} unit={(k) => `${k} ${unit}${k === 1 ? '' : 's'}`} onChange={(k) => put(k, unit)} />
+          <Txt s={12} c={C.muted} center>
+            {unit === 'week' ? `Runs for ${n} week${n === 1 ? '' : 's'}` : `About ${weeks} weeks`} · tap the number to type it
+          </Txt>
+        </View>
+      ) : value === 'Ongoing' ? (
+        <Txt s={12} c={C.muted} style={{ marginTop: 8 }}>
+          No end date: it runs until you close it.
+        </Txt>
+      ) : null}
+    </View>
+  );
+}
 type MF = { title: string; field: string; format: '1-to-1' | 'Group'; dur: string; price: 'Free' | 'Paid'; amount: string; seats: number; desc: string; rules: string[] };
 export function openMentorForm() {
   const f: MF = { title: '', field: '', format: '1-to-1', dur: '1 month', price: 'Free', amount: '', seats: 3, desc: '', rules: ['noDM', 'respect'] };
@@ -459,14 +505,7 @@ function MentorForm({ f }: { f: MF }) {
               ))}
             </Chips>
           </View>
-          <View>
-            <Label>Length</Label>
-            <Chips>
-              {['2 weeks', '1 month', '3 months', '6 months'].map((x) => (
-                <Chip key={x} small label={x} on={f.dur === x} onPress={() => ((f.dur = x), re())} />
-              ))}
-            </Chips>
-          </View>
+          <LengthPicker value={f.dur} onChange={(v) => ((f.dur = v), re())} />
           <View>
             <Label>{f.format === 'Group' ? 'Places in the group' : 'Mentees at a time'}</Label>
             <Stepper testID="mf-seats" label={f.format === 'Group' ? 'Places in the group' : 'Mentees at a time'} value={f.seats} min={1} max={100} unit={(n) => `${n} ${f.format === 'Group' ? (n > 1 ? 'places' : 'place') : n > 1 ? 'mentees' : 'mentee'}`} onChange={(n) => ((f.seats = n), re())} />

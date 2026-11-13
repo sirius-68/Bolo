@@ -16,6 +16,29 @@ function keep(uri: string) {
   }
 }
 
+/** Photo resizing (missing in builds made before it was added: photos then go up as they are). */
+const manip: any = (() => {
+  try {
+    return require('expo-image-manipulator');
+  } catch {
+    return null;
+  }
+})();
+/** Make a photo small enough to send and show quickly: longest side at most `max` pixels, saved as JPEG.
+    A 12-megapixel phone photo goes from several MB to a few hundred KB, and looks the same on a phone screen. */
+async function shrink(a: { uri: string; width?: number; height?: number }, max = 1600): Promise<string> {
+  try {
+    if (!manip?.manipulateAsync) return a.uri;
+    const w = a.width || 0;
+    const h = a.height || 0;
+    const big = Math.max(w, h) > max;
+    const r = await manip.manipulateAsync(a.uri, big ? [{ resize: w >= h ? { width: max } : { height: max } }] : [], { compress: 0.72, format: manip.SaveFormat?.JPEG ?? 'jpeg' });
+    return r?.uri || a.uri;
+  } catch {
+    return a.uri;
+  }
+}
+
 /** Pick a photo from the library (or the camera). Returns a "uri:" picture reference or null. */
 export async function pickImage(opts: { camera?: boolean; square?: boolean; front?: boolean } = {}): Promise<string | null> {
   try {
@@ -31,7 +54,7 @@ export async function pickImage(opts: { camera?: boolean; square?: boolean; fron
       r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: !!opts.square, aspect: [1, 1], quality: 0.7 });
     }
     if (r.canceled || !r.assets?.length) return null;
-    return 'uri:' + keep(r.assets[0].uri);
+    return 'uri:' + keep(await shrink(r.assets[0], opts.square ? 800 : 1600));
   } catch {
     toast('Couldn’t open your photos');
     return null;
@@ -58,11 +81,11 @@ export async function pickImages(max: number): Promise<string[]> {
     if (r.canceled) return [];
     const good: string[] = [];
     const bad: string[] = [];
-    r.assets.slice(0, max).forEach((a) => {
+    for (const a of r.assets.slice(0, max)) {
       const e = checkAsset(a);
       if (e) bad.push(e);
-      else good.push('uri:' + keep(a.uri));
-    });
+      else good.push('uri:' + keep(await shrink(a)));
+    }
     if (bad.length) toast(`${bad.length} photo${bad.length > 1 ? 's' : ''} skipped: ${bad[0]}`);
     return good;
   } catch {
@@ -85,7 +108,7 @@ export async function takePhoto(): Promise<string | null> {
       toast(e);
       return null;
     }
-    return 'uri:' + keep(r.assets[0].uri);
+    return 'uri:' + keep(await shrink(r.assets[0]));
   } catch {
     toast('Couldn’t open the camera');
     return null;

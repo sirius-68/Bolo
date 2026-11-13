@@ -15,6 +15,7 @@ import { answerQuoteNotif, bk, confirmDone, deleteNotifs, follow, markAllRead, N
 import { openMe, openProfile, openTrack } from '../src/logic/nav';
 import { openComments, openJob } from '../src/sheets/work';
 import { openChat } from '../src/sheets/chat';
+import { startCall } from '../src/logic/calls';
 import { goTo } from '../src/sheets/goto';
 import { openNotifSettings } from '../src/sheets/account';
 
@@ -36,6 +37,8 @@ export default function Notifs() {
   const open = (n: Notif) => {
     if (sel) return toggle(n.id);
     readNotif(n.id);
+    // missed calls have their own screen (the picture on the row opens the chat instead)
+    if (n.type === 'missed') return router.push('/calls?tab=missed' as any);
     if (n.go) return goTo(n.go);
     const who = typeof n.who === 'string' ? n.who : '';
     const go: Record<string, () => void> = {
@@ -221,6 +224,24 @@ function Row({ n, sel, onPress, onLong }: { n: Notif; sel: string[] | null; onPr
           {db.myOffers[jb.id] ? done('check', 'Offer sent') : isW() ? acts(<Pill key="o" title="Send offer" onPress={() => openJob(jb.id)} />) : null}
         </>
       );
+      break;
+    }
+    case 'missed': {
+      const cnt = n.count || 1;
+      // the picture opens the chat with that person; the rest of the row opens Calls
+      if (p && who)
+        pics = (
+          <Pressable accessibilityRole="button" accessibilityLabel={`Message ${p.name}`} hitSlop={6} onPress={() => (readNotif(n.id), openChat(who))}>
+            <Avatar pic={p.photo} square={!!p.biz} size={40} />
+          </Pressable>
+        );
+      text = (
+        <Txt s={14}>
+          {name || 'Someone'} {cnt > 1 ? <B>{cnt} missed calls</B> : (n.text || 'Missed call').replace(/^M/, 'm')}
+          {T}
+        </Txt>
+      );
+      extra = acts(<Pill key="c" icon="phone" title="Call back" onPress={() => who && startCall(who, /video/i.test(n.text || '') && cnt === 1 ? 'video' : 'voice')} />, <Pill key="m" kind="dim" title="Message" onPress={() => who && openChat(who)} />);
       break;
     }
     case 'verified':
