@@ -239,6 +239,21 @@ if (ready) {
     const n = must(await B.sb.from('notifications').select('body,type').in('type', ['missed', 'call']));
     expect(n.length === 1 && n[0].body === '2 missed calls', `expected one "2 missed calls" notification, got ${JSON.stringify(n)}`);
   });
+  await step('both people calling each other at the same moment get one call', async () => {
+    const a = must(await A.sb.rpc('start_call', { p_conversation: cid, p_kind: 'voice' }));
+    const b = must(await B.sb.rpc('start_call', { p_conversation: cid, p_kind: 'voice' }));
+    expect(a === b, 'two calls were started');
+    must(await A.sb.rpc('end_call', { p_call: a }));
+  });
+  await step('a connected call can be kept alive, and the call list tidies itself', async () => {
+    const id = must(await A.sb.rpc('start_call', { p_conversation: cid, p_kind: 'voice' }));
+    must(await B.sb.rpc('answer_call', { p_call: id, p_accept: true }));
+    must(await A.sb.rpc('call_alive', { p_call: id }));
+    must(await B.sb.rpc('tidy_calls'));
+    const c = must(await A.sb.from('calls').select('status,alive_at').eq('id', id).maybeSingle());
+    expect(c?.status === 'accepted' && c.alive_at, 'a live call was closed or not kept alive');
+    must(await B.sb.rpc('end_call', { p_call: id }));
+  });
   await step('voice call: ring, answer, hang up', async () => {
     callId = must(await A.sb.rpc('start_call', { p_conversation: cid, p_kind: 'voice' }));
     const c = must(await B.sb.from('calls').select('status').eq('id', callId).maybeSingle());

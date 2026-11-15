@@ -9,7 +9,7 @@ import { toast } from '../src/ui/overlay';
 import { P, fname } from '../src/logic/core';
 import { useLive } from '../src/logic/live';
 import { db } from '../src/data/db';
-import { CALLS, Call, agora, answerCall, callPass, endCall, loadCall, onCall, otherOf, setActiveCall } from '../src/logic/calls';
+import { CALLS, Call, agora, answerCall, callAlive, callPass, callPermissions, endCall, loadCall, onCall, otherOf, setActiveCall } from '../src/logic/calls';
 import { ring, stopRing } from '../src/logic/ring';
 
 type Phase = 'loading' | 'incoming' | 'calling' | 'connecting' | 'live' | 'ended';
@@ -31,6 +31,8 @@ export default function CallScreen() {
   const eng = useRef<any>(null);
   const handler = useRef<any>(null);
   const joined = useRef(false);
+  // this phone tapped Accept (so an "answered" update is ours, not another phone's)
+  const answering = useRef(false);
   const done = useRef(false);
 
   const video = call?.kind === 'video';
@@ -65,12 +67,9 @@ export default function CallScreen() {
     stopRing();
     setPhase('connecting');
     if (Platform.OS === 'android') {
-      const want = [PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, ...(kind === 'video' ? [PermissionsAndroid.PERMISSIONS.CAMERA] : [])];
-      const res = await PermissionsAndroid.requestMultiple(want);
-      if (res[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO] !== 'granted') {
-        toast('Allow the microphone to make calls');
-        return finish('Microphone is off', true);
-      }
+      // normally already allowed before the call started or was answered; this is the last safety net
+      const mic = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO).catch(() => true);
+      if (!mic && !(await callPermissions(kind))) return finish('Microphone is off', true);
     }
     const pass = await callPass(id);
     if ('error' in pass) {
@@ -128,6 +127,8 @@ export default function CallScreen() {
       if (c.id !== id) return;
       setCall(c);
       if (c.status === 'accepted' && !incoming) void join(c.kind);
+      // the same account answered on another phone: this one stops ringing and steps aside (it must not hang up their call)
+      if (c.status === 'accepted' && incoming && !answering.current && !joined.current) finish('Answered on another device', false);
       if (c.status === 'declined') finish('Declined', false);
       if (c.status === 'missed') finish(incoming ? 'Missed call' : 'No answer', false);
       if (c.status === 'ended') finish('Call ended', false);
@@ -164,6 +165,13 @@ export default function CallScreen() {
     const t = setInterval(() => setSecs((s) => s + 1), 1000);
     return () => clearInterval(t);
   }, [phase]);
+  // tell the server this call is still going (see callAlive)
+  useEffect(() => {
+    if (phase !== 'live' && phase !== 'connecting') return;
+    callAlive(id);
+    const t = setInterval(() => callAlive(id), 15000);
+    return () => clearInterval(t);
+  }, [phase, id]);
 
   const status =
     phase === 'incoming' ? `Incoming ${video ? 'video' : 'voice'} call` : phase === 'calling' ? 'Calling…' : phase === 'connecting' ? 'Connecting…' : phase === 'live' ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}` : phase === 'ended' ? endText : '';
@@ -221,6 +229,10 @@ export default function CallScreen() {
               accessibilityRole="button"
               accessibilityLabel="Accept"
               onPress={async () => {
+                if (answering.current) return;
+                // the phone's own microphone question comes now, before the call is answered: a refusal leaves it ringing
+                if (!(await callPermissions(call?.kind || 'voice'))) return;
+                answering.current = true;
                 if (await answerCall(id, true)) void join(call?.kind || 'voice');
                 else finish('Call ended', false);
               }}

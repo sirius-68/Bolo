@@ -11,7 +11,7 @@ import { C, S, tx } from '../../src/ui/theme';
 import { P, THREADS, myPhoto } from '../../src/logic/core';
 import { bump, useLive } from '../../src/logic/live';
 import { groupOf } from '../../src/logic/career';
-import { deleteChat } from '../../src/logic/work';
+import { deleteChat, muteChat } from '../../src/logic/work';
 import { confirm, toast } from '../../src/ui/overlay';
 import { openRules } from '../../src/sheets/chat';
 import { openProfile } from '../../src/logic/nav';
@@ -64,8 +64,8 @@ export default function GroupInfo() {
   const lerp = (a: number, b: number) => grow.interpolate({ inputRange: [0, 1], outputRange: [a, b] });
   const logo = typeof p.photo === 'string' && p.photo.startsWith('logo:') ? p.photo.slice(5).split('|') : null;
   const mute = () => {
-    th.muted = th.muted ? 0 : 1;
-    bump();
+    // saved on the server too, so its notifications stop on every phone (it used to change only this phone)
+    muteChat(id, !th.muted);
     toast(th.muted ? 'Notifications off for this group' : 'Notifications on');
   };
   const leave = () =>

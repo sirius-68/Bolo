@@ -1,7 +1,7 @@
 -- Calls: who can call, answer and hang up; the call log in the chat.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(20);
+select plan(27);
 
 insert into auth.users (id, email, raw_user_meta_data) values
   ('a0000000-0000-0000-0000-000000000001', 'ana@test.bolo', '{"name": "Ana"}'),
@@ -46,6 +46,26 @@ select public.start_call(public.start_direct('b0000000-0000-0000-0000-0000000000
 set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-000000000002"}';
 select lives_ok($$ select public.answer_call((select id from public.calls where status = 'ringing' limit 1), false) $$, 'Ben declines a call');
 select is((select body from public.notifications where type in ('missed', 'call')), '2 missed calls', 'a call Ben declined himself is not added as missed, and the ringing line is gone');
+
+-- both people calling each other at the same moment: one call
+set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-000000000001"}';
+select public.start_call(public.start_direct('b0000000-0000-0000-0000-000000000002'), 'voice');
+set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-000000000002"}';
+select is(public.start_call(public.start_direct('a0000000-0000-0000-0000-000000000001'), 'voice'), (select id from public.calls where status = 'ringing' limit 1), 'Ben calling Ana while she calls him joins her call');
+select is((select count(*)::int from public.calls where status = 'ringing'), 1, 'only one call rings');
+select lives_ok($$ select public.answer_call((select id from public.calls where status = 'ringing' limit 1), true) $$, 'Ben answers it');
+select lives_ok($$ select public.call_alive((select id from public.calls where status = 'accepted' limit 1)) $$, 'a phone in the call keeps it alive');
+
+-- a live call keeps Ben busy for Carl; once its phones go quiet it is closed and Carl gets through
+set local request.jwt.claims = '{"sub": "c0000000-0000-0000-0000-000000000003"}';
+select is((select status from public.calls where id = public.start_call(public.start_direct('b0000000-0000-0000-0000-000000000002'), 'voice')), 'busy', 'Carl hears busy while Ben is really on a call');
+reset role;
+update public.calls set alive_at = now() - interval '5 minutes' where status = 'accepted';
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "c0000000-0000-0000-0000-000000000003"}';
+select is((select status from public.calls where id = public.start_call(public.start_direct('b0000000-0000-0000-0000-000000000002'), 'voice')), 'ringing', 'a call whose phones went quiet no longer makes Ben busy');
+set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-000000000002"}';
+select is((select count(*)::int from public.calls where status = 'accepted'), 0, 'and that call was closed');
 
 select * from finish();
 rollback;

@@ -100,6 +100,10 @@ Deno.serve(async (req) => {
       ? String(n.body || '')
       : String(n.body || '').charAt(0).toUpperCase() + String(n.body || '').slice(1);
   const channel = isCall ? 'calls' : 'messages';
+  // one pop-up per chat for calls: "missed call" takes the place of "is calling you", and a second missed call
+  // updates the first instead of stacking
+  const convId = (n.target as any)?.k === 'chat' ? String((n.target as any)?.id || '') : '';
+  const tag = (n.type === 'call' || n.type === 'missed') && convId ? `calls:${convId}` : n.event_key;
   const data: Record<string, string> = {
     id: n.id,
     type: n.type,
@@ -124,10 +128,10 @@ Deno.serve(async (req) => {
             android: {
               priority: 'HIGH',
               ttl: isCall ? '40s' : '86400s',
-              collapse_key: n.event_key,
+              collapse_key: tag,
               notification: {
                 channel_id: channel,
-                tag: n.event_key,
+                tag,
                 color: '#f6ee5c',
                 icon: 'notification_icon',
                 default_sound: true,

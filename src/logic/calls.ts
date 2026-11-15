@@ -2,10 +2,10 @@
    and hands out the Agora pass; this module starts calls, answers them, and opens the call screen when
    someone rings while bolo is open. */
 import { router } from 'expo-router';
-import { Vibration } from 'react-native';
+import { Linking, PermissionsAndroid, Platform, Vibration } from 'react-native';
 import { db } from '../data/db';
 import { supabase } from '../lib/supabase';
-import { toast } from '../ui/overlay';
+import { confirm, toast } from '../ui/overlay';
 import { bump } from './live';
 import { friendly } from './remote';
 import { L, convFor, ensurePeople } from './server';
@@ -34,6 +34,38 @@ export const agora: any = (() => {
 })();
 export const callsAvailable = () => !!agora;
 
+/** Microphone (and camera for video) before a call starts or is answered: the phone's own question appears here,
+    and a call is never connected without sound. When the person turned the question off for good ("Don't ask
+    again"), they are offered the phone's settings instead. Returns true when the call can go ahead. */
+export async function callPermissions(kind: 'voice' | 'video'): Promise<boolean> {
+  if (Platform.OS !== 'android') return true;
+  try {
+    const P = PermissionsAndroid.PERMISSIONS;
+    const want = [P.RECORD_AUDIO, ...(kind === 'video' ? [P.CAMERA] : [])];
+    const have = await Promise.all(want.map((x) => PermissionsAndroid.check(x)));
+    if (have.every(Boolean)) return true;
+    const res = await PermissionsAndroid.requestMultiple(want);
+    const mic = res[P.RECORD_AUDIO];
+    const cam = kind === 'video' ? res[P.CAMERA] : 'granted';
+    if (mic === 'granted' && cam === 'granted') return true;
+    const blocked = mic === 'never_ask_again' || cam === 'never_ask_again';
+    const what = mic !== 'granted' ? (cam !== 'granted' ? 'microphone and camera' : 'microphone') : 'camera';
+    if (blocked)
+      confirm({
+        title: `Turn on the ${what}`,
+        text: `bolo needs the ${what} for ${kind} calls. Open bolo’s settings, tap Permissions and allow the ${what}.`,
+        ok: 'Open settings',
+        icon: mic !== 'granted' ? 'mic' : 'cam',
+        onOk: () => void Linking.openSettings().catch(() => {}),
+      });
+    else toast(`Allow the ${what} to ${kind === 'video' ? 'make video calls' : 'make calls'}`);
+    return false;
+  } catch {
+    // the check itself failed: let the call try (joining asks again)
+    return true;
+  }
+}
+
 /** The call this phone is on right now (its screen is open). One at a time. */
 let active: string | null = null;
 let starting = false;
@@ -51,6 +83,7 @@ export async function startCall(key: string, kind: 'voice' | 'video') {
   if (starting || active) return;
   starting = true;
   try {
+    if (!(await callPermissions(kind))) return;
     const cid = await convFor(key, isW() ? 'W' : 'C');
     const { data, error } = await supabase.rpc('start_call', { p_conversation: cid, p_kind: kind });
     if (error) throw error;
@@ -60,7 +93,8 @@ export async function startCall(key: string, kind: 'voice' | 'video') {
     if (row?.status === 'busy') return toast('They’re on another call. Try again in a moment');
     if (active) return;
     active = id;
-    router.push(`/call?id=${id}` as any);
+    // they were calling me at the same moment: this is their call, ringing for me
+    router.push(`/call?id=${id}${row && row.callee_id === db.uid ? '&incoming=1' : ''}` as any);
   } catch (e) {
     toast(friendly(e));
   } finally {
@@ -73,6 +107,14 @@ export async function answerCall(id: string, accept: boolean) {
   const { error } = await supabase.rpc('answer_call', { p_call: id, p_accept: accept });
   if (error) toast(friendly(error));
   return !error;
+}
+/** While a call is connected, each phone says so every 15 seconds. A call whose phones stopped saying so
+    (both lost their connection, the app was killed) is closed by the server instead of keeping both people "busy". */
+export function callAlive(id: string) {
+  void supabase.rpc('call_alive', { p_call: id }).then(
+    () => {},
+    () => {},
+  );
 }
 export async function endCall(id: string) {
   Vibration.cancel();
@@ -136,6 +178,11 @@ let historyFor = '';
 export async function loadCalls(): Promise<void> {
   const me = db.uid;
   if (!me) return;
+  // calls left hanging (an app closed mid-ring, a phone that lost its connection) are closed off first, so the list is true
+  await supabase.rpc('tidy_calls').then(
+    () => {},
+    () => {},
+  );
   const { data, error } = await supabase.from('calls').select('*').or(`caller_id.eq.${me},callee_id.eq.${me}`).order('created_at', { ascending: false }).limit(100);
   if (error || db.uid !== me) return;
   HISTORY = (data || []) as Call[];

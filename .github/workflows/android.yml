@@ -143,6 +143,14 @@ jobs:
           cp phone/bolo.apk rel/bolo-${{ github.run_number }}-phone.apk
           cp out/bolo-${{ github.run_number }}.apk rel/bolo-${{ github.run_number }}-universal.apk
           ls -la out phone rel | tee -a ci-out/apk.txt
+      - name: Check the app asks for what calls need (microphone, camera, notifications)
+        run: |
+          # A setting elsewhere once removed the microphone from the app: calls then dropped with no question asked.
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/aapt" dump permissions phone/bolo.apk | tee ci-out/permissions.txt
+          for p in RECORD_AUDIO CAMERA POST_NOTIFICATIONS MODIFY_AUDIO_SETTINGS; do
+            grep -q "android.permission.$p'" ci-out/permissions.txt || { echo "::error::The app has lost the $p permission"; exit 1; }
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: bolo-apk

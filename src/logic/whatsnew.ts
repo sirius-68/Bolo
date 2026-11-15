@@ -5,12 +5,13 @@ import { db, ui } from '../data/db';
 import { showStories, Story } from '../components/Stories';
 import { openNotifSettings, openPayments } from '../sheets/account';
 
-export const WHATS_NEW_ID = '2026-11-15';
+export const WHATS_NEW_ID = '2026-11-16';
 
 /** Slides added in the latest update. */
-const LATEST = ['callslist', 'yours', 'photos'];
+const LATEST = ['callsfixed'];
 
 export const WHATS_NEW: Story[] = [
+  { key: 'callsfixed', colors: ['#2fbf7a', '#0f6e45'], icon: 'mic', chip: 'Calls', title: 'Calls stay connected', text: 'bolo now asks for your microphone (and camera for video) before a call starts or is answered, so calls no longer drop with “Allow the microphone”. If you once said no for good, bolo takes you straight to the setting.' },
   { key: 'callslist', colors: ['#7c5cff', '#3b1fa8'], icon: 'phone', chip: 'Calls', title: 'All your calls in one place', text: 'Open Messages and tap the phone button to see every call: made, received and missed. Several missed calls from one person show as one line with a count. Tap a call to open the chat, or call back in one tap.', cta: 'Open calls', onCta: () => router.push('/calls' as any) },
   { key: 'yours', colors: ['#2fbf7a', '#0f6e45'], icon: 'pin', chip: 'Your details', title: 'Your city and your CV, as you set them', text: 'Type your city and tap Save: it now stays, on every phone you log in on. The date of birth adds its own slashes, and your CV shows your own profession and skills.' },
   { key: 'photos', colors: ['#f6ee5c', '#e3c400'], icon: 'image', chip: 'Faster', title: 'Photos that load', text: 'Photos are made lighter before they are sent, so posts and jobs with pictures appear quickly. In a group, pull down to see its picture large. Mentorships and programs can now run for any length you choose.', dark: true },
