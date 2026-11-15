@@ -15,6 +15,7 @@ import { SearchBar, Pull } from '../src/components/common';
 import { goBack } from '../src/ui/kit';
 import { router } from 'expo-router';
 import { missedUnseen } from '../src/logic/calls';
+import { markRead } from '../src/logic/server';
 
 const TABS: Record<string, (id: string) => boolean> = {
   All: () => true,
@@ -68,7 +69,11 @@ export default function Inbox() {
                 name="check2"
                 label="Mark all as read"
                 onPress={() => {
-                  O.forEach((id) => (T[id].unread = 0));
+                  // read receipts and the counts on every phone come from the server, so each chat is marked there too
+                  O.forEach((id) => {
+                    T[id].unread = 0;
+                    if (T[id].cid) markRead(T[id].cid!);
+                  });
                   bump();
                   toast('All chats marked as read');
                 }}
