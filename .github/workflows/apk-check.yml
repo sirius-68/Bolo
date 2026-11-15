@@ -1,0 +1,37 @@
+name: APK check
+
+# Compares released APKs: are they whole, signed with the same key, and what version do they carry?
+# A phone refuses an update signed with a different key, or a file that was cut short.
+on:
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: Release tags to compare, separated by spaces
+        default: v1.0.151 v1.0.155 v1.0.159
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Download and inspect
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAGS: ${{ inputs.tags }}
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          for t in $TAGS; do
+            mkdir -p "$t" && cd "$t"
+            gh release download "$t" --repo "$GITHUB_REPOSITORY" -p '*.apk' || { echo "$t: no download"; cd ..; continue; }
+            for f in *.apk; do
+              echo "==================== $t / $f"
+              ls -l "$f"
+              unzip -tq "$f" > /dev/null && echo "zip: whole" || echo "zip: DAMAGED"
+              "$BT/aapt" dump badging "$f" | grep -E "^package:|sdkVersion|targetSdkVersion|native-code" || true
+              "$BT/apksigner" verify --print-certs -v "$f" 2>&1 | grep -E "Verifies|scheme|certificate SHA-256|Number of signers|WARNING|ERROR" | head -12
+            done
+            cd ..
+          done
