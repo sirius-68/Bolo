@@ -31,7 +31,7 @@ jobs:
               ls -l "$f"
               unzip -tq "$f" > /dev/null && echo "zip: whole" || echo "zip: DAMAGED"
               "$BT/aapt" dump badging "$f" | grep -E "^package:|sdkVersion|targetSdkVersion|native-code" || true
-              "$BT/apksigner" verify --print-certs -v "$f" 2>&1 | grep -E "Verifies|scheme|certificate SHA-256|Number of signers|WARNING|ERROR" | head -12
+              "$BT/apksigner" verify --print-certs -v "$f" 2>&1 | grep -E "Verifies|Verified using|certificate SHA-256|certificate DN|Number of signers|ERROR"
             done
             cd ..
           done
