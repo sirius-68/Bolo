@@ -45,6 +45,8 @@ export async function maybeShowWhatsNew() {
   if (checking) return;
   checking = true;
   try {
+    // on a slow start the app opens before it knows whether this phone is new: wait for that answer (up to 20 s)
+    for (let i = 0; i < 40 && !ui.bootDone; i++) await new Promise((r) => setTimeout(r, 500));
     // older versions kept the mark with the account data: carry it over
     const seen = (await AsyncStorage.getItem(SEEN_KEY)) || ((db.PREF as any).seenNew as string | undefined) || '';
     if (seen === WHATS_NEW_ID) return;

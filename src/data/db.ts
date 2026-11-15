@@ -493,6 +493,8 @@ export const ui = {
   verifyReturn: '' as string,
   /** opened the app already logged in (an existing user, e.g. after an update) */
   returning: false,
+  /** the start-up checks (saved copy, session) have finished, whether or not the app opened before them */
+  bootDone: false,
   cvT: 'Classic',
   proBill: 'month' as 'month' | 'year',
   justJoined: false,

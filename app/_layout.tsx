@@ -124,7 +124,8 @@ export default function Root() {
       try {
         // two starts in a row that didn't survive → skip the saved copy this time
         const skipped = await bootGuard();
-        if (!skipped) await restore();
+        // a saved copy of a signed-in account means this phone has used bolo before (What's new depends on it)
+        if (!skipped && (await restore()) && db.loggedIn) ui.returning = true;
         startAutosave();
         startSync();
         // Refresh position and city quietly when location is already allowed (never prompts here).
@@ -145,6 +146,7 @@ export default function Root() {
       } catch (e) {
         report(e, 'start');
       } finally {
+        ui.bootDone = true;
         clearTimeout(safety);
         go();
       }
