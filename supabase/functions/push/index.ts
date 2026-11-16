@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
   const { data: n } = await admin.from('notifications').select('id, recipient_id, actor_id, type, category, body, target, event_key, read_at').eq('id', body.id).maybeSingle();
   if (!n || n.read_at) return json({ ok: true, skipped: 'read or gone' });
 
-  const { data: tokens } = await admin.from('push_tokens').select('token').eq('user_id', n.recipient_id);
+  const { data: tokens } = await admin.from('push_tokens').select('token, app_version').eq('user_id', n.recipient_id);
   if (!tokens?.length) return json({ ok: true, skipped: 'no phones' });
 
   let name = 'bolo';
@@ -116,7 +116,9 @@ Deno.serve(async (req) => {
   let sent = 0;
   const gone: string[] = [];
   await Promise.all(
-    tokens.map(async ({ token: to }) => {
+    tokens.map(async ({ token: to, app_version }) => {
+      // newer apps have a channel that rings like a phone call ("r1" in the version they registered with)
+      const rings = isCall && /\br1\b/.test(String(app_version || ''));
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -130,13 +132,14 @@ Deno.serve(async (req) => {
               ttl: isCall ? '40s' : '86400s',
               collapse_key: tag,
               notification: {
-                channel_id: channel,
+                channel_id: rings ? 'ring' : channel,
+                ...(rings ? { sound: 'bolo_ring' } : {}),
                 tag,
                 color: '#f6ee5c',
                 icon: 'notification_icon',
-                default_sound: true,
+                default_sound: !rings,
                 notification_priority: isCall ? 'PRIORITY_MAX' : 'PRIORITY_HIGH',
-                visibility: 'PRIVATE',
+                visibility: isCall ? 'PUBLIC' : 'PRIVATE',
               },
             },
           },

@@ -179,7 +179,7 @@ export function bizOnlyInfo() {
     </View>
   ));
 }
-function switchToBiz(id: string) {
+export function switchToBiz(id: string) {
   sheet.close();
   useBiz(id);
   resetTo('/home');

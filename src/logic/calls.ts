@@ -144,6 +144,8 @@ function incoming(c: Call) {
   if (ringing || active || starting) return;
   ringing = c.id;
   active = c.id;
+  // the pop-up that rang while bolo was closed stops; from here the call screen rings
+  void require('./push').clearCallPopups();
   Vibration.vibrate([0, 700, 500, 700, 500, 700, 500, 700, 500, 700], false);
   ring('in');
   void ensurePeople([c.caller_id]).then(() => {

@@ -1,7 +1,9 @@
 /* Opens the screen a notification is about (from the inbox, or from a phone pop-up). */
 import { router } from 'expo-router';
 import { toast } from '../ui/overlay';
-import { postById } from '../logic/core';
+import { db } from '../data/db';
+import { curBiz, isW, postById } from '../logic/core';
+import { openBizSetup, switchToBiz } from './account';
 import { openMe, openProfile, openTrack } from '../logic/nav';
 import { Go } from '../logic/notify';
 import { openComments, openJob } from './work';
@@ -47,6 +49,22 @@ export function goTo(g: Go) {
       return router.push('/experts' as any);
     case 'notifs':
       return router.push('/notifs' as any);
+    case 'verify': {
+      // from the bolo team: "please verify" or the answer to a verification
+      if (g.id === 'expert') return router.push('/experts' as any);
+      if (g.id === 'business') {
+        const b = db.BIZ.list.find((x) => x.remoteId === g.biz) || curBiz();
+        if (!b) return openMe();
+        if (b.verified === 'verified') return isW() ? switchToBiz(b.id) : openMe();
+        // the business page's own set-up, on the step with the RCCM and NIU
+        if (isW() || db.BIZ.active !== b.id) {
+          switchToBiz(b.id);
+          return void setTimeout(() => openBizSetup('edit', 3), 900);
+        }
+        return openBizSetup('edit', 3);
+      }
+      return db.PR.docs.id === 'verified' ? openMe() : router.push('/id-verify' as any);
+    }
     default:
       return openMe();
   }

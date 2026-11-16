@@ -747,7 +747,7 @@ export function goFrom(t: any): Notif['go'] {
     return c ? { k: 'chat', id: c.key } : { k: 'notifs' };
   }
   if (t.k === 'profile') return t.id === db.uid ? { k: 'me' } : { k: 'profile', id: L(t.id) };
-  if (t.k === 'verify') return { k: 'me' };
+  if (t.k === 'verify') return { k: 'verify', id: String(t.id || 'id'), biz: t.biz || undefined };
   return t;
 }
 function notifFrom(n: any): Notif {

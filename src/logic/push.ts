@@ -59,6 +59,15 @@ async function clearFor(cid: string) {
   } catch {}
 }
 
+/** The call screen is taking over: remove the ringing pop-up (and its ringtone) so the two don't ring together. */
+export async function clearCallPopups() {
+  if (!N) return;
+  try {
+    const shown = await N.getPresentedNotificationsAsync();
+    for (const n of shown) if (payload(n).type === 'call') await N.dismissNotificationAsync(n.request.identifier);
+  } catch {}
+}
+
 async function channels() {
   await N.setNotificationChannelAsync('messages', {
     name: 'Messages and updates',
@@ -72,6 +81,20 @@ async function channels() {
     importance: N.AndroidImportance.MAX,
     sound: 'default',
     vibrationPattern: [0, 700, 500, 700, 500, 700],
+    lightColor: '#f6ee5c',
+    lockscreenVisibility: N.AndroidNotificationVisibility?.PUBLIC,
+    bypassDnd: false,
+  });
+  // Incoming calls while bolo is closed: a real ringtone (30 seconds) and a long vibration, on the lock screen too.
+  // A channel keeps the sound it was created with, so this is a new one next to the older "Calls".
+  await N.setNotificationChannelAsync('ring', {
+    name: 'Incoming calls',
+    description: 'Rings when someone calls you and bolo is closed',
+    importance: N.AndroidImportance.MAX,
+    sound: 'bolo_ring.mp3',
+    audioAttributes: { usage: N.AndroidAudioUsage?.NOTIFICATION_RINGTONE, contentType: N.AndroidAudioContentType?.SONIFICATION },
+    vibrationPattern: [0, 900, 600, 900, 600, 900, 600, 900, 600, 900],
+    enableVibrate: true,
     lightColor: '#f6ee5c',
     lockscreenVisibility: N.AndroidNotificationVisibility?.PUBLIC,
     bypassDnd: false,
@@ -129,7 +152,8 @@ function wire() {
 
 async function save(token: string) {
   myToken = token;
-  const version = `${Constants.expoConfig?.version || '1.0.0'}${BUILD ? ' (' + BUILD + ')' : ''}`;
+  // "r1" tells the server this phone has the ringing channel for calls
+  const version = `${Constants.expoConfig?.version || '1.0.0'}${BUILD ? ' (' + BUILD + ')' : ''} r1`;
   const { error } = await supabase.rpc('register_push_token', { p_token: token, p_platform: 'android', p_version: version });
   if (error) console.warn('bolo: push register failed', error.message);
 }
