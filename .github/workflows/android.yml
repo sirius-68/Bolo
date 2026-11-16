@@ -143,6 +143,16 @@ jobs:
           cp phone/bolo.apk rel/bolo-${{ github.run_number }}-phone.apk
           cp out/bolo-${{ github.run_number }}.apk rel/bolo-${{ github.run_number }}-universal.apk
           ls -la out phone rel | tee -a ci-out/apk.txt
+      - name: Check the libraries calls and the map need are in, and note the size
+        run: |
+          # Unused call add-ons are left out and libraries are compressed to make the download small:
+          # make sure nothing the app needs went with them.
+          unzip -l phone/bolo.apk 'lib/*' | sort -k1 -n -r | head -40 | tee ci-out/libs.txt
+          for l in libagora-rtc-sdk.so libAgoraRtcWrapper.so libaosl.so libmapbox-maps.so libhermes.so libreactnative.so; do
+            unzip -l phone/bolo.apk | grep -q "/$l" || { echo "::error::$l is missing from the app"; exit 1; }
+          done
+          if unzip -l phone/bolo.apk | grep -q "libagora_lip_sync_extension.so"; then echo "::warning::unused call add-ons are still in the app"; fi
+          echo "Phone APK: $(du -m phone/bolo.apk | cut -f1) MB" | tee -a ci-out/apk.txt
       - name: Check the app asks for what calls need (microphone, camera, notifications)
         run: |
           # A setting elsewhere once removed the microphone from the app: calls then dropped with no question asked.
