@@ -6,9 +6,9 @@ import { Avatar, CoTag, OptRow, Pict, Pill, Rate, StatusPill, Txt, Verified, Met
 import { afterSheet, sheet, SheetTitle } from '../ui/overlay';
 import { openReport } from '../sheets/safety';
 import { Icon } from '../ui/Icon';
-import { C, R, S } from '../ui/theme';
-import { P, isW, k, oppBiz, mOwner, has, WORKERS, fname, myPhoto, meAs } from '../logic/core';
-import { blockPerson, closeJob, deletePost, follow, hireState, isSaved, likePost, saveToggle, toggleSave } from '../logic/work';
+import { C, S } from '../ui/theme';
+import { P, isW, k, oppBiz, mOwner, has, meAs } from '../logic/core';
+import { blockPerson, closeJob, deletePost, follow, hireState, likePost, saveToggle, toggleSave } from '../logic/work';
 import { openProfile } from '../logic/nav';
 import { openJob, openHire, openComments, sharePost, openMedia, shareJob } from '../sheets/work';
 import { commentCount } from '../logic/comments';
@@ -16,27 +16,6 @@ import { openOpp, openMentor } from '../sheets/career';
 
 const hireLabel = (id: string) => ({ none: 'Hire', requested: 'Requested', booked: 'Booked ✓' })[hireState(id)];
 
-/* ------------------------- small worker card (home rail) ------------------------- */
-export function WorkerCard({ id }: { id: string }) {
-  const p = P(id);
-  const st = hireState(id);
-  return (
-    <Pressable onPress={() => openProfile(id)} style={({ pressed }) => ({ width: 272, flexDirection: 'row', gap: 14, padding: 10, borderRadius: 20, backgroundColor: pressed ? C.s2 : C.s1, borderWidth: 1, borderColor: C.line })}>
-      <Pict pic={p.photo} style={{ width: 92, height: 100, borderRadius: 14, backgroundColor: C.orange }} />
-      <View style={{ flex: 1, justifyContent: 'center', gap: 2 }}>
-        <View style={S.row}>
-          <Txt s={15} w={8} lines={1} style={{ flexShrink: 1 }}>
-            {p.name}
-          </Txt>
-          {p.verified ? <Verified /> : null}
-        </View>
-        <Meta parts={[p.role, `${p.years} years`]} />
-        <Meta parts={[<Rate key="r" r={p.rate} />, p.dist]} />
-        <Pill title={hireLabel(id)} on={st !== 'none'} onPress={() => openHire(id)} style={{ marginTop: 8, alignSelf: 'flex-start' }} />
-      </View>
-    </Pressable>
-  );
-}
 
 /* ------------------------- big recommended card (person) ------------------------- */
 export function RecCard({ id, i }: { id: string; i: number }) {
@@ -594,4 +573,3 @@ export function ListRow({ pic, square, icon, title, sub, pill, pillKind = 'wait'
   );
 }
 
-export { fname, myPhoto };

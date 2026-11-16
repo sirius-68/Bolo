@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { db } from '../src/data/db';
-import { CATS, PJ_AREAS, detectCat, catIcon } from '../src/data/catalog';
+import { CATS, detectCat, catIcon } from '../src/data/catalog';
 import { Btn, Check, Chip, Chips, Field, Fine, Input, Label, OptRow, Page, Pict, SelectBox, Stepper, Sub, SwitchRow, Title, TopBar, Txt } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { pick, toast } from '../src/ui/overlay';
-import { C, R, S } from '../src/ui/theme';
+import { C, S } from '../src/ui/theme';
 import { bizName, cityLabel, curBiz, digits, isW, postById } from '../src/logic/core';
 import { postJob, updateJob } from '../src/logic/work';
 import { MAX_PHOTO_MB, pickImages, takePhoto } from '../src/logic/media';
@@ -193,7 +193,6 @@ export default function PostJob() {
     </Page>
   );
 }
-export { R };
 
 /** Add photos: take one with the camera (preview, then use or retake) or choose from the gallery. */
 function addPhotos(room: number, add: (L: string[]) => void) {

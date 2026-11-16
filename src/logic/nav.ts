@@ -3,7 +3,6 @@ import { ui } from '../data/db';
 
 /** Thin wrappers over expo-router so screens read like the prototype (go / back / reset). */
 export const go = (path: string) => router.push(path as any);
-export const replace = (path: string) => router.replace(path as any);
 export const back = () => (router.canGoBack() ? router.back() : router.replace('/feed' as any));
 /** Clear the stack and land on a tab. */
 export function resetTo(path: string) {

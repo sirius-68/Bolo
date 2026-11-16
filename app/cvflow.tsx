@@ -2,7 +2,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import { BackHandler, Pressable, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { db } from '../src/data/db';
-import { CITIES, EDU, EX, POPULAR, SKILLS, SOFT } from '../src/data/catalog';
+import { EDU, EX, POPULAR, SKILLS, SOFT } from '../src/data/catalog';
 import { Btn, Chip, Chips, Field, Grow, Input, Label, Page, Pict, SelectBox, Steps, TopBar, Txt } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { confirm, pick, sheet, SheetTitle, toast } from '../src/ui/overlay';
@@ -466,4 +466,3 @@ function SkillsStep({ c, re, onNext }: { c: CVF; re: () => void; onNext: () => v
     </View>
   );
 }
-export { Label };

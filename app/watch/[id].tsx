@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollView, View, useWindowDimensions } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { Avatar, Btn, Empty, IconBtn, Input, Txt, goBack, tap, Missing } from '../../src/ui/kit';
+import { Avatar, Btn, IconBtn, Input, Txt, goBack, tap, Missing } from '../../src/ui/kit';
 import { RecRow } from '../../src/components/RecRow';
 import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';

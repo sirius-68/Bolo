@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { Linking, Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Btn, Field, Input, Page, Seg, SelectBox, TopBar, Txt, tap } from '../src/ui/kit';
-import { Icon } from '../src/ui/Icon';
-import { C, S } from '../src/ui/theme';
+import { C } from '../src/ui/theme';
 import { confirm, pick } from '../src/ui/overlay';
 import { db } from '../src/data/db';
 import { COURSE_CATS } from '../src/data/catalog';
 import { useLive } from '../src/logic/live';
-import { WEB_TEACH, blankListing, domainOf, formOf, listingErrors, normUrl, openCourseSite, removeListing, saveListing } from '../src/logic/listings';
+import { blankListing, domainOf, formOf, listingErrors, normUrl, openCourseSite, removeListing, saveListing } from '../src/logic/listings';
 
 /** Quick setup for a course listing: the link to your course page and the basics.
     People open your site from bolo and sign up there. The web version has the full toolkit. */

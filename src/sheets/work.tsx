@@ -7,18 +7,15 @@ import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { db, Post, CvFile } from '../data/db';
 import { RV_TAGS_C, RV_TAGS_W, SERVICES, STAGES, STAGE_COL, catIcon } from '../data/catalog';
-import { AlertIll, Avatar, Btn, Check, Chip, Chips, CoTag, Empty, Field, Input, Label, Meta, Note, Pict, Pill, ProTag, Rate, StatusPill, Txt, Verified, tap } from '../ui/kit';
+import { AlertIll, Avatar, Btn, Chip, Chips, CoTag, Empty, Field, Input, Label, Meta, Note, Pict, Pill, Rate, StatusPill, Txt, Verified, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { afterSheet, sheet, SheetTitle, toast } from '../ui/overlay';
-import { C, R, S, tx } from '../ui/theme';
-import { profileRaw, P, isW, me, curBiz, bizName, bizLogo, first, myName, myPhoto, mySkill, postById, digits, fname, myCity } from '../logic/core';
-import {
-  acceptOffer, applyVac, bk, closeJob, confirmDone, declineApp, reportIssue, sendHireRequest, sendOffer, setStage, stageLabel, submitReview, withdrawApplication, withdrawOffer, hireState, trOther,
-} from '../logic/work';
+import { C, R, S } from '../ui/theme';
+import { profileRaw, P, isW, me, curBiz, bizName, myName, mySkill, postById, digits, fname } from '../logic/core';
+import { acceptOffer, applyVac, bk, closeJob, confirmDone, declineApp, reportIssue, sendHireRequest, sendOffer, setStage, stageLabel, submitReview, withdrawApplication, withdrawOffer, hireState } from '../logic/work';
 import { openProfile, openTrack } from '../logic/nav';
 import { pickDocument } from '../logic/media';
 import { MyCV, PersonCV } from '../components/cv';
-import { useLive } from '../logic/live';
 import { openChat } from './chat';
 import { openContract } from './business';
 import { openPro, switchRole } from './account';
@@ -730,4 +727,3 @@ export async function sharePost(name?: string) {
     await Share.share({ message: `Check out ${name ? name + ' ' : ''}on bolo: jobs, talent and careers near you.\n${shareTail()}` });
   } catch {}
 }
-export { tx, myCity, ProTag, trOther, bizLogo, Check };

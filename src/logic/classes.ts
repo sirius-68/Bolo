@@ -2,9 +2,9 @@
    Recordings exist for lessons that already had a class, and a new one appears when a teacher
    ends a recorded live class. Progress (where you stopped) is saved per recording. */
 import { db, uid, Course } from '../data/db';
-import { bump, later } from './live';
+import { bump } from './live';
 import { toast } from '../ui/overlay';
-import { P, fname, nowT } from './core';
+import { P, nowT } from './core';
 import { courseGroup, learnerGroup, lessonsOf } from './career';
 import { notify } from './notify';
 
@@ -65,15 +65,6 @@ export function toggleSavedVideo(id: string) {
   toast(i >= 0 ? 'Removed from saved videos' : 'Saved to My learning');
   bump();
 }
-/** Saved videos and ones you started, most recent first. */
-export function myVideos(): { r: Rec; saved: boolean; pct: number }[] {
-  const W = watch();
-  const ids = [...new Set([...saved(), ...Object.keys(W).sort((a, b) => W[b].at - W[a].at)])];
-  return ids
-    .map((id) => recById(id))
-    .filter((r): r is Rec => !!r && db.myLearning.includes(r.cid))
-    .map((r) => ({ r, saved: saved().includes(r.id), pct: W[r.id] && W[r.id].d ? Math.min(100, Math.round((W[r.id].t / W[r.id].d) * 100)) : 0 }));
-}
 
 /* ---------------- timestamps ---------------- */
 /** 275 → "04:35", 3725 → "1:02:05" */
@@ -104,4 +95,3 @@ export function classPeople(c: Course): string[] {
   const th = db.THREADS_W[learnerGroup(c)];
   return (th?.members || []).filter((id) => P(id) && !P(id).biz).slice(0, 12);
 }
-export const firstName = (id: string) => fname(P(id)?.name || '');

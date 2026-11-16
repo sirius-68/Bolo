@@ -630,7 +630,6 @@ export async function uploadChatFile(cid: string, localUri: string, ext: string,
   const { data } = await supabase.storage.from('chat').createSignedUrl(path, CHAT_FILE_TTL);
   return { path, url: data?.signedUrl || '' };
 }
-export const convOfKey = (key: string, inbox: 'W' | 'C') => (inbox === 'W' ? db.THREADS_W : db.THREADS_C)[key]?.cid;
 export const rawMessage = (cid: string, id: string) => (RAW_MSGS[cid] || []).find((m) => m.id === id);
 export const membersOf = (cid: string) => MEMBERS[cid] || [];
 export const convRow = (cid: string) => CONVS[cid];
@@ -1008,10 +1007,8 @@ export function loadAll(force = false): Promise<void> {
 }
 export const refreshPosts = async () => (await loadPosts(), await loadApplications(), bump());
 export const refreshChats = async () => (await loadChats(), bump());
-export const refreshBookings = async () => (await loadBookings(), bump());
 export const refreshCareer = async () => (await Promise.all([loadCourses(), loadOpps(), loadMentorships(), loadExperts()]), bump());
 export const refreshNotifs = async () => (await loadNotifs(), bump());
-export const refreshMine = async () => (await loadMine(), bump());
 
 let channel: RealtimeChannel | null = null;
 /** Live updates: new messages, read receipts, bookings, the worker's position, offers and notifications. */

@@ -27,7 +27,6 @@ export const C = {
 } as const;
 
 export const R = { sm: 12, md: 16, lg: 20, xl: 24, pill: 999 } as const;
-export const G = 20; // page gutter
 
 export type Weight = 5 | 6 | 7 | 8;
 export const FONT: Record<Weight, string> = {

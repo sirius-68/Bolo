@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AlertIll, Avatar, Btn, Empty, Input, Page, TopBar, Txt, goBack, tap } from '../src/ui/kit';
+import { AlertIll, Avatar, Btn, Empty, Page, TopBar, Txt, goBack, tap } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { C, S } from '../src/ui/theme';
-import { sheet, SheetTitle } from '../src/ui/overlay';
 import { db } from '../src/data/db';
 import { useLive } from '../src/logic/live';
 import { MONEY_LIVE } from '../src/logic/money';
 import { xaf } from '../src/logic/core';
-import { ExBooking, bookService, expertById, expertContact, nearestDate, priceAfter, promoFor, serviceOf } from '../src/logic/experts';
+import { ExBooking, bookService, expertById, expertContact, nearestDate, priceAfter, serviceOf } from '../src/logic/experts';
 import { ExRating } from '../src/components/ExpertUI';
 import { openChat } from '../src/sheets/chat';
 
@@ -21,9 +20,9 @@ export default function ExpertBook() {
   const ins = useSafeAreaInsets();
   const e = expertById(eid);
   const s = e ? serviceOf(e, sid) : undefined;
-  const [code, setCode] = useState('');
+  // promo codes come back together with payments
+  const code = '';
   const [done, setDone] = useState<ExBooking | null>(null);
-  const [busy, setBusy] = useState(false);
   if (!e || !s)
     return (
       <Page header={<TopBar title="Booking a service" />}>
@@ -122,7 +121,7 @@ export default function ExpertBook() {
             </Txt>
           </View>
         </View>
-        <Btn testID="book-pay" variant="yellow" icon="send" loading={busy} title="Send request" onPress={pay} />
+        <Btn testID="book-pay" variant="yellow" icon="send" title="Send request" onPress={pay} />
         <Txt s={11} c={C.faint} center>
           By booking you agree to bolo’s terms for expert sessions.
         </Txt>
@@ -131,36 +130,6 @@ export default function ExpertBook() {
   );
 }
 
-function openPromo(apply: (c: string) => void) {
-  sheet.show(() => <Promo apply={apply} />);
-}
-function Promo({ apply }: { apply: (c: string) => void }) {
-  const [v, setV] = useState('');
-  const [err, setErr] = useState('');
-  return (
-    <View style={{ gap: 12 }}>
-      <SheetTitle sub="First session with an expert? FIRST20 gives you 20% off.">Promo code</SheetTitle>
-      <Input testID="promo-input" value={v} onChangeText={(t) => (setV(t.toUpperCase()), setErr(''))} placeholder="Enter code" autoCapitalize="characters" autoFocus invalid={!!err} maxLength={20} />
-      {err ? (
-        <Txt s={12} c={C.err}>
-          {err}
-        </Txt>
-      ) : null}
-      <Btn
-        testID="promo-apply"
-        variant="yellow"
-        title="Apply"
-        disabled={!v.trim()}
-        onPress={() => {
-          const p = promoFor(v);
-          if (!p) return setErr('This code isn’t valid or was already used.');
-          apply(p.code);
-          sheet.close(`${p.label} applied`);
-        }}
-      />
-    </View>
-  );
-}
 
 function Booked({ b }: { b: ExBooking }) {
   const e = expertById(b.ex)!;

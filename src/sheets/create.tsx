@@ -2,24 +2,16 @@ import { createPost } from '../logic/work';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { router } from 'expo-router';
-import { db, ui, uid } from '../data/db';
-import { Btn, Chip, Chips, Label, OptRow, ProTag, Txt } from '../ui/kit';
-import { afterSheet, sheet, SheetTitle, toast } from '../ui/overlay';
+import { db, ui } from '../data/db';
+import { Btn, Chip, Chips, Label } from '../ui/kit';
+import { sheet, SheetTitle, toast } from '../ui/overlay';
 import { C } from '../ui/theme';
-import { bizName, curBiz, isW, mySkill, myCity } from '../logic/core';
+import { isW, mySkill, myCity } from '../logic/core';
 import { bump } from '../logic/live';
 import { resetTo } from '../logic/nav';
 import { openOppForm, openMentorForm } from './career';
-import { bizOnlyPrompt } from './account';
 import { openService } from './profile';
 
-/** The yellow “+” button. Regular and Business get different options. */
-const need = (
-  <OptRow key="need" testID="cr-job" icon="job" title="I need something done" sub="Post a job: a repair, a tailor, a tutor. People nearby send offers." onPress={() => afterSheet(() => router.push('/post-job'))} />
-);
-const offer = (
-  <OptRow key="offer" testID="cr-service" icon="wrench" bg={C.mint} title="Offer a service" sub="List what you do with a price. People near you can book it" onPress={() => afterSheet(() => openService())} />
-);
 
 /** The actions the floating + offers, ordered by what this person came for. */
 export type CreateAction = { k: string; icon: string; bg: string; fg?: string; label: string; run: () => void };
@@ -45,48 +37,6 @@ export function createActions(): CreateAction[] {
   ];
 }
 
-export function openCreate() {
-  sheet.show(() => <CreateSheet />);
-}
-function CreateSheet() {
-  const w = isW();
-  const go = (fn: () => void) => afterSheet(fn);
-  if (w)
-    return (
-      <View>
-        <SheetTitle sub="What would you like to do?">Create</SheetTitle>
-        {db.user.intents.includes("find") ? [offer, need] : [need, offer]}
-        <OptRow icon="post" bg={C.orange} title="Share your work" sub="Photos of a job you’re proud of" onPress={() => go(() => router.push('/new-post'))} />
-        <OptRow icon="clock" bg={C.lav} title="Set availability" sub="Let people book your free slots today" onPress={() => go(openAvailability)} />
-        <OptRow icon="follow" bg={C.mint} title="Offer a mentorship" sub="Share what you know, free or paid" onPress={() => go(openMentorForm)} />
-        <OptRow
-          icon="cap"
-          bg="#fff"
-          title={
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Txt s={14} w={7}>
-                Internship, program or course
-              </Txt>
-              <ProTag small text="BUSINESS" />
-            </View>
-          }
-          sub="Only business pages can create these"
-          onPress={() => go(() => bizOnlyPrompt('create internships, programs and courses'))}
-        />
-      </View>
-    );
-  return (
-    <View>
-      <SheetTitle sub="Everything you create shows with your company name and logo.">Create for {bizName(curBiz())}</SheetTitle>
-      <OptRow icon="job" title="Post a vacancy" sub="Full-time, part-time or contract roles under your company" onPress={() => go(() => router.push('/post-job'))} />
-      <OptRow icon="cap" bg={C.lav} title="Create an internship" sub="Train young talent. It shows in Career" onPress={() => go(() => openOppForm('Internship'))} />
-      <OptRow icon="sparkle" bg={C.orange} title="Create a program" sub="Apprenticeship, graduate program or training people can join" onPress={() => go(() => openOppForm('Training program'))} />
-      <OptRow icon="file" bg={C.mint} title="Create a course" sub="Teach a skill, free or paid, online or in person" onPress={() => go(() => openOppForm('Course'))} />
-      <OptRow icon="follow" bg={C.pink} title="Offer a mentorship" sub="Group mentoring led by your company" onPress={() => go(openMentorForm)} />
-      <OptRow icon="post" bg="#fff" title="Post a company update" sub="News, photos, events" onPress={() => go(() => router.push('/new-post'))} />
-    </View>
-  );
-}
 
 const SLOTS = ['Now', '9:00 am', '11:00 am', '2:00 pm', '5:00 pm', '7:00 pm'];
 export function openAvailability() {

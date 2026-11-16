@@ -78,10 +78,6 @@ export function findExperts(f = exF) {
   return L.sort((a, b) => score(b) - score(a) || exRating(b).n - exRating(a).n);
 }
 
-/* ---------------- promo codes (come back with payments) ---------------- */
-export function promoFor(_code: string): { code: string; off: number; label: string } | null {
-  return null;
-}
 export const priceAfter = (price: number, _code?: string) => price;
 
 /* ---------------- booking ---------------- */
@@ -97,7 +93,6 @@ export function bookService(e: Expert, s: Service, _code?: string): ExBooking | 
   bump();
   return b;
 }
-export const myExBookings = () => books().filter((b) => b.state !== 'cancelled');
 export const activeExBookings = () => books().filter((b) => b.state === 'booked' || b.state === 'scheduled');
 export const exBookingsWith = (e: Expert) => books().filter((b) => b.ex === e.id && b.state !== 'cancelled');
 

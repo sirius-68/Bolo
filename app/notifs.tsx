@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, ui, Notif } from '../src/data/db';
 import { NT_ICON } from '../src/data/catalog';
-import { Avatar, Btn, Empty, PTabs, Pill, Quiet, TopBar, Txt, Verified, tap } from '../src/ui/kit';
+import { Avatar, Empty, PTabs, Pill, Quiet, TopBar, Txt, Verified, tap } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { toast } from '../src/ui/overlay';
 import { C, S } from '../src/ui/theme';
@@ -404,4 +404,3 @@ function Row({ n, sel, onPress, onLong }: { n: Notif; sel: string[] | null; onPr
     </Pressable>
   );
 }
-export { router, Btn };

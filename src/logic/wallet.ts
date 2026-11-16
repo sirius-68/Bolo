@@ -5,7 +5,7 @@
 import { db, uid, Booking } from '../data/db';
 import { toast } from '../ui/overlay';
 import { bump, later } from './live';
-import { P, nowT, xaf } from './core';
+import { nowT, xaf } from './core';
 import { notify } from './notify';
 
 export type TxKind = 'topup' | 'hold' | 'release' | 'refund' | 'earn' | 'withdraw';
@@ -67,64 +67,9 @@ export function withdraw(amt: number, method: string) {
 }
 
 /* ---------------- escrow ---------------- */
-/** Take the job's price from the wallet and hold it. Returns false when the balance is too low. */
-export function holdFor(b: Booking) {
-  const amt = bookingAmt(b);
-  b.amt = amt;
-  if (db.WALLET.bal < amt) {
-    b.escrow = 'unfunded';
-    return false;
-  }
-  db.WALLET.bal -= amt;
-  b.escrow = 'held';
-  addTx({ kind: 'hold', amt, title: b.title, who: b.worker, booking: b.id });
-  return true;
-}
-/** Client confirmed: the held money goes to the worker. */
-export function releaseFor(b: Booking) {
-  if (b.escrow !== 'held') return;
-  b.escrow = 'released';
-  addTx({ kind: 'release', amt: bookingAmt(b), title: `Paid to ${P(b.worker).name}`, who: b.worker, booking: b.id });
-}
-/** Cancelled before the work started: money back to the wallet. */
-export function refundFor(b: Booking) {
-  if (b.escrow !== 'held') return;
-  b.escrow = 'refunded';
-  db.WALLET.bal += bookingAmt(b);
-  addTx({ kind: 'refund', amt: bookingAmt(b), title: `Refund · ${b.title}`, who: b.worker, booking: b.id });
-}
-/** You did the job and the client confirmed: the money is yours. */
-export function earnFor(b: Booking) {
-  if (b.paidOut) return;
-  b.paidOut = 1;
-  const amt = bookingAmt(b);
-  db.WALLET.bal += amt;
-  addTx({ kind: 'earn', amt, title: b.title, who: b.client, booking: b.id });
-}
 
 /* ---------------- escrow for services that aren't jobs (expert sessions) ---------------- */
-/** Take an amount from the wallet and hold it for a booking. False when the balance is too low. */
-export function holdAmount(amt: number, title: string, who?: string, ref?: string) {
-  if (amt > db.WALLET.bal) return false;
-  db.WALLET.bal -= amt;
-  addTx({ kind: 'hold', amt, title, who, booking: ref });
-  return true;
-}
-export function releaseAmount(amt: number, title: string, who?: string, ref?: string) {
-  addTx({ kind: 'release', amt, title, who, booking: ref });
-}
-export function refundAmount(amt: number, title: string, who?: string, ref?: string) {
-  db.WALLET.bal += amt;
-  addTx({ kind: 'refund', amt, title: `Refund · ${title}`, who, booking: ref });
-}
 
-/** Saves from before the wallet existed: open jobs count as already paid into escrow. */
-export function ensureWallet() {
-  db.BOOKINGS.forEach((b) => {
-    if (!b.escrow && b.state !== 'confirmed') b.escrow = 'held';
-    if (!b.amt) b.amt = amtOf(b.price);
-  });
-}
 
 export const TX_LOOK: Record<TxKind, { icon: string; bg: string; fg: string; sign: '+' | '−' | ''; label: string }> = {
   topup: { icon: 'plus', bg: '#7be0a7', fg: '#000', sign: '+', label: 'Money added' },

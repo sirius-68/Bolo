@@ -4,13 +4,13 @@ import { useLocalSearchParams } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { db, Review } from '../../src/data/db';
 import { catIcon } from '../../src/data/catalog';
-import { Avatar, Btn, Empty, IconBtn, PTabs, Page, Pict, Rate, Rich, StatusPill, TopBar, Txt, Verified, CoTag, Missing, LoadingPage } from '../../src/ui/kit';
+import { Avatar, Btn, Empty, IconBtn, PTabs, Page, Pict, Rate, Rich, TopBar, Txt, Verified, CoTag, Missing, LoadingPage } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { pick, toast } from '../../src/ui/overlay';
 import { C, S } from '../../src/ui/theme';
 import { P, aboutOf, fname, has, isW, k, myVacancies, profileRaw } from '../../src/logic/core';
 import { loadPerson, isGone, isUuid } from '../../src/logic/server';
-import { useLive, bump } from '../../src/logic/live';
+import { useLive } from '../../src/logic/live';
 import { follow, hireState, reviewable, saveToggle, sendText } from '../../src/logic/work';
 import { openHire, openReview, openMedia } from '../../src/sheets/work';
 import { openChat } from '../../src/sheets/chat';
@@ -18,7 +18,6 @@ import { OppCard, ReqPost, ReelThumb, PostCard } from '../../src/components/card
 import type { Reel } from '../../src/data/db';
 import { router } from 'expo-router';
 import { PersonCV } from '../../src/components/cv';
-import { sheet } from '../../src/ui/overlay';
 
 export default function Profile() {
   useLive();
@@ -34,7 +33,6 @@ export default function Profile() {
   if (isGone(id)) return <Missing bar="Profile" title="This profile isn’t available" text="The account may have been deleted, or the link is wrong." />;
   const kind = p.biz ? 'company' : p.client ? 'client' : 'worker';
   const tabs: string[] = kind === 'company' ? ['About', 'Jobs', 'Posts', 'Activity'] : kind === 'client' ? ['About', 'Jobs', 'Reviews'] : ['About', 'Services', 'Posts', 'Reviews', 'Schedule', 'CV'];
-  const t = tabs.includes(tab) ? tab : 'About';
   const f = fname(p.name);
   const following = has(db.followed, id);
   const st = hireState(id);
@@ -624,4 +622,3 @@ function CompanyTab({ id, t }: { id: string; t: string }) {
     </Card>
   );
 }
-export { StatusPill, sheet, bump };

@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../data/db';
 import { CATS } from '../data/catalog';
-import { anchor, coordOf, placeOf, kmBetween } from '../data/geo';
+import { anchor, placeOf, kmBetween } from '../data/geo';
 import { Avatar, Pict, Txt, Verified, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { C, S, tx } from '../ui/theme';

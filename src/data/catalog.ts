@@ -277,8 +277,6 @@ export const ST_C: [string, string, string, string][] = [
 ];
 export const WHERE = ['At the client’s place', 'At my workshop', 'Both'];
 export const UNITS = ['per job', 'per hour', 'per day', 'per visit'];
-export const LANGS = ['English', 'French', 'Pidgin', 'Duala', 'Bakweri', 'Fulfulde', 'Ewondo', 'Bamileke'];
-export const LVL = ['Basic', 'Good', 'Fluent', 'Native'];
 export const EDU = ['No formal education', 'Primary', 'Secondary', 'Technical / vocational', 'University'];
 export const DOCS: Record<string, [string, string, string]> = {
   id: ['National ID card', 'idcard', 'Required to work on bolo'],
@@ -292,15 +290,7 @@ export const CT: [string, string, string, string, 'tel' | 'email' | 'text'][] = 
   ['telegram', 'Telegram', 'tg', '@username', 'text'],
   ['facebook', 'Facebook', 'fb', 'facebook.com/yourpage', 'text'],
 ];
-export const LANG_SETS = [
-  ['English', 'Pidgin'],
-  ['English', 'Pidgin', 'French'],
-  ['English', 'French'],
-  ['English', 'Pidgin', 'Bakweri'],
-];
 
-/* -------------------- places -------------------- */
-export const NB = ['Molyko', 'Great Soppo', 'Bonduma', 'Mile 17', 'Checkpoint', 'Bomaka', 'Muea', 'Clerks Quarter', 'Buea Town'];
 export const CITIES: [string, string][] = [
   ['Buea', 'South-West'],
   ['Limbe', 'South-West'],
@@ -324,7 +314,6 @@ export const CITIES: [string, string][] = [
   ['Garoua', 'North'],
   ['Maroua', 'Far North'],
 ];
-export const PJ_AREAS = ['Molyko', 'Great Soppo', 'Bonduma', 'Mile 17', 'Checkpoint', 'Bomaka', 'Muea', 'Remote / online'];
 
 /* -------------------- skill tests -------------------- */
 export const QUIZ: Record<string, [string, string[], number][]> = {
@@ -390,15 +379,6 @@ export const QUIZ: Record<string, [string, string[], number][]> = {
   ],
 };
 
-/* -------------------- career -------------------- */
-export const PROVIDERS = [
-  ['Silicon Mountain Academy', 'SMA', '#a9b6ff', '#000'],
-  ['Buea Tech School', 'BTS', '#3d5af1', '#fff'],
-  ['Learnly Africa', 'LA', '#f6ee5c', '#000'],
-  ['SkillUp CM', 'SU', '#f47b3b', '#000'],
-  ['Mboa Academy', 'MA', '#7be0a7', '#000'],
-  ['GreenField Institute', 'GF', '#2a2a2e', '#7be0a7'],
-].map(([n, t, b, f]) => ({ n, logo: `logo:${t}|${b}|${f}` }));
 export const COURSE_CATS: [string, string][] = [
   ['Business', 'job'],
   ['Finance', 'cat-acct'],
@@ -440,11 +420,6 @@ export const PATHS: [string, string, string[], string[], string[]][] = [
   ['Into tech: become a web developer', 'cat-dev', ['Learn HTML, CSS and JavaScript', 'Build 3 small projects for real businesses', 'Apply for an internship or junior role'], ['c3', 'c4'], ['o4', 'o1']],
   ['From helper to certified tradesperson', 'wrench', ['Join an apprenticeship', 'Get a recognised certificate', 'Start taking your own jobs on bolo'], ['c9', 'c10'], ['o3']],
   ['Into care work and nursing', 'cat-health', ['Take a home care course', 'Get first aid certified', 'Apply for a clinical internship'], ['c13'], ['o2']],
-];
-export const EXPERTS: [string, string, string][] = [
-  ['Linda Ebai', 'CV & interview coach', 'faces/expert0'],
-  ['Patrick Ngu', 'Tech careers mentor', 'faces/expert1'],
-  ['Esther Mbong', 'HR manager, 12 yrs', 'faces/expert2'],
 ];
 export const OPP_KINDS = ['Internship', 'Graduate program', 'Apprenticeship', 'Training program', 'Course'];
 
@@ -507,7 +482,4 @@ export const NT_ICON: Record<string, [string, string]> = {
   rating: ['star', C.yellow],
   pro: ['rocket', C.lav],
 };
-export const NT_JOBS = ['quote', 'accept', 'reminder', 'offers', 'payment', 'newjob', 'payment_in', 'newoffer', 'onway', 'arrived', 'jobdone'];
 
-/** Job history shown on a Regular profile (sample). */
-export const SCENES = ['plumb', 'clean', 'electric', 'deliver', 'mech', 'design'];

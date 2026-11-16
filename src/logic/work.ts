@@ -1,16 +1,14 @@
 /* Jobs, offers, bookings, chats and notifications, on real accounts.
    Each action writes to the server; the local model is updated at once and then corrected by what the server
    sends back (see server.ts). Nothing here pretends to be the other person. */
-import { db, ui, Booking, Msg, Post, Notif, CvFile } from '../data/db';
+import { db, Booking, Msg, Post, Notif, CvFile } from '../data/db';
 import { STAGES } from '../data/catalog';
 import { toast, undoBar } from '../ui/overlay';
 import { supabase } from '../lib/supabase';
 import { bump } from './live';
-import { notify } from './notify';
-import { P, isW, thread, nowT, fname, first, xaf, budgetNum, mySkill, cityLabel, THREADS, ORDER, NOTIFS, curBiz, postById, add, toggle, has, dayText } from './core';
+import { P, isW, thread, nowT, fname, first, mySkill, cityLabel, THREADS, ORDER, NOTIFS, curBiz, postById, add, toggle, dayText } from './core';
 import { friendly } from './remote';
-import {
-  R, L, SAVE_KIND, convFor, deleteNotifRows, markRead, markReviewed, refreshBooking, refreshBookings, refreshChats, refreshMine, refreshPosts, sendMessage, setNotifRead, uploadChatFile, uuid, convOfKey, rawMessage, membersOf, retryMessage } from './server';
+import { R, SAVE_KIND, convFor, deleteNotifRows, markRead, markReviewed, refreshBooking, refreshChats, refreshPosts, sendMessage, setNotifRead, uploadChatFile, uuid, rawMessage, retryMessage } from './server';
 import { startSharing, stopSharing } from './tracking';
 
 const fail = (e: any) => toast(friendly(e));
@@ -42,7 +40,6 @@ export function saveToggle(list: SaveList, id: string, label: string) {
   bump();
   void saveRemote(list, id, on);
 }
-export const isSaved = (list: SaveList, id: string) => has(db[list] as string[], id);
 export function follow(id: string) {
   const on = toggle(db.followed, id);
   toast(on ? `Following ${P(id).name}` : `Unfollowed ${P(id).name}`);
@@ -783,11 +780,6 @@ export function preview(th: { msgs: Msg[]; typing?: number }, inChat: boolean): 
   if (m.k === 'offer') return ['', `${me}Quote: ${m.job} · ${m.price}`, 'money'];
   return ['', me + m.t, ''];
 }
-/** Read receipts for a chat: who has read up to when. */
-export const readersOf = (id: string) => {
-  const cid = THREADS()[id]?.cid;
-  return cid ? membersOf(cid).filter((m: any) => m.user_id !== db.uid) : [];
-};
 
 /* =========================== safety: report and block =========================== */
 export const REPORT_REASONS: [string, string][] = [
@@ -880,4 +872,3 @@ export const NT_TABS: Record<string, (n: Notif) => boolean> = {
   Learning: (n) => ['enrol', 'course', 'newcourse', 'material', 'live', 'mentor', 'rating'].includes(n.type) || n.cat === 'learning' || n.cat === 'mentorship',
   Mentions: (n) => ['mention', 'review', 'comment'].includes(n.type),
 };
-export { xaf, budgetNum, notify, ui, refreshBookings, refreshMine, L };

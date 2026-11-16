@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Post } from '../data/db';
 import { catIcon } from '../data/catalog';
-import { LngLat, anchor, coordOf, placeOf } from '../data/geo';
+import { LngLat, anchor, placeOf } from '../data/geo';
 import { hasCoord, locGranted, locate } from '../logic/here';
 import { useLive } from '../logic/live';
 import { Mapbox } from '../lib/mapbox';

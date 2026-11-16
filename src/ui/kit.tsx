@@ -1,20 +1,6 @@
 import React, { memo, ReactNode, useEffect, useRef, useState } from 'react';
 import { KeyAvoid } from './keyboard';
-import {
-  ActivityIndicator,
-  Animated,
-  KeyboardTypeOptions,
-  Pressable,
-  ScrollView,
-  StyleProp,
-  StyleSheet,
-  Text,
-  TextInput,
-  TextStyle,
-  View,
-  ViewStyle,
-  Platform,
-} from 'react-native';
+import { ActivityIndicator, Animated, KeyboardTypeOptions, Pressable, ScrollView, StyleProp, StyleSheet, Text, TextInput, TextStyle, View, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import Svg, { Circle } from 'react-native-svg';
@@ -52,15 +38,11 @@ export function Txt({ s = 14, w = 5, c = C.text, center, lines, style, children,
     </Text>
   );
 }
-/** Bold inline span inside a Txt. */
-export const B = ({ children, c = C.text }: { children: ReactNode; c?: string }) => (
-  <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', color: c }}>{children}</Text>
-);
 
 export const tap = () => Haptics.selectionAsync().catch(() => {});
 
 /* ---------------- images ---------------- */
-/** A picture reference: an IMG key ("faces/samuel"), a uri ("uri:file://…") or a generated logo ("logo:NX|#3d5af1|#fff"). */
+/** A picture reference: an IMG key ("img/me"), a uri ("uri:file://…") or a generated logo ("logo:NX|#3d5af1|#fff"). */
 export type Pic = string;
 export function picSource(p?: Pic | null) {
   if (!p) return IMG['img/me'];
@@ -411,51 +393,6 @@ export function Chips({ children, style, scroll }: { children: ReactNode; style?
     );
   return <View style={[{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, style]}>{children}</View>;
 }
-/** Single choice chips. */
-export function ChoiceChips<T extends string | number>({
-  options,
-  value,
-  onChange,
-  small,
-  labels,
-}: {
-  options: readonly T[];
-  value: T | null | undefined;
-  onChange: (v: T) => void;
-  small?: boolean;
-  labels?: (v: T) => string;
-}) {
-  return (
-    <Chips>
-      {options.map((o) => (
-        <Chip key={String(o)} small={small} label={labels ? labels(o) : String(o)} on={value === o} onPress={() => onChange(o)} />
-      ))}
-    </Chips>
-  );
-}
-/** Multi choice chips. */
-export function MultiChips({
-  options,
-  value,
-  onToggle,
-  small,
-  check,
-}: {
-  options: readonly string[];
-  value: Set<string> | string[];
-  onToggle: (v: string) => void;
-  small?: boolean;
-  check?: boolean;
-}) {
-  const has = (o: string) => (value instanceof Set ? value.has(o) : value.includes(o));
-  return (
-    <Chips>
-      {options.map((o) => (
-        <Chip key={o} small={small} label={check ? `${has(o) ? '✓ ' : ''}${o}` : o} on={has(o)} onPress={() => onToggle(o)} />
-      ))}
-    </Chips>
-  );
-}
 
 /* ---------------- segmented & tabs ---------------- */
 export function Seg<T extends string>({ items, value, onChange, style }: { items: [T, string][]; value: T; onChange: (v: T) => void; style?: any }) {
@@ -534,7 +471,6 @@ export function Label({ children, right }: { children: ReactNode; right?: ReactN
     </View>
   );
 }
-export const Opt = () => <Text style={tx(12, 6, C.faint)}> · optional</Text>;
 
 export function Field({ label, children, error, hint, style }: { label?: ReactNode; children: ReactNode; error?: string | false | null; hint?: ReactNode; style?: any }) {
   return (
@@ -972,22 +908,6 @@ export function Kpis({ items, cols = 3 }: { items: [string | number, string, (()
   );
 }
 
-/* ---------------- layout ---------------- */
-export function SecHead({ title, action, onAction, style, count }: { title: string; action?: string; onAction?: () => void; style?: any; count?: string | number }) {
-  return (
-    <View style={[S.rowB, { marginTop: 28, marginBottom: 12 }, style]}>
-      <Txt s={18} w={8} style={{ flex: 1 }} lines={1}>
-        {title}
-      </Txt>
-      {count != null ? (
-        <Txt s={12} w={7} c={C.muted}>
-          {count}
-        </Txt>
-      ) : null}
-      {action ? <TextLink title={action} onPress={onAction} s={12} /> : null}
-    </View>
-  );
-}
 
 /** Top bar: back · centred title · action. */
 export function TopBar({
@@ -1075,7 +995,6 @@ export function Page({
 }
 
 export const Grow = () => <View style={{ flex: 1, minHeight: 16 }} />;
-export const Gap = ({ h = 12 }: { h?: number }) => <View style={{ height: h }} />;
 
 export function Title({ children, sm, center, style }: { children: ReactNode; sm?: boolean; center?: boolean; style?: any }) {
   return (

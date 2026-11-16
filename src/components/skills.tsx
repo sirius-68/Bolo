@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
-import { AREAMAP, AREAS, ALL_LANGS, CATIMG, EX, EXPLV, LANGP, POPULAR, PROF, SKILLS, SkillDef, detectCat, lvOf } from '../data/catalog';
+import { AREAMAP, AREAS, ALL_LANGS, CATIMG, EX, EXPLV, LANGP, POPULAR, PROF, SKILLS, SkillDef, lvOf } from '../data/catalog';
 import { db, SkillEntry } from '../data/db';
 import { bump } from '../logic/live';
-import { Btn, Chip, Chips, Field, Input, Label, SelectBox, Stepper, Txt, tap } from '../ui/kit';
+import { Btn, Chip, Chips, Field, Input, Label, SelectBox, Txt, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { pick, sheet, SheetTitle, toast } from '../ui/overlay';
 import { C, R, tx } from '../ui/theme';
@@ -504,4 +504,3 @@ export function LanguagesEditor({ langs, onChange }: { langs: [string, string][]
   );
 }
 
-export { Stepper, detectCat };

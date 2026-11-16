@@ -1,11 +1,10 @@
 /* Accounts: sign-up, roles (Regular / Business), businesses, Pro, profile data. */
 import { db, makeDb, setDb, ui, uid, MyBiz, Service } from '../data/db';
-import { CATS, SKILLS, lvOf } from '../data/catalog';
 import { toast } from '../ui/overlay';
 import { notify } from './notify';
 import { bump, cancelAll, later } from './live';
-import { curBiz, bizName, cityLabel, isW, nowT, mySkill, madeUpService, ensureSkillList, add, P } from './core';
-import { resumeSims, bizLog } from './work';
+import { curBiz, bizName, cityLabel, isW, nowT, madeUpService, ensureSkillList, P } from './core';
+import { resumeSims } from './work';
 import { clearSaved } from './persist';
 import { stopAdTicker } from './career';
 import { signOut } from './remote';
@@ -111,12 +110,6 @@ export function createBusinessAccount(o: { owner: string; email: string; phone: 
   toast(`Welcome to bolo, ${o.biz.name}!`);
 }
 
-export function invite(name: string, role: string) {
-  const b = curBiz()!;
-  b.recruiters.push({ n: name, r: role, pending: 1 });
-  toast('Invite sent to ' + name);
-  bump();
-}
 
 /* ---------------- Pro ---------------- */
 export function payPro(kind: 'regular' | 'business', done: () => void) {
@@ -180,7 +173,6 @@ export function saveSkills(d: { main: any; others: any[]; level: string; years: 
   db.PR.langs = d.langs.map((x) => [...x] as [string, string]);
   bump();
 }
-export { lvOf, SKILLS };
 
 /* ---------------- following ---------------- */
 export function toggleFollow(id: string) {
@@ -190,4 +182,3 @@ export function toggleFollow(id: string) {
   bump();
 }
 export const followingCount = () => db.followed.filter((id) => P(id)).length;
-export { add };

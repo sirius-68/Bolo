@@ -73,7 +73,6 @@ export function setActiveCall(id: string | null, was?: string) {
   if (id) active = id;
   else if (!was || active === was) active = null;
 }
-export const activeCall = () => active;
 
 /** Call someone from a 1-to-1 chat (key = the chat's app id). */
 export async function startCall(key: string, kind: 'voice' | 'video') {

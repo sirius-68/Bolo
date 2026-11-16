@@ -1,7 +1,6 @@
 import React, { useCallback } from 'react';
 import { Tabs, useFocusEffect } from 'expo-router';
 import { View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavBar } from '../../src/components/NavBar';
 import { setToastOffset } from '../../src/ui/overlay';
 import { C } from '../../src/ui/theme';
@@ -14,7 +13,6 @@ export default function TabsLayout() {
       return () => setToastOffset(32);
     }, []),
   );
-  const ins = useSafeAreaInsets();
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
     <Tabs

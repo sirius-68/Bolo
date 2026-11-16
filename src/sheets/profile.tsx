@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { db, Service, uid } from '../data/db';
-import { CATS, CT, DOCS, EDU, NB, QUIZ, UNITS, WHERE, catIcon } from '../data/catalog';
+import { CATS, CT, DOCS, EDU, QUIZ, UNITS, WHERE, catIcon } from '../data/catalog';
 import { MONEY_LIVE } from '../logic/money';
 import { myFollowers } from '../logic/server';
 import { OptRow, AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Note, SelectBox, Seg, StatusPill, SwitchRow, Txt, Kpis, CoTag } from '../ui/kit';

@@ -7,10 +7,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, ui } from '../../src/data/db';
 import { myStats } from '../../src/logic/server';
 import { DOCS, ST_C, ST_W, catIcon } from '../../src/data/catalog';
-import { Avatar, Btn, Empty, IconBtn, PTabs, ProTag, Ring, StatusPill, Txt, Verified, tap } from '../../src/ui/kit';
+import { Avatar, Btn, Empty, IconBtn, PTabs, Ring, StatusPill, Txt, Verified, tap } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
-import { P, bizLogo, bizName, bizPct, curBiz, isPro, isW, myHandle, myCity, cityLabel, myPhoto, mySkill, myVacancies, myOpps, myCourses, xaf, postById, openJobs, has , k } from '../../src/logic/core';
+import { P, bizLogo, bizName, bizPct, curBiz, isPro, isW, myHandle, cityLabel, myPhoto, myVacancies, myOpps, myCourses, xaf, postById, openJobs, k } from '../../src/logic/core';
 import { bump, useLive } from '../../src/logic/live';
 import { balance, heldTotal } from '../../src/logic/wallet';
 import { myListings } from '../../src/logic/listings';
@@ -22,7 +22,7 @@ import { openAccounts, openBizSetup, openEdit, openPro, openStatus, switchRole }
 import { openArea, openBoost, openContacts, openDoc, openEdu, openExp, openFollows, openJobHistory, openLangs, openService, openSvcMenu, openTest, openVideo } from '../../src/sheets/profile';
 import { openJob, sharePost } from '../../src/sheets/work';
 import { openCourse, openOpp, openOppForm, openMentor } from '../../src/sheets/career';
-import { openInvite, viewContract } from '../../src/sheets/business';
+import { viewContract } from '../../src/sheets/business';
 import { pickImage } from '../../src/logic/media';
 import { toast } from '../../src/ui/overlay';
 import { showPhone } from '../../src/data/countries';
@@ -252,7 +252,6 @@ function MeRegular() {
   const offers = Object.keys(db.myOffers);
   const hired = db.hired.filter((id) => P(id) && !P(id).client);
   const savedN = db.saved.length + db.savedPosts.length + db.savedJobs.length + db.savedOpps.length + db.savedCourses.length + db.savedMentors.length + db.savedCos.length;
-  const acc = Object.values(db.myOffers).filter((o) => o.state === 'acc').length;
   const tabs: [string, string, number | null][] = [
     ['Profile', 'Profile', null],
     ['My jobs', 'My jobs', mj.length],
@@ -812,4 +811,3 @@ function MeBusiness() {
     </ScrollView>
   );
 }
-export { has, ProTag };

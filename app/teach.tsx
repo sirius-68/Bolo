@@ -1,11 +1,11 @@
 import React from 'react';
-import { Linking, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { Btn, Page, TopBar, Txt, tap } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { C, S } from '../src/ui/theme';
 import { useLive } from '../src/logic/live';
-import { WEB_TEACH, domainOf, myListings, priceLabel } from '../src/logic/listings';
+import { domainOf, myListings, priceLabel } from '../src/logic/listings';
 import { toneOf, catIcon } from '../src/components/CourseListing';
 
 /** Offer a course: list it on bolo with a link to your own page. People sign up on your site. */

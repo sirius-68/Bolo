@@ -10,21 +10,19 @@ import { openCourseSite } from '../logic/listings';
 import { CourseReviews, RatingBadge } from '../components/Reviews';
 import { ratingOf } from '../logic/reviews';
 import { CV_TEMPLATES, CvKind, CvTpl, cvData, cvHtml, tplOf } from '../components/cvTemplates';
-import { ARTICLES, CATS, EXPERTS, OPP_KINDS, PATHS, RULES, SALARIES, catIcon } from '../data/catalog';
-import { OptRow, AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Meta, Note, PTabs, Pill, ProTag, Rate, Seg, SelectBox, StatusPill, Stepper, Steps, Txt, Verified, tap } from '../ui/kit';
+import { ARTICLES, CATS, OPP_KINDS, PATHS, RULES, SALARIES, catIcon } from '../data/catalog';
+import { OptRow, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Meta, Note, PTabs, Pill, ProTag, Rate, Seg, SelectBox, StatusPill, Stepper, Steps, Txt, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { afterSheet, pick, sheet, SheetTitle, toast } from '../ui/overlay';
 import { C, R, S } from '../ui/theme';
-import { P, isW, xaf, oppBiz, mOwner, curBiz, bizName, bizLogo, has, postById, fname, digits } from '../logic/core';
+import { P, isW, xaf, oppBiz, mOwner, curBiz, bizName, has, digits } from '../logic/core';
 import { saveToggle } from '../logic/work';
-import { announce, answerApplicant, answerMentee, courseGroup, enroll, learnerGroup, enrolEmployees, joinMentor, joinOpp, publishMentor, publishOpp, removeStudent, setProgress, updateMentor, updateOpp, OppForm } from '../logic/career';
-import { bump, useLive } from '../logic/live';
-import { openProfile, openCourses, resetTo } from '../logic/nav';
-import { MyCV, myCvHtml } from '../components/cv';
-import { ListRow, OppCard } from '../components/cards';
+import { announce, answerApplicant, answerMentee, courseGroup, enroll, enrolEmployees, joinMentor, joinOpp, publishMentor, publishOpp, removeStudent, setProgress, updateMentor, updateOpp, OppForm } from '../logic/career';
+import { useLive } from '../logic/live';
+import { openProfile, resetTo } from '../logic/nav';
+import { ListRow } from '../components/cards';
 import { openChat, RulePicker } from './chat';
 import { defaultPay } from './account';
-import { openJob } from './work';
 import { openPro, bizOnlyPrompt } from './account';
 
 const SaveBtn = ({ list, id, label }: { list: 'savedOpps' | 'savedCourses' | 'savedCos' | 'savedMentors'; id: string; label: string }) => {
@@ -1146,4 +1144,3 @@ function openPath(k: number) {
 export function openExperts() {
   router.push('/experts');
 }
-export { openCourses, Verified, AlertIll, postById, openJob, fname };

@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, Linking, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { FlatList, Linking, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { KeyAvoid, useKeyboardOpen } from '../../src/ui/keyboard';
 import { fmtTs } from '../../src/logic/classes';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, Msg } from '../../src/data/db';
-import { Avatar, CoTag, Empty, IconBtn, Pict, Txt, Verified, goBack, tap, Missing } from '../../src/ui/kit';
+import { Avatar, CoTag, IconBtn, Pict, Txt, Verified, goBack, tap, Missing } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { toast } from '../../src/ui/overlay';
 import { C, S, tx } from '../../src/ui/theme';
-import { P, THREADS, fname, isGroup, isW, postById } from '../../src/logic/core';
+import { P, THREADS, fname, isGroup } from '../../src/logic/core';
 import { hiringIn } from '../../src/logic/work';
 import { callsAvailable, startCall } from '../../src/logic/calls';
 import { useLive } from '../../src/logic/live';
@@ -413,4 +413,3 @@ function Bubble({ id, r, hiring }: { id: string; r: Row; hiring: boolean }) {
     </Pressable>
   );
 }
-export { isW, postById, Platform };

@@ -62,45 +62,5 @@ export const EX_SPECS = [
   'Transport and logistics',
 ];
 
-const cv = (price: number): Service => ({
-  id: 'cv',
-  t: 'CV review with a written report',
-  price,
-  fmt: 'Written review',
-  d: 'Send your CV and the kind of job you want. Within 3 days you get a marked-up CV and a short report: what works, what to cut, and how to match it to job adverts.',
-  gets: ['Comments right on your CV', 'A rewritten summary and top 3 achievements', 'One follow-up question in chat'],
-});
-const mock = (price: number, mins = 60): Service => ({
-  id: 'mock',
-  t: 'Mock interview with feedback',
-  price,
-  mins,
-  fmt: 'Video call',
-  d: 'A real interview for the job you’re going for, then honest feedback: how you came across, which answers to fix and how to talk about salary.',
-  gets: [`${mins}-minute video call`, 'Questions for your target role', 'Written notes after the call'],
-});
-const plan = (price: number): Service => ({
-  id: 'plan',
-  t: 'Career plan session',
-  price,
-  mins: 60,
-  fmt: 'Video call',
-  d: 'We look at where you are, what you enjoy and what pays, and leave with a 3-month plan: skills to learn, roles to target and people to contact.',
-  gets: ['60-minute video call', 'A written 3-month plan', 'Two weeks of chat check-ins'],
-});
-const quick = (price: number): Service => ({
-  id: 'qa',
-  t: 'Quick question in chat',
-  price,
-  fmt: 'Chat',
-  d: 'One focused question answered in detail in chat within 24 hours. Good for an offer you need to answer, a tricky email or a salary figure.',
-  gets: ['Answer within 24 hours', 'One follow-up'],
-});
 
-/** Experts are bolo members whose application was approved (loaded from the server). */
-export const EXPERT_LIST: Expert[] = [];
 
-export const EX_PROMOS: Record<string, { off: number; label: string }> = {
-  BOLO10: { off: 0.1, label: '10% off' },
-  FIRST20: { off: 0.2, label: '20% off your first session' },
-};

@@ -6,7 +6,7 @@ import { db, ui } from '../src/data/db';
 import { Avatar, Empty, IconBtn, Rate, Seg, Txt, Verified, goBack } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { C, S } from '../src/ui/theme';
-import { P, fCount, isW, listJobs, listPeople, matchJob, matchPerson, sortJobs, sortPeople, has } from '../src/logic/core';
+import { fCount, isW, listJobs, listPeople, matchJob, matchPerson, sortJobs, sortPeople, has } from '../src/logic/core';
 import { useLive } from '../src/logic/live';
 import { openProfile } from '../src/logic/nav';
 import { CatRail, SearchBar } from '../src/components/common';
@@ -115,4 +115,3 @@ export default function Browse() {
     </View>
   );
 }
-export { P };

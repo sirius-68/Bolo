@@ -6,8 +6,8 @@ import { db, ui } from '../data/db';
 import { CATS } from '../data/catalog';
 import { Avatar, IconBtn, Txt, tap, Verified } from '../ui/kit';
 import { Icon } from '../ui/Icon';
-import { C, R, S, tx } from '../ui/theme';
-import { bizLogo, bizName, curBiz, fname, greet, isPro, isW, cityLabel, myPhoto, P, unreadMsgs, unreadNotifs, fCount } from '../logic/core';
+import { C, S, tx } from '../ui/theme';
+import { bizLogo, bizName, curBiz, fname, isPro, isW, cityLabel, myPhoto, P, unreadMsgs, unreadNotifs } from '../logic/core';
 import { liveInfo, myBookings, pctOf, trOther } from '../logic/work';
 import { bump, useTick } from '../logic/live';
 import { afterSheet, sheet, SheetTitle } from '../ui/overlay';
@@ -103,7 +103,6 @@ export function SearchBar({ value, onChange, placeholder, onFilter, filters }: {
 }
 
 const liveList = () => myBookings().filter((b) => b.state !== 'confirmed' || !b.reviewed);
-export const hasLive = () => liveList().length > 0;
 const openLive = (b: any, fromSheet?: boolean) => {
   const go = () => (b.state === 'confirmed' ? openReview(trOther(b), b.id) : openTrack(b.id));
   if (fromSheet) afterSheet(go);
@@ -111,36 +110,6 @@ const openLive = (b: any, fromSheet?: boolean) => {
 };
 const liveBg = (cls: string) => (cls === 'done' ? C.mint : cls === 'sched' ? C.s3 : C.yellow);
 
-/** Small bubble of faces at the top of the screen — one per live job. Tap to see them all. */
-export function LiveBubble({ style }: { style?: any }) {
-  const L = liveList();
-  if (!L.length) return null;
-  const shown = L.slice(0, 3);
-  const label = L.map((b) => liveInfo(b)[0]).join('. ');
-  return (
-    <Pressable
-      testID="live-bubble"
-      accessibilityRole="button"
-      accessibilityLabel={`${L.length} live ${L.length === 1 ? 'job' : 'jobs'}: ${label}. Open`}
-      onPress={() => (tap(), openLiveSheet())}
-      style={[{ alignSelf: 'center', flexDirection: 'row', alignItems: 'center', padding: 4, paddingRight: L.length > 3 ? 10 : 4, borderRadius: 999, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }, style]}
-    >
-      {shown.map((b, i) => {
-        const cls = liveInfo(b)[2];
-        return (
-          <View key={b.id} style={{ marginLeft: i ? -10 : 0, borderRadius: 22, borderWidth: 2.5, borderColor: liveBg(cls) }}>
-            <Avatar pic={P(trOther(b)).photo} size={36} />
-          </View>
-        );
-      })}
-      {L.length > 3 ? (
-        <Txt s={12} w={8} style={{ marginLeft: 6 }}>
-          +{L.length - 3}
-        </Txt>
-      ) : null}
-    </Pressable>
-  );
-}
 /** Scale of the notch bubble, driven by the Home feed's scrolling (shrinks going down, restores going up). */
 export const notchScale = new Animated.Value(1);
 /** Just below the camera notch / status bar. */
@@ -357,7 +326,6 @@ export function Rail({ children }: { children: React.ReactNode }) {
     </ScrollView>
   );
 }
-export { openCities, greet, fCount, ui, bump, R };
 
 /** Pull down to refresh: reloads everything from bolo. Use as refreshControl={<Pull />} on any list or scroll view.
     (Android wraps the list inside this element, so style and children are passed through.) */

@@ -1,19 +1,5 @@
 import React, { ReactNode, useEffect, useReducer, useRef, useState } from 'react';
-import {
-  Animated,
-  BackHandler,
-  Dimensions,
-  Easing,
-  FlatList,
-  Keyboard,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Animated, BackHandler, Dimensions, Easing, FlatList, Keyboard, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { bump, useTick } from '../logic/live';
 import { KeyAvoid } from './keyboard';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { db, ui, uid } from '../src/data/db';
+import { ui } from '../src/data/db';
 import { Btn, Chip, Chips, Field, Input, Label, Page, Pict, SelectBox, Sub, Title, TopBar, Txt } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { pick, toast } from '../src/ui/overlay';

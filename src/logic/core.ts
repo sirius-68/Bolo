@@ -1,6 +1,6 @@
 /* Shared helpers and selectors over the data model. */
 import { db, ui, Person, Post, Thread, Notif, MyBiz, Mentorship, Opp } from '../data/db';
-import { CATS, lvOf, SKILLS } from '../data/catalog';
+import { lvOf, SKILLS } from '../data/catalog';
 import { logoPic } from '../ui/kit';
 
 /* ---------------- formatting ---------------- */
@@ -36,19 +36,9 @@ export const budgetNum = (b?: string) => {
 };
 export const fname = (n: string) => (/^(Mr|Mrs|Ms|Dr)\.? /.test(n) ? n : n.split(' ')[0]);
 export const first = (id: string) => fname(P(id)?.name || '');
-export const plural = (n: number, w: string, pl?: string) => `${n} ${n === 1 ? w : pl || w + 's'}`;
 export const greet = () => {
   const h = new Date().getHours();
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-};
-export const fmtDate = (d: string | Date, withYear = false) => {
-  try {
-    const x = typeof d === 'string' ? new Date(d) : d;
-    if (isNaN(+x)) return '';
-    return x.toLocaleDateString('en-GB', withYear ? { day: 'numeric', month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short' });
-  } catch {
-    return '';
-  }
 };
 export const digits = (s: string) => s.replace(/\D/g, '');
 export const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s.trim());
@@ -134,7 +124,6 @@ export function dobIso(t: string): string | null {
 /** YYYY-MM-DD → DD/MM/YYYY (for showing a saved date in the box). */
 export const isoToDmy = (iso?: string | null) => (/^\d{4}-\d{2}-\d{2}$/.test(iso || '') ? `${iso!.slice(8, 10)}/${iso!.slice(5, 7)}/${iso!.slice(0, 4)}` : '');
 export const myName = () => db.user.name || 'You';
-export const myFirst = () => (db.user.name ? db.user.name.split(' ')[0] : '');
 export const myPhoto = () => db.user.avatar || 'img/me';
 export const myCity = () => (db.user.city || '').replace(/ CM$/, '') || 'your area';
 /** City for labels; empty when unknown. */
@@ -165,7 +154,6 @@ export function meAs(as?: string, bizId?: string | number | null): Person {
 /** Other people you can hire (not clients, businesses or groups). */
 export const WORKERS = () => Object.keys(db.P).filter((id) => id !== 'me' && !db.P[id].client && !db.P[id].group && db.P[id].name !== 'Deleted account' && !require('./server').isBlocked(id));
 export const isGroup = (id: string) => !!db.P[id]?.group;
-export const isBiz = (id: string) => !!db.P[id]?.biz;
 /** Chat side: true when I'm the one hiring in this conversation. */
 export const hiringSide = (id: string): boolean => require('./work').hiringIn(id);
 
@@ -221,7 +209,6 @@ export const listPeople = () =>
     .filter((id) => (db.P[id].skills || []).length)
     .sort((a, b) => (kmOf(db.P[a].dist) || 999) - (kmOf(db.P[b].dist) || 999) || db.P[b].rate - db.P[a].rate);
 export const myVacancies = () => db.POSTS.filter((p) => p.mine && p.as === 'business' && p.biz === db.BIZ.active);
-export const myPersonalJobs = () => db.POSTS.filter((p) => p.mine && p.as !== 'business');
 export const myOpps = () => db.OPPS.filter((o) => o.mine && o.biz === db.BIZ.active);
 export const myCourses = () => db.COURSES.filter((c) => c.mine && c.biz === db.BIZ.active);
 export function oppBiz(o: Opp): { name: string; logo: string; id: string | null } {
@@ -339,5 +326,4 @@ export function sortPeople(L: string[], F: Filters = ui.F) {
   return L;
 }
 
-export const CAT_NAMES = CATS.map((c) => c[0]);
 export const pinOf = (id: string) => String(1000 + ((parseInt(id.replace(/\D/g, '').slice(-4)) || 4271) % 9000));

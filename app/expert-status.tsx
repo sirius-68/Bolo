@@ -7,7 +7,6 @@ import { C, S } from '../src/ui/theme';
 import { db } from '../src/data/db';
 import { useLive } from '../src/logic/live';
 import { STAGES, bookInterview, stageIndex } from '../src/logic/expert';
-import { toast } from '../src/ui/overlay';
 
 const SLOTS = ['Tomorrow · 10:00', 'Tomorrow · 15:30', 'Thursday · 11:00', 'Friday · 17:00'];
 

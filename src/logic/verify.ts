@@ -1,6 +1,6 @@
 /* Identity and document checks. Photos go to the private "verifications" folder (only the owner and bolo's
    reviewers can open them) and a request is filed for a reviewer. Nothing is approved on the phone. */
-import { db, ui } from '../data/db';
+import { db } from '../data/db';
 import { supabase } from '../lib/supabase';
 import { bump } from './live';
 import { friendly } from './remote';
@@ -34,14 +34,3 @@ export async function submitDocs(files: string[], kind: 'id' | 'business' | 'exp
   }
 }
 
-/** Where my latest checks stand (badges come from the server once a reviewer approves). */
-export async function refreshVerification() {
-  if (!db.uid) return;
-  const { data } = await supabase.from('verifications').select('kind,status,note,created_at').eq('user_id', db.uid).order('created_at', { ascending: false }).limit(10);
-  const id = (data || []).find((v: any) => v.kind === 'id');
-  if (id) db.PR.docs.id = id.status === 'approved' ? 'verified' : id.status === 'pending' ? 'review' : null;
-  const { data: p } = await supabase.from('profiles').select('verified').eq('id', db.uid).maybeSingle();
-  if (p) db.user.verified = !!p.verified;
-  ui.verifyReturn = ui.verifyReturn || '';
-  bump();
-}

@@ -58,7 +58,3 @@ export function notify(o: NotifyIn): Notif | null {
   bump();
   return n;
 }
-/** Marks the notification for an event as read (e.g. you opened the chat it was about). */
-export function readKey(key: string) {
-  [db.NOTIFS_W, db.NOTIFS_C].forEach((N) => N.forEach((n) => (n as any).key === key && (n.read = 1)));
-}

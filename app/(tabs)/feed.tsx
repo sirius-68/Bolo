@@ -5,27 +5,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, ui, REELS, Post } from '../../src/data/db';
 import { Avatar, Btn, Empty, Txt, net, tap } from '../../src/ui/kit';
 import { FeedSkeleton } from '../../src/ui/skeleton';
-import { showStories } from '../../src/components/Stories';
 import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
-import { P, has, fname, myPhoto, postById, cityLabel, curBiz, bizName, fCount, isW, listJobs, listPeople, matchJob, matchPerson, postVisible, sortJobs, sortPeople } from '../../src/logic/core';
+import { P, has, fname, myPhoto, curBiz, bizName, fCount, isW, listJobs, listPeople, matchJob, matchPerson, postVisible, sortJobs, sortPeople } from '../../src/logic/core';
 import { bump, useLive } from '../../src/logic/live';
 import { openBrowse, openProfile } from '../../src/logic/nav';
 import { notchScale, Rail, SearchBar, Sec, TabHeader, Pull } from '../../src/components/common';
 import { follow } from '../../src/logic/work';
 import { PersonRow, PostCard, RecCard, ReelThumb, ReqPost, JobCard } from '../../src/components/cards';
-import { onScrollFab } from '../../src/components/NavBar';
 import { activeFilters, openFilters, resetFilters } from '../../src/sheets/filters';
 import { openDoc, openService } from '../../src/sheets/profile';
-import { openJob } from '../../src/sheets/work';
-import { openOpp } from '../../src/sheets/career';
 import { services } from '../../src/logic/account';
-import { toast } from '../../src/ui/overlay';
 
 type FV = 'all' | 'feed' | 'jobs' | 'people';
 /** Height of the header row (avatar, name, icons) the bubble starts below. */
-const HEADER_ROW = 60;
-const BUBBLE_SPACE = 54;
 type Item = { k: string; po?: Post; id?: string; sp?: 'compose' | 'reels' | 'follow'; from?: number };
 
 export default function Feed() {

@@ -24,8 +24,6 @@ export function deviceCountry(): Country {
   return countryByIso('CM')!;
 }
 
-/** Local number typed by the person → full international number (+7 915…). Drops a leading trunk 0. */
-export const toIntl = (c: Country, local: string) => '+' + c.dial + local.replace(/\D/g, '').replace(/^0+/, '');
 
 /** Pretty-print a stored phone number (international numbers are kept as typed; older Cameroon numbers get +237). */
 export const showPhone = (p?: string | null) => {

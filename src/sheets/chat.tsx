@@ -6,9 +6,9 @@ import { db } from '../data/db';
 import { RULES } from '../data/catalog';
 import { AlertIll, Avatar, Btn, Chip, Chips, Field, Input, Label, OptRow, Txt, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
-import { afterSheet, sheet, SheetTitle, toast } from '../ui/overlay';
-import { C, R, S } from '../ui/theme';
-import { P, ORDER, THREADS, WORKERS, thread, hiringSide, mySkill, fname, isW, digits } from '../logic/core';
+import { afterSheet, sheet, SheetTitle } from '../ui/overlay';
+import { C, S } from '../ui/theme';
+import { P, ORDER, THREADS, WORKERS, thread, hiringSide, fname, digits } from '../logic/core';
 import { blockPerson, deleteChat, deleteMsg, forwardMsg, msgPreview, muteChat, openThread, sendLocation, sendQuote, sendText, shareContact, sendPhoto, sendFile } from '../logic/work';
 import { createGroup, dmBlocked, requestDM, groupOf } from '../logic/career';
 import { searchPeople } from '../logic/server';
@@ -93,7 +93,6 @@ function QuoteSheet({ id, as }: { id: string; as?: 'worker' | 'client' }) {
 /* ---------------- attach ---------------- */
 export function openAttach(id: string) {
   const group = !!P(id)?.group;
-  const hiring = hiringSide(id);
   sheet.show(() => (
     <View>
       <SheetTitle>Send</SheetTitle>
@@ -443,4 +442,3 @@ export function openRules(gid: string, fromMenu = false) {
     </View>
   ));
 }
-export { isW, R };

@@ -5,7 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import { db } from '../../src/data/db';
-import { Avatar, Empty, Pict, Txt, tap, Missing } from '../../src/ui/kit';
+import { Avatar, Pict, Txt, tap, Missing } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { C, S, tx } from '../../src/ui/theme';
 import { P, THREADS, myPhoto } from '../../src/logic/core';

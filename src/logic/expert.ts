@@ -7,9 +7,9 @@
    bolo keeps it proportionate for a local marketplace: automatic basics, a short ethics check,
    a real sample answer, a 15-minute interview, then a probation period judged by mentee ratings. */
 import { router } from 'expo-router';
-import { db, ui } from '../data/db';
+import { db } from '../data/db';
 import { openEdit } from '../sheets/account';
-import { bump, later } from './live';
+import { bump } from './live';
 import { toast } from '../ui/overlay';
 import { prPct } from './account';
 

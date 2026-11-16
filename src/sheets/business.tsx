@@ -8,14 +8,13 @@ import { AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Note, S
 import { Icon } from '../ui/Icon';
 import { afterSheet, sheet, SheetTitle, toast, confirm } from '../ui/overlay';
 import { C, S } from '../ui/theme';
-import { P, cityLabel, curBiz, bizName, bizLogo, myVacancies, postById, isEmail, isPhone, xaf } from '../logic/core';
+import { P, cityLabel, curBiz, bizName, bizLogo, myVacancies, postById, xaf } from '../logic/core';
 import { endContract, markSigned, sendContract, ContractDraft } from '../logic/work';
-import { invite } from '../logic/account';
 import { adCost, adRate, adTargets, adHead, launchAd, MAX_SKIP, SEC_RATE, STORY_EXTRA } from '../logic/career';
 import { showStories, Story } from '../components/Stories';
 import { openChat } from './chat';
 import { openJob } from './work';
-import { defaultPay, openBizSetup, openPro } from './account';
+import { defaultPay, openBizSetup } from './account';
 import { router } from 'expo-router';
 
 /* ---------------- company contracts ---------------- */
@@ -280,50 +279,6 @@ export function openStage(k: string) {
   });
 }
 
-/* ---------------- recruiters ---------------- */
-export function openInvite() {
-  sheet.show(() => <InviteForm />);
-}
-function InviteForm() {
-  const [n, setN] = useState('');
-  const [c, setC] = useState('');
-  const [r, setR] = useState('Recruiter');
-  const [tried, setTried] = useState(false);
-  const cOk = isEmail(c) || isPhone(c);
-  return (
-    <View style={{ gap: 14 }}>
-      <SheetTitle sub={`They can post vacancies and manage applicants for ${bizName(curBiz())}.`}>Invite a recruiter</SheetTitle>
-      <Field label="Name" error={tried && !n.trim() && 'Enter their name'}>
-        <Input value={n} onChangeText={setN} placeholder="Full name" autoCapitalize="words" invalid={tried && !n.trim()} />
-      </Field>
-      <Field label="Phone or email" error={tried && !cOk && 'Enter a valid phone or email'}>
-        <Input value={c} onChangeText={setC} placeholder="6XX XX XX XX or name@email.cm" autoCapitalize="none" invalid={tried && !cOk} />
-      </Field>
-      <View>
-        <Label>Role</Label>
-        <Chips>
-          {['Recruiter', 'Admin'].map((x) => (
-            <Chip key={x} label={x} on={r === x} onPress={() => setR(x)} />
-          ))}
-        </Chips>
-        <Txt s={12} c={C.muted} style={{ marginTop: 6 }}>
-          {r === 'Admin' ? 'Admins can also edit the company page, contracts and payments.' : 'Recruiters manage vacancies and applicants only.'}
-        </Txt>
-      </View>
-      <Btn
-        variant="yellow"
-        icon="send"
-        title="Send invite"
-        onPress={() => {
-          setTried(true);
-          if (!n.trim() || !cOk) return;
-          invite(n.trim(), r);
-          sheet.close();
-        }}
-      />
-    </View>
-  );
-}
 
 /* ---------------- ads ---------------- */
 type AdDraft = { t: [string, string, string, string]; head: string; text: string; areas: string[]; fields: string[]; reach: number; days: number; fmt: 'card' | 'story'; skip: number };
@@ -525,4 +480,3 @@ function AdForm({ a }: { a: AdDraft }) {
     </View>
   );
 }
-export { openPro };

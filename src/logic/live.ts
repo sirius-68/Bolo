@@ -31,7 +31,6 @@ export function subscribe(fn: Sub) {
   };
 }
 
-export const getTick = () => tick;
 
 /** Re-render on every model change (for overlays that aren't navigation screens). */
 export function useTick() {
@@ -91,12 +90,6 @@ export function every(ms: number, fn: () => boolean | 'skip' | void) {
   }, ms);
   timers.add(t);
   return t;
-}
-export function cancel(t?: ReturnType<typeof setTimeout> | null) {
-  if (!t) return;
-  clearTimeout(t);
-  clearInterval(t);
-  timers.delete(t);
 }
 export function cancelAll() {
   timers.forEach((t) => {

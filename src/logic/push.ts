@@ -4,7 +4,6 @@
    - Tapping a pop-up opens what it is about: the chat, job, booking… or the incoming call.
    - While bolo is open, pop-ups for the chat on screen and for calls are not shown (the app already shows them). */
 import { Platform } from 'react-native';
-import { router } from 'expo-router';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from '../data/db';

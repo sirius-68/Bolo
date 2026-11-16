@@ -11,8 +11,6 @@ import { toast } from '../ui/overlay';
 import { bizName, curBiz, isW, myPhoto } from './core';
 import { logoPic } from '../ui/kit';
 
-/** Where course creators get the full toolkit. */
-export const WEB_TEACH = 'https://bolo.app/teach';
 
 /** "coursera.org/learn/x" → "https://coursera.org/learn/x"; null when it isn't a web address. */
 export function normUrl(s: string): string | null {

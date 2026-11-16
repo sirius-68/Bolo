@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db, ui } from '../data/db';
 import { showStories, Story } from '../components/Stories';
-import { openNotifSettings, openPayments } from '../sheets/account';
+import { openNotifSettings } from '../sheets/account';
 
 export const WHATS_NEW_ID = '2026-11-17';
 

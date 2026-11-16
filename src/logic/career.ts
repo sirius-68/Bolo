@@ -1,10 +1,10 @@
 /* Career: internships & programs, courses, mentorships, groups, ads. */
 import { router } from 'expo-router';
-import { db, ui, uid, Course, Mentorship, Opp, Ad } from '../data/db';
+import { db, uid, Course, Mentorship, Opp, Ad } from '../data/db';
 import { toast } from '../ui/overlay';
 import { logoPic } from '../ui/kit';
 import { bump, later, every } from './live';
-import { P, isW, curBiz, bizName, WORKERS, nowT, mOwner, THREADS, ORDER, thread, fname, xaf, myCity } from './core';
+import { P, isW, curBiz, bizName, nowT, mOwner, THREADS, fname } from './core';
 import { bizLog } from './work';
 import { notify } from './notify';
 import { supabase } from '../lib/supabase';
@@ -164,7 +164,7 @@ export function scheduleClass(c: Course) {
   later(ms, () => {
     const gid = learnerGroup(c);
     const th = db.THREADS_W[gid];
-    th.msgs.push({ sys: '🔴 Class is live now' }, { f: 'them', t: `${c.prov.n}: We’re starting! Tap “Join class” on the course page or here: bolo.app/live/${c.id}`, at: nowT() });
+    th.msgs.push({ sys: '🔴 Class is live now' }, { f: 'them', t: `${c.prov.n}: We’re starting! Tap “Join class” on the course page.`, at: nowT() });
     th.unread = (th.unread || 0) + 1;
     th.time = nowT();
     notify({ type: 'live', cat: 'reminders', key: `cls:${c.id}:${c.startAt}:live`, text: `Your class “${c.title}” is live now. Tap to join.`, go: { k: 'live', id: c.id } });
@@ -177,28 +177,6 @@ export function keepLive(c: Course) {
   if (c.startAt && Date.now() - c.startAt < 80 * 60_000 && Date.now() >= c.startAt) return false;
   c.startAt = Date.now() - 5 * 60_000;
   return true;
-}
-export const LIVE_ID = 'c_live';
-export function ensureLiveCourse() {
-  let c = db.COURSES.find((x) => x.id === LIVE_ID);
-  if (!c) {
-    c = { id: LIVE_ID, live: 1, title: 'Live demo class: join any time', prov: { n: 'bolo Academy', logo: logoPic('bA', '#e11d48', '#fff') }, cat: 'Business', lv: 'Beginner', dur: '1 hour', type: 'Skill', fmt: 'Online', reg: '', price: 0, old: 0, prof: '', skills: ['Getting the most from a live class', 'Whiteboard, chat and Q&A', 'Recordings and timestamps'], mo: 0 } as Course;
-    db.COURSES.unshift(c);
-  }
-  keepLive(c);
-  return c;
-}
-/** Join the demo live class straight away (enrols you if needed, no payment). */
-export function joinLiveDemo() {
-  const c = ensureLiveCourse();
-  if (!db.myLearning.includes(c.id)) {
-    db.myLearning.push(c.id);
-    c.done = c.done || 0;
-    learnerGroup(c);
-  }
-  keepLive(c);
-  bump();
-  return c;
 }
 /** Courses enrolled before class times existed get the next Monday class. */
 export function ensureClassTime(c: Course) {
@@ -229,29 +207,10 @@ export function timeLeft(ms: number) {
 export const classWhen = (t: number) => new Date(t).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 /** A live class runs for 90 minutes from its start. */
 export const isLive = (c: Course, now = Date.now()) => !!c.startAt && now >= c.startAt && now < c.startAt + 90 * 60_000;
-/** Courses you teach as a Regular profile (tutor). */
-export const tutorCourses = () => db.COURSES.filter((c) => c.mine && !c.biz);
-/** Learner progress, 0–100. */
-export const coursePct = (c: Course) => Math.round((Math.min(c.done || 0, lessonsOf(c).length) / lessonsOf(c).length) * 100);
 /** Minutes for each lesson (stable per course). */
 export const lessonMin = (c: Course, i: number) => 12 + ((c.id.length * 7 + i * 11) % 24);
 /** Lessons shown on the course page, made from what the course teaches. */
 export const lessonsOf = (c: Course) => [...c.skills, 'Final project and certificate'];
-export function enrollPeople(c: Course, ids: string[]) {
-  c.people = c.people || [];
-  ids.forEach((id) => {
-    if (!c.people!.includes(id)) {
-      c.people!.push(id);
-      (c.prog = c.prog || {})[id] = 0;
-    }
-  });
-  c.enrolled = c.people.length;
-  const gid = courseGroup(c);
-  ids.forEach((id) => THREADS_ALL(gid)?.msgs.push({ sys: `${fname(P(id).name)} enrolled and joined` }));
-  if (c.mine && ids.length)
-    notify({ type: 'enrol', cat: 'applicants', who: ids[0], inbox: c.biz ? 'C' : 'W', key: `enrol:${c.id}:${ids.join(',')}`, text: ids.length > 1 ? `and ${ids.length - 1} other${ids.length > 2 ? 's' : ''} enrolled in “${c.title}”` : `enrolled in “${c.title}”`, go: { k: 'course', id: c.id } });
-  bump();
-}
 export function setProgress(cid: string, pid: string, v: number) {
   const c = db.COURSES.find((x) => x.id === cid)!;
   (c.prog = c.prog || {})[pid] = v;
@@ -280,17 +239,6 @@ export function announce(cid: string, t: string) {
 }
 const THREADS_ALL = (gid: string) => db.THREADS_C[gid] || db.THREADS_W[gid];
 
-/* ---------------- mentorships & groups ---------------- */
-export const groupLogo = (m: Mentorship) => {
-  const t = m.title
-    .split(/\s+/)
-    .filter((w) => /^[A-Za-z]/.test(w))
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
-  return logoPic(t || 'MG', m.color || '#f47b3b', '#000');
-};
 /** The group chat of a mentorship (made on the server when the mentorship is published). */
 export function mentorGroup(m: Mentorship, _asMentor?: boolean) {
   const cid = (m as any).cid as string | undefined;
@@ -424,39 +372,6 @@ export function courseGroup(c: Course) {
   return gid;
 }
 export const groupOf = (gid: string) => db.MENTORSHIPS.find((x) => x.id === db.P[gid]?.mentorship);
-export function leaveGroup(gid: string) {
-  const m = groupOf(gid);
-  const cid = gid.startsWith('g_') ? gid.slice(2) : '';
-  [db.THREADS_W, db.THREADS_C].forEach((T) => delete T[gid]);
-  [db.ORDER_W, db.ORDER_C].forEach((O) => {
-    const i = O.indexOf(gid);
-    if (i >= 0) O.splice(i, 1);
-  });
-  if (m && m.joinedMe) {
-    m.joinedMe = null;
-    m.joined = Math.max(0, m.joined - 1);
-  }
-  toast(`You left “${m?.title || db.P[gid]?.name || 'the group'}”`);
-  bump();
-  (async () => {
-    if (m && !m.mine) await supabase.from('mentorship_members').delete().eq('mentorship_id', m.id).eq('user_id', db.uid!);
-    if (cid) {
-      const { error } = await supabase.from('conversation_members').delete().eq('conversation_id', cid).eq('user_id', db.uid!);
-      if (error) fail(error);
-    }
-  })();
-}
-export function deleteGroup(gid: string) {
-  const cid = gid.startsWith('g_') ? gid.slice(2) : '';
-  [db.THREADS_W, db.THREADS_C].forEach((T) => delete T[gid]);
-  [db.ORDER_W, db.ORDER_C].forEach((O) => {
-    const i = O.indexOf(gid);
-    if (i >= 0) O.splice(i, 1);
-  });
-  toast('Group deleted');
-  bump();
-  if (cid) supabase.rpc('delete_group', { p_conversation: cid }).then(({ error }) => error && fail(error));
-}
 /** Groups with the "no private messages" rule: you can still message the mentor; please keep to the rules. */
 export function requestDM(mid: string) {
   db.DMREQ[mid] = 'ok';
@@ -527,4 +442,3 @@ export function startAdTicker() {
     if (!changed) return 'skip';
   });
 }
-export { xaf, myCity, ORDER, ui };
