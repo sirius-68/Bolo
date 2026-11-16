@@ -137,7 +137,8 @@ function SheetHost() {
           </View>
           {/* the sheets underneath stay mounted but hidden, so what was typed in them is still there on return */}
           {[...(open ? under : []), cur].map((L, i, all) => (
-            <View key={L.key} style={i === all.length - 1 ? { flexShrink: 1 } : { display: 'none' }}>
+            // a sheet with a footer (the comment box) fills the sheet's height, so the footer sits at the bottom
+            <View key={L.key} style={i === all.length - 1 ? { flexShrink: 1, flexGrow: L.opts.footer ? 1 : 0 } : { display: 'none' }}>
               <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, paddingTop: 4 }}>
                 {L.render ? L.render() : null}
               </ScrollView>
