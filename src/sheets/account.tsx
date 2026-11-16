@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MONEY_LIVE } from '../logic/money';
 import { NCAT_PREF } from '../logic/notify';
 import { supabase } from '../lib/supabase';
-import { Keyboard, Pressable, View } from 'react-native';
+import { Keyboard, Linking, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, ui, MyBiz } from '../data/db';
 import { AREAS, CITIES, SIZES, ST_C, ST_W } from '../data/catalog';
 import { AlertIll, Avatar, Btn, Chip, Chips, Field, Input, Label, Note, OptRow, ProTag, SelectBox, SwitchRow, Txt, Verified, StatusPill, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
-import { afterSheet, pick, sheet, SheetTitle, toast } from '../ui/overlay';
+import { afterSheet, confirm, pick, sheet, SheetTitle, toast } from '../ui/overlay';
 import { C, S } from '../ui/theme';
 import { bizLogo, bizName, bizPct, curBiz, myCity, isEmail, isPhone, isW, myPhoto, digits, xaf } from '../logic/core';
 import { canAddBiz, cancelPro, MAX_FREE_BIZ, newBizDraft, payPro, saveBiz, setRole, useBiz } from '../logic/account';
@@ -16,7 +16,7 @@ import { bump } from '../logic/live';
 import { blockedList, ensurePeople } from '../logic/server';
 import { unblockPerson } from '../logic/work';
 import { friendly } from '../logic/remote';
-import { setCityManually, gpsCity } from '../logic/here';
+import { setCityManually, gpsCity, gpsPlace, searchCities, Place } from '../logic/here';
 import { resetTo } from '../logic/nav';
 import { LogoPicker } from '../components/business';
 import { pickImage } from '../logic/media';
@@ -870,45 +870,65 @@ export function openNotifSettings() {
     return <N />;
   });
 }
-/** Choose a city anywhere in the world: from GPS, by typing it, or from suggestions. */
-export function openCities(onPick?: (c: string) => void, current?: string) {
-  sheet.show(() => <CitySheet onPick={onPick} current={current ?? myCity()} />, { tag: 'city' });
+/** Choose a city. With `onPick` it only reports the choice (a business's city, a CV, a job's place);
+    without it, it sets the person's own city. Opens over a sheet that is already showing and returns to it. */
+export function openCities(onPick?: (c: string, place?: Place) => void, current?: string) {
+  sheet.show(() => <CitySheet onPick={onPick} current={current ?? myCity()} />, { tag: 'city', over: true });
 }
-function CitySheet({ onPick, current }: { onPick?: (c: string) => void; current: string }) {
+function CitySheet({ onPick, current }: { onPick?: (c: string, place?: Place) => void; current: string }) {
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
   const [iso, setIso] = useState((db.user.country || deviceCountry().iso).toUpperCase());
+  const [found, setFound] = useState<Place[]>([]);
+  const [looking, setLooking] = useState(false);
   const ctry = countryByIso(iso) || deviceCountry();
   const typed = q.trim().replace(/\s+/g, ' ');
-  const done = (c: string, auto = false) => {
+  // cities that match what is typed, in the chosen country, a moment after the typing pauses
+  useEffect(() => {
+    if (typed.length < 2) {
+      setFound([]);
+      setLooking(false);
+      return;
+    }
+    let live = true;
+    setLooking(true);
+    const t = setTimeout(async () => {
+      const r = await searchCities(typed, ctry.iso);
+      if (!live) return;
+      setFound(r);
+      setLooking(false);
+    }, 280);
+    return () => {
+      live = false;
+      clearTimeout(t);
+    };
+  }, [typed, ctry.iso]);
+  const done = (c: string, place?: Place, auto = false) => {
     Keyboard.dismiss();
     sheet.close();
-    if (onPick) return onPick(c);
-    if (!auto) setCityManually(c, ctry.iso, ctry.name);
+    if (onPick) return onPick(c, place);
+    if (!auto) setCityManually(c, place?.iso || ctry.iso, ctry.name, place?.coord);
     toast('Location saved: ' + c);
   };
-  // Suggestions are Cameroonian cities; elsewhere people type their city.
-  const sugg = (iso === 'CM' ? CITIES.map(([c]) => c) : []).filter((c) => !typed || c.toLowerCase().includes(typed.toLowerCase()));
+  const local = (iso === 'CM' ? CITIES.map(([c]) => c) : []).filter((c) => !typed || c.toLowerCase().includes(typed.toLowerCase()));
+  const exact = found.find((p) => p.city.toLowerCase() === typed.toLowerCase());
   return (
     <View style={{ gap: 14 }}>
-      <SheetTitle sub={current && current !== 'your area' ? `Now: ${current}` : 'Used for the map, distances and what’s near you.'}>Your location</SheetTitle>
-      <Field label="City or town">
-        <Input testID="city-input" value={q} onChangeText={setQ} icon="pin" placeholder="e.g. Moscow, Lagos, Douala" autoCapitalize="words" returnKeyType="done" onSubmit={() => typed && done(typed)} />
-      </Field>
-      {/* the button sits right under the box, so it stays in view above the keyboard */}
-      {typed ? <Btn testID="city-save" variant="yellow" icon="check" title={`Save “${typed.length > 28 ? typed.slice(0, 27) + '…' : typed}”`} onPress={() => done(typed)} /> : null}
-      {sugg.length ? (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {sugg.slice(0, 8).map((c) => (
-            <Chip key={c} label={c} on={c === current} onPress={() => done(c)} />
-          ))}
-        </View>
-      ) : null}
+      <SheetTitle sub={current && current !== 'your area' ? `Now: ${current}` : 'Used for the map, distances and what’s near you.'}>{onPick ? 'Choose a city' : 'Your location'}</SheetTitle>
       <Pressable
         testID="city-country"
         accessibilityRole="button"
         accessibilityLabel={`Country: ${ctry.name}. Change`}
-        onPress={() => pickCountry('Country', ctry.name, (_, k) => k && (setIso(k), (db.user.country = k), bump()))}
+        onPress={() =>
+          pickCountry('Country', ctry.name, (_, k) => {
+            if (!k) return;
+            setIso(k);
+            if (!onPick) {
+              db.user.country = k;
+              bump();
+            }
+          })
+        }
         style={[S.rowB, { height: 54, paddingHorizontal: 16, borderRadius: 16, backgroundColor: C.s2 }]}
       >
         <View style={[S.row, { gap: 10 }]}>
@@ -924,6 +944,55 @@ function CitySheet({ onPick, current }: { onPick?: (c: string) => void; current:
         </View>
         <Icon name="down" size={16} color={C.muted} />
       </Pressable>
+      <Field label="City or town">
+        <Input testID="city-input" value={q} onChangeText={setQ} icon="pin" placeholder={`Start typing a city in ${ctry.name}`} autoCapitalize="words" returnKeyType="done" onSubmit={() => typed && done(exact ? exact.city : typed, exact)} />
+      </Field>
+      {/* matches appear right under the box, so they stay in view above the keyboard */}
+      {typed.length >= 2 ? (
+        <View testID="city-results" style={{ borderRadius: 16, backgroundColor: C.s2, overflow: 'hidden' }}>
+          {found.map((p, i) => (
+            <Pressable
+              key={p.city + (p.region || '') + i}
+              testID={`city-hit-${i}`}
+              accessibilityRole="button"
+              onPress={() => done(p.city, p)}
+              style={({ pressed }) => [S.row, { gap: 10, paddingVertical: 12, paddingHorizontal: 14, backgroundColor: pressed ? C.s3 : 'transparent', borderTopWidth: i ? 1 : 0, borderTopColor: C.line }]}
+            >
+              <Icon name="pin" size={16} color={C.yellow} />
+              <View style={{ flex: 1 }}>
+                <Txt s={15} w={7} lines={1}>
+                  {p.city}
+                </Txt>
+                {p.region && p.region !== p.city ? (
+                  <Txt s={12} c={C.muted} lines={1}>
+                    {p.region}
+                  </Txt>
+                ) : null}
+              </View>
+            </Pressable>
+          ))}
+          {!exact ? (
+            <Pressable
+              testID="city-save"
+              accessibilityRole="button"
+              onPress={() => done(typed)}
+              style={({ pressed }) => [S.row, { gap: 10, paddingVertical: 12, paddingHorizontal: 14, backgroundColor: pressed ? C.s3 : 'transparent', borderTopWidth: found.length ? 1 : 0, borderTopColor: C.line }]}
+            >
+              <Icon name={looking ? 'search' : 'check'} size={16} color={C.muted} />
+              <Txt s={14} c={C.muted} style={{ flex: 1 }} lines={1}>
+                {looking && !found.length ? 'Looking… or use' : 'Use'} “{typed.length > 26 ? typed.slice(0, 25) + '…' : typed}” as typed
+              </Txt>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+      {local.length && typed.length < 2 ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {local.slice(0, 8).map((c) => (
+            <Chip key={c} label={c} on={c === current} onPress={() => done(c)} />
+          ))}
+        </View>
+      ) : null}
       <Btn
         testID="city-gps"
         variant={typed ? 'dark' : 'white'}
@@ -932,10 +1001,12 @@ function CitySheet({ onPick, current }: { onPick?: (c: string) => void; current:
         loading={busy}
         onPress={async () => {
           setBusy(true);
-          const ok = await gpsCity();
+          const r = onPick ? await gpsPlace() : await gpsCity();
           setBusy(false);
-          if (!ok) return toast('Allow location in your phone settings, or type your city');
-          done(myCity(), true);
+          if (typeof r !== 'string') return done(r.city, r, true);
+          if (r === 'blocked')
+            return confirm({ title: 'Turn on location for bolo', text: 'Location is switched off for bolo on this phone. Open bolo’s settings, tap Permissions and allow Location, or type your city here.', ok: 'Open settings', icon: 'gpsfix', onOk: () => void Linking.openSettings().catch(() => {}) });
+          toast(r === 'off' ? 'Turn on Location on your phone, or type your city' : r === 'denied' ? 'Allow location, or type your city' : 'Couldn’t find where you are. Type your city instead');
         }}
       />
     </View>
