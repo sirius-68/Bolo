@@ -50,13 +50,18 @@ const say = (e) => toast(e?.message || String(e), true);
 const put = (el, ...kids) => el.replaceChildren(...kids.flat(Infinity).filter((k) => k != null && k !== false));
 
 /** A dialog. `build(close)` returns the content. Escape and the backdrop close it. */
+const openDialogs = [];
 function dialog(build, wide) {
   const veil = h('div', { class: 'veil' });
   const close = () => {
     veil.remove();
     document.removeEventListener('keydown', onKey);
+    const i = openDialogs.indexOf(veil);
+    if (i >= 0) openDialogs.splice(i, 1);
   };
-  const onKey = (e) => e.key === 'Escape' && close();
+  // Escape closes only the dialog on top (one dialog can open another)
+  const onKey = (e) => e.key === 'Escape' && openDialogs[openDialogs.length - 1] === veil && close();
+  openDialogs.push(veil);
   const box = h('div', { class: 'dialog' + (wide ? ' wide' : ''), role: 'dialog', 'aria-modal': 'true' }, build(close));
   veil.append(box);
   veil.addEventListener('mousedown', (e) => e.target === veil && close());
@@ -96,7 +101,10 @@ if (!CFG.url || !CFG.key) {
 const sb = createClient(CFG.url, CFG.key, { auth: { storage: window.sessionStorage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
 async function rpc(fn, args) {
   const { data, error } = await sb.rpc(fn, args || {});
-  if (error) throw new Error(error.message || 'Something went wrong');
+  if (error) {
+    if (error.code === 'PGRST202' || /could not find the function/i.test(error.message || '')) throw new Error('The database does not have this yet. Approve the waiting production deploy in GitHub (Actions → Backend), then try again.');
+    throw new Error(error.message || 'Something went wrong');
+  }
   return data;
 }
 async function signed(paths, seconds = 300) {
@@ -115,6 +123,7 @@ const VIEWS = [
   ['feedback', 'Feedback', 'feedback'],
   ['experts', 'Experts', 'experts'],
   ['people', 'People'],
+  ['announce', 'Announcements'],
   ['settings', 'Settings'],
   ['activity', 'Activity'],
 ];
@@ -223,7 +232,7 @@ function tabs(options, current, pick) {
 
 /* ------------------------------------------------------------------ pages */
 const PAGES = {};
-const filters = { ids: 'pending', businesses: 'review', reports: 'open', feedback: 'open', experts: 'pending', people: 'all', q: '' };
+const filters = { ids: 'pending', businesses: 'review', reports: 'open', feedback: 'open', experts: 'pending', people: 'all', q: '', bq: '' };
 
 PAGES.overview = async () => {
   const o = (state.overview = await rpc('admin_overview'));
@@ -304,30 +313,41 @@ PAGES.ids = async () => {
 };
 
 PAGES.businesses = async () => {
-  const rows = await rpc('admin_businesses', { p_status: filters.businesses });
+  // the search is only sent when something is typed, so the page also works before the database update
+  const rows = await rpc('admin_businesses', filters.bq ? { p_status: filters.businesses, p_query: filters.bq } : { p_status: filters.businesses });
+  const search = h('input', { class: 'input', type: 'search', placeholder: 'Business name, city, owner or owner email', value: filters.bq, 'aria-label': 'Search businesses' });
+  const form = h('form', { class: 'row' }, h('div', { class: 'grow' }, search), h('button', { class: 'btn y', type: 'submit' }, 'Search'));
+  form.addEventListener('submit', (e) => (e.preventDefault(), (filters.bq = search.value.trim()), (filters.businesses = filters.bq ? 'all' : filters.businesses), show('businesses')));
   const list = h('div', { class: 'list' });
   for (const b of rows) {
-    const st = b.verified === 'verified' ? pill('Verified', 'g') : b.verified === 'review' ? pill('Waiting', 'y') : pill('Not verified');
+    const st = [b.verified === 'verified' ? pill('Verified', 'g') : b.verified === 'review' ? pill('Waiting', 'y') : pill('Not verified'), b.suspended_at ? pill('Suspended', 'r') : null];
     list.append(
       h(
         'div',
         { class: 'item' },
         h('div', { class: 'row' }, avatar(b.name, b.logo_url), h('div', { class: 'grow' }, h('h3', { class: 'clip' }, b.name || 'No name'), h('div', { class: 'small muted clip' }, [b.sector, b.city].filter(Boolean).join(' · '))), st),
-        kv([['RCCM', b.rccm], ['NIU', b.niu], ['Address', [b.address, b.area, b.city].filter(Boolean).join(', ')], ['Phone', b.phone], ['Email', b.email ? mail(b.email) : null], ['Website', b.web], ['About', b.about], ['Owner', [b.owner, b.owner_verified ? ' (ID verified)' : ' (ID not verified)']], ['Owner email', mail(b.owner_email)], ['Created', ago(b.created_at)]]),
+        b.suspended_at ? h('div', { class: 'quote small' }, 'Suspended ' + ago(b.suspended_at) + (b.suspended_note ? ': ' + b.suspended_note : '')) : null,
+        kv([['Vacancies and posts', b.posts], ['RCCM', b.rccm], ['NIU', b.niu], ['Address', [b.address, b.area, b.city].filter(Boolean).join(', ')], ['Phone', b.phone], ['Email', b.email ? mail(b.email) : null], ['Website', b.web], ['About', b.about], ['Owner', [b.owner, b.owner_verified ? ' (ID verified)' : ' (ID not verified)']], ['Owner email', mail(b.owner_email)], ['Created', ago(b.created_at)]]),
         h(
           'div',
           { class: 'row wrap' },
           b.verified !== 'verified' ? h('button', { class: 'btn y', onclick: () => decide({ title: `Verify ${b.name}?`, text: 'Check the RCCM and NIU against the official registry first. The business gets the verified badge.', ok: 'Verify', run: async () => (await rpc('admin_review_business', { p_business: b.id, p_approve: true, p_note: null }), toast('Verified'), show('businesses')) }) }, 'Verify') : null,
           b.verified !== 'none' ? h('button', { class: 'btn danger', onclick: () => decide({ title: b.verified === 'verified' ? `Remove ${b.name}’s badge?` : `Reject ${b.name}?`, text: 'The owner is told why.', note: 'Reason, for example: the RCCM number does not match the name', required: true, danger: true, ok: b.verified === 'verified' ? 'Remove badge' : 'Reject', run: async (n) => (await rpc('admin_review_business', { p_business: b.id, p_approve: false, p_note: n }), toast('Done'), show('businesses')) }) }, b.verified === 'verified' ? 'Remove badge' : 'Reject') : null,
+          b.verified === 'none' ? h('button', { class: 'btn', onclick: () => askVerify({ business: b.id, name: b.name, after: () => show('businesses') }) }, 'Ask to verify') : null,
+          h('button', { class: 'btn', onclick: () => writeTo(b.owner_id, b.name, b.id) }, 'Message'),
+          b.suspended_at
+            ? h('button', { class: 'btn y', onclick: () => decide({ title: `Restore ${b.name}?`, text: 'Its vacancies show again and it can publish. The owner is told.', ok: 'Restore', run: async () => (await rpc('admin_suspend_business', { p_business: b.id, p_on: false, p_note: null }), toast('Restored'), show('businesses')) }) }, 'Restore page')
+            : h('button', { class: 'btn danger', onclick: () => decide({ title: `Suspend ${b.name}?`, text: 'Its vacancies and posts leave the lists and it can publish nothing new. The owner’s personal account keeps working. The owner is told why.', note: 'Reason shown to the owner, for example: vacancies that ask for money', required: true, danger: true, ok: 'Suspend page', run: async (n) => (await rpc('admin_suspend_business', { p_business: b.id, p_on: true, p_note: n }), toast('Suspended'), show('businesses')) }) }, 'Suspend page'),
           h('button', { class: 'btn', onclick: () => person(b.owner_id) }, 'See owner'),
         ),
       ),
     );
   }
   return [
-    head('Businesses', 'A business asks to be verified after adding its RCCM and NIU.'),
-    tabs([['review', 'Waiting'], ['verified', 'Verified'], ['none', 'Not verified'], ['all', 'All']], filters.businesses, (s) => ((filters.businesses = s), show('businesses'))),
-    withGap(rows.length ? list : empty(filters.businesses === 'review' ? 'No business is waiting' : 'Nothing here')),
+    head('Businesses', 'A business asks to be verified after adding its RCCM and NIU. You can also ask one to verify, write to it, or suspend its page.'),
+    form,
+    withGap(tabs([['review', 'Waiting'], ['verified', 'Verified'], ['none', 'Not verified'], ['suspended', 'Suspended'], ['all', 'All']], filters.businesses, (s) => ((filters.businesses = s), show('businesses')))),
+    withGap(rows.length ? list : empty(filters.businesses === 'review' && !filters.bq ? 'No business is waiting' : 'Nothing here')),
   ];
 };
 
@@ -491,6 +511,113 @@ function suspend(id, name, after) {
     },
   });
 }
+/** Write to one account as the bolo team (to its business inbox when `business` is given). */
+function writeTo(id, name, business) {
+  decide({
+    title: `Write to ${name || 'this account'}`,
+    text: business ? 'It arrives in the Notifications of this business page in the app, from “bolo”, with a pop-up on the phone.' : 'It arrives in their Notifications in the app, from “bolo”, with a pop-up on the phone. They cannot answer it there: for a conversation, use email.',
+    note: 'Your message (at least 5 characters)',
+    required: true,
+    ok: 'Send',
+    run: async (n) => {
+      await rpc('admin_message', business ? { p_user: id, p_text: n, p_business: business } : { p_user: id, p_text: n });
+      toast('Sent');
+    },
+  });
+}
+/** Ask a person (their ID) or a business (RCCM and NIU) to verify. */
+function askVerify({ user, business, name, after }) {
+  decide({
+    title: `Ask ${name || 'them'} to verify?`,
+    text: business ? 'The owner gets a notice in the business inbox that opens the page where the RCCM and NIU are added.' : 'They get a notice that opens the ID check (their ID and a selfie).',
+    note: 'Add a line if you want, for example: needed before your first job (optional)',
+    ok: 'Send request',
+    run: async (n) => {
+      await rpc('admin_request_verification', business ? { p_user: null, p_business: business, p_note: n } : { p_user: user, p_business: null, p_note: n });
+      toast('Request sent');
+      after?.();
+    },
+  });
+}
+const KIND_LABEL = { post: 'Post', job: 'Job', comment: 'Comment', course: 'Course listing', opp: 'Internship or program', mentor: 'Mentorship' };
+/** Everything one account posted, each with a way to remove it. */
+async function contentOf(id, name) {
+  const body = h('div', { class: 'col' }, spinner());
+  const close = dialog(() => body, true);
+  const load = async () => {
+    try {
+      const d = await rpc('admin_content', { p_user: id });
+      const rows = [
+        ...d.posts.map((x) => ({ type: x.type, id: x.id, title: x.title || x.kind, text: x.body, at: x.created_at, extra: [x.business, x.status].filter(Boolean).join(' · ') })),
+        ...d.comments.map((x) => ({ type: 'comment', id: x.id, title: 'Comment', text: x.body, at: x.created_at })),
+        ...d.courses.map((x) => ({ type: 'course', id: x.id, title: x.title, text: x.url, at: x.created_at })),
+        ...d.opps.map((x) => ({ type: 'opp', id: x.id, title: x.title, text: x.kind + ' · ' + x.status, at: x.created_at })),
+        ...d.mentorships.map((x) => ({ type: 'mentor', id: x.id, title: x.title, text: '', at: x.created_at })),
+      ].sort((a, b) => new Date(b.at) - new Date(a.at));
+      put(
+        body,
+        h('div', { class: 'row' }, h('h2', { class: 'grow clip' }, `What ${name || 'this account'} posted`), h('button', { class: 'btn sm', onclick: () => close() }, 'Close')),
+        rows.length
+          ? rows.map((r) =>
+              h(
+                'div',
+                { class: 'quote col' },
+                h('div', { class: 'row' }, pill(KIND_LABEL[r.type] || r.type), h('b', { class: 'grow clip' }, r.title || ''), h('span', { class: 'tiny faint' }, ago(r.at))),
+                r.text ? h('p', { class: 'pre small' }, r.text) : null,
+                r.extra ? h('p', { class: 'tiny faint' }, r.extra) : null,
+                h('div', {}, h('button', { class: 'btn sm danger', onclick: () => decide({ title: `Remove this ${(KIND_LABEL[r.type] || 'item').toLowerCase()}?`, text: 'It is deleted for everyone and its author is told why. This cannot be undone.', note: 'Reason shown to the author', required: true, danger: true, ok: 'Remove', run: async (n) => (await rpc('admin_remove_content', { p_type: r.type, p_id: String(r.id), p_note: n }), toast('Removed'), load()) }) }, 'Remove')),
+              ),
+            )
+          : empty('Nothing posted', 'No posts, jobs, comments or listings from this account.'),
+      );
+    } catch (e) {
+      body.replaceChildren(empty('Couldn’t load this', e.message), h('button', { class: 'btn', onclick: () => close() }, 'Close'));
+    }
+  };
+  await load();
+}
+/** Close an account for good (owners only). The name must be typed, so it cannot happen by accident. */
+function closeAccount(id, name, after) {
+  dialog((close) => {
+    const typed = h('input', { class: 'input', placeholder: 'Type the name shown above', 'aria-label': 'Type the account name to confirm' });
+    const why = h('textarea', { class: 'input', placeholder: 'Reason (kept in Activity)', maxlength: '400' });
+    const err = h('p', { class: 'err' });
+    const go = h('button', { class: 'btn danger' }, 'Close account for good');
+    go.addEventListener('click', async () => {
+      if (typed.value.trim().toLowerCase() !== String(name || '').trim().toLowerCase()) return (err.textContent = 'The name does not match.');
+      if (!why.value.trim()) return (err.textContent = 'Write the reason.');
+      go.disabled = true;
+      try {
+        const { data, error } = await sb.functions.invoke('delete-account', { body: { user: id, note: why.value.trim() } });
+        if (error) {
+          let msg = error.message;
+          try {
+            msg = (await error.context.json()).error || msg;
+          } catch {
+            /* keep the message */
+          }
+          throw new Error(msg);
+        }
+        if (data?.error) throw new Error(data.error);
+        close();
+        toast('Account closed');
+        after?.();
+      } catch (e) {
+        err.textContent = e?.message || String(e);
+        go.disabled = false;
+      }
+    });
+    return [
+      h('h2', {}, `Close ${name || 'this account'} for good?`),
+      h('p', { class: 'muted' }, 'The account, its profile, posts, messages, files and business pages are deleted. This cannot be undone. To stop someone for a while, suspend them instead.'),
+      h('p', {}, h('b', {}, name || 'No name')),
+      typed,
+      why,
+      err,
+      h('div', { class: 'row between' }, h('button', { class: 'btn', onclick: close }, 'Cancel'), go),
+    ];
+  });
+}
 /** Everything about one account, in a dialog. */
 async function person(id) {
   let close;
@@ -509,7 +636,24 @@ async function person(id) {
         p.suspended_at ? h('div', { class: 'quote small' }, 'Suspended ' + ago(p.suspended_at) + (p.suspended_note ? ': ' + p.suspended_note : '')) : null,
         kv([['Email', mail(d.email)], ['Phone', d.phone], ['Joined', fmtDate(p.created_at)], ['Last sign-in', fmtDate(d.last_sign_in_at)], ['About', p.bio], ['Account id', h('span', { class: 'tiny faint' }, p.id)]]),
         h('div', { class: 'cards' }, [['Posts', c.posts], ['Offers sent', c.offers], ['Bookings', c.bookings], ['Messages sent', c.messages], ['Reviews', c.reviews], ['Blocked by', c.blocked_by]].map(([l, n]) => h('div', { class: 'card stat' }, h('span', { class: 'muted tiny' }, l), h('b', {}, n)))),
-        d.businesses.length ? h('div', { class: 'col' }, h('h3', {}, 'Business pages'), d.businesses.map((b) => h('div', { class: 'row small' }, h('span', { class: 'grow clip' }, b.name), pill(b.verified === 'verified' ? 'Verified' : b.verified === 'review' ? 'Waiting' : 'Not verified', b.verified === 'verified' ? 'g' : '')))) : null,
+        h('div', { class: 'row wrap' }, p.pro_regular ? pill('Pro', 'y') : pill('No Pro'), p.pro_business ? pill('Business Pro', 'y') : null),
+        d.businesses.length
+          ? h(
+              'div',
+              { class: 'col' },
+              h('h3', {}, 'Business pages'),
+              d.businesses.map((b) =>
+                h(
+                  'div',
+                  { class: 'row small wrap' },
+                  h('span', { class: 'grow clip' }, b.name),
+                  pill(b.verified === 'verified' ? 'Verified' : b.verified === 'review' ? 'Waiting' : 'Not verified', b.verified === 'verified' ? 'g' : ''),
+                  h('button', { class: 'btn sm', onclick: () => writeTo(id, b.name, b.id) }, 'Message'),
+                  b.verified === 'none' ? h('button', { class: 'btn sm', onclick: () => askVerify({ business: b.id, name: b.name, after: load }) }, 'Ask to verify') : null,
+                ),
+              ),
+            )
+          : null,
         d.reports.length ? h('div', { class: 'col' }, h('h3', {}, 'Reports about them'), d.reports.map((r) => h('div', { class: 'row small wrap' }, pill(REASONS[r.reason] || r.reason, 'o'), h('span', { class: 'grow' }, r.details || r.target_type), h('span', { class: 'faint' }, ago(r.created_at)), pill(r.status)))) : null,
         d.posts.length ? h('div', { class: 'col' }, h('h3', {}, 'Latest posts'), d.posts.map((x) => h('div', { class: 'quote small' }, h('b', {}, x.title || x.kind), x.body ? h('p', { class: 'pre' }, x.body) : null, h('p', { class: 'tiny faint' }, ago(x.created_at) + ' · ' + x.status)))) : null,
         d.history.length ? h('div', { class: 'col' }, h('h3', {}, 'Admin history'), d.history.map((x) => h('div', { class: 'row small' }, h('span', { class: 'grow' }, x.action + (x.data?.note ? ': ' + x.data.note : '')), h('span', { class: 'faint' }, ago(x.created_at))))) : null,
@@ -518,6 +662,19 @@ async function person(id) {
           : h(
               'div',
               { class: 'row wrap' },
+              h('button', { class: 'btn y', onclick: () => writeTo(id, p.name) }, 'Message'),
+              h('button', { class: 'btn', onclick: () => contentOf(id, p.name) }, 'What they posted'),
+              p.verified
+                ? h('button', { class: 'btn', onclick: () => decide({ title: `Remove ${p.name || 'this account'}’s ID badge?`, text: 'They are told and can verify again.', note: 'Reason shown to them', required: true, danger: true, ok: 'Remove badge', run: async (n) => (await rpc('admin_set_verified', { p_user: id, p_on: false, p_note: n }), toast('Badge removed'), load()) }) }, 'Remove ID badge')
+                : [
+                    h('button', { class: 'btn', onclick: () => askVerify({ user: id, name: p.name, after: load }) }, 'Ask to verify ID'),
+                    h('button', { class: 'btn', onclick: () => decide({ title: `Give ${p.name || 'this account'} the ID badge?`, text: 'Only when you checked their identity another way. They get the verified badge and a notice.', note: 'How you checked (kept in Activity)', required: true, ok: 'Give badge', run: async (n) => (await rpc('admin_set_verified', { p_user: id, p_on: true, p_note: n }), toast('Badge given'), load()) }) }, 'Give ID badge'),
+                  ],
+              h('button', { class: 'btn', onclick: () => decide({ title: (p.pro_regular ? 'Remove Pro from ' : 'Give Pro to ') + (p.name || 'this account') + '?', text: 'Until payments are live, Pro is given by hand.', ok: p.pro_regular ? 'Remove Pro' : 'Give Pro', run: async () => (await rpc('admin_set_pro', { p_user: id, p_regular: !p.pro_regular, p_business: !!p.pro_business }), toast('Saved'), load()) }) }, p.pro_regular ? 'Remove Pro' : 'Give Pro'),
+              d.businesses.length || p.pro_business
+                ? h('button', { class: 'btn', onclick: () => decide({ title: (p.pro_business ? 'Remove Business Pro from ' : 'Give Business Pro to ') + (p.name || 'this account') + '?', ok: p.pro_business ? 'Remove Business Pro' : 'Give Business Pro', run: async () => (await rpc('admin_set_pro', { p_user: id, p_regular: !!p.pro_regular, p_business: !p.pro_business }), toast('Saved'), load()) }) }, p.pro_business ? 'Remove Business Pro' : 'Give Business Pro')
+                : null,
+              state.me.role === 'owner' ? h('button', { class: 'btn danger', onclick: () => closeAccount(id, p.name, () => (close(), show(state.view))) }, 'Close account') : null,
               p.suspended_at
                 ? h('button', { class: 'btn y', onclick: () => decide({ title: `Restore ${p.name || 'this account'}?`, text: 'They can use bolo normally again and are told so.', ok: 'Restore', run: async () => (await rpc('admin_suspend', { p_user: id, p_on: false, p_note: null }), toast('Restored'), load(), show(state.view)) }) }, 'Restore account')
                 : h('button', { class: 'btn danger', onclick: () => suspend(id, p.name, () => (load(), show(state.view))) }, 'Suspend account'),
@@ -529,6 +686,51 @@ async function person(id) {
   };
   await load();
 }
+
+const AUDIENCES = [['all', 'Everyone'], ['workers', 'People who offer work (have skills)'], ['hirers', 'People who hire (no skills listed)'], ['businesses', 'Business pages (to the business inbox)'], ['verified', 'ID-verified people']];
+PAGES.announce = async () => {
+  const senior = ['owner', 'admin'].includes(state.me.role);
+  const log = (await rpc('admin_audit', { p_limit: 200 })).filter((l) => l.action === 'announce.send').slice(0, 20);
+  const text = h('textarea', { class: 'input', maxlength: '500', id: 'anText', placeholder: 'For example: New on bolo: you can now edit a job after posting it. Update the app to get it.' });
+  const count = h('span', { class: 'tiny faint num' }, '0 / 500');
+  text.addEventListener('input', () => (count.textContent = `${text.value.length} / 500`));
+  const who = h('select', { class: 'input', id: 'anWho' }, AUDIENCES.map(([v, l]) => h('option', { value: v }, l)));
+  const city = h('input', { class: 'input', id: 'anCity', placeholder: 'Leave empty for every city' });
+  const send = h('button', { class: 'btn y' }, 'Send announcement');
+  send.addEventListener('click', () => {
+    const t = text.value.trim();
+    if (t.length < 10) return toast('Write at least a sentence', true);
+    const label = AUDIENCES.find((a) => a[0] === who.value)[1];
+    decide({
+      title: 'Send this to ' + label.toLowerCase() + (city.value.trim() ? ' in ' + city.value.trim() : '') + '?',
+      text: '“' + t + '”. Everyone in this group gets it in their Notifications, with a pop-up on the phone. It cannot be taken back.',
+      ok: 'Send',
+      run: async () => {
+        const n = await rpc('admin_announce', { p_text: t, p_audience: who.value, p_city: city.value.trim() || null });
+        toast(`Sent to ${n} account${n === 1 ? '' : 's'}`);
+        show('announce');
+      },
+    });
+  });
+  return [
+    head('Announcements', 'One message to many people at once, from “bolo”. People who switched “News” off in their notification settings do not get it.'),
+    senior
+      ? h(
+          'div',
+          { class: 'card col' },
+          h('div', { class: 'field' }, h('label', { for: 'anText' }, 'Message'), text, count),
+          h('div', { class: 'field' }, h('label', { for: 'anWho' }, 'Who gets it'), who),
+          h('div', { class: 'field' }, h('label', { for: 'anCity' }, 'Only in this city (optional)'), city),
+          h('p', { class: 'muted small' }, 'At most 5 announcements a day. To write to one person or one business, open them under People or Businesses and choose Message.'),
+          h('div', {}, send),
+        )
+      : empty('Owners and admins only', 'Your role can write to one account at a time (People → Message), not to everyone.'),
+    withGap(h('h2', {}, 'Sent')),
+    log.length
+      ? h('div', { class: 'list' }, log.map((l) => h('div', { class: 'item' }, h('div', { class: 'row wrap' }, pill((AUDIENCES.find((a) => a[0] === l.data?.audience) || [0, l.data?.audience || 'Everyone'])[1], 'o'), l.data?.city ? pill(l.data.city) : null, h('span', { class: 'grow' }), h('span', { class: 'small faint' }, `${l.data?.sent ?? '?'} received · ${ago(l.created_at)} · ${l.actor}`)), h('p', { class: 'pre' }, l.data?.note || ''))))
+      : empty('No announcements yet'),
+  ];
+};
 
 PAGES.settings = async () => {
   const [cfg, admins] = await Promise.all([sb.from('app_config').select('key,value').then(({ data, error }) => (error ? Promise.reject(new Error(error.message)) : data)), rpc('admin_admins')]);
@@ -640,6 +842,13 @@ const ACTIONS = {
   'admin.grant': 'added an admin',
   'admin.revoke': 'removed an admin',
   'pro.set': 'changed a plan',
+  'verification.request': 'asked for a verification',
+  'verified.set': 'changed an ID badge by hand',
+  'message.send': 'wrote to an account',
+  'announce.send': 'sent an announcement',
+  'business.suspend': 'suspended a business page',
+  'business.restore': 'restored a business page',
+  'account.close': 'closed an account',
 };
 PAGES.activity = async () => {
   const rows = await rpc('admin_audit', { p_limit: 200 });
@@ -652,7 +861,7 @@ PAGES.activity = async () => {
       {},
       rows.map((l) => {
         const d = l.data || {};
-        const detail = [d.name, d.label, d.note, d.role, l.target_table === 'app_config' ? l.target_id : null].filter(Boolean).join(' · ');
+        const detail = [d.name, d.label, d.note, d.role, d.audience ? `to ${d.audience}${d.city ? ' in ' + d.city : ''} (${d.sent ?? '?'})` : null, l.target_table === 'app_config' ? l.target_id : null].filter(Boolean).join(' · ');
         return h('tr', {}, h('td', { class: 'small num' }, fmtDate(l.created_at)), h('td', {}, l.actor), h('td', {}, ACTIONS[l.action] || (l.action.startsWith('expert.') ? 'moved an expert application to ' + l.action.slice(7) : l.action)), h('td', { class: 'small muted' }, detail || '—'));
       }),
     ),

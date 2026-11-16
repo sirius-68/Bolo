@@ -33,20 +33,26 @@ Deno.serve(async (req) => {
   const user = who?.user;
   if (whoErr || !user) return json({ error: 'Sign in first' }, 401);
 
-  const step1 = await asUser.rpc('request_account_deletion');
-  if (step1.error) return json({ error: step1.error.message }, 400);
+  // Normally people delete their own account. An owner of the admin panel can close someone else's:
+  // the database checks that the caller is an owner and records it (admin_close_account) before anything is removed.
+  const body = await req.json().catch(() => ({}));
+  const other = typeof body?.user === 'string' && body.user !== user.id ? body.user : null;
+  if (other && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(other)) return json({ error: 'No such account' }, 400);
+  const target = other || user.id;
+  const step1 = other ? await asUser.rpc('admin_close_account', { p_user: other, p_note: typeof body?.note === 'string' ? body.note.slice(0, 400) : null }) : await asUser.rpc('request_account_deletion');
+  if (step1.error) return json({ error: step1.error.message }, other ? 403 : 400);
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
   for (const bucket of BUCKETS) {
     for (let round = 0; round < 20; round++) {
-      const { data: files, error } = await admin.storage.from(bucket).list(user.id, { limit: 1000 });
+      const { data: files, error } = await admin.storage.from(bucket).list(target, { limit: 1000 });
       if (error || !files?.length) break;
-      const { error: rmErr } = await admin.storage.from(bucket).remove(files.map((f) => `${user.id}/${f.name}`));
+      const { error: rmErr } = await admin.storage.from(bucket).remove(files.map((f) => `${target}/${f.name}`));
       if (rmErr) break;
     }
   }
 
-  const { error: delErr } = await admin.auth.admin.deleteUser(user.id);
+  const { error: delErr } = await admin.auth.admin.deleteUser(target);
   if (delErr) return json({ error: 'Could not delete the account. Try again later.' }, 500);
   return json({ ok: true });
 });
