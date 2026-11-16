@@ -3,20 +3,21 @@ name: Update test, part 2 - the new version opens over the old data, shows What'
 ---
 # the new version was installed over the old one (data kept): it must open, still signed in
 - launchApp
+# What's new appears once after the update. It covers the screen and closes by itself after its slides,
+# so it is looked for first (waiting for the home screen first could miss it).
+- extendedWaitUntil:
+    visible:
+      id: "story-close"
+    timeout: 60000
+- takeScreenshot: u05-whats-new-after-update
+- tapOn:
+    id: "story-close"
+- waitForAnimationToEnd
 - extendedWaitUntil:
     visible:
       id: "tab-feed"
     timeout: 60000
 - assertNotVisible: "This screen hit a problem"
-# What's new appears once after the update
-- extendedWaitUntil:
-    visible:
-      id: "story-close"
-    timeout: 20000
-- takeScreenshot: u05-whats-new-after-update
-- tapOn:
-    id: "story-close"
-- waitForAnimationToEnd
 - takeScreenshot: u06-home-after-update
 # restart: not shown again
 - stopApp

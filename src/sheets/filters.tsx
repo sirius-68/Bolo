@@ -13,16 +13,51 @@ const EMPTY: Filters = { dist: 0, rate: 0, ver: false, urgent: false, budget: 0,
 
 /** Filters for jobs or people lists. Changes apply when the person taps “Show results”. */
 export function openFilters(mode: 'jobs' | 'people') {
-  const t: Filters = { ...EMPTY, ...ui.F };
-  sheet.show(() => <FilterSheet mode={mode} t={t} />, {
-    footer: undefined,
-  });
+  // the choices being made (applied on “Show results”) and what redraws the sheet when the buttons below change them
+  const st: Draft = { t: { ...EMPTY, ...ui.F }, cat: ui.cat, redraw: () => {} };
+  // Reset and Show results stay at the bottom of the sheet, in view however long the list of filters is
+  sheet.show(() => <FilterSheet mode={mode} st={st} />, { footer: () => <FilterFoot st={st} /> });
+}
+type Draft = { t: Filters; cat: string | null; redraw: () => void };
+function FilterFoot({ st }: { st: Draft }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 10 }}>
+      <Btn
+        testID="flt-reset"
+        variant="ghost"
+        title="Reset"
+        style={{ flex: 1 }}
+        onPress={() => {
+          Object.assign(st.t, EMPTY);
+          st.cat = null;
+          st.redraw();
+        }}
+      />
+      <Btn
+        variant="yellow"
+        title="Show results"
+        style={{ flex: 2 }}
+        testID="flt-apply"
+        onPress={() => {
+          ui.F = { ...st.t };
+          ui.cat = st.cat;
+          bump();
+          sheet.close();
+          const n = fCount() + (st.cat ? 1 : 0);
+          toast(n ? `${n} filter${n > 1 ? 's' : ''} applied` : 'Showing everything');
+        }}
+      />
+    </View>
+  );
 }
 /** Same layout for jobs and people: Field and Distance first, the specific filters, then Sort. */
-function FilterSheet({ mode, t }: { mode: 'jobs' | 'people'; t: Filters }) {
+function FilterSheet({ mode, st }: { mode: 'jobs' | 'people'; st: Draft }) {
   const [, f] = useState(0);
-  const [cat, setCat] = useState<string | null>(ui.cat);
   const re = () => f((x) => x + 1);
+  st.redraw = re;
+  const t = st.t;
+  const cat = st.cat;
+  const setCat = (c: string | null) => ((st.cat = c), re());
   const row = <K extends keyof Filters>(label: string, k: K, opts: [Filters[K], string][]) => (
     <View>
       <Label>{label}</Label>
@@ -136,23 +171,6 @@ function FilterSheet({ mode, t }: { mode: 'jobs' | 'people'; t: Filters }) {
               ['exp', 'Most experienced'],
             ],
       )}
-      <View style={{ flexDirection: 'row', gap: 10 }}>
-        <Btn variant="ghost" title="Reset" style={{ flex: 1 }} onPress={() => (Object.assign(t, EMPTY), setCat(null), re())} />
-        <Btn
-          variant="yellow"
-          title="Show results"
-          style={{ flex: 2 }}
-          testID="flt-apply"
-          onPress={() => {
-            ui.F = { ...t };
-            ui.cat = cat;
-            bump();
-            sheet.close();
-            const n = fCount() + (cat ? 1 : 0);
-            toast(n ? `${n} filter${n > 1 ? 's' : ''} applied` : 'Showing everything');
-          }}
-        />
-      </View>
     </View>
   );
 }
