@@ -10,8 +10,10 @@ name: Update test, part 2 - the new version opens over the old data, shows What'
       id: "story-close"
     timeout: 60000
 - takeScreenshot: u05-whats-new-after-update
+# one tap only: a repeated tap would land on the bell that sits under the close button
 - tapOn:
     id: "story-close"
+    retryTapIfNoChange: false
 - waitForAnimationToEnd
 - extendedWaitUntil:
     visible:
