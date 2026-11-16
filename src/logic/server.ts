@@ -485,9 +485,8 @@ function buildThread(cid: string) {
     members: c.kind === 'group' ? others.map((o) => L(o.user_id)) : undefined,
     muted: me?.muted ? 1 : undefined,
     uids: members.map((m) => m.user_id),
-    // live signals (see presence.ts) survive a rebuild of the chat
-    typing: old?.typing || 0,
-    on: old?.on,
+    // live signals come from what is known right now (see presence.ts), never from what was saved on the phone
+    ...require('./presence').liveFor(cid),
   };
   T[key] = th;
   if (!O.includes(key)) O.push(key);

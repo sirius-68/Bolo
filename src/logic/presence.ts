@@ -40,6 +40,13 @@ function setTyping(cid: string, on: boolean, uid: string) {
   th.typing = n;
   bump();
 }
+/** For a chat being (re)built: how many people are typing in it and whether the other person is online. */
+export function liveFor(cid: string): { typing: number; on: number } {
+  const me = ME();
+  const direct = convRow(cid)?.kind !== 'group';
+  const other = direct ? membersOf(cid).find((m: any) => m.user_id !== me)?.user_id : undefined;
+  return { typing: Object.keys(typers[cid] || {}).length, on: other && isOnline(other) ? 1 : 0 };
+}
 /** Who is typing in this chat right now (their account ids); empty when nobody is. */
 export const typingIn = (cid?: string): string[] => (cid && threadOf(cid)?.typing ? Object.keys(typers[cid] || {}) : []);
 
