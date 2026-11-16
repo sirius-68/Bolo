@@ -5,6 +5,7 @@ import { Icon } from '../ui/Icon';
 import { pick } from '../ui/overlay';
 import { C, R } from '../ui/theme';
 import { COUNTRIES, Country, countryByIso, deviceCountry, flag } from '../data/countries';
+import { db } from '../data/db';
 import { SUPABASE_KEY, SUPABASE_URL } from '../lib/supabase';
 import { bump } from '../logic/live';
 
@@ -26,7 +27,8 @@ export const firstMode = (): Mode => (authCaps.phone ? 'phone' : 'email');
 
 /** Last country picked for phone numbers (starts as the phone's own region). */
 let lastCountry: Country | null = null;
-const defCountry = () => (lastCountry ||= deviceCountry());
+// the country chosen for the location (Settings → Location) comes first, then the phone's own region
+const defCountry = () => (lastCountry ||= countryByIso(db.user?.country) || deviceCountry());
 
 /** The country a shared dialling code usually means. */
 const MAIN_FOR_CODE: Record<string, string> = { '7': 'RU', '1': 'US', '39': 'IT', '262': 'RE' };

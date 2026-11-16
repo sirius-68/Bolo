@@ -70,7 +70,13 @@ export default function PostJob() {
       other: (typed) => setCat(typed.charAt(0).toUpperCase() + typed.slice(1, 40)),
       otherLabel: (typed) => `Use “${typed}” as the category`,
     });
-  const shown = [...new Set([finalCat, ...CATS.map(([c]) => c)].filter(Boolean) as string[])].slice(0, 9);
+  // a business hiring staff sees office and professional fields first; a person with a job at home sees trades first
+  const OFFICE = ['Sales', 'Admin', 'Accountant', 'Developer', 'Designer', 'Engineer', 'Teacher', 'Nurse', 'Writer', 'Driver', 'Security', 'Cook'];
+  const names = CATS.map(([c]) => c);
+  const ordered = w ? names : [...OFFICE.filter((c) => names.includes(c)), ...names.filter((c) => !OFFICE.includes(c))];
+  const shown = [...new Set([finalCat, ...ordered].filter(Boolean) as string[])].slice(0, 9);
+  // once someone is booked for the job, the pay is what was agreed
+  const booked = editing && old!.status === 'booked';
   return (
     <Page keyboard header={<TopBar title={editing ? (w ? 'Edit job' : 'Edit vacancy') : w ? 'Post a job' : 'Post a vacancy'} />}>
       <Title sm>{w ? 'What do you need help with?' : `Who are you hiring at ${bizName(curBiz())}?`}</Title>
@@ -132,12 +138,18 @@ export default function PostJob() {
           </View>
         </View>
         <Field label={w ? 'Budget' : 'Salary or pay (per month)'}>
-          <Input prefix="XAF" keyboardType="number-pad" value={b ? (+b).toLocaleString('en-US') : ''} onChangeText={(v) => setBudget(digits(v))} placeholder={w ? 'e.g. 15,000' : 'e.g. 120,000'} />
-          <View style={{ marginTop: 10 }}>
-            <Check on={neg} onPress={() => setNeg(!neg)}>
-              {w ? 'I’m open to offers (negotiable)' : 'Negotiable'}
-            </Check>
-          </View>
+          <Input prefix="XAF" keyboardType="number-pad" editable={!booked} value={b ? (+b).toLocaleString('en-US') : ''} onChangeText={(v) => setBudget(digits(v))} placeholder={w ? 'e.g. 15,000' : 'e.g. 120,000'} />
+          {booked ? (
+            <Txt s={12} c={C.muted} style={{ marginTop: 8 }}>
+              This job is already booked, so the pay stays as agreed. You can still correct the description and photos.
+            </Txt>
+          ) : (
+            <View style={{ marginTop: 10 }}>
+              <Check on={neg} onPress={() => setNeg(!neg)}>
+                {w ? 'I’m open to offers (negotiable)' : 'Negotiable'}
+              </Check>
+            </View>
+          )}
         </Field>
         <View>
           <Label>Job type</Label>

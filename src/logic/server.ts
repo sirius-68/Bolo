@@ -1057,7 +1057,7 @@ export function startRealtime() {
       if (m.sender_id && m.sender_id !== me) {
         await ensurePeople([m.sender_id]);
         // this phone has it: the sender sees two ticks, and is no longer "typing"
-        if (e.eventType === 'INSERT') require('./presence').gotMessages();
+        if (e.eventType === 'INSERT') require('./presence').gotMessages(cid, m.sender_id);
       }
       buildThread(cid);
       sortOrders();

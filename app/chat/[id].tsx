@@ -61,9 +61,12 @@ export default function Chat() {
   if (mineLast && mineLast.m.st === 'read') {
     const at = others.length === 1 ? new Date(others[0].last_read_at) : null;
     const today = at && new Date().toDateString() === at.toDateString();
-    mineLast.seen = at && today ? `Seen ${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}` : 'Seen';
+    // in a group: how many of the others have opened the chat since
+    const n = others.filter((o: any) => +new Date(o.last_read_at) >= (mineLast.m.ts0 || 0)).length;
+    mineLast.seen = others.length > 1 ? (n >= others.length ? 'Seen by everyone' : `Seen by ${n}`) : at && today ? `Seen ${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}` : 'Seen';
   }
-  const typer = typingIn(th.cid);
+  const typers = typingIn(th.cid);
+  const typer = typers.length;
   const status = grp ? '' : seenLabel(others[0]?.user_id);
   const onType = (v: string) => {
     setText(v);
@@ -102,7 +105,7 @@ export default function Chat() {
               {p.biz ? <CoTag /> : null}
             </View>
             <Txt testID="chat-status" s={12} c={typer || status === 'online' ? C.mint : C.muted} lines={1}>
-              {typer ? (grp && typer !== 'someone' ? `${fname(P(typer)?.name || 'Someone')} is typing…` : 'typing…') : grp ? `${(th.members || []).length + 1} members` : status || (p.biz ? 'Business' : p.role)}
+              {typer ? (!grp ? 'typing…' : typer > 1 ? `${typer} people are typing…` : `${fname(P(typers[0])?.name || 'Someone')} is typing…`) : grp ? `${(th.members || []).length + 1} members` : status || (p.biz ? 'Business' : p.role)}
             </Txt>
           </View>
         </Pressable>

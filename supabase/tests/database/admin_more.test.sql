@@ -2,7 +2,7 @@
 -- messages, announcements, business suspension, closing an account.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(31);
+select plan(32);
 
 insert into auth.users (id, email, raw_user_meta_data) values
   ('a0000000-0000-0000-0000-000000000001', 'ana@test.bolo', '{"name": "Ana"}'),
@@ -52,6 +52,7 @@ select is((select count(*)::int from public.notifications where business_id = 'e
 -- ---- the owner: announcement, business suspension, closing an account
 set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-000000000001"}';
 select is(public.admin_announce('bolo will be offline on Sunday from 2 to 4 am.'), 3, 'the announcement goes to everyone who has not switched News off');
+select is(public.admin_announce('Please verify your identity to get the badge.', 'unverified'), 3, 'an announcement only to accounts that are not verified yet');
 select lives_ok($$ select public.admin_suspend_business('e0000000-0000-0000-0000-000000000005', true, 'fake vacancies') $$, 'Ana suspends the business page');
 set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-000000000002"}';
 select throws_ok($$ insert into public.posts (id, author_id, business_id, kind, title) values ('vac2', auth.uid(), 'e0000000-0000-0000-0000-000000000005', 'request', 'Driver') $$, 'P0001', null, 'a suspended business cannot publish');
@@ -62,7 +63,7 @@ select is((select count(*)::int from public.notifications where category = 'news
 set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-000000000001"}';
 select throws_ok($$ select public.admin_close_account('d0000000-0000-0000-0000-000000000004', 'leaving') $$, null, null, 'an admin must be removed as admin first');
 select lives_ok($$ select public.admin_close_account('c0000000-0000-0000-0000-000000000003', 'asked by email') $$, 'the owner closes Carl''s account');
-select ok((select count(*) from public.audit_log where action in ('verification.request', 'message.send', 'business.approve', 'verified.set', 'announce.send', 'business.suspend', 'account.close')) = 8, 'every one of these is in the audit log');
+select ok((select count(*) from public.audit_log where action in ('verification.request', 'message.send', 'business.approve', 'verified.set', 'announce.send', 'business.suspend', 'account.close')) = 9, 'every one of these is in the audit log');
 
 select * from finish();
 rollback;

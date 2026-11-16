@@ -22,26 +22,26 @@ const threadOf = (cid: string): Thread | undefined => {
 /* ---------------------------------------------------------------- typing */
 const SHOW_MS = 5000; // a signal counts for this long; the writer repeats it while typing
 const SEND_EVERY = 2500;
-const clear: Record<string, any> = {};
-const who: Record<string, string> = {}; // chat → account id of the person typing (for groups)
+/** chat → the people typing in it right now (account id → the timer that clears them) */
+const typers: Record<string, Record<string, any>> = {};
 let mine: any = null; // my own channel, where signals for me arrive
 const out: Record<string, { ch: any; ok: boolean; used: number }> = {}; // account id → their channel
 const sentAt: Record<string, number> = {};
 
-function setTyping(cid: string, on: boolean, uid?: string) {
+function setTyping(cid: string, on: boolean, uid: string) {
   const th = threadOf(cid);
   if (!th) return;
-  clearTimeout(clear[cid]);
-  if (on) {
-    if (uid) who[cid] = uid;
-    clear[cid] = setTimeout(() => setTyping(cid, false), SHOW_MS);
-  } else delete who[cid];
-  if (!!th.typing === on) return;
-  th.typing = on ? 1 : 0;
+  const T = (typers[cid] = typers[cid] || {});
+  clearTimeout(T[uid]);
+  if (on) T[uid] = setTimeout(() => setTyping(cid, false, uid), SHOW_MS);
+  else delete T[uid];
+  const n = Object.keys(T).length;
+  if ((th.typing || 0) === n) return;
+  th.typing = n;
   bump();
 }
-/** Who is typing in this chat right now (their account id), or '' when nobody is. */
-export const typingIn = (cid?: string) => (cid && threadOf(cid)?.typing ? who[cid] || 'someone' : '');
+/** Who is typing in this chat right now (their account ids); empty when nobody is. */
+export const typingIn = (cid?: string): string[] => (cid && threadOf(cid)?.typing ? Object.keys(typers[cid] || {}) : []);
 
 function listen() {
   const me = ME();
@@ -196,8 +196,10 @@ export async function setShowSeen(on: boolean): Promise<boolean> {
 /* ---------------------------------------------------------------- delivered */
 let deliveredOff = false;
 let deliverTimer: any = null;
-/** This phone has the new messages: let their senders see two ticks. Safe to call often. */
-export function gotMessages() {
+/** This phone has the new messages: let their senders see two ticks. Safe to call often.
+    With a chat and a sender: their message has arrived, so they are no longer "typing". */
+export function gotMessages(cid?: string, from?: string) {
+  if (cid && from) setTyping(cid, false, from);
   if (deliveredOff || !ME() || deliverTimer) return;
   deliverTimer = setTimeout(async () => {
     deliverTimer = null;

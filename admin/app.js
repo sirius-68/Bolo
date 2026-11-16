@@ -687,7 +687,7 @@ async function person(id) {
   await load();
 }
 
-const AUDIENCES = [['all', 'Everyone'], ['workers', 'People who offer work (have skills)'], ['hirers', 'People who hire (no skills listed)'], ['businesses', 'Business pages (to the business inbox)'], ['verified', 'ID-verified people']];
+const AUDIENCES = [['all', 'Everyone'], ['workers', 'People who offer work (have skills)'], ['hirers', 'People who hire (no skills listed)'], ['businesses', 'Business pages (to the business inbox)'], ['verified', 'ID-verified people'], ['unverified', 'People who have not verified their ID']];
 PAGES.announce = async () => {
   const senior = ['owner', 'admin'].includes(state.me.role);
   const log = (await rpc('admin_audit', { p_limit: 200 })).filter((l) => l.action === 'announce.send').slice(0, 20);
