@@ -459,7 +459,7 @@ export function makeDb() {
     /** server conversation id → where it shows in the app */
     CONV: {} as Record<string, { key: string; inbox: 'W' | 'C' }>,
     /** comments per post, loaded when a post is opened */
-    CMTS: {} as Record<string, { id: string; by: string; t: string; at: string }[]>,
+    CMTS: {} as Record<string, import('../logic/comments').Cmt[]>,
     /** approved career experts (server) */
     EXPERTS: [] as import('./experts').Expert[],
     /** chats hidden on this phone ("Delete chat"): conversation id → hidden at (ms) */

@@ -48,6 +48,7 @@ select is((select count(*)::int from public.comments where post_id = 'p1'), 2, '
 
 -- ================================================================ delivered and last seen
 set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-000000000002"}';
+select public.start_direct('a0000000-0000-0000-0000-000000000001');
 select lives_ok($$ insert into public.messages (conversation_id, body) values ((select public.start_direct('a0000000-0000-0000-0000-000000000001')), 'Hello Ana') $$, 'Ben writes to Ana');
 select lives_ok($$ select public.seen_now() $$, 'Ben''s app says he is here');
 

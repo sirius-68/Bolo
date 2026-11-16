@@ -80,8 +80,12 @@ export const sheet = {
   is: (tag: string) => !!sheetState.render && sheetState.opts.tag === tag,
   tag: () => (sheetState.render ? sheetState.opts.tag : undefined),
 };
-/** Close the sheet, then run fn once the close animation finished (prototype used 260 ms). */
+/** Close the sheet (and any it was opened over: we are leaving for another screen), then run fn once the
+    close animation finished (prototype used 260 ms). */
 export function afterSheet(fn: () => void, ms = 280) {
+  const below = under;
+  under = [];
+  below.forEach((u) => u.opts.onClose?.());
   sheet.close();
   setTimeout(fn, ms);
 }

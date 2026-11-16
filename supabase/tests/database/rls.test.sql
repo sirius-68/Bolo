@@ -57,7 +57,7 @@ select is((select count(*)::int from public.notifications where type = 'comment'
 select lives_ok($$ update public.notifications set read_at = now() $$, 'Ana marks her notifications read');
 select throws_ok($$ update public.notifications set body = 'changed' $$, null, null, 'Ana cannot rewrite a notification');
 delete from public.comments where post_id = 'post1';
-select is((select count(*)::int from public.comments where post_id = 'post1'), 1, 'Ana cannot delete Ben''s comment');
+select is((select count(*)::int from public.comments where post_id = 'post1'), 0, 'Ana, who owns the post, can remove a comment under it');
 select lives_ok($$ insert into public.blocks (blocked_id) values ('b0000000-0000-0000-0000-000000000002') $$, 'Ana blocks Ben');
 
 set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-000000000002"}';

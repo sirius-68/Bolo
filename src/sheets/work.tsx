@@ -18,7 +18,6 @@ import {
 import { openProfile, openTrack } from '../logic/nav';
 import { pickDocument } from '../logic/media';
 import { MyCV, PersonCV } from '../components/cv';
-import { addComment, cmtName, commentsOf, deleteComment } from '../logic/comments';
 import { useLive } from '../logic/live';
 import { openChat } from './chat';
 import { openContract } from './business';
@@ -709,48 +708,7 @@ function ReviewSheet({ target, bid }: { target: string; bid: string | null }) {
 /* ====================================================================== */
 /* Comments, media, sharing                                               */
 /* ====================================================================== */
-export function openComments(id: string) {
-  sheet.show(() => <Comments id={id} />, { tag: 'cmt:' + id });
-}
-function Comments({ id }: { id: string }) {
-  useLive();
-  const [v, setV] = useState('');
-  const L = commentsOf(id);
-  const send = () => {
-    if (!v.trim()) return;
-    addComment(id, v);
-    setV('');
-  };
-  return (
-    <View style={{ gap: 14 }}>
-      <SheetTitle sub={L.length ? `${L.length} comment${L.length === 1 ? '' : 's'}` : 'Be the first to comment'}>Comments</SheetTitle>
-      {L.map((c) => (
-        <View key={c.id} style={{ flexDirection: 'row', gap: 10 }}>
-          <Avatar pic={c.by === 'me' ? myPhoto() : P(c.by).photo} size={36} />
-          <View style={{ flex: 1 }}>
-            <Txt s={13} w={8}>
-              {cmtName(c)} <Txt s={11} c={C.muted}>{c.at}</Txt>
-            </Txt>
-            <Txt s={14} c="#d9d9de">
-              {c.t}
-            </Txt>
-          </View>
-          {c.by === 'me' ? (
-            <Pressable testID="cmt-delete" accessibilityLabel="Delete your comment" hitSlop={8} onPress={() => deleteComment(id, c.id)} style={{ padding: 4 }}>
-              <Icon name="trash" size={16} color={C.muted} />
-            </Pressable>
-          ) : null}
-        </View>
-      ))}
-      <View style={[S.row, { gap: 8, marginTop: 4 }]}>
-        <Input testID="cmt-input" value={v} onChangeText={setV} placeholder="Add a comment…" style={{ flex: 1, height: 48, minHeight: 48 }} onSubmit={send} returnKeyType="send" maxLength={500} />
-        <Pressable testID="cmt-send" accessibilityLabel="Send" onPress={send} style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: v.trim() ? C.yellow : C.s3, alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name="send" size={20} color="#000" />
-        </Pressable>
-      </View>
-    </View>
-  );
-}
+export { openComments } from './comments';
 export function openMedia(pic: string) {
   sheet.show(() => <Pict pic={pic} style={{ width: '100%', aspectRatio: pic.startsWith('scenes/') ? 390 / 700 : 1, borderRadius: 18 }} fit="contain" />);
 }
