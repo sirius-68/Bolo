@@ -105,9 +105,34 @@ if (ready) {
     expect(n, 'Ana got no notifications');
     return n.map((x) => x.type).join(', ');
   });
+  await step('comments: a reply sits under the comment, a like counts, and Ben is told about both', async () => {
+    const cmts = must(await A.sb.from('comment_feed').select('id,author_id,likes,liked').eq('post_id', postId));
+    const bens = cmts.find((c) => c.author_id === B.id);
+    expect(bens, 'Ben’s comment is not in the list');
+    const rid = randomUUID();
+    must(await A.sb.from('comments').insert({ id: rid, post_id: postId, body: '@Ben come at 10', parent_id: bens.id, reply_to: B.id }));
+    must(await A.sb.from('comment_likes').insert({ comment_id: bens.id }));
+    const after = must(await A.sb.from('comment_feed').select('id,parent_id,likes,liked').eq('post_id', postId));
+    expect(after.find((c) => c.id === rid)?.parent_id === bens.id, 'the reply is not under the comment');
+    const b = after.find((c) => c.id === bens.id);
+    expect(b.likes === 1 && b.liked === true, 'the like does not show');
+    const n = await eventually(async () => {
+      const d = must(await B.sb.from('notifications').select('body').eq('recipient_id', B.id));
+      return d.some((x) => /replied to your comment/.test(x.body)) && d.some((x) => /liked your comment/.test(x.body)) ? d : null;
+    });
+    expect(n, 'Ben was not told about the reply and the like');
+  });
   await step('Ben sends an offer', async () => {
     const d = must(await B.sb.from('applications').insert({ post_id: postId, price: 'XAF 7,500', when_text: 'Today', msg: 'Hello, I am free now', cv: null }).select('id').single());
     appId = d.id;
+  });
+  await step('Ana edits the job: it is saved and Ben, who applied, is told', async () => {
+    const long = 'Line of a pasted description.\n'.repeat(300);
+    must(await A.sb.from('posts').update({ title: 'E2E fix a tap (kitchen)', body: long, data: { edited: 1 } }).eq('id', postId));
+    const d = must(await B.sb.from('post_feed').select('title,body').eq('id', postId).single());
+    expect(d.title === 'E2E fix a tap (kitchen)' && d.body.length > 8000 && d.body.includes('\n'), 'the edit or the long description was not saved as written');
+    const n = await eventually(async () => must(await B.sb.from('notifications').select('body').eq('recipient_id', B.id).eq('event_key', 'edit:' + postId))[0]);
+    expect(n, 'Ben was not told that the job changed');
   });
   await step('Ana accepts the offer: the job is booked', async () => {
     const apps = must(await A.sb.from('applications').select('id,applicant_id,stage').eq('post_id', postId));
@@ -163,6 +188,35 @@ if (ready) {
     must(await B.sb.from('messages').insert({ id: randomUUID(), conversation_id: cid, kind: 'text', body: 'On my way', data: {} }));
     must(await B.sb.from('conversation_members').update({ last_read_at: new Date().toISOString() }).eq('conversation_id', cid).eq('user_id', B.id));
     must(await B.sb.from('notifications').update({ read_at: new Date().toISOString() }).eq('recipient_id', B.id).eq('event_key', 'msg:' + cid).is('read_at', null));
+  });
+  await step('typing signal arrives; delivered and last seen work, and last seen can be switched off', async () => {
+    await A.sb.realtime.setAuth((await A.sb.auth.getSession()).data.session.access_token);
+    // Ben listens on his own channel; Ana signals that she is typing in their chat
+    const got = [];
+    const mine = B.sb.channel('ping-' + B.id, { config: { broadcast: { self: false } } }).on('broadcast', { event: 'typing' }, (e) => got.push(e.payload));
+    let st = '';
+    mine.subscribe((x) => (st = x));
+    expect(await eventually(() => st === 'SUBSCRIBED', 15000), 'Ben could not listen for typing: ' + st);
+    const out = A.sb.channel('ping-' + B.id, { config: { broadcast: { self: false, ack: false } } });
+    let so = '';
+    out.subscribe((x) => (so = x));
+    expect(await eventually(() => so === 'SUBSCRIBED', 15000), 'Ana could not open the line: ' + so);
+    let ok = null;
+    for (let i = 0; i < 5 && !ok; i++) {
+      await out.send({ type: 'broadcast', event: 'typing', payload: { c: cid, on: true } });
+      ok = await eventually(() => got.some((x) => x.c === cid), 3000);
+    }
+    await A.sb.removeChannel(out);
+    await B.sb.removeChannel(mine);
+    expect(ok, 'the typing signal did not arrive');
+    must(await B.sb.rpc('mark_delivered'));
+    const m = must(await A.sb.from('conversation_members').select('user_id,delivered_at').eq('conversation_id', cid));
+    expect(m.find((x) => x.user_id === B.id)?.delivered_at, 'delivered is not marked');
+    must(await B.sb.rpc('seen_now'));
+    expect(must(await A.sb.rpc('seen_of', { p_users: [B.id] })).length === 1, 'last seen is not shared between two people who chat');
+    must(await B.sb.from('profiles').update({ show_seen: false }).eq('id', B.id));
+    expect(must(await A.sb.rpc('seen_of', { p_users: [B.id] })).length === 0, 'last seen is still shared after it was switched off');
+    must(await B.sb.from('profiles').update({ show_seen: true }).eq('id', B.id));
   });
   await step('photo upload into the chat, private to its members', async () => {
     const path = `${cid}/${randomUUID()}.txt`;
@@ -362,6 +416,22 @@ if (ready) {
       expect(hidden.length === 0, 'a suspended person is still listed');
       must(await A.sb.rpc('admin_suspend', { p_user: B.id, p_on: false }));
       must(await B.sb.from('messages').insert({ id: randomUUID(), conversation_id: cid, kind: 'text', body: 'back again', data: {} }), 'message after restore');
+    });
+    await step('admin: ask to verify, write to an account, badge by hand, what they posted; notices come from bolo', async () => {
+      must(await A.sb.rpc('admin_request_verification', { p_user: B.id, p_business: null, p_note: 'e2e' }));
+      must(await A.sb.rpc('admin_message', { p_user: B.id, p_text: 'e2e hello from the team' }));
+      const n = await eventually(async () => {
+        const d = must(await B.sb.from('notifications').select('actor_id,body,target,event_key').eq('recipient_id', B.id).is('actor_id', null).eq('type', 'account'));
+        return d.some((x) => x.target?.k === 'verify') && d.some((x) => x.body === 'e2e hello from the team') ? d : null;
+      });
+      expect(n, 'the request and the message did not arrive as notices from bolo');
+      must(await A.sb.rpc('admin_set_verified', { p_user: B.id, p_on: true, p_note: 'e2e' }));
+      expect(must(await B.sb.from('profiles').select('verified').eq('id', B.id).single()).verified === true, 'the badge was not set');
+      must(await A.sb.rpc('admin_set_verified', { p_user: B.id, p_on: false, p_note: 'e2e' }));
+      const c = must(await A.sb.rpc('admin_content', { p_user: B.id }));
+      expect(Array.isArray(c.comments) && c.comments.length >= 1, 'what Ben posted is not listed');
+      const biz = must(await A.sb.rpc('admin_businesses', { p_status: 'all', p_query: 'no such business e2e' }));
+      expect(Array.isArray(biz) && biz.length === 0, 'the business search did not answer');
     });
     await step('admin: the app notice can be set and cleared, and every action is in the activity list', async () => {
       const before = must(await A.sb.from('app_config').select('value').eq('key', 'maintenance').maybeSingle());

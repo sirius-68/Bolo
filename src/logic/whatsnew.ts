@@ -5,12 +5,15 @@ import { db, ui } from '../data/db';
 import { showStories, Story } from '../components/Stories';
 import { openNotifSettings } from '../sheets/account';
 
-export const WHATS_NEW_ID = '2026-11-17';
+export const WHATS_NEW_ID = '2026-11-18';
 
 /** Slides added in the latest update. */
-const LATEST = ['places', 'editjobs'];
+const LATEST = ['talk', 'chatsigns', 'ringing'];
 
 export const WHATS_NEW: Story[] = [
+  { key: 'talk', colors: ['#7c5cff', '#3b1fa8'], icon: 'chat', chip: 'Comments', title: 'Like and reply to comments', text: 'Tap the heart on a comment to like it, or Reply to answer it: replies sit in a thread under the comment. Hold a comment to copy, delete or report it. You can also delete any comment under your own post.' },
+  { key: 'chatsigns', colors: ['#2fbf7a', '#0f6e45'], icon: 'check2', chip: 'Messages', title: 'Typing, delivered, seen', text: 'See when someone is typing, when they are online or were last here, and follow each message: one tick is sent, two ticks is delivered, green with “Seen” means it was read. You can hide your own online status in Settings → Privacy & security.', cta: 'Open messages', onCta: () => router.push('/inbox') },
+  { key: 'ringing', colors: ['#f6ee5c', '#e3c400'], icon: 'phone', chip: 'Calls and updates', title: 'Calls ring when bolo is closed', text: 'An incoming call now rings with a ringtone and shows on the lock screen even when bolo is closed: tap it to answer. You can also edit internships, programs and mentorships after publishing, and the app download is much smaller.', dark: true },
   { key: 'places', colors: ['#3d5af1', '#1b2a9b'], icon: 'pin', chip: 'Location', title: 'Any city, found as you type', text: 'Choose a country, start typing and your city appears in the list. Choosing a location no longer closes the form you were filling in, and search boxes stay above the keyboard. Filters now have a Location row: look around you or in any city, within 2 to 50 km.' },
   { key: 'editjobs', colors: ['#f6ee5c', '#e3c400'], icon: 'edit', chip: 'Jobs', title: 'Edit your jobs, paste full descriptions', text: 'Open a job or vacancy you posted and tap Edit to change it. The description takes a full pasted text and keeps its line breaks. Search every category, or type your own.', dark: true },
   { key: 'callsfixed', colors: ['#2fbf7a', '#0f6e45'], icon: 'mic', chip: 'Calls', title: 'Calls stay connected', text: 'bolo now asks for your microphone (and camera for video) before a call starts or is answered, so calls no longer drop with “Allow the microphone”. If you once said no for good, bolo takes you straight to the setting.' },

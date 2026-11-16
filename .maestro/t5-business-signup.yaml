@@ -93,3 +93,30 @@ name: New business account - sign-up, business page, dashboard, post a vacancy
     id: "tab-me"
 - waitForAnimationToEnd
 - takeScreenshot: z10-me
+# edit the business page: choosing the city opens over the form and comes back to it (it used to close the form)
+- tapOn: "Edit page"
+- extendedWaitUntil:
+    visible:
+      id: "bz-step-2"
+    timeout: 10000
+- tapOn:
+    id: "bz-step-2"
+- waitForAnimationToEnd
+- tapOn:
+    id: "bz-city"
+- extendedWaitUntil:
+    visible:
+      id: "city-input"
+    timeout: 10000
+- tapOn:
+    id: "city-input"
+- inputText: "Zzqtown"
+- takeScreenshot: z11-city-over-business-form
+- tapOn:
+    id: "city-save"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Location & contact"
+    timeout: 10000
+- assertVisible: "Zzqtown"
+- takeScreenshot: z12-back-on-business-form

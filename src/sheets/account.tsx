@@ -337,6 +337,14 @@ function BizSetup({ st }: { st: BzState }) {
       <View style={{ height: 4, borderRadius: 2, backgroundColor: C.s3, marginTop: 8 }}>
         <View style={{ width: `${(st.step / 3) * 100}%`, height: 4, borderRadius: 2, backgroundColor: C.yellow }} />
       </View>
+      {/* editing: every part of the page is one tap away (what was typed stays while moving between them) */}
+      {st.mode === 'edit' ? (
+        <Chips style={{ marginTop: 12 }}>
+          {['About', 'Location & contact', 'Logo & verification'].map((t, i) => (
+            <Chip key={t} testID={`bz-step-${i + 1}`} small label={t} on={st.step === i + 1} onPress={() => ((st.step = i + 1), re())} />
+          ))}
+        </Chips>
+      ) : null}
     </View>
   );
   const nav = (last?: boolean) => (
@@ -392,7 +400,7 @@ function BizSetup({ st }: { st: BzState }) {
         <SheetTitle>Location & contact</SheetTitle>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Field label="City" style={{ flex: 1 }}>
-            <SelectBox value={b.city} placeholder="Choose a city" onPress={() => openCities((v) => (set('city', v), re()), b.city)} />
+            <SelectBox testID="bz-city" value={b.city} placeholder="Choose a city" onPress={() => openCities((v) => (set('city', v), re()), b.city)} />
           </Field>
           <Field label="Neighbourhood" style={{ flex: 1 }}>
             <Input value={b.area} onChangeText={(v) => (set('area', v), re())} />
