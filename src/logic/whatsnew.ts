@@ -5,12 +5,14 @@ import { db, ui } from '../data/db';
 import { showStories, Story } from '../components/Stories';
 import { openNotifSettings, openPayments } from '../sheets/account';
 
-export const WHATS_NEW_ID = '2026-11-16';
+export const WHATS_NEW_ID = '2026-11-17';
 
 /** Slides added in the latest update. */
-const LATEST = ['callsfixed'];
+const LATEST = ['places', 'editjobs'];
 
 export const WHATS_NEW: Story[] = [
+  { key: 'places', colors: ['#3d5af1', '#1b2a9b'], icon: 'pin', chip: 'Location', title: 'Any city, found as you type', text: 'Choose a country, start typing and your city appears in the list. Choosing a location no longer closes the form you were filling in, and search boxes stay above the keyboard. Filters now have a Location row: look around you or in any city, within 2 to 50 km.' },
+  { key: 'editjobs', colors: ['#f6ee5c', '#e3c400'], icon: 'edit', chip: 'Jobs', title: 'Edit your jobs, paste full descriptions', text: 'Open a job or vacancy you posted and tap Edit to change it. The description takes a full pasted text and keeps its line breaks. Search every category, or type your own.', dark: true },
   { key: 'callsfixed', colors: ['#2fbf7a', '#0f6e45'], icon: 'mic', chip: 'Calls', title: 'Calls stay connected', text: 'bolo now asks for your microphone (and camera for video) before a call starts or is answered, so calls no longer drop with “Allow the microphone”. If you once said no for good, bolo takes you straight to the setting.' },
   { key: 'callslist', colors: ['#7c5cff', '#3b1fa8'], icon: 'phone', chip: 'Calls', title: 'All your calls in one place', text: 'Open Messages and tap the phone button to see every call: made, received and missed. Several missed calls from one person show as one line with a count. Tap a call to open the chat, or call back in one tap.', cta: 'Open calls', onCta: () => router.push('/calls' as any) },
   { key: 'yours', colors: ['#2fbf7a', '#0f6e45'], icon: 'pin', chip: 'Your details', title: 'Your city and your CV, as you set them', text: 'Type your city and tap Save: it now stays, on every phone you log in on. The date of birth adds its own slashes, and your CV shows your own profession and skills.' },

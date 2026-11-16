@@ -94,10 +94,10 @@ export default function PostJob() {
             </View>
           ) : null}
           <Chips scroll>
+            <Chip testID="pj-cats" small icon="search" label="All categories" tone="white" onPress={allCats} />
             {shown.map((c) => (
               <Chip key={c} small icon={catIcon(c)} label={c} on={finalCat === c} onPress={() => setCat(cat === c ? null : c)} />
             ))}
-            <Chip small icon="search" label="All categories" onPress={allCats} />
           </Chips>
           {!finalCat ? (
             <Txt s={12} c={C.muted} style={{ marginTop: 8 }}>

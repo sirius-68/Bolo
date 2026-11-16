@@ -35,7 +35,57 @@ name: New account that needs something done - sign-up, onboarding, post a job
     visible: "Tour leaking tap ${RUN}"
     timeout: 15000
 - takeScreenshot: h06-job-posted
-- back
+# edit the job: paste-like text with line breaks, the category search with the keyboard open, a custom category
+- scrollUntilVisible:
+    element:
+      id: "job-edit"
+    direction: DOWN
+- tapOn:
+    id: "job-edit"
+- extendedWaitUntil:
+    visible:
+      id: "pj-text"
+    timeout: 15000
+- tapOn:
+    id: "pj-text"
+- inputText: "Under the kitchen sink."
+- pressKey: Enter
+- inputText: "Bring a wrench."
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "pj-cats"
+    direction: DOWN
+- tapOn:
+    id: "pj-cats"
+- extendedWaitUntil:
+    visible:
+      id: "pick-search"
+    timeout: 8000
+- tapOn:
+    id: "pick-search"
+- inputText: "Tap repair"
+# the search box and the empty state stay above the open keyboard
+- assertVisible:
+    id: "pick-search"
+- assertVisible:
+    id: "pick-other"
+- takeScreenshot: h06b-category-search-keyboard
+- tapOn:
+    id: "pick-other"
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      id: "pj-submit"
+    direction: DOWN
+- takeScreenshot: h06c-edit-job
+- tapOn:
+    id: "pj-submit"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "tab-feed"
+    timeout: 15000
 - extendedWaitUntil:
     visible:
       id: "tab-feed"

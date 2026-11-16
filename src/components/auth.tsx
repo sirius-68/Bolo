@@ -28,13 +28,27 @@ export const firstMode = (): Mode => (authCaps.phone ? 'phone' : 'email');
 let lastCountry: Country | null = null;
 const defCountry = () => (lastCountry ||= deviceCountry());
 
+/** The country a shared dialling code usually means. */
+const MAIN_FOR_CODE: Record<string, string> = { '7': 'RU', '1': 'US', '39': 'IT', '262': 'RE' };
 /** Split a stored number (+7 9151234567, or an old local Cameroon number) into country + local part. */
 export function splitPhone(v: string, hint?: Country): { c: Country; local: string } {
   const s = (v || '').trim();
   if (!s.startsWith('+')) return { c: hint || defCountry(), local: s };
   const d = s.replace(/\D/g, '');
   if (hint && d.startsWith(hint.dial)) return { c: hint, local: d.slice(hint.dial.length) };
-  const best = COUNTRIES.filter((c) => d.startsWith(c.dial)).sort((a, b) => b.dial.length - a.dial.length)[0];
+  const all = COUNTRIES.filter((c) => d.startsWith(c.dial)).sort((a, b) => b.dial.length - a.dial.length);
+  // several countries share one code (+7 Russia and Kazakhstan, +1 United States and Canada…)
+  const same = all.filter((c) => c.dial === all[0].dial);
+  const rest = all[0] ? d.slice(all[0].dial.length) : '';
+  const mine = defCountry().iso;
+  const best =
+    same.length < 2
+      ? same[0]
+      : (all[0].dial === '7' && /^[67]/.test(rest) && same.find((c) => c.iso === 'KZ')) || // Kazakhstan's numbers start with 6 or 7
+        (all[0].dial === '7' && rest && same.find((c) => c.iso === 'RU')) ||
+        same.find((c) => c.iso === mine) ||
+        same.find((c) => MAIN_FOR_CODE[c.dial] === c.iso) ||
+        same[0];
   return best ? { c: best, local: d.slice(best.dial.length) } : { c: defCountry(), local: d };
 }
 const joinPhone = (c: Country, local: string) => '+' + c.dial + ' ' + local.replace(/[^\d ]/g, '').replace(/^0+/, '');

@@ -240,11 +240,14 @@ export function updateJob(id: string, f: JobForm, keepWhen = false) {
   bump();
   (async () => {
     try {
+      // edited seconds after posting: wait until the server has given the job its id
+      for (let i = 0; i < 40 && po.id.startsWith('tmp_'); i++) await new Promise((r) => setTimeout(r, 500));
+      if (po.id.startsWith('tmp_')) throw new Error('This job is still being posted. Try again in a moment.');
       const photos = await uploadPostPhotos(po.photos || []);
       const { error } = await supabase
         .from('posts')
         .update({ title: po.title, body: po.text, cat: po.cat, area: po.area, urgent: !!po.urgent, budget_num: +b || 0, photos: photos.map((x) => x.replace(/^uri:/, '')), data: { budget: po.budget, when: po.when, type: po.type, openings: po.openings, edited: 1 }, ...(f.at !== undefined ? { location: jobPoint(f) } : {}) })
-        .eq('id', id);
+        .eq('id', po.id);
       if (error) throw error;
       po.photos = photos;
       bump();

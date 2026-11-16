@@ -76,6 +76,67 @@ name: New account that offers skills - sign-up, full onboarding, send an offer
     visible: "Tour leaking tap ${RUN}"
     timeout: 20000
 - takeScreenshot: w10-jobs
+# filters: choose another country and city from the list (the filter sheet must come back), then the job from elsewhere is hidden
+- tapOn: "Filters.*"
+- extendedWaitUntil:
+    visible:
+      id: "flt-city"
+    timeout: 8000
+- tapOn:
+    id: "flt-city"
+- extendedWaitUntil:
+    visible:
+      id: "city-country"
+    timeout: 8000
+- tapOn:
+    id: "city-country"
+- extendedWaitUntil:
+    visible:
+      id: "pick-search"
+    timeout: 8000
+- tapOn:
+    id: "pick-search"
+- inputText: "Fran"
+- assertVisible:
+    id: "pick-search"
+- takeScreenshot: w10b-country-search-keyboard
+- tapOn: ".*France"
+- waitForAnimationToEnd
+- tapOn:
+    id: "city-input"
+- inputText: "Lyo"
+- extendedWaitUntil:
+    visible:
+      id: "city-hit-0"
+    timeout: 20000
+- takeScreenshot: w10c-city-suggestions
+- tapOn:
+    id: "city-hit-0"
+- extendedWaitUntil:
+    visible:
+      id: "flt-apply"
+    timeout: 8000
+- takeScreenshot: w10d-filter-with-city
+- tapOn:
+    id: "flt-apply"
+- waitForAnimationToEnd
+- assertNotVisible: "Tour leaking tap ${RUN}"
+- takeScreenshot: w10e-filtered-by-city
+- tapOn: "Filters.*"
+- extendedWaitUntil:
+    visible:
+      id: "flt-apply"
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Reset"
+    direction: DOWN
+- tapOn: "Reset"
+- tapOn:
+    id: "flt-apply"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Tour leaking tap ${RUN}"
+    timeout: 15000
 - tapOn: "Tour leaking tap ${RUN}"
 - waitForAnimationToEnd
 - takeScreenshot: w11-job
