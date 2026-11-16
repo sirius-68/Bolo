@@ -64,6 +64,37 @@ export function publishOpp(f: OppForm): 'opp' | 'course' {
   })();
   return 'opp';
 }
+/** Change an internship or program I published. Dates stay as they were unless new ones are picked. */
+export function updateOpp(id: string, f: OppForm) {
+  const o = db.OPPS.find((x) => x.id === id && x.mine);
+  if (!o || id.startsWith('tmp_')) return toast('This listing is still being published. Try again in a moment.');
+  const before = { ...o };
+  const b = db.BIZ.list.find((x) => x.id === o.biz) || curBiz();
+  const amt = +String(f.amount).replace(/\D/g, '') || 0;
+  Object.assign(o, {
+    title: f.title.trim(),
+    cat: f.cat || o.cat,
+    dur: f.dur,
+    start: fmtD(f.start) || o.start,
+    mode: f.mode === 'Online' ? 'Online' : `${f.mode} · ${b?.area || b?.city || ''}`.replace(/ · $/, ''),
+    pay: f.paid === 'Paid' ? (amt ? `XAF ${amt.toLocaleString('en-US')} / month stipend` : 'Paid · stipend on request') : f.paid === 'Fee' ? `XAF ${amt.toLocaleString('en-US')} fee` : f.paid === 'Free' ? 'Free' : 'Unpaid',
+    seats: f.seats,
+    deadline: fmtD(f.deadline) || o.deadline,
+    desc: f.desc.trim() || o.desc,
+  });
+  bump();
+  const { cat, dur, start, mode, pay, deadline, desc, skills } = o;
+  supabase
+    .from('opportunities')
+    .update({ title: o.title, seats: o.seats, data: { cat, dur, start, mode, pay, deadline, desc, skills } })
+    .eq('id', id)
+    .then(({ error }) => {
+      if (!error) return toast('Changes saved');
+      Object.assign(o, before);
+      bump();
+      fail(error);
+    });
+}
 export function joinOpp(id: string) {
   const o = db.OPPS.find((x) => x.id === id)!;
   o.applied = 1;
@@ -316,6 +347,35 @@ export function publishMentor(f: MentorForm) {
     await refreshCareer();
     await refreshChats();
   })();
+}
+/** Change a mentorship I run. */
+export function updateMentor(id: string, f: MentorForm) {
+  const m = db.MENTORSHIPS.find((x) => x.id === id && x.mine);
+  if (!m || id.startsWith('tmp_')) return toast('This mentorship is still being published. Try again in a moment.');
+  const before = { ...m };
+  const amt = +String(f.amount).replace(/\D/g, '');
+  Object.assign(m, {
+    title: f.title.trim(),
+    field: f.field || m.field,
+    format: f.format,
+    dur: f.dur,
+    price: f.price === 'Free' || !amt ? 'Free' : `XAF ${amt.toLocaleString('en-US')} / month`,
+    seats: Math.max(f.seats, m.joined || 0),
+    desc: f.desc.trim() || m.desc,
+    rules: [...f.rules],
+  });
+  bump();
+  const { field, format, dur, price, desc, rules } = m;
+  supabase
+    .from('mentorships')
+    .update({ title: m.title, seats: m.seats, data: { field, format, dur, price, desc, rules, color: m.color } })
+    .eq('id', id)
+    .then(({ error }) => {
+      if (!error) return toast('Changes saved');
+      Object.assign(m, before);
+      bump();
+      fail(error);
+    });
 }
 export function answerMentee(mid: string, pid: string, st: 'acc' | 'dec') {
   const m = db.MENTORSHIPS.find((x) => x.id === mid)!;

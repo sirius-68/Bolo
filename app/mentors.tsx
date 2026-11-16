@@ -35,7 +35,7 @@ export default function Mentors() {
               <Txt s={22} w={8} style={{ flex: 1 }}>
                 Mentorship
               </Txt>
-              <IconBtn testID="mentors-offer" name="plus" bg={C.yellow} color="#000" label="Offer a mentorship" onPress={openMentorForm} />
+              <IconBtn testID="mentors-offer" name="plus" bg={C.yellow} color="#000" label="Offer a mentorship" onPress={() => openMentorForm()} />
             </View>
             <Txt s={13} c={C.muted}>
               Learn from experienced people and companies, 1-to-1 or in groups.
@@ -67,7 +67,7 @@ export default function Mentors() {
         )}
         ListEmptyComponent={
           <Empty title="No mentorships match" text="Try another topic.">
-            <Btn small variant="yellow" title="Offer one yourself" style={{ marginTop: 12, alignSelf: 'center' }} onPress={openMentorForm} />
+            <Btn small variant="yellow" title="Offer one yourself" style={{ marginTop: 12, alignSelf: 'center' }} onPress={() => openMentorForm()} />
           </Empty>
         }
       />

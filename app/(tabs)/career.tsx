@@ -186,7 +186,7 @@ export default function Career() {
         {others.map((m) => (
           <MentorCard key={m.id} m={m} />
         ))}
-        <Pressable accessibilityRole="button" onPress={openMentorForm} style={{ width: 180, padding: 16, borderRadius: 22, borderWidth: 1, borderStyle: 'dashed', borderColor: C.s3, justifyContent: 'center', gap: 8 }}>
+        <Pressable accessibilityRole="button" onPress={() => openMentorForm()} style={{ width: 180, padding: 16, borderRadius: 22, borderWidth: 1, borderStyle: 'dashed', borderColor: C.s3, justifyContent: 'center', gap: 8 }}>
           <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
             <Icon name="plus" size={20} color="#000" />
           </View>

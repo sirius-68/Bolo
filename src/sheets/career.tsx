@@ -17,7 +17,7 @@ import { afterSheet, pick, sheet, SheetTitle, toast } from '../ui/overlay';
 import { C, R, S } from '../ui/theme';
 import { P, isW, xaf, oppBiz, mOwner, curBiz, bizName, bizLogo, has, postById, fname, digits } from '../logic/core';
 import { saveToggle } from '../logic/work';
-import { announce, answerApplicant, answerMentee, courseGroup, enroll, learnerGroup, enrolEmployees, joinMentor, joinOpp, publishMentor, publishOpp, removeStudent, setProgress, OppForm } from '../logic/career';
+import { announce, answerApplicant, answerMentee, courseGroup, enroll, learnerGroup, enrolEmployees, joinMentor, joinOpp, publishMentor, publishOpp, removeStudent, setProgress, updateMentor, updateOpp, OppForm } from '../logic/career';
 import { bump, useLive } from '../logic/live';
 import { openProfile, openCourses, resetTo } from '../logic/nav';
 import { MyCV, myCvHtml } from '../components/cv';
@@ -161,6 +161,7 @@ export function OppSheet({ id }: { id: string }) {
       ) : null}
       {o.mine ? (
         <>
+          <Btn testID="opp-edit" variant="dark" icon="edit" title={`Edit ${o.kind.toLowerCase()}`} style={{ marginTop: 14 }} onPress={() => openOppForm(o.kind, o.id)} />
           <H4 t={o.kind === 'Training program' ? 'Requests to join' : 'Applications'} n={(o.people || []).length} />
           <Txt s={12} c={C.muted} style={{ marginTop: -4, marginBottom: 8 }}>
             {(o.people || []).filter((p) => o.st?.[p] === 'acc').length} accepted · {(o.people || []).filter((p) => !o.st?.[p]).length} waiting for your answer
@@ -204,8 +205,8 @@ export function OppSheet({ id }: { id: string }) {
   );
 }
 
-type OF = OppForm & { lv: string };
-export function openOppForm(kind?: string) {
+type OF = OppForm & { lv: string; edit?: string; was?: { start: string; deadline: string } };
+export function openOppForm(kind?: string, editId?: string) {
   // Courses are listings with a link to the course's own page (quick setup screen).
   if (kind === 'Course') return router.push('/list-course' as any);
   // Anyone can list a course; internships and programs come from business pages.
@@ -213,7 +214,26 @@ export function openOppForm(kind?: string) {
     bizOnlyPrompt('create internships and programs');
     return;
   }
-  const f: OF = { kind: kind || 'Internship', title: '', cat: '', desc: '', dur: '3 months', start: '', mode: 'On-site', paid: kind === 'Training program' ? 'Free' : kind === 'Course' ? 'Fee' : 'Paid', amount: '', seats: 5, deadline: '', lv: 'Beginner' };
+  const old = editId ? db.OPPS.find((x) => x.id === editId && x.mine) : undefined;
+  const f: OF = old
+    ? {
+        // editing: everything as it is now; the dates stay unless new ones are picked
+        kind: old.kind,
+        title: old.title,
+        cat: old.cat,
+        desc: old.desc === 'Details coming soon.' ? '' : old.desc,
+        dur: old.dur,
+        start: '',
+        mode: old.mode.split(' · ')[0] || 'On-site',
+        paid: /stipend/i.test(old.pay) ? 'Paid' : /fee/i.test(old.pay) ? 'Fee' : /^free/i.test(old.pay) ? 'Free' : 'Unpaid',
+        amount: digits(old.pay),
+        seats: old.seats,
+        deadline: '',
+        lv: 'Beginner',
+        edit: old.id,
+        was: { start: old.start, deadline: old.deadline },
+      }
+    : { kind: kind || 'Internship', title: '', cat: '', desc: '', dur: '3 months', start: '', mode: 'On-site', paid: kind === 'Training program' ? 'Free' : kind === 'Course' ? 'Fee' : 'Paid', amount: '', seats: 5, deadline: '', lv: 'Beginner' };
   sheet.show(() => <OppFormSheet f={f} />, { full: true });
 }
 function OppFormSheet({ f }: { f: OF }) {
@@ -229,9 +249,9 @@ function OppFormSheet({ f }: { f: OF }) {
   return (
     <View style={{ gap: 14 }}>
       <SheetTitle sub={course ? `Published by ${by} in Career → Courses. Students enrol and join your class group; fees go to your wallet.` : `Published by ${by} in Career, where anyone can apply or join.`}>
-        New {f.kind.toLowerCase()}
+        {f.edit ? 'Edit' : 'New'} {f.kind.toLowerCase()}
       </SheetTitle>
-      {tutor ? null : <View>
+      {tutor || f.edit ? null : <View>
         <Label>Type</Label>
         <Chips>
           {OPP_KINDS.map((k) => (
@@ -280,10 +300,10 @@ function OppFormSheet({ f }: { f: OF }) {
       </View>
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <Field label="Starts" style={{ flex: 1 }}>
-          <SelectBox value={f.start} placeholder="Pick a date" onPress={() => pick('Starts', nextDates(), f.start, (v) => (set('start', v), re()))} />
+          <SelectBox value={f.start} placeholder={f.was?.start || 'Pick a date'} onPress={() => pick('Starts', nextDates(), f.start, (v) => (set('start', v), re()))} />
         </Field>
         <Field label="Apply by" style={{ flex: 1 }}>
-          <SelectBox value={f.deadline} placeholder="Rolling" onPress={() => pick('Apply by', nextDates(), f.deadline, (v) => (set('deadline', v), re()))} />
+          <SelectBox value={f.deadline} placeholder={f.was?.deadline || 'Rolling'} onPress={() => pick('Apply by', nextDates(), f.deadline, (v) => (set('deadline', v), re()))} />
         </Field>
       </View>
       <View>
@@ -292,9 +312,14 @@ function OppFormSheet({ f }: { f: OF }) {
       </View>
       <Btn
         variant="yellow"
-        title={`Publish ${f.kind.toLowerCase()}`}
+        testID="of-submit"
+        title={f.edit ? 'Save changes' : `Publish ${f.kind.toLowerCase()}`}
         disabled={!f.title.trim()}
         onPress={() => {
+          if (f.edit) {
+            updateOpp(f.edit, { ...f, start: toISO(f.start), deadline: toISO(f.deadline) });
+            return sheet.close();
+          }
           const kind = publishOpp({ ...f, start: toISO(f.start), deadline: toISO(f.deadline) });
           sheet.close();
           if (tutor) setTimeout(() => router.push('/teach' as any), 300);
@@ -374,6 +399,7 @@ export function MentorSheet({ id }: { id: string }) {
       ) : null}
       {m.mine ? (
         <>
+          <Btn testID="mentor-edit" variant="dark" icon="edit" title="Edit mentorship" style={{ marginTop: 14 }} onPress={() => openMentorForm(m.id)} />
           <H4 t="Mentee requests" n={(m.people || []).length} />
           <View style={{ gap: 8 }}>
             {(m.people || []).length ? m.people!.map((pid) => <ReqRow key={pid} pid={pid} st={m.st?.[pid]} word="Mentee" onAnswer={(s) => answerMentee(m.id, pid, s)} />) : <Empty title="No requests yet" text="People who want you as a mentor show up here." />}
@@ -455,9 +481,12 @@ export function LengthPicker({ value, onChange, label = 'Length' }: { value: str
     </View>
   );
 }
-type MF = { title: string; field: string; format: '1-to-1' | 'Group'; dur: string; price: 'Free' | 'Paid'; amount: string; seats: number; desc: string; rules: string[] };
-export function openMentorForm() {
-  const f: MF = { title: '', field: '', format: '1-to-1', dur: '1 month', price: 'Free', amount: '', seats: 3, desc: '', rules: ['noDM', 'respect'] };
+type MF = { title: string; field: string; format: '1-to-1' | 'Group'; dur: string; price: 'Free' | 'Paid'; amount: string; seats: number; desc: string; rules: string[]; edit?: string };
+export function openMentorForm(editId?: string) {
+  const old = editId ? db.MENTORSHIPS.find((x) => x.id === editId && x.mine) : undefined;
+  const f: MF = old
+    ? { title: old.title, field: old.field, format: old.format, dur: old.dur, price: /^free/i.test(old.price) ? 'Free' : 'Paid', amount: digits(old.price), seats: old.seats, desc: old.desc === 'Details coming soon.' ? '' : old.desc, rules: [...(old.rules || [])], edit: old.id }
+    : { title: '', field: '', format: '1-to-1', dur: '1 month', price: 'Free', amount: '', seats: 3, desc: '', rules: ['noDM', 'respect'] };
   sheet.show(() => <MentorForm f={f} />, { full: true });
 }
 const MSTEPS = ['What you’ll mentor', 'How it runs', 'Price and what mentees get', 'Group rules and publish'];
@@ -473,7 +502,8 @@ function MentorForm({ f }: { f: MF }) {
     if (!okStep) return;
     setTried(false);
     if (step < MSTEPS.length - 1) return setStep(step + 1);
-    publishMentor(f);
+    if (f.edit) updateMentor(f.edit, f);
+    else publishMentor(f);
     sheet.close();
   };
   return (
@@ -543,7 +573,7 @@ function MentorForm({ f }: { f: MF }) {
       ) : null}
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
         {step > 0 ? <Btn variant="dark" title="Back" style={{ flex: 1 }} onPress={() => (setTried(false), setStep(step - 1))} /> : null}
-        <Btn testID="mf-next" variant="yellow" style={{ flex: 2 }} title={step < MSTEPS.length - 1 ? 'Continue' : 'Publish mentorship'} onPress={next} />
+        <Btn testID="mf-next" variant="yellow" style={{ flex: 2 }} title={step < MSTEPS.length - 1 ? 'Continue' : f.edit ? 'Save changes' : 'Publish mentorship'} onPress={next} />
       </View>
     </View>
   );
