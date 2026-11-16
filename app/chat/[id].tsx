@@ -15,12 +15,14 @@ import { callsAvailable, startCall } from '../../src/logic/calls';
 import { useLive } from '../../src/logic/live';
 import { answerOffer, markChatRead, retryText, sendText } from '../../src/logic/work';
 import { setViewing } from '../../src/logic/push';
+import { iAmTyping, leftChat, loadSeen, seenLabel, stoppedTyping, typingIn } from '../../src/logic/presence';
+import { membersOf } from '../../src/logic/server';
 import { openProfile } from '../../src/logic/nav';
 import { groupOf } from '../../src/logic/career';
 import { openAttach, openChatMenu, openMsgMenu, openQuote, openRules } from '../../src/sheets/chat';
 import { openMedia, openJob } from '../../src/sheets/work';
 
-type Row = { m: Msg; i: number; grp: boolean };
+type Row = { m: Msg; i: number; grp: boolean; seen?: string };
 
 export default function Chat() {
   useLive();
@@ -35,7 +37,15 @@ export default function Chat() {
   });
   useEffect(() => {
     setViewing(th?.cid);
-    return () => setViewing(undefined);
+    // who is online, now and while the chat stays open
+    const other = th?.cid ? membersOf(th.cid).filter((m: any) => m.user_id !== db.uid).map((m: any) => m.user_id) : [];
+    if (other.length === 1) void loadSeen(other);
+    const t = other.length === 1 ? setInterval(() => void loadSeen(other), 30000) : null;
+    return () => {
+      setViewing(undefined);
+      leftChat(th?.cid);
+      if (t) clearInterval(t);
+    };
   }, [th?.cid]);
   useEffect(() => {
     if (th && isGroup(id) && !th.rulesOk && (groupOf(id)?.rules || []).length) setTimeout(() => openRules(id), 350);
@@ -45,12 +55,27 @@ export default function Chat() {
   const grp = isGroup(id);
   const msgs = th.msgs;
   const rows: Row[] = msgs.map((m, i) => ({ m, i, grp: !m.d && !m.sys && !!msgs[i + 1] && msgs[i + 1].f === m.f && !msgs[i + 1].sys && !msgs[i + 1].d })).reverse();
+  // "Seen" under my newest message once the other person has opened the chat (with the time, in a chat of two)
+  const others = th.cid ? membersOf(th.cid).filter((m: any) => m.user_id !== db.uid) : [];
+  const mineLast = rows.find((r) => r.m.f === 'me' && !r.m.sys && !r.m.d);
+  if (mineLast && mineLast.m.st === 'read') {
+    const at = others.length === 1 ? new Date(others[0].last_read_at) : null;
+    const today = at && new Date().toDateString() === at.toDateString();
+    mineLast.seen = at && today ? `Seen ${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}` : 'Seen';
+  }
+  const typer = typingIn(th.cid);
+  const status = grp ? '' : seenLabel(others[0]?.user_id);
+  const onType = (v: string) => {
+    setText(v);
+    iAmTyping(th.cid, v);
+  };
   const hiring = hiringIn(id);
   const quick = grp ? ['Hello everyone 👋', 'Thanks! 🙏', 'See you at the session'] : hiring ? ['When can you come?', 'What’s your price?', 'Send me a quote', 'Thanks! 🙏'] : ['I can come tomorrow', 'On my way 🛵', 'Thanks! 🙏'];
   const send = () => {
     const t = text.trim();
     if (!t) return;
     setText('');
+    stoppedTyping(th.cid);
     // if it couldn't even be queued (no connection before the chat existed), give the words back
     void sendText(id, t).then((ok) => !ok && setText((cur) => cur || t));
   };
@@ -76,8 +101,8 @@ export default function Chat() {
               {p.verified ? <Verified size={13} /> : null}
               {p.biz ? <CoTag /> : null}
             </View>
-            <Txt s={12} c={C.muted} lines={1}>
-              {grp ? `${(th.members || []).length + 1} members` : p.biz ? 'Business' : p.role}
+            <Txt testID="chat-status" s={12} c={typer || status === 'online' ? C.mint : C.muted} lines={1}>
+              {typer ? (grp && typer !== 'someone' ? `${fname(P(typer)?.name || 'Someone')} is typing…` : 'typing…') : grp ? `${(th.members || []).length + 1} members` : status || (p.biz ? 'Business' : p.role)}
             </Txt>
           </View>
         </Pressable>
@@ -110,6 +135,15 @@ export default function Chat() {
         contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 12 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
+        ListHeaderComponent={
+          typer ? (
+            <View testID="chat-typing" accessibilityLabel="Typing" style={{ alignSelf: 'flex-start', flexDirection: 'row', gap: 5, marginTop: 8, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 18, borderBottomLeftRadius: 6, backgroundColor: C.s2 }}>
+              {[0, 1, 2].map((d) => (
+                <View key={d} style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.muted, opacity: 0.45 + d * 0.25 }} />
+              ))}
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={{ alignItems: 'center', gap: 8, paddingVertical: 30, transform: [{ scaleY: -1 }] }}>
             <Avatar pic={p.photo} size={64} square={!!p.biz || grp} />
@@ -146,7 +180,7 @@ export default function Chat() {
             </Pressable>
             <TextInput
               value={text}
-              onChangeText={setText}
+              onChangeText={onType}
               placeholder="Message"
               placeholderTextColor={C.faint}
               multiline
@@ -368,7 +402,12 @@ function Bubble({ id, r, hiring }: { id: string; r: Row; hiring: boolean }) {
           <Txt s={10} c={C.faint}>
             {m.at || ''}
           </Txt>
-          {me ? <Icon name={m.st === 'sending' ? 'clock' : m.st === 'read' ? 'check2' : 'check'} size={12} color={m.st === 'read' ? C.lav : C.faint} /> : null}
+          {me ? <Icon name={m.st === 'sending' ? 'clock' : m.st === 'read' || m.st === 'delivered' ? 'check2' : 'check'} size={12} color={m.st === 'read' ? C.mint : C.faint} /> : null}
+          {me && r.seen ? (
+            <Txt testID="msg-seen" s={10} w={7} c={C.mint}>
+              {r.seen}
+            </Txt>
+          ) : null}
         </View>
       ) : null}
     </Pressable>

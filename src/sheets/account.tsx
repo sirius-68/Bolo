@@ -16,6 +16,7 @@ import { bump } from '../logic/live';
 import { blockedList, ensurePeople } from '../logic/server';
 import { unblockPerson } from '../logic/work';
 import { friendly } from '../logic/remote';
+import { setShowSeen } from '../logic/presence';
 import { setCityManually, gpsCity, gpsPlace, searchCities, Place } from '../logic/here';
 import { resetTo } from '../logic/nav';
 import { LogoPicker } from '../components/business';
@@ -684,6 +685,18 @@ export function openPrivacy() {
               f((x) => x + 1);
             }}
           />
+          {typeof db.PREF.showSeen === 'boolean' ? (
+            <SwitchRow
+              testID="priv-seen"
+              title="Show when I’m online"
+              sub={db.PREF.showSeen ? 'People you chat with see “online” and when you were last here' : 'Hidden. You also won’t see when other people were last here'}
+              value={db.PREF.showSeen}
+              onChange={(v) => {
+                f((x) => x + 1);
+                void setShowSeen(v).then((ok) => (ok ? f((x) => x + 1) : (toast('Couldn’t save that. Check your connection and try again.'), f((x) => x + 1))));
+              }}
+            />
+          ) : null}
           <Note icon="lock">Your phone number and email are never shown on your profile. Share them in chat when you choose to.</Note>
           <OptRow icon="lock" bg="#fff" title="Change password" sub="We’ll send you a reset code" onPress={() => afterSheet(() => router.push('/forgot'))} />
           <OptRow icon="eyeoff" bg={C.orange} title="Blocked people" sub={n ? `${n} blocked · tap to review` : 'None'} chev={!!n} onPress={() => (n ? openBlocked() : toast('You haven’t blocked anyone'))} />

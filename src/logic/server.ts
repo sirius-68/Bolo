@@ -402,7 +402,11 @@ function msgFrom(m: any, conv: { kind: string }, others: any[]): Msg {
   const d = m.data || {};
   const base: Msg = { id: m.id, f: mine ? 'me' : 'them', at, ts0: +new Date(m.created_at) };
   if (m.kind === 'sys' || !m.sender_id) return { ...base, sys: m.body, f: undefined, call: d.call ? 1 : undefined, missed: d.call ? !!d.missed : undefined };
-  if (mine) base.st = m._st || (others.some((o) => +new Date(o.last_read_at) >= +new Date(m.created_at)) ? 'read' : 'sent');
+  if (mine) {
+    const t = +new Date(m.created_at);
+    // seen = the other person opened the chat after it; delivered = their phone received it
+    base.st = m._st || (others.some((o) => +new Date(o.last_read_at) >= t) ? 'read' : others.some((o) => o.delivered_at && +new Date(o.delivered_at) >= t) ? 'delivered' : 'sent');
+  }
   if (conv.kind === 'group' && !mine) base.by = L(m.sender_id);
   const who = conv.kind === 'group' && !mine ? (db.P[m.sender_id]?.name || 'Member').split(' ')[0] + ': ' : '';
   switch (m.kind) {
@@ -481,7 +485,9 @@ function buildThread(cid: string) {
     members: c.kind === 'group' ? others.map((o) => L(o.user_id)) : undefined,
     muted: me?.muted ? 1 : undefined,
     uids: members.map((m) => m.user_id),
-    typing: 0,
+    // live signals (see presence.ts) survive a rebuild of the chat
+    typing: old?.typing || 0,
+    on: old?.on,
   };
   T[key] = th;
   if (!O.includes(key)) O.push(key);
@@ -506,7 +512,8 @@ async function loadChats() {
     return;
   }
   const [mem, msgs] = await Promise.all([
-    supabase.from('conversation_members').select('conversation_id,user_id,role,last_read_at,muted').in('conversation_id', ids).then(need),
+    // every column: newer servers add delivered_at (two ticks), older ones simply don't have it
+    supabase.from('conversation_members').select('*').in('conversation_id', ids).then(need),
     supabase.from('messages').select('id,conversation_id,sender_id,kind,body,data,created_at').in('conversation_id', ids).order('created_at', { ascending: false }).limit(2000).then(need),
   ]);
   await signFiles(msgs.data || []);
@@ -986,6 +993,9 @@ export function loadAll(force = false): Promise<void> {
       if (!failed.length) db.syncedAt = loadedAt = Date.now();
       else console.warn('bolo: loading failed', failed.length, String(failed[0]?.message || failed[0]));
       net.offline = failed.length > 0;
+      // two ticks for what just arrived, and who is online now that the chats are known
+      require('./presence').gotMessages();
+      void require('./presence').loadSeen();
     } finally {
       net.loading = false;
       if (db.uid === me) net.opening = false;
@@ -1034,6 +1044,7 @@ export function startRealtime() {
   const me = db.uid;
   const ch = supabase.channel('bolo-' + me);
   channel = ch;
+  require('./presence').startSignals();
   ch
     .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, async (e: any) => {
       const m = e.new;
@@ -1046,7 +1057,11 @@ export function startRealtime() {
       if (i >= 0) L0[i] = { ...L0[i], ...m, _st: undefined, data: m.kind === 'deleted' ? {} : { ...(L0[i].data || {}), ...(m.data || {}) } };
       else RAW_MSGS[cid] = [...L0, m];
       if (e.eventType === 'INSERT') CONVS[cid].last_message_at = m.created_at;
-      if (m.sender_id && m.sender_id !== me) await ensurePeople([m.sender_id]);
+      if (m.sender_id && m.sender_id !== me) {
+        await ensurePeople([m.sender_id]);
+        // this phone has it: the sender sees two ticks, and is no longer "typing"
+        if (e.eventType === 'INSERT') require('./presence').gotMessages();
+      }
       buildThread(cid);
       sortOrders();
       bump();
@@ -1114,4 +1129,5 @@ export function stopRealtime() {
   const c = channel;
   channel = null;
   if (c) void supabase.removeChannel(c);
+  require('./presence').stopSignals();
 }

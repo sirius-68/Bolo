@@ -713,9 +713,9 @@ export function Toggle({ value, onChange, label }: { value: boolean; onChange: (
     </Pressable>
   );
 }
-export function SwitchRow({ title, sub, value, onChange, style }: { title: string; sub?: string; value: boolean; onChange: (v: boolean) => void; style?: any }) {
+export function SwitchRow({ title, sub, value, onChange, style, testID }: { title: string; sub?: string; value: boolean; onChange: (v: boolean) => void; style?: any; testID?: string }) {
   return (
-    <View style={[S.row, { gap: 12, paddingVertical: 12 }, style]}>
+    <View testID={testID} style={[S.row, { gap: 12, paddingVertical: 12 }, style]}>
       <View style={{ flex: 1 }}>
         <Txt s={14} w={7}>
           {title}

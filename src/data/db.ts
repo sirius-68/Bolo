@@ -87,7 +87,8 @@ export type Msg = {
   f?: 'me' | 'them';
   t?: string;
   at?: string;
-  st?: 'sent' | 'read' | 'sending' | 'failed';
+  /** sending → sent (one tick) → delivered (two ticks: their phone has it) → read (they opened the chat) */
+  st?: 'sent' | 'delivered' | 'read' | 'sending' | 'failed';
   k?: 'offer' | 'voice' | 'file' | 'img' | 'loc' | 'ts';
   /** k='ts': a question asked at this second of recording `rec` */
   ts?: number;
@@ -423,7 +424,7 @@ export function makeDb() {
       submittedAt: '',
       sessions: 0,
     },
-    PREF: { visible: true, phoneAfterHire: true, twoStep: false, lang: 'English', momo: [] as [string, string, number][], notif: [1, 1, 1, 1, 0, 1, 1, 1, 1] },
+    PREF: { visible: true, /** show others when I'm online / was last here (undefined until the server says it has this) */ showSeen: undefined as boolean | undefined, phoneAfterHire: true, twoStep: false, lang: 'English', momo: [] as [string, string, number][], notif: [1, 1, 1, 1, 0, 1, 1, 1, 1] },
     P,
     BIZ_SAMPLE,
     POSTS: [] as Post[],

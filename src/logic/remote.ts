@@ -249,6 +249,7 @@ export async function pull() {
       db.PR.docs.id = r.verified ? 'verified' : db.PR.docs.id === 'review' ? 'review' : null;
       u.verified = !!r.verified;
       if (typeof r.visible === 'boolean') db.PREF.visible = r.visible;
+      if (typeof r.show_seen === 'boolean') db.PREF.showSeen = r.show_seen;
     }
     const q = pv.data;
     if (q) {
