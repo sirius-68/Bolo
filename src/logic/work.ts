@@ -120,6 +120,13 @@ export type JobForm = {
   area: string;
   urgent: boolean;
   photos: string[];
+  /** where the job is [lng, lat] when a city was chosen; null = no place (remote); undefined = where I am */
+  at?: [number, number] | null;
+};
+/** The map position saved with a job. */
+const jobPoint = (f: JobForm) => {
+  const c = f.at === undefined ? (/remote|online/i.test(f.area) ? null : db.user.coord) : f.at;
+  return c ? `POINT(${c[0]} ${c[1]})` : null;
 };
 /** Upload photos picked on the phone to the public post-photo folder; returns 'uri:https://…' pictures. */
 export async function uploadPostPhotos(photos: string[]): Promise<string[]> {
@@ -167,6 +174,7 @@ export function postJob(f: JobForm): Post {
     urgent: f.urgent,
     offerList: [],
     status: 'open',
+    coord: f.at === undefined ? (/remote|online/i.test(f.area) ? undefined : db.user.coord || undefined) : f.at || undefined,
   };
   db.POSTS.unshift(job);
   if (!w) bizLog('job', `Posted vacancy <b>${job.title}</b>`);
@@ -189,7 +197,7 @@ export function postJob(f: JobForm): Post {
           budget_num: +b || 0,
           photos: photos.map((p) => p.replace(/^uri:/, '')),
           data: { budget: job.budget, when: job.when, type: job.type, openings: job.openings },
-          location: db.user.coord ? `POINT(${db.user.coord[0]} ${db.user.coord[1]})` : null,
+          location: jobPoint(f),
         })
         .select('id')
         .single();
@@ -205,6 +213,47 @@ export function postJob(f: JobForm): Post {
     }
   })();
   return job;
+}
+/** Change a job or vacancy I posted. Shown at once; saved in the background (and put back if the server refuses).
+    `keepWhen`: leave the date as it was (the form shows it as "keep"). */
+export function updateJob(id: string, f: JobForm, keepWhen = false) {
+  const po = db.POSTS.find((p) => p.id === id && p.mine && p.kind === 'request');
+  if (!po) return toast('This job can no longer be edited');
+  const before = { ...po };
+  const w = po.as !== 'business';
+  const b = f.budget.replace(/[^\d]/g, '');
+  Object.assign(po, {
+    cat: f.cat,
+    title: f.title.trim(),
+    text: f.text.trim(),
+    budget: b ? `XAF ${(+b).toLocaleString('en-US')}${f.neg ? ' · negotiable' : ''}${!w ? ' / month' : ''}` : w ? 'Open to offers' : 'Salary negotiable',
+    area: f.area,
+    type: f.type,
+    openings: w ? 1 : f.openings || 1,
+    photos: [...f.photos],
+    urgent: f.urgent,
+    edited: 1,
+  });
+  // the place only changes when another city was chosen in the form
+  if (f.at !== undefined) po.coord = f.at || undefined;
+  if (!keepWhen) po.when = f.when === 'Flexible' ? 'Flexible' : dayText(f.when, f.time);
+  bump();
+  (async () => {
+    try {
+      const photos = await uploadPostPhotos(po.photos || []);
+      const { error } = await supabase
+        .from('posts')
+        .update({ title: po.title, body: po.text, cat: po.cat, area: po.area, urgent: !!po.urgent, budget_num: +b || 0, photos: photos.map((x) => x.replace(/^uri:/, '')), data: { budget: po.budget, when: po.when, type: po.type, openings: po.openings, edited: 1 }, ...(f.at !== undefined ? { location: jobPoint(f) } : {}) })
+        .eq('id', id);
+      if (error) throw error;
+      po.photos = photos;
+      bump();
+    } catch (e) {
+      Object.assign(po, before);
+      bump();
+      fail(e);
+    }
+  })();
 }
 /** Share a work post, an update or my free slots. Shown at once; photos upload in the background. */
 export function createPost(p: { kind: 'photo' | 'text' | 'avail'; text: string; src?: string; tags?: string[]; job?: string; slots?: string[] }) {

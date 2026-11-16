@@ -246,6 +246,7 @@ export function postFrom(r: any): Post {
     cat: r.cat || undefined,
     area: r.area || '',
     urgent: !!r.urgent,
+    edited: r.data?.edited ? 1 : undefined,
     photos,
     time: ago(r.created_at),
     at: +new Date(r.created_at),

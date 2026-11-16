@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { View } from 'react-native';
 import { ui } from '../data/db';
 import { CATS, COURSE_CATS } from '../data/catalog';
-import { Btn, Chip, Chips, Label, SelectBox, SwitchRow } from '../ui/kit';
+import { Btn, Chip, Chips, Label, Note, SelectBox, SwitchRow, Txt } from '../ui/kit';
+import { C } from '../ui/theme';
+import { openCities } from './account';
 import { pick, sheet, SheetTitle, toast } from '../ui/overlay';
-import { fCount, Filters } from '../logic/core';
+import { cityLabel, fCount, filterOrigin, Filters } from '../logic/core';
 import { bump } from '../logic/live';
 
-const EMPTY: Filters = { dist: 0, rate: 0, ver: false, urgent: false, budget: 0, sort: 'best', type: '', posted: 0, by: '', exp: 0 };
+const EMPTY: Filters = { dist: 0, rate: 0, ver: false, urgent: false, budget: 0, sort: 'best', type: '', posted: 0, by: '', exp: 0, city: '', cityAt: null };
 
 /** Filters for jobs or people lists. Changes apply when the person taps “Show results”. */
 export function openFilters(mode: 'jobs' | 'people') {
@@ -39,13 +41,38 @@ function FilterSheet({ mode, t }: { mode: 'jobs' | 'people'; t: Filters }) {
         <Label>Field</Label>
         <SelectBox testID="flt-field" icon="squares" value={cat || ''} placeholder="Any field" onPress={() => pick('Field', ['Any field', ...CATS.map((c) => c[0])], cat || 'Any field', (v) => setCat(v === 'Any field' ? null : v))} />
       </View>
+      <View>
+        <Label>Location</Label>
+        <SelectBox
+          testID="flt-city"
+          icon="pin"
+          value={t.city}
+          placeholder={cityLabel() ? `Around me (${cityLabel()})` : 'Anywhere'}
+          onPress={() =>
+            openCities((c, place) => {
+              t.city = c;
+              t.cityAt = place?.coord || null;
+              re();
+            }, t.city || cityLabel())
+          }
+        />
+        {t.city ? (
+          <Txt testID="flt-city-clear" s={12} w={7} c={C.lav} style={{ marginTop: 8 }} onPress={() => ((t.city = ''), (t.cityAt = null), re())}>
+            Back to around me
+          </Txt>
+        ) : null}
+      </View>
       {row('Distance', 'dist', [
         [0, 'Any'],
-        [1, '1 km'],
         [2, '2 km'],
-        [3, '3 km'],
         [5, '5 km'],
+        [10, '10 km'],
+        [25, '25 km'],
+        [50, '50 km'],
       ])}
+      {(t.dist || t.sort === 'near') && !filterOrigin(t) ? (
+        <Note icon="pin">Distance needs to know where to measure from. Choose a city above, or set your own location on the home screen.</Note>
+      ) : null}
       {jobs ? (
         <>
           {row('Job type', 'type', [
@@ -140,6 +167,7 @@ export function activeFilters(mode: 'jobs' | 'people'): [string, () => void][] {
   const off = (k: keyof Filters) => () => (((ui.F as any)[k] = (EMPTY as any)[k]), bump());
   const L: [string, () => void][] = [];
   if (ui.cat) L.push([ui.cat, () => ((ui.cat = null), bump())]);
+  if (F.city) L.push([F.city, () => ((ui.F.city = ''), (ui.F.cityAt = null), bump())]);
   if (F.dist) L.push([`Within ${F.dist} km`, off('dist')]);
   if (mode === 'jobs') {
     if (F.type) L.push([F.type === 'One-off' ? 'Gigs' : F.type, off('type')]);

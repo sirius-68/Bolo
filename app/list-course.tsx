@@ -105,7 +105,7 @@ export default function ListCourse() {
           {!f.free ? <Input testID="lc-price" value={f.price} onChangeText={(v) => set('price', v.replace(/[^\d]/g, ''))} placeholder="Price on your site" prefix="XAF" keyboardType="number-pad" maxLength={8} invalid={!!err('price')} style={{ marginTop: 8 }} /> : null}
         </Field>
         <Field label="Short description" hint="What people will be able to do after it. Optional">
-          <Input value={f.desc} onChangeText={(v) => set('desc', v)} placeholder="e.g. Build budgets, invoices and stock sheets in Excel" multiline maxLength={240} />
+          <Input value={f.desc} onChangeText={(v) => set('desc', v)} placeholder="e.g. Build budgets, invoices and stock sheets in Excel" multiline maxHeight={300} maxLength={4000} />
         </Field>
       </View>
 

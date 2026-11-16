@@ -362,6 +362,7 @@ export function Chip({
   small,
   tone = 'blue',
   style,
+  testID,
 }: {
   label: string;
   on?: boolean;
@@ -370,11 +371,13 @@ export function Chip({
   small?: boolean;
   tone?: 'blue' | 'yellow' | 'white';
   style?: StyleProp<ViewStyle>;
+  testID?: string;
 }) {
   const onBg = tone === 'yellow' ? C.yellow : tone === 'white' ? C.white : C.blue;
   const onFg = tone === 'blue' ? C.white : C.black;
   return (
     <Pressable
+      testID={testID}
       onPress={() => {
         tap();
         onPress?.();
@@ -563,6 +566,8 @@ export type InputProps = {
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   testID?: string;
   minHeight?: number;
+  /** multiline: grow up to this height, then scroll inside the box */
+  maxHeight?: number;
   returnKeyType?: 'done' | 'next' | 'search' | 'send' | 'go';
   editable?: boolean;
   onFocus?: () => void;
@@ -602,6 +607,7 @@ export function Input(p: InputProps) {
         secureTextEntry={p.secure && !show}
         keyboardType={p.keyboardType}
         multiline={multi}
+        scrollEnabled={multi ? !!p.maxHeight : undefined}
         numberOfLines={multi ? undefined : 1}
         maxLength={p.maxLength}
         autoFocus={p.autoFocus}
@@ -616,7 +622,7 @@ export function Input(p: InputProps) {
         selectionColor={C.yellow}
         style={[
           tx(15, 6, C.text),
-          { flex: 1, paddingVertical: multi ? 2 : 0, minHeight: multi ? (p.minHeight || 96) - 24 : 50, maxHeight: multi ? undefined : 50, textAlignVertical: multi ? 'top' : 'center' },
+          { flex: 1, paddingVertical: multi ? 2 : 0, minHeight: multi ? (p.minHeight || 96) - 24 : 50, maxHeight: multi ? p.maxHeight : 50, textAlignVertical: multi ? 'top' : 'center' },
           p.inputStyle,
         ]}
       />

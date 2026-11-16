@@ -257,7 +257,7 @@ export function aboutOf(id: string) {
 
 /* ---------------- search filters ---------------- */
 export type Filters = typeof ui.F;
-export const fCount = (F: Filters = ui.F) => (F.dist ? 1 : 0) + (F.rate ? 1 : 0) + (F.ver ? 1 : 0) + (F.urgent ? 1 : 0) + (F.budget ? 1 : 0) + (F.sort !== 'best' ? 1 : 0) + (F.type ? 1 : 0) + (F.posted ? 1 : 0) + (F.by ? 1 : 0) + (F.exp ? 1 : 0);
+export const fCount = (F: Filters = ui.F) => (F.dist ? 1 : 0) + (F.city ? 1 : 0) + (F.rate ? 1 : 0) + (F.ver ? 1 : 0) + (F.urgent ? 1 : 0) + (F.budget ? 1 : 0) + (F.sort !== 'best' ? 1 : 0) + (F.type ? 1 : 0) + (F.posted ? 1 : 0) + (F.by ? 1 : 0) + (F.exp ? 1 : 0);
 /** "now", "12mins ago", "2h ago", "Yesterday", "3 days ago", "1w" → age in days. */
 export function ageDays(t?: string) {
   const s = (t || '').toLowerCase();
@@ -269,12 +269,44 @@ export function ageDays(t?: string) {
   if (w) return +w[1] * 7;
   return 30;
 }
+/** Kilometres between two map positions. */
+function kmBetween(a: [number, number], b: [number, number]) {
+  const r = (x: number) => (x * Math.PI) / 180;
+  const dLat = r(b[1] - a[1]);
+  const dLng = r(b[0] - a[0]);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(r(a[1])) * Math.cos(r(b[1])) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(h));
+}
+/** Where distances are measured from: the city chosen in the filters, otherwise where I am. */
+export const filterOrigin = (F: Filters = ui.F): [number, number] | null => F.cityAt || (db.user.coord as [number, number] | undefined) || null;
+/** Distance to a place from the filter's origin. Unknown places are infinitely far: they never pass a distance filter
+    and sort last under "Nearest" (they used to count as 0 km and pass everything). */
+export const kmTo = (c?: [number, number] | null, F: Filters = ui.F) => {
+  const o = filterOrigin(F);
+  return o && c ? kmBetween(o, c) : Infinity;
+};
+/** Compare two distances; unknown ones (Infinity) go last and equal ones keep their order. */
+const far = (a: number, b: number) => (a === b ? 0 : a < b ? -1 : 1);
+/** Age of a post in days, from its real time when we have it. */
+const postAge = (po: Post) => (po.at ? (Date.now() - po.at) / 86400000 : ageDays(po.time));
+/** A job's place: its own pin when it has one, otherwise where its owner is. */
+const jobKm = (po: Post, F: Filters) => {
+  const own = kmTo(po.coord as [number, number] | undefined, F);
+  return own < Infinity ? own : kmTo(P(po.client!)?.coord as [number, number] | undefined, F);
+};
+/** "In this city": within reach of the city's position when it is known, otherwise by its name in the address. */
+function inCity(coord: [number, number] | undefined, text: string, F: Filters) {
+  if (!F.city) return true;
+  if (text.toLowerCase().includes(F.city.toLowerCase())) return true;
+  return !!F.cityAt && !!coord && kmBetween(F.cityAt, coord) <= (F.dist || 30);
+}
 export function matchPerson(id: string, q: string, cat: string | null, F: Filters = ui.F) {
   const p = P(id);
   if (!p) return false;
   if (q && !(p.name + ' ' + p.role + ' ' + (p.tag || '') + ' ' + p.area).toLowerCase().includes(q)) return false;
-  if (cat && p.role !== cat) return false;
-  if (F.dist && kmOf(p.dist) > F.dist) return false;
+  if (cat && p.role !== cat && !(p.skills || []).includes(cat)) return false;
+  if (!inCity(p.coord as [number, number] | undefined, p.area || '', F)) return false;
+  if (F.dist && kmTo(p.coord as [number, number] | undefined, F) > F.dist) return false;
   if (F.rate && p.rate < F.rate) return false;
   if (F.ver && !p.verified) return false;
   if (F.exp && (p.years || 0) < F.exp) return false;
@@ -284,23 +316,24 @@ export function matchJob(po: Post, q: string, cat: string | null, F: Filters = u
   const c = P(po.client!);
   if (q && !((c?.name || '') + ' ' + po.cat + ' ' + po.title + ' ' + po.area + ' ' + (po.text || '')).toLowerCase().includes(q)) return false;
   if (cat && po.cat !== cat) return false;
-  if (F.dist && !po.mine && kmOf(c?.dist) > F.dist) return false;
+  if (!po.mine && !inCity((po.coord || c?.coord) as [number, number] | undefined, (po.area || '') + ' ' + (c?.area || ''), F)) return false;
+  if (F.dist && !po.mine && jobKm(po, F) > F.dist) return false;
   if (F.urgent && !po.urgent) return false;
   if (F.budget && budgetNum(po.budget) < F.budget) return false;
   if (F.type && !(po.type || '').includes(F.type)) return false;
-  if (F.posted && ageDays(po.time) >= F.posted) return false;
+  if (F.posted && postAge(po) >= F.posted) return false;
   if (F.by === 'company' && !(po.biz || c?.biz)) return false;
   if (F.by === 'person' && (po.biz || c?.biz)) return false;
   return true;
 }
 export function sortJobs(L: Post[], F: Filters = ui.F) {
-  if (F.sort === 'near') return L.slice().sort((a, b) => kmOf(P(a.client!)?.dist) - kmOf(P(b.client!)?.dist));
+  if (F.sort === 'near') return L.slice().sort((a, b) => far(jobKm(a, F), jobKm(b, F)));
   if (F.sort === 'budget') return L.slice().sort((a, b) => budgetNum(b.budget) - budgetNum(a.budget));
-  if (F.sort === 'new') return L.slice().sort((a, b) => ageDays(a.time) - ageDays(b.time));
+  if (F.sort === 'new') return L.slice().sort((a, b) => (b.at || 0) - (a.at || 0) || ageDays(a.time) - ageDays(b.time));
   return L;
 }
 export function sortPeople(L: string[], F: Filters = ui.F) {
-  if (F.sort === 'near') return L.slice().sort((a, b) => kmOf(P(a).dist) - kmOf(P(b).dist));
+  if (F.sort === 'near') return L.slice().sort((a, b) => far(kmTo(P(a).coord as [number, number] | undefined, F), kmTo(P(b).coord as [number, number] | undefined, F)));
   if (F.sort === 'rate') return L.slice().sort((a, b) => P(b).rate - P(a).rate);
   if (F.sort === 'exp') return L.slice().sort((a, b) => (P(b).years || 0) - (P(a).years || 0));
   return L;

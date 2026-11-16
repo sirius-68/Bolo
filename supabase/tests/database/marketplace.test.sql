@@ -2,7 +2,7 @@
 -- People: Ana (posts a job), Ben (worker), Carl (another worker), Dee (stranger).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(55);
+select plan(58);
 
 insert into auth.users (id, email, raw_user_meta_data) values
   ('a0000000-0000-0000-0000-000000000001', 'ana@test.bolo', '{"name": "Ana"}'),
@@ -110,6 +110,12 @@ set local request.jwt.claims = '{"sub": "d0000000-0000-0000-0000-000000000004"}'
 select lives_ok($$ update public.mentorship_members set status = 'yes' where mentorship_id = 'mt1' $$, 'Dee accepts Ben');
 set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-000000000002"}';
 select is((select count(*)::int from public.conversation_members cm join public.mentorships m on m.conversation_id = cm.conversation_id where m.id = 'mt1'), 2, 'Ben is in the mentorship group chat');
+
+-- ================================================================ long descriptions and editing
+set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-000000000001"}';
+select lives_ok($$ insert into public.posts (id, author_id, kind, title, body, cat) values ('job9', auth.uid(), 'request', 'Sales representative', repeat('Line of a pasted description.' || chr(10), 400), 'Sales') $$, 'a pasted description of several pages is saved');
+select lives_ok($$ update public.posts set body = 'Shorter now', title = 'Sales rep', data = '{"edited": 1}' where id = 'job9' $$, 'Ana edits her own vacancy');
+select throws_ok($$ update public.posts set body = repeat('x', 20001) where id = 'job9' $$, null, null, 'but not a whole book');
 
 select * from finish();
 rollback;

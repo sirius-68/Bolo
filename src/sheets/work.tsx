@@ -4,6 +4,7 @@ import { MONEY_LIVE } from '../logic/money';
 import { loadPost } from '../logic/server';
 import { Pressable, Share, View } from 'react-native';
 import * as Linking from 'expo-linking';
+import { router } from 'expo-router';
 import { db, Post, CvFile } from '../data/db';
 import { RV_TAGS_C, RV_TAGS_W, SERVICES, STAGES, STAGE_COL, catIcon } from '../data/catalog';
 import { AlertIll, Avatar, Btn, Check, Chip, Chips, CoTag, Empty, Field, Input, Label, Meta, Note, Pict, Pill, ProTag, Rate, StatusPill, Txt, Verified, tap } from '../ui/kit';
@@ -86,14 +87,19 @@ function JobSheet({ id, initialStage }: { id: string; initialStage?: string }) {
         {po.title}
       </Txt>
       {po.text && po.text !== po.title ? (
-        <Txt s={14} c="#d9d9de" style={{ marginTop: 6 }}>
+        <Txt s={14} c="#d9d9de" selectable style={{ marginTop: 6, lineHeight: 21 }}>
           {po.text}
+        </Txt>
+      ) : null}
+      {po.edited ? (
+        <Txt s={11} c={C.faint} style={{ marginTop: 6 }}>
+          Edited
         </Txt>
       ) : null}
       {(po.photos || []).length ? (
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
           {po.photos!.map((s) => (
-            <Pict key={s} pic={s} style={{ flex: 1, aspectRatio: 1, borderRadius: 12 }} />
+            <Pict key={s} pic={s} style={{ flex: 1, aspectRatio: po.photos!.length === 1 ? 16 / 10 : 1, borderRadius: 12 }} />
           ))}
         </View>
       ) : null}
@@ -180,7 +186,8 @@ function MyJobOffers({ po }: { po: Post }) {
         <Empty title="Waiting for offers" text="Your job is live: people looking for work can see it and send offers. You’ll get a notification for each one." />
       )}
       {b ? <Btn variant="yellow" icon="nav" title="Track the job" style={{ marginTop: 14 }} onPress={() => afterSheet(() => openTrack(b.id))} /> : null}
-      {!po.booked ? <Btn variant="ghost" title="Close this job" style={{ marginTop: 14 }} onPress={() => (closeJob(po.id), sheet.close())} /> : null}
+      <Btn testID="job-edit" variant="dark" icon="edit" title="Edit job" style={{ marginTop: 14 }} onPress={() => afterSheet(() => router.push(`/post-job?edit=${po.id}` as any))} />
+      {!po.booked ? <Btn variant="ghost" title="Close this job" style={{ marginTop: 10 }} onPress={() => (closeJob(po.id), sheet.close())} /> : null}
     </View>
   );
 }
@@ -254,7 +261,8 @@ function Applicants({ po, initialStage }: { po: Post; initialStage?: string }) {
           <Empty title={L.length ? 'Nobody at this stage' : 'Waiting for applicants'} text={L.length ? 'Move people along from the other tabs.' : 'Matching people near you are being notified.'} />
         )}
       </View>
-      <Btn variant="ghost" title="Close vacancy" style={{ marginTop: 14 }} onPress={() => (closeJob(po.id), sheet.close())} />
+      <Btn testID="job-edit" variant="dark" icon="edit" title="Edit vacancy" style={{ marginTop: 14 }} onPress={() => afterSheet(() => router.push(`/post-job?edit=${po.id}` as any))} />
+      <Btn variant="ghost" title="Close vacancy" style={{ marginTop: 10 }} onPress={() => (closeJob(po.id), sheet.close())} />
     </View>
   );
 }

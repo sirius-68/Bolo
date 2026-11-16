@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, FlatList, KeyboardAvoidingView, PanResponder, Platform, Pressable, ScrollView, TextInput, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing, FlatList, PanResponder, Pressable, ScrollView, TextInput, View, useWindowDimensions } from 'react-native';
+import { KeyAvoid } from '../../src/ui/keyboard';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Line, Path, Text as SvgText } from 'react-native-svg';
@@ -177,7 +178,7 @@ function Room({ c, asHost }: { c: Course; asHost?: boolean }) {
   const tiles = [{ id: 'me', name: 'You', pic: myPhoto(), mic, hand }, ...(host ? [] : [{ id: 'host', name: c.prov.n, pic: c.prov.logo, mic: true, hand: false }]), ...people.map((pid) => ({ id: pid, name: fname(P(pid).name), pic: P(pid).photo, mic: speakId === pid, hand: hands.includes(pid) }))];
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: '#0b0b0d' }}>
+    <KeyAvoid style={{ flex: 1, backgroundColor: '#0b0b0d' }}>
       <StatusBar style="light" />
       {/* header */}
       <View style={[S.row, { gap: 10, paddingTop: ins.top + 6, paddingHorizontal: 14, paddingBottom: 10 }]}>
@@ -445,7 +446,7 @@ function Room({ c, asHost }: { c: Course; asHost?: boolean }) {
         {host ? <Ctl icon="record" label={rec ? 'Stop rec' : 'Record'} on={rec} danger={rec} onPress={toggleRec} testID="live-rec" /> : <Ctl icon="chat" label="Q&A" on={panel === 'qa'} onPress={() => (tap(), setPanel('qa'))} testID="live-qa" />}
         <Ctl icon="dots" label="More" onPress={more} testID="live-more" />
       </View>
-    </KeyboardAvoidingView>
+    </KeyAvoid>
   );
 }
 

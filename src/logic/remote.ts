@@ -26,6 +26,7 @@ export function friendly(e: any): string {
   const status = Number(e?.status || e?.context?.status || 0);
   const m = raw.toLowerCase();
   if (m.includes('sending confirmation') || m.includes('sending recovery') || m.includes('sending magic') || m.includes('error sending')) return 'We couldn’t send the code email just now. Please try again in a few minutes.';
+  if (m.includes('posts_text_len') || m.includes('pg_column_size')) return 'That text is longer than we can save right now. Shorten it a little and try again.';
   if (m.includes('network') || m.includes('fetch') || m.includes('timeout')) return 'No internet connection. Check your data or Wi‑Fi and try again.';
   if (m.includes('invalid login')) return 'Wrong phone/email or password.';
   if (m.includes('already registered') || m.includes('already been registered') || m.includes('already exists')) return 'An account with this phone or email already exists. Log in instead.';

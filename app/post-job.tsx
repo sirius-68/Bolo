@@ -1,61 +1,87 @@
 import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { db } from '../src/data/db';
 import { CATS, PJ_AREAS, detectCat, catIcon } from '../src/data/catalog';
 import { Btn, Check, Chip, Chips, Field, Fine, Input, Label, OptRow, Page, Pict, SelectBox, Stepper, Sub, SwitchRow, Title, TopBar, Txt } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { pick, toast } from '../src/ui/overlay';
 import { C, R, S } from '../src/ui/theme';
-import { bizName, cityLabel, curBiz, digits, isW } from '../src/logic/core';
-import { postJob } from '../src/logic/work';
+import { bizName, cityLabel, curBiz, digits, isW, postById } from '../src/logic/core';
+import { postJob, updateJob } from '../src/logic/work';
 import { MAX_PHOTO_MB, pickImages, takePhoto } from '../src/logic/media';
 import { afterSheet, sheet, SheetTitle } from '../src/ui/overlay';
 import { later } from '../src/logic/live';
 import { back, resetTo } from '../src/logic/nav';
 import { openJob } from '../src/sheets/work';
+import { openCities } from '../src/sheets/account';
 
 const TIMES = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'];
 
 export default function PostJob() {
-  const w = isW();
-  const [title, setTitle] = useState('');
-  const [text, setText] = useState('');
-  const [cat, setCat] = useState<string | null>(null);
-  const [photos, setPhotos] = useState<string[]>([]);
-  const [budget, setBudget] = useState('');
-  const [neg, setNeg] = useState(false);
-  const [type, setType] = useState(w ? 'One-off' : 'Full-time');
-  const [openings, setOpenings] = useState(1);
-  const [when, setWhen] = useState(w ? 'Today' : 'Flexible');
+  // edit=<job id>: change a job or vacancy that is already posted
+  const { edit } = useLocalSearchParams<{ edit?: string }>();
+  const old = edit ? postById(edit) : undefined;
+  const editing = !!old && !!old.mine;
+  const w = editing ? old!.as !== 'business' : isW();
+  const [title, setTitle] = useState(old?.title || '');
+  const [text, setText] = useState(old?.text && old.text !== old.title ? old.text : '');
+  const [cat, setCat] = useState<string | null>(old?.cat || null);
+  const [photos, setPhotos] = useState<string[]>(old?.photos ? [...old.photos] : []);
+  const [budget, setBudget] = useState(old ? digits(String(old.budget || '').split('/')[0]) : '');
+  const [neg, setNeg] = useState(/negotiable/i.test(old?.budget || ''));
+  const [type, setType] = useState(old?.type || (w ? 'One-off' : 'Full-time'));
+  const [openings, setOpenings] = useState(old?.openings || 1);
+  // an edited job keeps its date unless another one is picked
+  const KEEP = old?.when ? `Keep: ${old.when}` : '';
+  const [when, setWhen] = useState(KEEP || (w ? 'Today' : 'Flexible'));
   const [time, setTime] = useState('09:00');
-  const [area, setArea] = useState(db.PR.area.home || cityLabel());
-  const [urgent, setUrgent] = useState(false);
+  const [area, setArea] = useState(old ? old.area || '' : db.PR.area.home || cityLabel());
+  // set when another city is chosen for the job (undefined = where I am, null = nowhere: remote)
+  const [at, setAt] = useState<[number, number] | null | undefined>(undefined);
+  const [urgent, setUrgent] = useState(!!old?.urgent);
   const [tried, setTried] = useState(false);
   const auto = detectCat(title + ' ' + text);
   const finalCat = cat || auto;
   const b = digits(budget);
   const types = w ? ['One-off', 'Part-time', 'Full-time', 'Remote'] : ['Full-time', 'Part-time', 'Contract', 'Internship', 'Remote'];
-  const whens = w ? ['Today', 'Tomorrow', 'This week', 'Flexible'] : ['As soon as possible', 'Next month', 'Flexible'];
+  const whens = [...(KEEP ? [KEEP] : []), ...(w ? ['Today', 'Tomorrow', 'This week', 'Flexible'] : ['As soon as possible', 'Next month', 'Flexible'])];
   const ok = title.trim().length >= 3;
   const submit = () => {
     setTried(true);
     if (!ok) return;
-    const job = postJob({ title, text, cat: finalCat || 'Handyman', budget: b, neg, type, openings, when, time, area, urgent, photos });
+    const form = { title, text, cat: finalCat || 'Other', budget: b, neg, type, openings, when, time, area, urgent, photos, at };
+    if (editing) {
+      updateJob(old!.id, form, when === KEEP);
+      toast(w ? 'Job updated' : 'Vacancy updated');
+      return back();
+    }
+    const job = postJob(form);
     toast(w ? 'Job posted. People nearby will send offers' : `Vacancy published for ${bizName(curBiz())}`);
     if (w) back();
     else resetTo('/home');
     later(450, () => openJob(job.id));
   };
+  // the full list, searchable; a job that fits none of them can use its own word
+  const allCats = () =>
+    pick('Category', CATS.map(([c]) => c), finalCat || undefined, (v) => setCat(v), {
+      search: true,
+      hint: 'No category with that name.',
+      other: (typed) => setCat(typed.charAt(0).toUpperCase() + typed.slice(1, 40)),
+      otherLabel: (typed) => `Use “${typed}” as the category`,
+    });
+  const shown = [...new Set([finalCat, ...CATS.map(([c]) => c)].filter(Boolean) as string[])].slice(0, 9);
   return (
-    <Page keyboard header={<TopBar title={w ? 'Post a job' : 'Post a vacancy'} />}>
+    <Page keyboard header={<TopBar title={editing ? (w ? 'Edit job' : 'Edit vacancy') : w ? 'Post a job' : 'Post a vacancy'} />}>
       <Title sm>{w ? 'What do you need help with?' : `Who are you hiring at ${bizName(curBiz())}?`}</Title>
       <Sub>{w ? 'Any personal job: a quick fix, a tutor, a driver. People near you send offers; you choose.' : 'Your vacancy shows with your company name and logo. Applicants land in your dashboard.'}</Sub>
       <View style={{ gap: 18, marginTop: 20 }}>
         <Field label="Job title" error={tried && !ok && 'Give your job a short title (3+ letters)'}>
-          <Input icon="job" value={title} onChangeText={setTitle} maxLength={60} placeholder={w ? 'e.g. Kitchen sink is leaking' : 'e.g. Sales representative'} invalid={tried && !ok} testID="pj-title" />
+          <Input icon="job" value={title} onChangeText={setTitle} maxLength={120} placeholder={w ? 'e.g. Kitchen sink is leaking' : 'e.g. Sales representative'} invalid={tried && !ok} testID="pj-title" />
         </Field>
         <Field label="Details">
-          <Input multiline value={text} onChangeText={setText} maxLength={400} placeholder={w ? 'What’s wrong, how big is the job, anything people should bring…' : 'Responsibilities, requirements, benefits…'} />
+          {/* no length limit: a pasted job description keeps its line breaks, blank lines and lists exactly as they are */}
+          <Input testID="pj-text" multiline minHeight={150} maxHeight={360} value={text} onChangeText={setText} placeholder={w ? 'What’s wrong, how big is the job, anything people should bring…' : 'Responsibilities, requirements, benefits… Paste a full description if you have one.'} />
         </Field>
         <View>
           <Label>Category · optional</Label>
@@ -68,10 +94,16 @@ export default function PostJob() {
             </View>
           ) : null}
           <Chips scroll>
-            {CATS.map(([c]) => (
+            {shown.map((c) => (
               <Chip key={c} small icon={catIcon(c)} label={c} on={finalCat === c} onPress={() => setCat(cat === c ? null : c)} />
             ))}
+            <Chip small icon="search" label="All categories" onPress={allCats} />
           </Chips>
+          {!finalCat ? (
+            <Txt s={12} c={C.muted} style={{ marginTop: 8 }}>
+              No category chosen. It will be listed under “Other”, or tap All categories to search.
+            </Txt>
+          ) : null}
         </View>
         <View>
           <Label>Photos · optional, up to 3</Label>
@@ -139,11 +171,23 @@ export default function PostJob() {
         </Field>
         <Chips>
           {[cityLabel(), 'Remote / online'].filter(Boolean).map((c) => (
-            <Chip key={c} small label={c} on={area === c} onPress={() => setArea(c)} />
+            <Chip key={c} small label={c} on={area === c} onPress={() => (setArea(c), setAt(c === cityLabel() ? db.user.coord || undefined : null))} />
           ))}
+          <Chip
+            testID="pj-city"
+            small
+            icon="search"
+            label="Another city"
+            onPress={() =>
+              openCities((c, place) => {
+                setArea(c);
+                setAt(place?.coord || null);
+              }, area)
+            }
+          />
         </Chips>
         {w ? <SwitchRow title="Urgent" sub="Show it first to people nearby" value={urgent} onChange={setUrgent} /> : null}
-        <Btn variant="yellow" title={w ? 'Post job' : 'Publish vacancy'} onPress={submit} testID="pj-submit" />
+        <Btn variant="yellow" title={editing ? 'Save changes' : w ? 'Post job' : 'Publish vacancy'} onPress={submit} testID="pj-submit" />
         <Fine style={{ marginTop: -6 }}>{w ? 'People see your phone number only after you hire them.' : 'Applicants can message you through bolo; your phone stays private.'}</Fine>
       </View>
     </Page>

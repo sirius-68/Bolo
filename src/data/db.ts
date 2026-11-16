@@ -38,6 +38,8 @@ export type Offer = { by: string; price: string; when: string; msg: string; stag
 /** A CV attached to an offer: the person's bolo CV (src 'profile'), or a file they picked (sent in the chat; uri/mime only exist on the sender's phone). */
 export type CvFile = { name: string; kb: number; src?: string; uri?: string; mime?: string };
 export type Post = {
+  /** changed after it was posted */
+  edited?: number;
   id: string;
   kind: 'image' | 'request' | 'job' | 'avail' | 'art' | 'photo' | 'text';
   by?: string;
@@ -482,7 +484,8 @@ export const ui = {
   ibTab: 'All',
   cat: null as string | null,
   q: '',
-  F: { dist: 0, rate: 0, ver: false, urgent: false, budget: 0, sort: 'best', type: '', posted: 0, by: '' as '' | 'company' | 'person', exp: 0 },
+  /** `city` + `cityAt`: look in a chosen city (its position when known) instead of around me */
+  F: { dist: 0, rate: 0, ver: false, urgent: false, budget: 0, sort: 'best', type: '', posted: 0, by: '' as '' | 'company' | 'person', exp: 0, city: '', cityAt: null as null | [number, number] },
   openChat: null as string | null,
   current: '' as string,
   reelFilter: 'all' as 'all' | 'following' | 'near',
