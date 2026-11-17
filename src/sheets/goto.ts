@@ -19,12 +19,6 @@ export function goTo(g: Go) {
       return openOpp(g.id);
     case 'course':
       return openCourse(g.id);
-    case 'coursePage':
-      return router.push(`/course/${g.id}` as any);
-    case 'live':
-      return router.push(`/live/${g.id}` as any);
-    case 'watch':
-      return router.push(`/watch/${g.id}${g.t ? `?t=${g.t}` : ''}` as any);
     case 'mentor':
       return openMentor(g.id);
     case 'chat':
@@ -36,8 +30,6 @@ export function goTo(g: Go) {
     case 'post':
       // from a like or a reply: straight to that comment
       return openComments(g.id, g.c);
-    case 'wallet':
-      return router.push('/wallet' as any);
     case 'teach':
       return router.push('/teach' as any);
     case 'courses':

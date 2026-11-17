@@ -1,14 +1,11 @@
 /* Accounts: sign-up, roles (Regular / Business), businesses, Pro, profile data. */
 import { db, makeDb, setDb, ui, uid, MyBiz, Service } from '../data/db';
 import { toast } from '../ui/overlay';
-import { notify } from './notify';
-import { bump, cancelAll, later } from './live';
+import { bump, cancelAll } from './live';
 import { curBiz, bizName, cityLabel, isW, nowT, madeUpService, ensureSkillList, P } from './core';
 import { resumeSims } from './work';
 import { clearSaved } from './persist';
-import { stopAdTicker } from './career';
 import { signOut } from './remote';
-import { MONEY_LIVE } from './money';
 
 export const wantsWork = () => db.user.intents.includes('find');
 
@@ -33,7 +30,6 @@ export function enterBusinessOnly() {
 export async function logout() {
   await signOut();
   cancelAll();
-  stopAdTicker();
   await clearSaved();
   setDb(makeDb());
   ui.appStarted = false;
@@ -66,8 +62,6 @@ export function useBiz(id: string) {
   toast(`Switched to ${bizName(curBiz())} · Business`);
   bump();
 }
-export const MAX_FREE_BIZ = 2;
-export const canAddBiz = () => !MONEY_LIVE || db.BIZ.list.length < MAX_FREE_BIZ || db.user.pro.business;
 
 /* ---------------- businesses ---------------- */
 export function newBizDraft(): MyBiz {
@@ -111,20 +105,6 @@ export function createBusinessAccount(o: { owner: string; email: string; phone: 
 }
 
 
-/* ---------------- Pro ---------------- */
-export function payPro(kind: 'regular' | 'business', done: () => void) {
-  later(1400, () => {
-    db.user.pro[kind] = true;
-    toast(kind === 'regular' ? '🎉 Welcome to bolo Pro' : '🎉 Business Pro is active');
-    notify({ type: 'pro', cat: 'account', key: `pro:${kind}:${new Date().toISOString().slice(0, 7)}`, inbox: kind === 'regular' ? 'W' : 'C', text: kind === 'regular' ? 'bolo Pro is active: priority applications, Pro CV templates and profile boosts.' : 'Business Pro is active: cheaper ads and a featured company page.', go: { k: 'me' } });
-    done();
-  });
-}
-export function cancelPro(kind: 'regular' | 'business') {
-  db.user.pro[kind] = false;
-  toast('Plan cancelled. You keep it until the end of the month');
-  bump();
-}
 
 /* ---------------- my profile data ---------------- */
 export function services(): Service[] {

@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { Pull } from '../../src/components/common';
-import { MONEY_LIVE } from '../../src/logic/money';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,14 +12,13 @@ import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
 import { P, bizLogo, bizName, bizPct, curBiz, isPro, isW, myHandle, cityLabel, myPhoto, myVacancies, myOpps, myCourses, xaf, postById, openJobs, k } from '../../src/logic/core';
 import { bump, useLive } from '../../src/logic/live';
-import { balance, heldTotal } from '../../src/logic/wallet';
 import { myListings } from '../../src/logic/listings';
 import { followingCount, prItems, prPct, services } from '../../src/logic/account';
 import { openProfile } from '../../src/logic/nav';
 import { ListRow } from '../../src/components/cards';
 import { onScrollFab } from '../../src/components/NavBar';
-import { openAccounts, openBizSetup, openEdit, openPro, openStatus, switchRole } from '../../src/sheets/account';
-import { openArea, openBoost, openContacts, openDoc, openEdu, openExp, openFollows, openJobHistory, openLangs, openService, openSvcMenu, openTest, openVideo } from '../../src/sheets/profile';
+import { openAccounts, openBizSetup, openEdit, openStatus, switchRole } from '../../src/sheets/account';
+import { openArea, openContacts, openDoc, openEdu, openExp, openFollows, openJobHistory, openLangs, openService, openSvcMenu, openTest, openVideo } from '../../src/sheets/profile';
 import { openJob, sharePost } from '../../src/sheets/work';
 import { openCourse, openOpp, openOppForm, openMentor } from '../../src/sheets/career';
 import { viewContract } from '../../src/sheets/business';
@@ -190,38 +188,7 @@ function SwitchAndPro() {
           <Icon name="chev" size={18} color={C.faint} />
         </Pressable>
       ) : null}
-      {MONEY_LIVE ? (
-        <>
-      <Pressable testID="me-wallet" accessibilityRole="button" onPress={() => (tap(), router.push('/wallet' as any))} style={({ pressed }) => [S.row, { gap: 12, padding: 12, borderRadius: 18, backgroundColor: pressed ? C.s2 : C.s1, borderWidth: 1, borderColor: C.line }]}>
-        <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: C.mint, alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name="coins" size={20} color="#000" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Txt s={14} w={8}>
-            Wallet · {xaf(balance())}
-          </Txt>
-          <Txt s={12} c={C.muted}>
-            {heldTotal() ? `${xaf(heldTotal())} held in escrow · add money or withdraw` : 'Add money, withdraw, pay safely with escrow'}
-          </Txt>
-        </View>
-        <Icon name="chev" size={18} color={C.faint} />
-      </Pressable>
-      <Pressable accessibilityRole="button" onPress={() => openPro()} style={({ pressed }) => [S.row, { gap: 12, padding: 12, borderRadius: 18, backgroundColor: pressed ? C.s2 : C.s1, borderWidth: 1, borderColor: C.line }]}>
-        <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name="rocket" size={20} color="#000" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Txt s={14} w={8}>
-            {isPro() ? `bolo ${w ? 'Pro' : 'Business Pro'} · active` : `Upgrade to ${w ? 'Pro' : 'Business Pro'}`}
-          </Txt>
-          <Txt s={12} c={C.muted}>
-            {isPro() ? 'Manage your plan' : w ? 'Get jobs faster, premium CV, profile boosts' : 'Cheaper ads, more businesses, featured company'}
-          </Txt>
-        </View>
-        <Icon name="chev" size={18} color={C.faint} />
-      </Pressable>
-        </>
-      ) : null}
+      
     </View>
   );
 }
@@ -463,7 +430,6 @@ function ProfilePanel() {
                 </Pressable>
               </Pressable>
               <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                <Btn small variant="dark" icon="rocket" title={s.boost ? `${s.boost} day${s.boost > 1 ? 's' : ''} of boost left` : 'Boost'} onPress={() => openBoost(s.id)} />
                 <Btn
                   small
                   variant="dark"

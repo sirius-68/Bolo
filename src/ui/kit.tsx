@@ -863,13 +863,6 @@ export function Meta({ parts, s = 12, c = C.muted, lines = 1, style }: { parts: 
   );
 }
 
-export function Bar({ pct, color = C.yellow, h = 4, bg = C.s3, style }: { pct: number; color?: string; h?: number; bg?: string; style?: any }) {
-  return (
-    <View style={[{ height: h, borderRadius: h, backgroundColor: bg, overflow: 'hidden' }, style]}>
-      <View style={{ width: `${Math.max(0, Math.min(100, pct))}%`, height: '100%', backgroundColor: color, borderRadius: h }} />
-    </View>
-  );
-}
 export function Ring({ pct, size = 64, stroke = 6 }: { pct: number; size?: number; stroke?: number }) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;

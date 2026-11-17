@@ -868,7 +868,7 @@ export function deleteNotifs(ids: string[]) {
 }
 export const NT_TABS: Record<string, (n: Notif) => boolean> = {
   All: () => true,
-  Jobs: (n) => ['quote', 'accept', 'reminder', 'offers', 'payment', 'newjob', 'payment_in', 'newoffer', 'onway', 'arrived', 'jobdone'].includes(n.type),
+  Jobs: (n) => ['quote', 'accept', 'reminder', 'offers', 'newjob', 'newoffer', 'onway', 'arrived', 'jobdone'].includes(n.type),
   Learning: (n) => ['enrol', 'course', 'newcourse', 'material', 'live', 'mentor', 'rating'].includes(n.type) || n.cat === 'learning' || n.cat === 'mentorship',
   Mentions: (n) => ['mention', 'review', 'comment'].includes(n.type),
 };

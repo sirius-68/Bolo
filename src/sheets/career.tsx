@@ -1,29 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { MONEY_LIVE } from '../logic/money';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { db, ui, Course } from '../data/db';
+import { db, ui } from '../data/db';
 import { router } from 'expo-router';
 import { WebView } from 'react-native-webview';
 import { openCourseSite } from '../logic/listings';
-import { CourseReviews, RatingBadge } from '../components/Reviews';
-import { ratingOf } from '../logic/reviews';
 import { CV_TEMPLATES, CvKind, CvTpl, cvData, cvHtml, tplOf } from '../components/cvTemplates';
 import { ARTICLES, CATS, OPP_KINDS, PATHS, RULES, SALARIES, catIcon } from '../data/catalog';
-import { OptRow, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Meta, Note, PTabs, Pill, ProTag, Rate, Seg, SelectBox, StatusPill, Stepper, Steps, Txt, tap } from '../ui/kit';
+import { Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Meta, Note, PTabs, Pill, ProTag, Rate, Seg, SelectBox, StatusPill, Stepper, Steps, Txt, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { afterSheet, pick, sheet, SheetTitle, toast } from '../ui/overlay';
-import { C, R, S } from '../ui/theme';
+import { C, S } from '../ui/theme';
 import { P, isW, xaf, oppBiz, mOwner, curBiz, bizName, has, digits } from '../logic/core';
 import { saveToggle } from '../logic/work';
-import { announce, answerApplicant, answerMentee, courseGroup, enroll, enrolEmployees, joinMentor, joinOpp, publishMentor, publishOpp, removeStudent, setProgress, updateMentor, updateOpp, OppForm } from '../logic/career';
+import { answerApplicant, answerMentee, joinMentor, joinOpp, publishMentor, publishOpp, updateMentor, updateOpp, OppForm } from '../logic/career';
 import { useLive } from '../logic/live';
 import { openProfile, resetTo } from '../logic/nav';
 import { ListRow } from '../components/cards';
 import { openChat, RulePicker } from './chat';
-import { defaultPay } from './account';
-import { openPro, bizOnlyPrompt } from './account';
+import { bizOnlyPrompt } from './account';
 
 const SaveBtn = ({ list, id, label }: { list: 'savedOpps' | 'savedCourses' | 'savedCos' | 'savedMentors'; id: string; label: string }) => {
   const on = has(db[list], id);
@@ -191,12 +187,9 @@ export function OppSheet({ id }: { id: string }) {
           Internships are for individuals. Switch to your Regular profile to apply.
         </Note>
       ) : (
-        <View style={{ marginTop: 16, gap: 8 }}>
-          {o.emp ? (
-            <StatusPill kind="acc" text={`${o.emp} employee${o.emp > 1 ? 's' : ''} enrolled · ${bizName(curBiz())}`} />
-          ) : null}
-          <Btn variant="yellow" icon="follow" title="Enrol employees" onPress={() => openEmpEnroll('opp', o.id)} />
-        </View>
+        <Note icon="user" style={{ marginTop: 16 }}>
+          Programs are joined from a Regular profile. Share this page with your team so they can join.
+        </Note>
       )}
       {b.id ? <Btn variant="ghost" title={`About ${b.name}`} style={{ marginTop: 10 }} onPress={() => afterSheet(() => openProfile(b.id!))} /> : null}
     </View>
@@ -413,11 +406,9 @@ export function MentorSheet({ id }: { id: string }) {
           </View>
           {m.joinedMe === 'yes' ? <Btn variant="dark" icon="chat" title="Open the group chat" onPress={() => afterSheet(() => openChat('g_' + m.id))} /> : null}
         </View>
-      ) : !isW() && m.format === 'Group' ? (
-        <Btn variant="yellow" icon="follow" title="Add employees to this mentorship" style={{ marginTop: 18 }} onPress={() => openEmpEnroll('mentor', m.id)} />
       ) : !isW() ? (
         <Note icon="user" style={{ marginTop: 16 }}>
-          1-to-1 mentorships are for individuals. Switch to your Regular profile to request one.
+          Mentorships are for individuals. Switch to your Regular profile to request one.
         </Note>
       ) : (
         <Btn variant="yellow" style={{ marginTop: 18 }} disabled={m.joined >= m.seats} title={m.joined >= m.seats ? 'Full' : m.format === '1-to-1' ? 'Request a mentor' : 'Join mentorship'} onPress={() => joinMentor(m.id)} />
@@ -577,302 +568,14 @@ function MentorForm({ f }: { f: MF }) {
   );
 }
 
-/* ======================= businesses enrol employees ======================= */
-export function openEmpEnroll(kind: 'course' | 'mentor' | 'opp', id: string) {
-  const st = { set: [] as string[], extra: [] as string[], q: '' };
-  sheet.show(() => <EmpEnroll kind={kind} id={id} st={st} />, { full: true });
-}
-function EmpEnroll({ kind, id, st }: { kind: 'course' | 'mentor' | 'opp'; id: string; st: { set: string[]; extra: string[]; q: string } }) {
-  const [, force] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const re = () => force((x) => x + 1);
-  const b = curBiz()!;
-  const it: any = kind === 'course' ? db.COURSES.find((c) => c.id === id) : kind === 'mentor' ? db.MENTORSHIPS.find((m) => m.id === id) : db.OPPS.find((o) => o.id === id);
-  const n = st.set.length + st.extra.length;
-  const price = kind === 'course' ? it.price : 0;
-  const add = () => {
-    const v = st.q.trim();
-    if (!v) return;
-    st.extra.push(v);
-    st.q = '';
-    re();
-  };
-  return (
-    <View style={{ gap: 12 }}>
-      <SheetTitle sub={`${bizName(b)} pays and your employees follow “${it.title}”. A business can’t enrol on its own.`}>Enrol employees</SheetTitle>
-      {b.team.length ? (
-        b.team.map((pid) => {
-          const on = st.set.includes(pid);
-          return (
-            <Pressable key={pid} onPress={() => ((st.set = on ? st.set.filter((x) => x !== pid) : [...st.set, pid]), re())} style={[S.row, { gap: 12, padding: 10, borderRadius: 14, backgroundColor: on ? 'rgba(61,90,241,.16)' : C.s2 }]}>
-              <Avatar pic={P(pid).photo} size={40} />
-              <View style={{ flex: 1 }}>
-                <Txt s={14} w={7}>
-                  {P(pid).name}
-                </Txt>
-                <Txt s={12} c={C.muted}>
-                  {P(pid).role} · on your team
-                </Txt>
-              </View>
-              <Icon name={on ? 'checkc' : 'plus'} size={20} color={on ? C.yellow : C.muted} />
-            </Pressable>
-          );
-        })
-      ) : (
-        <Note icon="follow">Nobody is on your team yet. Add employees by name or phone below. They’ll get an invite by SMS.</Note>
-      )}
-      {st.extra.map((e, i) => (
-        <View key={e + i} style={[S.row, { gap: 12, padding: 10, borderRadius: 14, backgroundColor: 'rgba(61,90,241,.16)' }]}>
-          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.s3, alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="user" size={18} color="#fff" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Txt s={14} w={7}>
-              {e}
-            </Txt>
-            <Txt s={12} c={C.muted}>
-              Invite by SMS
-            </Txt>
-          </View>
-          <Pressable accessibilityLabel="Remove" onPress={() => (st.extra.splice(i, 1), re())} hitSlop={8}>
-            <Icon name="x" size={18} color={C.muted} />
-          </Pressable>
-        </View>
-      ))}
-      <View style={[S.row, { gap: 8 }]}>
-        <Input value={st.q} onChangeText={(v) => ((st.q = v), re())} placeholder="Add employee: name or phone" style={{ flex: 1, height: 48, minHeight: 48 }} onSubmit={add} />
-        <Pressable onPress={add} style={{ height: 48, paddingHorizontal: 16, borderRadius: R.md, backgroundColor: C.s3, justifyContent: 'center' }}>
-          <Txt s={13} w={7}>
-            Add
-          </Txt>
-        </Pressable>
-      </View>
-      {price ? (
-        <View style={[S.row, { gap: 10, padding: 12, borderRadius: 14, backgroundColor: C.s2 }]}>
-          <Icon name="coins" size={18} color={C.yellow} />
-          <Txt s={13} style={{ flex: 1 }}>
-            {n} × {xaf(price)} = <Txt s={13} w={8}>{xaf(n * price)}</Txt> · {defaultPay()}
-          </Txt>
-        </View>
-      ) : null}
-      <Btn
-        variant="yellow"
-        loading={busy}
-        disabled={!n}
-        title={n ? `Enrol ${n} employee${n > 1 ? 's' : ''}` : 'Choose employees'}
-        onPress={() => {
-          setBusy(true);
-          setTimeout(() => {
-            enrolEmployees(kind, id, n);
-            sheet.close();
-          }, 900);
-        }}
-      />
-    </View>
-  );
-}
 
 /* ======================= courses ======================= */
 export function openCourse(id: string) {
   const c = db.COURSES.find((x) => x.id === id);
+  if (!c) return toast('This course is no longer listed');
   // Your own listing: edit it. Any other listing: open the course's website.
-  if (c?.mine) return router.push(`/list-course?id=${id}` as any);
-  if (c?.url) return openCourseSite(c);
-  // Learners who are enrolled go straight to their course page.
-  if (c && isW() && !c.mine && db.myLearning.includes(id)) return router.push(`/course/${id}` as any);
-  sheet.show(() => <CourseSheet id={id} />, { tag: 'course:' + id, full: true });
-}
-function CourseSheet({ id }: { id: string }) {
-  const [busy, setBusy] = useState(false);
-  const c = db.COURSES.find((x) => x.id === id);
-  if (!c) return <Empty title="Course not found" />;
-  const d = c.old ? Math.round((1 - c.price / c.old) * 100) : 0;
-  const e = db.myLearning.includes(id);
-  return (
-    <View>
-      <Head pic={c.prov.logo} sq name={c.prov.n} sub={c.fmt + (c.reg ? ' · ' + c.reg : '')} right={!c.mine ? <SaveBtn list="savedCourses" id={c.id} label="Course" /> : null} />
-      <Lab icon="cap" text={`${c.cat} · ${c.type}`} />
-      <Txt s={22} w={8} style={{ marginTop: 10, lineHeight: 26 }}>
-        {c.title}
-      </Txt>
-      {ratingOf(c).n ? (
-        <View style={[S.row, { gap: 6, marginTop: 6 }]}>
-          <RatingBadge c={c} />
-          <Txt s={12} c={C.muted}>
-            from enrolled students
-          </Txt>
-        </View>
-      ) : null}
-      <Facts items={[['star', c.lv === 'Beginner' ? 'From zero' : 'Advanced'], ['clock', c.dur], ...(c.prof ? ([['job', `Become a ${c.prof.toLowerCase()}`]] as [string, string][]) : [])]} />
-      <H4 t="What you’ll learn" />
-      {[...c.skills, `A certificate from ${c.prov.n}`].map((s) => (
-        <View key={s} style={[S.row, { gap: 8, marginBottom: 6 }]}>
-          <Icon name="check" size={16} color={C.mint} />
-          <Txt s={14}>{s}</Txt>
-        </View>
-      ))}
-      <H4 t="Included" />
-      <Facts items={[['video', 'Live classes'], ['chat', 'Class group'], ['cert', 'Certificate'], ['clock', 'Learn at your pace']]} />
-      <View style={[S.row, { gap: 10, marginTop: 16, flexWrap: 'wrap' }]}>
-        <Txt s={24} w={8} c={C.yellow}>
-          {c.price ? xaf(c.price) : 'Free'}
-        </Txt>
-        {c.old ? (
-          <Txt s={14} c={C.muted} style={{ textDecorationLine: 'line-through' }}>
-            {xaf(c.old)}
-          </Txt>
-        ) : null}
-        {d ? <StatusPill kind="urg" text={`−${d}%`} /> : null}
-      </View>
-      {c.mo ? (
-        <Txt s={12} c={C.muted}>
-          or {xaf(c.mo)} per month
-        </Txt>
-      ) : null}
-      {!c.mine && ratingOf(c).n ? (
-        <>
-          <H4 t="Ratings and reviews" />
-          <CourseReviews c={c} />
-        </>
-      ) : null}
-      {c.mine ? (
-        <CourseOwner c={c} />
-      ) : !isW() ? (
-        <View style={{ marginTop: 16, gap: 8 }}>
-          {c.emp ? <StatusPill kind="acc" text={`${c.emp} employee${c.emp > 1 ? 's' : ''} enrolled · ${bizName(curBiz())}`} /> : null}
-          <Btn variant="yellow" icon="follow" title={c.emp ? 'Enrol more employees' : 'Enrol employees'} onPress={() => openEmpEnroll('course', c.id)} />
-          <Txt s={12} c={C.muted} center>
-            Businesses enrol their team, not the business itself.
-          </Txt>
-        </View>
-      ) : e ? (
-        <Btn testID="course-open" variant="yellow" icon="cap" style={{ marginTop: 16 }} title="Open course page" onPress={() => afterSheet(() => router.push(`/course/${c.id}` as any))} />
-      ) : (
-        <Btn
-          variant="yellow"
-          style={{ marginTop: 16 }}
-          loading={busy}
-          title={busy ? (c.price ? 'Waiting for payment approval…' : 'Enrolling…') : c.price ? `Enroll · pay with ${defaultPay()}` : 'Enroll for free'}
-          onPress={() => {
-            setBusy(true);
-            // Enrolled → straight to the course page (lessons, live class, class group).
-            enroll(id, () => (setBusy(false), afterSheet(() => router.push(`/course/${id}` as any))));
-          }}
-        />
-      )}
-    </View>
-  );
-}
-function CourseOwner({ c }: { c: Course }) {
-  const L = c.people || [];
-  const done = L.filter((p) => (c.prog || {})[p] >= 100).length;
-  const rev = L.length * c.price;
-  return (
-    <View>
-      <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
-        {[
-          [L.length, 'Students'],
-          [done, 'Completed'],
-          [rev ? Math.round(rev / 1000) + 'k' : '0', 'XAF earned'],
-        ].map(([v, l]) => (
-          <View key={l as string} style={{ flex: 1, padding: 12, borderRadius: 14, backgroundColor: C.s2, alignItems: 'center' }}>
-            <Txt s={20} w={8}>
-              {v}
-            </Txt>
-            <Txt s={11} c={C.muted}>
-              {l}
-            </Txt>
-          </View>
-        ))}
-      </View>
-      <Btn testID="course-start-live" variant="yellow" icon="video" title="Start live class" style={{ marginTop: 12 }} onPress={() => afterSheet(() => router.push(`/live/${c.id}` as any))} />
-      <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
-        <Btn variant="dark" icon="follow" title="Class group" disabled={!L.length} style={{ flex: 1 }} onPress={() => afterSheet(() => openChat(courseGroup(c)))} />
-        <Btn variant="dark" icon="bell" title="Announce" disabled={!L.length} style={{ flex: 1 }} onPress={() => openAnnounce(c.id)} />
-      </View>
-      <H4 t="Ratings and reviews" n={ratingOf(c).n} />
-      <CourseReviews c={c} />
-      <H4 t="Students" n={L.length} />
-      {L.length ? (
-        <View style={{ gap: 8 }}>
-          {L.map((pid) => {
-            const pr = (c.prog || {})[pid] || 0;
-            return (
-              <View key={pid} style={[S.row, { gap: 12, padding: 10, borderRadius: 16, backgroundColor: C.s2 }]}>
-                <Avatar pic={P(pid).photo} size={40} />
-                <View style={{ flex: 1, gap: 4 }}>
-                  <Txt s={14} w={8}>
-                    {P(pid).name}
-                  </Txt>
-                  <View style={{ height: 4, borderRadius: 2, backgroundColor: C.s3, overflow: 'hidden' }}>
-                    <View style={{ width: `${pr}%`, height: 4, backgroundColor: pr >= 100 ? C.mint : C.yellow }} />
-                  </View>
-                  <Txt s={11} c={C.muted}>
-                    {pr >= 100 ? 'Completed ✓' : pr ? pr + '% done' : 'Not started'}
-                  </Txt>
-                </View>
-                <Pressable accessibilityLabel="Student options" hitSlop={8} onPress={() => openStudentMenu(c.id, pid)}>
-                  <Icon name="dots" size={20} color={C.muted} />
-                </Pressable>
-              </View>
-            );
-          })}
-        </View>
-      ) : (
-        <Empty title="No students yet" text="People who enroll show up here and join your class group automatically." />
-      )}
-    </View>
-  );
-}
-function openStudentMenu(cid: string, pid: string) {
-  const c = db.COURSES.find((x) => x.id === cid)!;
-  const pr = (c.prog || {})[pid] || 0;
-  sheet.show(() => (
-    <View>
-      <View style={[S.row, { gap: 12, marginBottom: 8 }]}>
-        <Avatar pic={P(pid).photo} size={44} />
-        <View>
-          <Txt s={15} w={8}>
-            {P(pid).name}
-          </Txt>
-          <Txt s={12} c={C.muted}>
-            {c.title} · {pr}%
-          </Txt>
-        </View>
-      </View>
-      <OptRow icon="chat" title="Message privately" onPress={() => afterSheet(() => openChat(pid))} />
-      <OptRow icon="rocket" bg={C.lav} title="Mark progress +25%" chev={false} onPress={() => (setProgress(cid, pid, Math.min(100, pr + 25)), openCourse(cid))} />
-      <OptRow icon="cert" bg={C.mint} title="Mark completed & send certificate" chev={false} onPress={() => (setProgress(cid, pid, 100), openCourse(cid))} />
-      <OptRow icon="trash" bg={C.errSoft} title="Remove from course" danger chev={false} onPress={() => (removeStudent(cid, pid), openCourse(cid))} />
-    </View>
-  ));
-}
-function openAnnounce(cid: string) {
-  const c = db.COURSES.find((x) => x.id === cid)!;
-  let t = '';
-  sheet.show(() => {
-    const A = () => {
-      const [v, setV] = useState('');
-      t = v;
-      return (
-        <View style={{ gap: 12 }}>
-          <SheetTitle sub={`Posted to the class group and sent to all ${(c.people || []).length} students.`}>Announcement</SheetTitle>
-          <Input multiline value={v} onChangeText={setV} placeholder="e.g. Lesson 2 is tomorrow at 6pm, link below" autoFocus />
-          <Btn
-            variant="yellow"
-            icon="send"
-            title="Send"
-            disabled={!v.trim()}
-            onPress={() => {
-              announce(cid, t.trim());
-              sheet.close();
-            }}
-          />
-        </View>
-      );
-    };
-    return <A />;
-  });
+  if (c.mine) return router.push(`/list-course?id=${id}` as any);
+  openCourseSite(c);
 }
 
 /* ======================= career tools ======================= */
@@ -887,8 +590,6 @@ function CVSheet() {
   const [id, setId] = useState<string>(tplOf((db.user as any).cvTpl).id);
   const [html, setHtml] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const t = tplOf(id);
-  const locked = MONEY_LIVE && t.pro && !pro;
   useEffect(() => {
     let on = true;
     setHtml(null);
@@ -959,25 +660,16 @@ function CVSheet() {
           </View>
         )}
       </View>
-      {locked ? (
-        <View style={[S.row, { gap: 10, padding: 12, borderRadius: 14, backgroundColor: 'rgba(169,182,255,.12)' }]}>
-          <Icon name="lock" size={16} color={C.lav} />
-          <Txt s={12} c={C.lav} style={{ flex: 1 }}>
-            {t.name} is a Pro design. You can preview it; get Pro to save it as a PDF.
-          </Txt>
-        </View>
-      ) : null}
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <Btn variant="dark" icon="edit" title="Edit CV" style={{ flex: 1 }} testID="cv-edit" onPress={() => afterSheet(() => router.push('/cvflow?edit=1' as any))} />
         <Btn
           testID="cv-pdf"
           variant="yellow"
-          icon={locked ? 'lock' : 'download'}
-          title={locked ? 'Get Pro' : 'Save PDF'}
+          icon="download"
+          title="Save PDF"
           loading={busy}
           style={{ flex: 1 }}
           onPress={async () => {
-            if (locked) return openPro('regular', 'cv');
             if (!html) return;
             setBusy(true);
             try {

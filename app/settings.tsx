@@ -1,5 +1,4 @@
 import React from 'react';
-import { MONEY_LIVE } from '../src/logic/money';
 import { Pressable, View } from 'react-native';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
@@ -8,14 +7,13 @@ import { Avatar, OptRow, Page, TopBar, Txt } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { confirm, toast } from '../src/ui/overlay';
 import { C, S } from '../src/ui/theme';
-import { bizLogo, bizName, curBiz, isPro, isW, cityLabel, myPhoto, xaf } from '../src/logic/core';
-import { balance } from '../src/logic/wallet';
+import { bizLogo, bizName, curBiz, isPro, isW, cityLabel, myPhoto } from '../src/logic/core';
 import { useLive } from '../src/logic/live';
 import * as Sharing from 'expo-sharing';
 import { logout } from '../src/logic/account';
 import { deleteAccount, exportMyData } from '../src/logic/remote';
 import { openWhatsNew } from '../src/logic/whatsnew';
-import { defaultPay, openAccounts, openBizSetup, openCities, openEdit, openHelp, openLang, openNotifSettings, openPayments, openPrivacy, openPro } from '../src/sheets/account';
+import { openAccounts, openBizSetup, openCities, openEdit, openHelp, openLang, openNotifSettings, openPrivacy } from '../src/sheets/account';
 import { openDoc } from '../src/sheets/profile';
 
 async function downloadData() {
@@ -75,12 +73,12 @@ export default function Settings() {
       </Pressable>
       <G t="Account" />
       <Box>
-        {MONEY_LIVE ? <OptRow icon="rocket" bg={C.lav} title={isPro() ? `bolo ${w ? 'Pro' : 'Business Pro'} · active` : `Upgrade to ${w ? 'Pro' : 'Business Pro'}`} sub={w ? 'Get jobs faster, premium CV, profile boosts' : 'Cheaper ads, more businesses, featured company'} onPress={() => openPro()} /> : null}
+        
         <OptRow icon="sparkle" bg={C.lav} title="What’s new" sub="The latest updates to bolo" onPress={openWhatsNew} />
-        {MONEY_LIVE ? <OptRow icon="coins" bg={C.yellow} title="Wallet" sub={`${xaf(balance())} available · escrow`} onPress={() => router.push('/wallet' as any)} /> : null}
-        {MONEY_LIVE ? <OptRow icon="money" title="Payment methods" sub={defaultPay()} onPress={openPayments} /> : null}
+        
+        
         {b ? <OptRow icon="storefront" bg="#fff" title="Business page" sub="Details, logo, RCCM & NIU" onPress={() => openBizSetup('edit', 1)} /> : <OptRow icon="edit" bg="#fff" title="Edit profile" sub="Name, bio, contact" onPress={openEdit} />}
-        {MONEY_LIVE ? (b ? <OptRow icon="rocket" bg={C.orange} title="Ads manager" sub="Promote vacancies, programs and courses" onPress={() => router.push('/ads')} /> : null) : null}
+        
       </Box>
       <G t="Preferences" />
       <Box>

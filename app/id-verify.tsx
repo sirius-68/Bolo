@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BackHandler, Pressable, View } from 'react-native';
-import { router } from 'expo-router';
-import { Btn, Check, Note, Page, Pict, Steps, Sub, Title, TopBar, Txt, tap } from '../src/ui/kit';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Btn, Check, Note, Page, Pict, Steps, Sub, tap, TextLink, Title, TopBar, Txt } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { C, R, S } from '../src/ui/theme';
 import { db } from '../src/data/db';
@@ -21,8 +21,11 @@ const DOCS: [Doc, string, string, string][] = [
 const STEP_T = ['Before you start', 'Your document', 'Front of your document', 'Back of your document', 'Take a selfie', 'Check and send'];
 
 /** In-app identity check (used by the Career Expert application and anywhere a verified ID is needed).
-    Separate from sign-up: finishing it returns to where it was opened. */
+    One screen for both uses: opened from the app it returns to where it was opened; as the last step of
+    sign-up (?onboard=1) it can be skipped with “Later” and ends on the welcome screen. */
 export default function IdVerify() {
+  const { onboard } = useLocalSearchParams<{ onboard?: string }>();
+  const leave = () => (onboard ? router.push('/done') : router.back());
   const [step, setStep] = useState(0);
   const [iso, setIso] = useState((db.user.country || 'CM').toUpperCase());
   const [doc, setDoc] = useState<Doc | null>(null);
@@ -74,7 +77,7 @@ export default function IdVerify() {
           </Title>
           <Sub center>Most checks finish within a few hours. We’ll send you a notification when it’s done. You can keep going in the meantime.</Sub>
         </View>
-        <Btn testID="idv-done" variant="yellow" title="Continue" onPress={() => router.back()} />
+        <Btn testID="idv-done" variant="yellow" title="Continue" onPress={leave} />
       </Page>
     );
 
@@ -258,7 +261,7 @@ export default function IdVerify() {
   const last = step === 5;
   return (
     <Page>
-      <TopBar title="Verify your identity" onBack={() => (step === 0 ? router.back() : setStep(step === 4 && !needBack ? 2 : step - 1))} />
+      <TopBar title="Verify your identity" onBack={() => (step === 0 ? router.back() : setStep(step === 4 && !needBack ? 2 : step - 1))} right={onboard ? <TextLink testID="idv-later" title="Later" onPress={leave} /> : undefined} />
       <Steps total={total} on={at + 1} />
       <Txt s={12} w={7} c={C.muted} style={{ marginTop: 14 }}>
         Step {at + 1} of {total}

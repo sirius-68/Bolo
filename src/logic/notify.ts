@@ -11,8 +11,8 @@ import { bump } from './live';
 
 export type NCat = 'jobs' | 'messages' | 'reminders' | 'applicants' | 'news' | 'learning' | 'mentorship' | 'social' | 'account';
 export type Go =
-  | { k: 'job' | 'opp' | 'course' | 'coursePage' | 'mentor' | 'chat' | 'profile' | 'track' | 'post' | 'watch' | 'live' | 'expert' | 'web'; id: string; t?: number; /** post: the comment to show */ c?: string }
-  | { k: 'wallet' | 'cv' | 'teach' | 'me' | 'courses' | 'notifs' | 'experts'; id?: string }
+  | { k: 'job' | 'opp' | 'course' | 'mentor' | 'chat' | 'profile' | 'track' | 'post' | 'expert' | 'web'; id: string; /** post: the comment to show */ c?: string }
+  | { k: 'cv' | 'teach' | 'me' | 'courses' | 'notifs' | 'experts'; id?: string }
   /** a verification: id = 'id' (identity), 'business' (biz = the business on the server) or 'expert' */
   | { k: 'verify'; id: string; biz?: string };
 

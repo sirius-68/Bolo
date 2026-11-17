@@ -5,17 +5,16 @@ import { Pressable, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { db, Service, uid } from '../data/db';
 import { CATS, CT, DOCS, EDU, QUIZ, UNITS, WHERE, catIcon } from '../data/catalog';
-import { MONEY_LIVE } from '../logic/money';
 import { myFollowers } from '../logic/server';
 import { OptRow, AlertIll, Avatar, Btn, Chip, Chips, Empty, Field, Input, Label, Note, SelectBox, Seg, StatusPill, SwitchRow, Txt, Kpis, CoTag } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { afterSheet, pick, sheet, SheetTitle, toast, confirm } from '../ui/overlay';
 import { C, R, S } from '../ui/theme';
-import { P, budgetNum, cityLabel, curBiz, digits, isEmail, isPhone, isW, myCity, mySkill, has } from '../logic/core';
+import { P, budgetNum, cityLabel, curBiz, digits, isEmail, isPhone, isW, mySkill, has } from '../logic/core';
 import { pickImage } from '../logic/media';
-import { defaultPay, openCities } from './account';
+import { openCities } from './account';
 import { services, syncContacts, toggleFollow } from '../logic/account';
-import { bump, later } from '../logic/live';
+import { bump } from '../logic/live';
 import { openProfile } from '../logic/nav';
 import { LanguagesEditor } from '../components/skills';
 import { PhoneInput } from '../components/auth';
@@ -119,72 +118,10 @@ export function openSvcMenu(id: string) {
             sheet.close(s.pub ? 'Visible in search again' : 'Hidden from search');
           }}
         />
-        <OptRow icon="rocket" title="Boost in search" sub={s.boost ? `Boosted · ${s.boost} day${s.boost > 1 ? 's' : ''} left` : 'Show first to people nearby'} onPress={() => afterSheet(() => openBoost(id))} />
         <OptRow icon="trash" bg={C.errSoft} title="Delete" sub="Remove this service from your profile" danger onPress={() => afterSheet(() => delService(id))} />
       </View>
     );
   });
-}
-export function openBoost(id: string) {
-  if (!MONEY_LIVE) return toast('Boosts start once payments are live');
-  sheet.show(() => <Boost id={id} />);
-}
-function Boost({ id }: { id: string }) {
-  const s = services().find((x) => x.id === id)!;
-  const O: [number, number][] = [
-    [1, 500],
-    [3, 1200],
-    [7, 2500],
-  ];
-  const [d, setD] = useState(3);
-  const [busy, setBusy] = useState(false);
-  const free = db.user.pro.regular;
-  const cost = O.find((o) => o[0] === d)![1];
-  return (
-    <View>
-      <AlertIll icon="rocket" />
-      <SheetTitle center sub={`Show up first on the map and feed around ${db.PR.area.home || myCity()}. `}>
-        Boost your {s.skill.toLowerCase()} service
-      </SheetTitle>
-      <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
-        {O.map(([n, p]) => (
-          <Pressable key={n} accessibilityRole="radio" accessibilityState={{ checked: d === n }} onPress={() => setD(n)} style={{ flex: 1, padding: 12, borderRadius: 14, alignItems: 'center', backgroundColor: C.s2, borderWidth: 2, borderColor: d === n ? C.yellow : 'transparent' }}>
-            <Txt s={15} w={8}>
-              {n} day{n > 1 ? 's' : ''}
-            </Txt>
-            <Txt s={12} c={C.muted}>
-              {free && n === 1 ? 'Free with Pro' : 'XAF ' + p.toLocaleString('en-US')}
-            </Txt>
-            {n === 3 ? (
-              <Txt s={10} w={8} c={C.yellow}>
-                POPULAR
-              </Txt>
-            ) : null}
-          </Pressable>
-        ))}
-      </View>
-      <View style={[S.row, { gap: 8, marginTop: 12 }]}>
-        <Icon name="coins" size={16} color={C.yellow} />
-        <Txt s={12} c={C.muted}>
-          Pay with {defaultPay()} · change in Settings → Payments
-        </Txt>
-      </View>
-      <Btn
-        variant="yellow"
-        style={{ marginTop: 14 }}
-        loading={busy}
-        title={busy ? 'Waiting for payment approval…' : free && d === 1 ? 'Use a free boost' : `Pay XAF ${cost.toLocaleString('en-US')}`}
-        onPress={() => {
-          setBusy(true);
-          later(free && d === 1 ? 400 : 1400, () => {
-            s.boost = (s.boost || 0) + d;
-            s.pub = true;
-            sheet.close(`🚀 Boosted! ${s.skill} shows first for ${d} day${d > 1 ? 's' : ''}`);
-          });
-        }}
-      />
-    </View>
-  );
 }
 
 /* ---------------- skill test ---------------- */

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
-import { db, Post, Opp, Mentorship, Reel } from '../data/db';
+import { db, Post, Opp, Mentorship } from '../data/db';
 import { catIcon } from '../data/catalog';
 import { Avatar, CoTag, OptRow, Pict, Pill, Rate, StatusPill, Txt, Verified, Meta, tap } from '../ui/kit';
 import { afterSheet, sheet, SheetTitle } from '../ui/overlay';
@@ -404,32 +404,6 @@ export function openPostMenu(po: Post) {
   ));
 }
 
-/* ------------------------- reel thumbnail ------------------------- */
-export function ReelThumb({ r, i, title, onPress, width = 150 }: { r: Reel; i: number; title?: string; onPress: () => void; width?: number }) {
-  const p = P(r.by);
-  return (
-    <Pressable accessibilityLabel={`Watch ${p.name}’s video`} onPress={onPress} style={{ width, aspectRatio: 3 / 4.6, borderRadius: 22, overflow: 'hidden', backgroundColor: C.s2 }}>
-      <Pict pic={`scenes/${r.scene}`} style={{ position: 'absolute', width: '100%', height: '100%' }} />
-      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '35%', backgroundColor: 'rgba(0,0,0,.18)' }} />
-      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', backgroundColor: 'rgba(0,0,0,.45)' }} />
-      <View style={[S.row, { position: 'absolute', left: 10, top: 10, height: 22, paddingHorizontal: 9, borderRadius: 999, backgroundColor: r.live ? C.orange : 'rgba(0,0,0,.55)', gap: 4 }]}>
-        {!r.live ? <Icon name="playfill" size={11} color="#fff" /> : null}
-        <Txt s={10} w={8}>
-          {r.live ? 'LIVE' : 'Video'}
-        </Txt>
-      </View>
-      <Txt s={11} w={7} style={{ position: 'absolute', right: 10, top: 13 }}>
-        {r.views}
-      </Txt>
-      <View style={[S.row, { position: 'absolute', left: 10, right: 10, bottom: 10 }]}>
-        <Txt s={13} w={8} lines={1} style={{ flexShrink: 1 }}>
-          {title || p.name.split(' ')[0]}
-        </Txt>
-        {p.verified ? <Verified size={14} /> : null}
-      </View>
-    </Pressable>
-  );
-}
 
 /* ------------------------- person row (lists) ------------------------- */
 export function PersonRow({ id }: { id: string }) {

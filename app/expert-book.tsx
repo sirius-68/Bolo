@@ -5,9 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AlertIll, Avatar, Btn, Empty, Page, TopBar, Txt, goBack, tap } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { C, S } from '../src/ui/theme';
-import { db } from '../src/data/db';
 import { useLive } from '../src/logic/live';
-import { MONEY_LIVE } from '../src/logic/money';
 import { xaf } from '../src/logic/core';
 import { ExBooking, bookService, expertById, expertContact, nearestDate, priceAfter, serviceOf } from '../src/logic/experts';
 import { ExRating } from '../src/components/ExpertUI';
@@ -31,11 +29,8 @@ export default function ExpertBook() {
     );
   if (done) return <Booked b={done} />;
   const due = priceAfter(s.price, code);
-  const bal = db.WALLET.bal;
-  const short = MONEY_LIVE && due > bal;
   const pay = () => {
     tap();
-    if (short) return router.push(`/topup?amt=${Math.max(500, Math.ceil((due - bal) / 100) * 100)}` as any);
     const r = bookService(e, s, code || undefined);
     if (!('need' in r)) setDone(r);
   };

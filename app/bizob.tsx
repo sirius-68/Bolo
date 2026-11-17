@@ -3,7 +3,7 @@ import { ScrollView, View } from 'react-native';
 import { KeyAvoid } from '../src/ui/keyboard';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AREAS, BO_HIRE, SIZES } from '../src/data/catalog';
+import { AREAS, BO_HIRE } from '../src/data/catalog';
 import { Avatar, Btn, Chip, Chips, Field, IconBtn, Input, Label, Note, SelectBox, Txt } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { C } from '../src/ui/theme';
@@ -12,7 +12,7 @@ import { createBusinessAccount, newBizDraft } from '../src/logic/account';
 import { openCities } from '../src/sheets/account';
 import { bizLogo, isEmail, isPhone } from '../src/logic/core';
 import { resetTo } from '../src/logic/nav';
-import { LogoPicker } from '../src/components/business';
+import { BizAbout, BizDocs, BizWhere, LogoPicker } from '../src/components/business';
 import { signup } from '../src/components/auth';
 import { isReal, signUp } from '../src/logic/remote';
 import { db } from '../src/data/db';
@@ -29,7 +29,8 @@ export default function BizOnboarding() {
   const [types, setTypes] = useState<string[]>(['Full-time staff']);
   const [err, setErr] = useState<string | null>(null);
   const up = (k: keyof typeof o, v: string) => setO({ ...o, [k]: v });
-  const ub = (patch: any) => setB({ ...b, ...patch });
+  // always from the latest values: the city sheet answers while other fields may have changed
+  const ub = (patch: any) => setB((x) => ({ ...x, ...patch }));
   const goStep = (s: number) => {
     setErr(null);
     setStep(s);
@@ -124,23 +125,7 @@ export default function BizOnboarding() {
           Tell us about your business
         </Txt>
         <View style={{ gap: 14, marginTop: 22 }}>
-          <Field label="Business name" error={err === 'name' && 'Add your business name'}>
-            <Input testID="bo-name" value={b.name} onChangeText={(v) => ub({ name: v })} icon="storefront" placeholder="e.g. Ekole Services Ltd" maxLength={50} invalid={err === 'name'} />
-          </Field>
-          <Field label="Sector" error={err === 'sector' && 'Choose a sector'}>
-            <SelectBox value={b.sector} placeholder="Choose a sector" invalid={err === 'sector'} onPress={() => pick('Sector', AREAS.map((a) => a[0]), b.sector, (v) => ub({ sector: v }))} />
-          </Field>
-          <View>
-            <Label>Team size</Label>
-            <Chips>
-              {SIZES.map((z) => (
-                <Chip key={z} label={z} on={b.size === z} onPress={() => ub({ size: z })} />
-              ))}
-            </Chips>
-          </View>
-          <Field label="What does your business do?">
-            <Input multiline value={b.about} onChangeText={(v) => ub({ about: v })} maxLength={240} placeholder="One or two sentences candidates will read" />
-          </Field>
+          <BizAbout id="bo" b={b} set={ub} miss={err === 'name' || err === 'sector' ? err : null} />
         </View>
       </>
     );
@@ -151,21 +136,7 @@ export default function BizOnboarding() {
           Where is your business?
         </Txt>
         <View style={{ gap: 14, marginTop: 22 }}>
-          <Field label="City" error={err === 'city' && 'Choose the city your business is in'}>
-            <SelectBox testID="bo-city" value={b.city} placeholder="Choose a city" icon="pin" invalid={err === 'city'} onPress={() => openCities((v) => setB((x) => ({ ...x, city: v })), b.city)} />
-          </Field>
-          <Field label="Neighbourhood">
-            <Input value={b.area} onChangeText={(v) => ub({ area: v })} placeholder="Neighbourhood or district" />
-          </Field>
-          <Field label="Street address">
-            <Input value={b.address} onChangeText={(v) => ub({ address: v })} icon="pin" placeholder="Street, building or landmark" />
-          </Field>
-          <Field label="Business phone">
-            <PhoneInput value={b.phone} onChange={(v) => ub({ phone: v })} />
-          </Field>
-          <Field label="Website · optional">
-            <Input value={b.web} onChangeText={(v) => ub({ web: v })} icon="globe" placeholder="yourbusiness.cm" autoCapitalize="none" />
-          </Field>
+          <BizWhere id="bo" b={b} set={ub} miss={err === 'city' ? 'city' : null} onCity={() => openCities((v) => ub({ city: v }), b.city)} />
         </View>
       </>
     );
@@ -209,12 +180,7 @@ export default function BizOnboarding() {
         </Txt>
         <LogoPicker b={b} onChange={ub} />
         <View style={{ gap: 14, marginTop: 18 }}>
-          <Field label="Trade register number (RCCM)">
-            <Input value={b.rccm} onChangeText={(v) => ub({ rccm: v })} icon="file" placeholder="e.g. RC/BUE/2024/B/123" autoCapitalize="characters" />
-          </Field>
-          <Field label="Taxpayer number (NIU)">
-            <Input value={b.niu} onChangeText={(v) => ub({ niu: v })} icon="idcard" placeholder="e.g. M012345678901A" autoCapitalize="characters" />
-          </Field>
+          <BizDocs b={b} set={ub} />
         </View>
       </>
     );

@@ -37,10 +37,12 @@ name: New account that offers skills - sign-up, full onboarding, send an offer
 - tapOn:
     id: "skills-continue"
 - extendedWaitUntil:
-    visible: "Upload your ID"
+    visible:
+      id: "idv-later"
     timeout: 15000
 - takeScreenshot: w07-verify-id
-- tapOn: "Later"
+- tapOn:
+    id: "idv-later"
 - extendedWaitUntil:
     visible:
       id: "start-exploring"

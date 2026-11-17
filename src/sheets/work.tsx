@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { shareTail } from '../logic/links';
-import { MONEY_LIVE } from '../logic/money';
 import { loadPost } from '../logic/server';
 import { Pressable, Share, View } from 'react-native';
 import * as Linking from 'expo-linking';
@@ -18,7 +17,7 @@ import { pickDocument } from '../logic/media';
 import { MyCV, PersonCV } from '../components/cv';
 import { openChat } from './chat';
 import { openContract } from './business';
-import { openPro, switchRole } from './account';
+import { switchRole } from './account';
 
 /* ====================================================================== */
 /* Job / vacancy sheet                                                    */
@@ -458,19 +457,6 @@ function ApplyForm({ po }: { po: Post }) {
         <Input multiline value={msg} onChangeText={setMsg} maxLength={400} />
       </Field>
       <CvPicker mode={mode} setMode={setMode} file={file} setFile={setFile} />
-      {db.user.pro.regular ? (
-        <Note icon="rocket" color={C.yellow}>
-          Priority application. You’ll show at the top of {c.name}’s list.
-        </Note>
-      ) : (
-        !MONEY_LIVE ? null : <Pressable onPress={() => openPro('regular', 'priority')} style={[S.row, { gap: 10, padding: 12, borderRadius: 14, backgroundColor: 'rgba(246,238,92,.1)' }]}>
-          <Icon name="rocket" size={18} color={C.yellow} />
-          <Txt s={13} w={6} style={{ flex: 1 }}>
-            Get to the top of the list with <Txt s={13} w={8}>Pro</Txt>
-          </Txt>
-          <Icon name="chev" size={16} color={C.muted} />
-        </Pressable>
-      )}
       <Btn testID="send-application" variant="yellow" title="Send application" disabled={!msg.trim()} onPress={() => applyVac(po.id, msg.trim(), cvFor(mode, file))} />
     </View>
   );

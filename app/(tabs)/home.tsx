@@ -1,11 +1,10 @@
 import React from 'react';
-import { MONEY_LIVE } from '../../src/logic/money';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, ui } from '../../src/data/db';
 import { STAGES, STAGE_COL, catIcon } from '../../src/data/catalog';
-import { Avatar, Btn, Empty, Kpis, ProTag, Rich, StatusPill, Txt, tap } from '../../src/ui/kit';
+import { Avatar, Btn, Empty, Kpis, Rich, StatusPill, Txt, tap } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
 import { C, S } from '../../src/ui/theme';
 import { P, bizPct, budgetNum, curBiz, greet, bizName, isW, myOpps, xaf, nowT } from '../../src/logic/core';
@@ -15,11 +14,10 @@ import { Rail, Sec, TabHeader, Pull } from '../../src/components/common';
 import { OppCard } from '../../src/components/cards';
 import { onScrollFab } from '../../src/components/NavBar';
 import { openJob } from '../../src/sheets/work';
-import { openAdCreate, openStage, viewContract } from '../../src/sheets/business';
+import { openStage, viewContract } from '../../src/sheets/business';
 import { openBizSetup, openStatus } from '../../src/sheets/account';
 import { openOppForm } from '../../src/sheets/career';
 import { toast } from '../../src/ui/overlay';
-import { adPct, adsOf } from '../../src/logic/career';
 import { ST_C } from '../../src/data/catalog';
 import { MapScreen } from '../../src/components/MapScreen';
 
@@ -62,8 +60,6 @@ function BizHome() {
     ...wait.map((c) => ['file', `Job offer waiting for ${P(c.person).name}’s reply`, () => viewContract(c.id)] as [string, string, () => void]),
     ...(pct < 100 ? ([['edit', `Finish your business page (${pct}%)`, () => openBizSetup('edit', !b.name || !b.sector || !b.about ? 1 : !b.address || !b.phone || !b.email ? 2 : 3)]] as [string, string, () => void][]) : []),
   ];
-  const ads = adsOf();
-  const live = ads.filter((a) => a.status === 'active');
   const Card = ({ children, style }: { children: React.ReactNode; style?: any }) => <View style={[{ padding: 14, borderRadius: 20, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }, style]}>{children}</View>;
   const Row = ({ icon, title, sub, right, onPress }: { icon: string; title: string; sub?: string; right?: React.ReactNode; onPress?: () => void }) => (
     <Pressable onPress={onPress} style={({ pressed }) => [S.row, { gap: 12, paddingVertical: 10, paddingHorizontal: 4, borderRadius: 12, backgroundColor: pressed ? C.s2 : 'transparent' }]}>
@@ -183,40 +179,7 @@ function BizHome() {
           <Btn small variant="yellow" title="Post a vacancy" style={{ marginTop: 12, alignSelf: 'center' }} onPress={() => router.push('/post-job')} />
         </Empty>
       )}
-      {MONEY_LIVE ? (
-        <>
-      <Sec title="Ads" action={ads.length ? 'Manage' : undefined} onAction={() => router.push('/ads')} />
-      <Card>
-        <View style={[S.row, { gap: 8 }]}>
-          <Icon name="rocket" size={18} color={C.yellow} />
-          <Txt s={15} w={8} style={{ flex: 1 }}>
-            {live.length ? `${live.length} ad${live.length > 1 ? 's' : ''} running` : 'Reach more candidates'}
-          </Txt>
-          {db.user.pro.business ? <ProTag small text="−20%" /> : null}
-        </View>
-        {live.length ? (
-          live.slice(0, 2).map((a) => (
-            <View key={a.id} style={{ marginTop: 10 }}>
-              <Txt s={13} w={7} lines={1}>
-                {a.head}
-              </Txt>
-              <View style={{ height: 6, borderRadius: 3, backgroundColor: C.s3, marginTop: 6, overflow: 'hidden' }}>
-                <View style={{ width: `${adPct(a)}%`, height: 6, backgroundColor: C.yellow }} />
-              </View>
-              <Txt s={11} c={C.muted} style={{ marginTop: 4 }}>
-                {a.reached.toLocaleString('en-US')} of {a.reach.toLocaleString('en-US')} reached · {a.clicks} clicks · {a.apps} applicants
-              </Txt>
-            </View>
-          ))
-        ) : (
-          <Txt s={13} c={C.muted} style={{ marginTop: 6 }}>
-            Show your vacancies, programs and courses first on the map, feed and Career. You pay only for people reached.
-          </Txt>
-        )}
-        <Btn small variant={live.length ? 'dark' : 'yellow'} icon="plus" title="Create an ad" style={{ marginTop: 12, alignSelf: 'flex-start' }} onPress={openAdCreate} />
-      </Card>
-        </>
-      ) : null}
+      
       <Sec title="Programs & internships" action="+ Create" onAction={() => openOppForm()} />
       {opps.length ? (
         <Rail>

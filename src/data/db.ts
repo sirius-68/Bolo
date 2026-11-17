@@ -456,7 +456,6 @@ export function makeDb() {
     mutedG: [] as string[],
     stats: { nextId: 1 },
     /** bolo wallet. Hidden until mobile money is connected (see src/logic/money.ts). */
-    WALLET: { bal: 0, tx: [] as import('../logic/wallet').Tx[] },
     /** server conversation id → where it shows in the app */
     CONV: {} as Record<string, { key: string; inbox: 'W' | 'C' }>,
     /** comments per post, loaded when a post is opened */

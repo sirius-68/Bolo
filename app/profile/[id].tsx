@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
-import { db, Review } from '../../src/data/db';
+import { db } from '../../src/data/db';
 import { catIcon } from '../../src/data/catalog';
 import { Avatar, Btn, Empty, IconBtn, PTabs, Page, Pict, Rate, Rich, TopBar, Txt, Verified, CoTag, Missing, LoadingPage } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
@@ -14,8 +14,7 @@ import { useLive } from '../../src/logic/live';
 import { follow, hireState, reviewable, saveToggle, sendText } from '../../src/logic/work';
 import { openHire, openReview, openMedia } from '../../src/sheets/work';
 import { openChat } from '../../src/sheets/chat';
-import { OppCard, ReqPost, ReelThumb, PostCard } from '../../src/components/cards';
-import type { Reel } from '../../src/data/db';
+import { OppCard, ReqPost, PostCard } from '../../src/components/cards';
 import { router } from 'expo-router';
 import { PersonCV } from '../../src/components/cv';
 import { EmptyTab, ReviewsPanel } from '../../src/components/PersonReviews';
@@ -308,14 +307,10 @@ function PersonTab({ id, t, kind }: { id: string; t: string; kind: string }) {
   }
 
   if (t === 'Posts') {
-    const reels: (readonly [Reel, number])[] = [];
     const posts = db.POSTS.filter((x) => x.by === id && x.kind !== 'request');
-    if (!reels.length && !posts.length) return <EmptyTab icon="image" title="No posts yet" text={`When ${f} shares photos or videos of their work, they’ll show here.`} />;
+    if (!posts.length) return <EmptyTab icon="image" title="No posts yet" text={`When ${f} shares photos or videos of their work, they’ll show here.`} />;
     return (
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-        {reels.map(([r, i]) => (
-          <ReelThumb key={'r' + i} r={r} i={i} width={'48.5%' as any} onPress={() => router.push(`/reels?i=${i}` as any)} />
-        ))}
         {posts.map((x) => (
           <Pressable key={x.id} style={{ width: '48.5%', aspectRatio: 3 / 4, borderRadius: 20, overflow: 'hidden', backgroundColor: C.s2, padding: 12, justifyContent: 'flex-end' }} onPress={() => (x.img || x.src ? openMedia((x.img || x.src)!) : null)}>
             {x.img || x.src ? <Pict pic={(x.img || x.src)!} style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }} /> : null}

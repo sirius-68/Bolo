@@ -6,8 +6,6 @@ import { bump } from './live';
 import { friendly } from './remote';
 import { uuid } from './server';
 
-/** Photos taken in the sign-up ID steps, kept only until they're sent. */
-export const idShots: { doc: string; files: string[] } = { doc: 'id', files: [] };
 
 /** Upload the photos and ask bolo to check them. Returns an error message, or null when sent. */
 export async function submitDocs(files: string[], kind: 'id' | 'business' | 'expert' = 'id', businessId?: string | null): Promise<string | null> {

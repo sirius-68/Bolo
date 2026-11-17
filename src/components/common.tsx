@@ -16,7 +16,7 @@ import { openAccounts, openCities } from '../sheets/account';
 import { openReview } from '../sheets/work';
 
 /** Header used on the main tabs: who you are (tap to switch), messages and notifications. */
-export function TabHeader({ hello = true, reels }: { hello?: boolean; reels?: boolean }) {
+export function TabHeader({ hello = true }: { hello?: boolean }) {
   const w = isW();
   const b = curBiz();
   const m = unreadMsgs();
@@ -58,7 +58,6 @@ export function TabHeader({ hello = true, reels }: { hello?: boolean; reels?: bo
           </View>
         </Pressable>
       </View>
-      {reels ? <IconBtn name="play" ring label="Reels, videos of work" onPress={() => router.push('/reels')} /> : null}
       <IconBtn name="chat" ring count={m} label="Messages" onPress={() => router.push('/inbox')} />
       <IconBtn name="bell" ring count={n} label="Notifications" onPress={() => router.push('/notifs')} />
     </View>

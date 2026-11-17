@@ -26,7 +26,7 @@ export default function Skills() {
     if (edit) {
       toast('Skills updated');
       router.back();
-    } else router.push('/verify-id');
+    } else router.push('/id-verify?onboard=1' as any);
   };
   const sec = (t: string, children: React.ReactNode, small?: string) => (
     <View style={{ marginTop: 26 }}>

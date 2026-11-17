@@ -1,9 +1,7 @@
-import { REELS } from '../data/db';
 import React, { useEffect } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { router } from 'expo-router';
 import { Icon } from '../ui/Icon';
 import { C, tx } from '../ui/theme';
 import { net, tap } from '../ui/kit';
@@ -44,18 +42,14 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
         { name: 'feed', icon: 'home', label: 'Home' },
         { name: 'home', icon: 'mapt', label: 'Map' },
         { name: 'career', icon: 'job', label: 'Career' },
-        { name: 'reels', icon: 'play', label: 'Reels' },
         { name: 'me', icon: 'user', label: 'Profile' },
       ]
     : [
         { name: 'home', icon: 'squares', label: 'Home' },
         { name: 'feed', icon: 'feed', label: 'Talent' },
         { name: 'career', icon: 'job', label: 'Career' },
-        { name: 'reels', icon: 'play', label: 'Reels' },
         { name: 'me', icon: 'user', label: 'Company' },
       ];
-  // Videos come back with video posts; until there are any, no empty Reels tab.
-  if (!REELS.length) tabs.splice(tabs.findIndex((t) => t.name === 'reels'), 1);
   // The map is a full-screen experience with its own Home button.
   if (W && cur === 'home') return null;
   return (
@@ -109,7 +103,6 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
             accessibilityState={{ selected: on }}
             onPress={() => {
               tap();
-              if (t.name === 'reels') return router.push('/reels');
               const route = state.routes.find((r) => r.name === t.name);
               if (route) navigation.navigate(route.name as never);
             }}

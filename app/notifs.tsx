@@ -7,7 +7,6 @@ import { db, ui, Notif } from '../src/data/db';
 import { NT_ICON } from '../src/data/catalog';
 import { Avatar, Empty, PTabs, Pill, Quiet, TopBar, Txt, Verified, tap } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
-import { toast } from '../src/ui/overlay';
 import { C, S } from '../src/ui/theme';
 import { NOTIFS, P, fname, has, isW, postById } from '../src/logic/core';
 import { bump, useLive } from '../src/logic/live';
@@ -50,14 +49,12 @@ export default function Notifs() {
       quote: () => openChat(who),
       newjob: () => n.job && openJob(n.job),
       newoffer: () => n.job && openJob(n.job),
-      payment_in: () => router.push('/wallet' as any),
       accept: () => openChat(who),
       reminder: () => openChat(who),
       mention: () => openComments('m'),
       onway: () => n.booking && openTrack(n.booking),
       arrived: () => n.booking && openTrack(n.booking),
       jobdone: () => n.booking && openTrack(n.booking),
-      payment: () => toast(`Receipt: ${n.amount} paid to ${P(who).name}`),
     };
     go[n.type]?.();
   };
@@ -298,21 +295,6 @@ function Row({ n, sel, onPress, onLong }: { n: Notif; sel: string[] | null; onPr
         <Txt s={13} c="#d9d9de" style={{ marginTop: 6 }}>
           {n.stars ? <Txt s={13} c={C.yellow}>{'★'.repeat(n.stars)} </Txt> : null}
           {n.text}
-        </Txt>
-      );
-      break;
-    case 'payment_in':
-      text = (
-        <Txt s={14}>
-          You received <B>{n.amount}</B> from {name}
-          {T}
-        </Txt>
-      );
-      break;
-    case 'payment':
-      text = (
-        <Txt s={14}>
-          Payment of <B>{n.amount}</B> to {name} confirmed{T}
         </Txt>
       );
       break;

@@ -1,12 +1,10 @@
 /* Career: internships & programs, courses, mentorships, groups, ads. */
 import { router } from 'expo-router';
-import { db, uid, Course, Mentorship, Opp, Ad } from '../data/db';
+import { db, uid, Course, Mentorship, Opp } from '../data/db';
 import { toast } from '../ui/overlay';
-import { logoPic } from '../ui/kit';
-import { bump, later, every } from './live';
-import { P, isW, curBiz, bizName, nowT, mOwner, THREADS, fname } from './core';
+import { bump } from './live';
+import { P, isW, curBiz, mOwner, THREADS, fname } from './core';
 import { bizLog } from './work';
-import { notify } from './notify';
 import { supabase } from '../lib/supabase';
 import { friendly } from './remote';
 import { R, groupKey, refreshCareer, refreshChats } from './server';
@@ -123,127 +121,9 @@ export function answerApplicant(oid: string, pid: string, st: 'acc' | 'dec') {
   supabase.from('opportunity_applications').update({ status: st }).eq('opportunity_id', oid).eq('user_id', R(pid)).then(({ error }) => error && fail(error));
 }
 
-/* ---------------- courses ---------------- */
-export function enroll(id: string, done: () => void) {
-  const c = db.COURSES.find((x) => x.id === id)!;
-  later(300, () => {
-    if (!db.myLearning.includes(id)) db.myLearning.push(id);
-    c.startAt = c.quick ? Date.now() + 60_000 : nextClassAt();
-    c.done = c.done || 0;
-    learnerGroup(c);
-    scheduleClass(c);
-    toast(`You’re enrolled in “${c.title}”`);
-    done();
-  });
-}
-export const nextClassAt = () => {
-  const d = new Date();
-  d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7));
-  d.setHours(18, 0, 0, 0);
-  return d.getTime();
-};
-/** The learner's class group for a course they joined: the trainer posts lesson links and announcements here. */
-export function learnerGroup(c: Course) {
-  const gid = 'gl_' + c.id;
-  if (!db.P[gid]) db.P[gid] = { name: `${c.title} · Class`, group: 1, client: 1, role: 'Class group', photo: c.prov.logo, pin: c.prov.logo, area: '', dist: '', rate: 5, years: 1, jobs: 0, reviews: '0', followers: 0 } as any;
-  const T = db.THREADS_W;
-  if (!T[gid]) {
-    T[gid] = { time: nowT(), group: 1, course: 1, members: [], unread: 0, msgs: [{ d: 'Today' }, { sys: `Class group for “${c.title}”` }] };
-    if (!db.ORDER_W.includes(gid)) db.ORDER_W.unshift(gid);
-  }
-  return gid;
-}
-/** When the class starts: a message in the class group, a notification and a pop-up. */
-export function scheduleClass(c: Course) {
-  if (!c.startAt) return;
-  const ms = c.startAt - Date.now();
-  if (ms <= 0 || ms > 6 * 3600_000) return; // only time it while the app is likely open
-  // 10 minutes before: a reminder (skipped for classes that start sooner than that)
-  if (ms > 10 * 60_000)
-    later(ms - 10 * 60_000, () => notify({ type: 'reminder', cat: 'reminders', key: `cls:${c.id}:${c.startAt}:10`, text: `“${c.title}” starts in 10 minutes.`, go: { k: 'coursePage', id: c.id } }));
-  later(ms, () => {
-    const gid = learnerGroup(c);
-    const th = db.THREADS_W[gid];
-    th.msgs.push({ sys: '🔴 Class is live now' }, { f: 'them', t: `${c.prov.n}: We’re starting! Tap “Join class” on the course page.`, at: nowT() });
-    th.unread = (th.unread || 0) + 1;
-    th.time = nowT();
-    notify({ type: 'live', cat: 'reminders', key: `cls:${c.id}:${c.startAt}:live`, text: `Your class “${c.title}” is live now. Tap to join.`, go: { k: 'live', id: c.id } });
-    toast(`“${c.title}” is starting now`);
-    bump();
-  });
-}
-/** The always-live demo course: its class started 5 minutes ago whenever you look. */
-export function keepLive(c: Course) {
-  if (c.startAt && Date.now() - c.startAt < 80 * 60_000 && Date.now() >= c.startAt) return false;
-  c.startAt = Date.now() - 5 * 60_000;
-  return true;
-}
-/** Courses enrolled before class times existed get the next Monday class. */
-export function ensureClassTime(c: Course) {
-  if (c.live) return keepLive(c);
-  if (c.quick || (c.startAt && c.startAt + 90 * 60_000 > Date.now())) return false;
-  c.startAt = nextClassAt();
-  scheduleClass(c);
-  return true;
-}
-/** Leave a course: it disappears from My learning (the class group stays in Messages until you leave it). */
-export function leaveCourse(id: string) {
-  db.myLearning = db.myLearning.filter((x) => x !== id);
-  const c = db.COURSES.find((x) => x.id === id);
-  if (c) c.done = 0;
-  toast('You left the course');
-  bump();
-}
-const two = (n: number) => String(n).padStart(2, '0');
-/** "2d 4h", "3h 05m" or "04:59" until a time. */
-export function timeLeft(ms: number) {
-  if (ms <= 0) return 'now';
-  const s = Math.floor(ms / 1000);
-  const d = Math.floor(s / 86400);
-  const h = Math.floor((s % 86400) / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  return d ? `${d}d ${h}h` : h ? `${h}h ${two(m)}m` : `${two(m)}:${two(s % 60)}`;
-}
-export const classWhen = (t: number) => new Date(t).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-/** A live class runs for 90 minutes from its start. */
-export const isLive = (c: Course, now = Date.now()) => !!c.startAt && now >= c.startAt && now < c.startAt + 90 * 60_000;
-/** Minutes for each lesson (stable per course). */
-export const lessonMin = (c: Course, i: number) => 12 + ((c.id.length * 7 + i * 11) % 24);
 /** Lessons shown on the course page, made from what the course teaches. */
 export const lessonsOf = (c: Course) => [...c.skills, 'Final project and certificate'];
-export function setProgress(cid: string, pid: string, v: number) {
-  const c = db.COURSES.find((x) => x.id === cid)!;
-  (c.prog = c.prog || {})[pid] = v;
-  const gid = 'g_cg' + cid;
-  if (v >= 100) THREADS_ALL(gid)?.msgs.push({ sys: `🎓 ${fname(P(pid).name)} completed the course` });
-  toast(v >= 100 ? `Certificate sent to ${P(pid).name}` : `Progress updated · ${v}%`);
-  bump();
-}
-export function removeStudent(cid: string, pid: string) {
-  const c = db.COURSES.find((x) => x.id === cid)!;
-  c.people = (c.people || []).filter((x) => x !== pid);
-  c.enrolled = c.people.length;
-  courseGroup(c);
-  THREADS_ALL('g_cg' + cid)?.msgs.push({ sys: `${fname(P(pid).name)} was removed` });
-  toast(`${P(pid).name} removed`);
-  bump();
-}
-export function announce(cid: string, t: string) {
-  const c = db.COURSES.find((x) => x.id === cid)!;
-  const g = courseGroup(c);
-  const th = THREADS_ALL(g)!;
-  th.msgs.push({ f: 'me', t: '📢 ' + t, at: nowT(), st: 'sent' });
-  th.time = nowT();
-  toast('Announcement sent to ' + (c.people || []).length + ' students');
-  bump();
-}
-const THREADS_ALL = (gid: string) => db.THREADS_C[gid] || db.THREADS_W[gid];
 
-/** The group chat of a mentorship (made on the server when the mentorship is published). */
-export function mentorGroup(m: Mentorship, _asMentor?: boolean) {
-  const cid = (m as any).cid as string | undefined;
-  return cid ? groupKey(cid) : '';
-}
 export function joinMentor(id: string) {
   const m = db.MENTORSHIPS.find((x) => x.id === id)!;
   m.joinedMe = 'req';
@@ -349,28 +229,6 @@ export async function createGroup(o: { title: string; desc: string; rules: strin
   toast('Group created');
   return groupKey(data as string);
 }
-export function courseGroup(c: Course) {
-  let m = db.MENTORSHIPS.find((x) => x.course === c.id);
-  if (!m) {
-    m = { id: 'cg' + c.id, plain: 1, course: c.id, mine: 1, asBiz: c.biz, title: `${c.title} · Class`, desc: `Class group for “${c.title}” by ${c.prov.n}. Announcements, lesson links, files and questions.`, field: '', format: 'Group', dur: c.dur, price: '', seats: c.seats || 500, joined: 0, people: [], rules: ['respect', 'onTime'], color: '#7be0a7' };
-    db.MENTORSHIPS.push(m);
-  }
-  m.people = [...(c.people || [])];
-  m.joined = m.people.length;
-  const gid = mentorGroup(m, true);
-  db.P[gid].role = 'Class group';
-  db.P[gid].photo = db.P[gid].pin = logoPic('CL', '#7be0a7', '#000');
-  const th = (isW() ? db.THREADS_W : db.THREADS_C)[gid];
-  if (th) {
-    th.members = [...m.people];
-    if (!th.course) {
-      th.course = 1;
-      th.unread = 0;
-      th.msgs = [{ d: 'Today' }, { sys: `Class group created for “${c.title}”` }];
-    }
-  }
-  return gid;
-}
 export const groupOf = (gid: string) => db.MENTORSHIPS.find((x) => x.id === db.P[gid]?.mentorship);
 /** Groups with the "no private messages" rule: you can still message the mentor; please keep to the rules. */
 export function requestDM(mid: string) {
@@ -384,61 +242,4 @@ export function dmBlocked(id: string) {
   return null;
 }
 
-/* ---------------- businesses enrol employees ---------------- */
-export function enrolEmployees(_kind: 'course' | 'mentor' | 'opp', _id: string, _n: number) {
-  toast('Team enrolment is coming soon. Share the page with your team for now');
-}
 
-/* ---------------- ads (pay per 100 people reached) ---------------- */
-export const AD_RATE = 500;
-export const adRate = () => (db.user.pro.business ? Math.round(AD_RATE * 0.8) : AD_RATE);
-export const adsOf = () => {
-  const b = curBiz();
-  if (!b) return [] as Ad[];
-  return (b.ads = b.ads || []);
-};
-export function adTargets(): [string, string, string, string][] {
-  return [
-    ...db.POSTS.filter((p) => p.mine && p.as === 'business' && p.biz === db.BIZ.active).map((p) => ['vac', p.id, p.title!, 'Vacancy'] as [string, string, string, string]),
-    ...db.OPPS.filter((o) => o.mine && o.biz === db.BIZ.active).map((o) => ['opp', o.id, o.title, o.kind] as [string, string, string, string]),
-    ...db.COURSES.filter((c) => c.mine && c.biz === db.BIZ.active).map((c) => ['course', c.id, c.title, 'Course'] as [string, string, string, string]),
-    ['page', 'page', bizName(curBiz()), 'Company page'],
-  ];
-}
-export const adHead = (t: [string, string, string, string]) => (t[0] === 'page' ? `Work with ${bizName(curBiz())}` : t[0] === 'course' ? `New course: ${t[2]}` : t[0] === 'opp' ? `Apply now: ${t[2]}` : `We’re hiring: ${t[2]}`);
-/** Story ads: extra per 100 people reached, plus a price for every second people must watch before they can close it. */
-export const STORY_EXTRA = 150;
-export const SEC_RATE = 40;
-export const MAX_SKIP = 10;
-export const adCost = (reach: number, fmt: 'card' | 'story' = 'card', skip = 0) => Math.round((reach / 100) * (adRate() + (fmt === 'story' ? STORY_EXTRA + Math.min(MAX_SKIP, skip) * SEC_RATE : 0)));
-export function launchAd(a: { t: [string, string, string, string]; head: string; text: string; areas: string[]; fields: string[]; reach: number; days: number; fmt?: 'card' | 'story'; skip?: number }) {
-  const ad: Ad = { id: uid('ad'), t: a.t, head: a.head || adHead(a.t), text: a.text, areas: a.areas, fields: a.fields, reach: a.reach, days: a.days, reached: 0, clicks: 0, apps: 0, status: 'active', paid: adCost(a.reach, a.fmt, a.skip), start: nowT(), fmt: a.fmt || 'card', skip: a.fmt === 'story' ? a.skip || 0 : 0 };
-  adsOf().unshift(ad);
-  startAdTicker();
-  bizLog('rocket', `Launched ad <b>${ad.head}</b> · ${ad.reach.toLocaleString('en-US')} people`);
-  toast(`🚀 Ad is live, reaching ${ad.reach.toLocaleString('en-US')} people`);
-  bump();
-}
-export const adPct = (ad: Ad) => Math.min(100, Math.round((ad.reached / ad.reach) * 100));
-let adTicker: any = null;
-export function stopAdTicker() {
-  adTicker = null;
-}
-export function startAdTicker() {
-  if (adTicker) return;
-  adTicker = every(3000, () => {
-    let changed = false;
-    db.BIZ.list.forEach((b) =>
-      (b.ads || []).forEach((ad) => {
-        if (ad.status !== 'active') return;
-        const inc = Math.min(ad.reach - ad.reached, Math.round(ad.reach * (0.04 + Math.random() * 0.05)));
-        ad.reached += inc;
-        ad.clicks += Math.round(inc * 0.07);
-        if (Math.random() < 0.5) ad.apps += Math.round(inc * 0.01);
-        if (ad.reached >= ad.reach) ad.status = 'done';
-        changed = true;
-      }),
-    );
-    if (!changed) return 'skip';
-  });
-}

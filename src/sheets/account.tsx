@@ -1,17 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { MONEY_LIVE } from '../logic/money';
 import { NCAT_PREF } from '../logic/notify';
 import { supabase } from '../lib/supabase';
 import { Keyboard, Linking, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, ui, MyBiz } from '../data/db';
-import { AREAS, CITIES, SIZES, ST_C, ST_W } from '../data/catalog';
-import { AlertIll, Avatar, Btn, Chip, Chips, Field, Input, Label, Note, OptRow, ProTag, SelectBox, SwitchRow, Txt, Verified, StatusPill, tap } from '../ui/kit';
+import { CITIES, ST_C, ST_W } from '../data/catalog';
+import { AlertIll, Avatar, Btn, Chip, Chips, Field, Input, Note, OptRow, SwitchRow, Txt, Verified, StatusPill } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { afterSheet, confirm, pick, sheet, SheetTitle, toast } from '../ui/overlay';
 import { C, S } from '../ui/theme';
-import { bizLogo, bizName, bizPct, curBiz, myCity, isEmail, isPhone, isW, myPhoto, digits, xaf } from '../logic/core';
-import { canAddBiz, cancelPro, MAX_FREE_BIZ, newBizDraft, payPro, saveBiz, setRole, useBiz } from '../logic/account';
+import { bizLogo, bizName, bizPct, curBiz, myCity, isEmail, isPhone, isW, myPhoto } from '../logic/core';
+import { newBizDraft, saveBiz, setRole, useBiz } from '../logic/account';
 import { bump } from '../logic/live';
 import { blockedList, ensurePeople } from '../logic/server';
 import { unblockPerson } from '../logic/work';
@@ -19,138 +18,10 @@ import { friendly } from '../logic/remote';
 import { setShowSeen } from '../logic/presence';
 import { setCityManually, gpsCity, gpsPlace, searchCities, Place } from '../logic/here';
 import { resetTo } from '../logic/nav';
-import { LogoPicker } from '../components/business';
+import { BizAbout, BizDocs, BizWhere, LogoPicker } from '../components/business';
 import { pickImage } from '../logic/media';
-import { PhoneInput, intlPhone } from '../components/auth';
-import { PAY_METHODS, KIND_LABEL, payOf } from '../data/payments';
-import { COUNTRIES, countryByIso, deviceCountry, flag, showPhone } from '../data/countries';
+import { COUNTRIES, countryByIso, deviceCountry, flag } from '../data/countries';
 
-/* ---------------- Pro plans ---------------- */
-export function openPro(kind?: 'regular' | 'business', why?: string) {
-  if (!MONEY_LIVE) return toast('Pro plans start once payments are live. Until then, every feature is free.');
-  const k = kind || (isW() ? 'regular' : 'business');
-  sheet.show(() => <ProSheet kind={k} why={why} />, { full: true });
-}
-function ProSheet({ kind, why }: { kind: 'regular' | 'business'; why?: string }) {
-  const [bill, setBill] = useState<'month' | 'year'>(ui.proBill as any);
-  const [busy, setBusy] = useState(false);
-  const R = kind === 'regular';
-  const on = db.user.pro[kind];
-  const price = R ? 2000 : 15000;
-  const yr = Math.round((price * 12 * 0.8) / 100) * 100;
-  const F: [string, string, string][] = R
-    ? [
-        ['rocket', 'Get jobs faster', 'Priority applications. You show first to employers'],
-        ['file', 'Premium CV templates', 'Stand-out CV designs on top of the free CV builder'],
-        ['rocket', 'Profile boosts', '2 free boosts every month for your services'],
-        ['eye', 'Who viewed you', 'See which businesses looked at your profile'],
-        ['cap', '1 free career expert session', 'A CV or interview review each month'],
-      ]
-    : [
-        ['rocket', 'Cheaper ads', '20% off every ad, vacancies, programs and courses'],
-        ['storefront', 'More businesses', `Run more than ${MAX_FREE_BIZ} business pages from one account`],
-        ['star', 'Featured company', 'Your company shows first in “Companies hiring”'],
-        ['follow', 'Applicant insights', 'Skills match scores and priority candidates'],
-        ['follow', 'Unlimited recruiters', 'Bring your whole HR team'],
-      ];
-  const lead = ({ more: `You’ve used your ${MAX_FREE_BIZ} free business pages.`, ads: 'Business Pro makes every ad 20% cheaper.', cv: 'The Modern CV template is part of bolo Pro.', priority: 'Priority applications are part of bolo Pro.' } as Record<string, string>)[why || ''] || '';
-  return (
-    <View>
-      <View style={{ padding: 18, borderRadius: 22, backgroundColor: R ? C.yellow : C.blue }}>
-        <ProTag text={R ? 'PRO' : 'BUSINESS PRO'} />
-        <Txt s={22} w={8} c={R ? '#000' : '#fff'} style={{ marginTop: 10 }}>
-          {R ? 'Get hired faster with bolo Pro' : 'Grow your team with Business Pro'}
-        </Txt>
-        <Txt s={13} c={R ? '#222' : '#e8ebff'} style={{ marginTop: 4 }}>
-          {lead || (R ? 'For your Regular profile, tools that put you ahead.' : 'Business pages are free. Pro adds promotion and growth tools.')}
-        </Txt>
-      </View>
-      <View style={{ gap: 12, marginTop: 16 }}>
-        {F.map(([i, t, s]) => (
-          <View key={t} style={[S.row, { gap: 12 }]}>
-            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name={i} size={18} color={C.yellow} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Txt s={14} w={8}>
-                {t}
-              </Txt>
-              <Txt s={12} c={C.muted}>
-                {s}
-              </Txt>
-            </View>
-          </View>
-        ))}
-      </View>
-      {on ? (
-        <>
-          <Note icon="checkc" color={C.mint} style={{ marginTop: 16 }}>
-            Your plan is active. It renews at the start of next month.
-          </Note>
-          <Btn
-            variant="ghost"
-            title="Cancel plan"
-            style={{ marginTop: 12 }}
-            onPress={() => {
-              cancelPro(kind);
-              sheet.close();
-            }}
-          />
-        </>
-      ) : (
-        <>
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
-            {(
-              [
-                ['month', price, 'per month'],
-                ['year', yr, 'per year'],
-              ] as const
-            ).map(([k, p, l]) => (
-              <Pressable
-                key={k}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: bill === k }}
-                onPress={() => {
-                  ui.proBill = k;
-                  setBill(k);
-                }}
-                style={{ flex: 1, padding: 14, borderRadius: 16, backgroundColor: C.s2, borderWidth: 2, borderColor: bill === k ? C.yellow : 'transparent' }}
-              >
-                {k === 'year' ? (
-                  <Txt s={11} w={8} c={C.mint}>
-                    Save 20%
-                  </Txt>
-                ) : null}
-                <Txt s={18} w={8}>
-                  {xaf(p)}
-                </Txt>
-                <Txt s={12} c={C.muted}>
-                  {l}
-                </Txt>
-              </Pressable>
-            ))}
-          </View>
-          <View style={[S.row, { gap: 8, marginTop: 12 }]}>
-            <Icon name="coins" size={16} color={C.yellow} />
-            <Txt s={12} c={C.muted} style={{ flex: 1 }}>
-              Pay with {defaultPay()} · cancel any time
-            </Txt>
-          </View>
-          <Btn
-            variant="yellow"
-            style={{ marginTop: 14 }}
-            loading={busy}
-            title={busy ? 'Waiting for payment approval…' : `Start ${R ? 'Pro' : 'Business Pro'} · ${xaf(bill === 'month' ? price : yr)}`}
-            onPress={() => {
-              setBusy(true);
-              payPro(kind, () => sheet.close());
-            }}
-          />
-        </>
-      )}
-    </View>
-  );
-}
 
 /* ---------------- Regular ↔ Business ---------------- */
 /** A Regular profile tried to do something only business pages can do. */
@@ -241,7 +112,7 @@ function Accounts() {
             Add a business
           </Txt>
           <Txt s={12} c={C.muted}>
-            {canAddBiz() ? `Free · ${db.BIZ.list.length} of ${db.user.pro.business ? 'unlimited' : MAX_FREE_BIZ} used` : `You’ve used your ${MAX_FREE_BIZ} free businesses, upgrade to Business Pro`}
+            A page for your company: vacancies, team and applicants
           </Txt>
         </View>
       </Pressable>
@@ -249,7 +120,6 @@ function Accounts() {
   );
 }
 export function addBusiness() {
-  if (!canAddBiz()) return afterSheet(() => openPro('business', 'more'));
   afterSheet(() => openBizSetup('new'));
 }
 /** After sign-up, when the person said they also want to hire for a business. */
@@ -270,6 +140,7 @@ function BizSetup({ st }: { st: BzState }) {
   const re = () => f((x) => x + 1);
   const b = st.b;
   const set = (k: keyof MyBiz, v: any) => ((b as any)[k] = v);
+  const put = (p: Partial<MyBiz>) => (Object.assign(b, p), re());
   const finish = () => {
     if (!b.name.trim()) {
       st.step = 1;
@@ -371,53 +242,16 @@ function BizSetup({ st }: { st: BzState }) {
       <View style={{ gap: 14 }}>
         {head}
         <SheetTitle>About your business</SheetTitle>
-        <Field label="Business name" error={st.tried && !b.name.trim() && 'Add your business name'}>
-          <Input icon="storefront" value={b.name} onChangeText={(v) => (set('name', v), re())} placeholder="e.g. Ekole Services Ltd" maxLength={50} invalid={st.tried && !b.name.trim()} autoCapitalize="words" />
-        </Field>
-        <Field label="Sector">
-          <SelectBox value={b.sector} placeholder="Choose a sector" onPress={() => pick('Sector', AREAS.map((a) => a[0]), b.sector, (v) => (set('sector', v), re()))} />
-        </Field>
-        <View>
-          <Label>Team size</Label>
-          <Chips>
-            {SIZES.map((z) => (
-              <Chip key={z} label={z} on={b.size === z} onPress={() => (set('size', z), re())} />
-            ))}
-          </Chips>
-        </View>
-        <Field label="What does your business do?">
-          <Input multiline value={b.about} onChangeText={(v) => (set('about', v), re())} maxLength={240} placeholder="One or two sentences candidates will read on your page" />
-        </Field>
+        <BizAbout id="bz" b={b} set={put} miss={st.tried && !b.name.trim() ? 'name' : null} />
         {nav()}
       </View>
     );
   if (st.step === 2) {
-    const phoneBad = !!b.phone && !isPhone(b.phone);
-    const mailBad = !!b.email && !isEmail(b.email);
     return (
       <View style={{ gap: 14 }}>
         {head}
         <SheetTitle>Location & contact</SheetTitle>
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <Field label="City" style={{ flex: 1 }}>
-            <SelectBox testID="bz-city" value={b.city} placeholder="Choose a city" onPress={() => openCities((v) => (set('city', v), re()), b.city)} />
-          </Field>
-          <Field label="Neighbourhood" style={{ flex: 1 }}>
-            <Input value={b.area} onChangeText={(v) => (set('area', v), re())} />
-          </Field>
-        </View>
-        <Field label="Street address">
-          <Input icon="pin" value={b.address} onChangeText={(v) => (set('address', v), re())} placeholder="e.g. Opposite Total, Molyko" />
-        </Field>
-        <Field label="Business phone" error={phoneBad && 'Enter a valid phone number'}>
-          <PhoneInput value={b.phone || ''} onChange={(v) => (set('phone', v), re())} invalid={phoneBad} />
-        </Field>
-        <Field label="Email" error={mailBad && 'That email doesn’t look right'}>
-          <Input keyboardType="email-address" autoCapitalize="none" value={b.email} onChangeText={(v) => (set('email', v.trim()), re())} placeholder="jobs@yourbusiness.cm" invalid={mailBad} />
-        </Field>
-        <Field label="Website · optional">
-          <Input icon="globe" autoCapitalize="none" value={b.web} onChangeText={(v) => (set('web', v.trim()), re())} placeholder="yourbusiness.cm" />
-        </Field>
+        <BizWhere id="bz" b={b} set={put} email onCity={() => openCities((v) => put({ city: v }), b.city)} />
         {nav()}
       </View>
     );
@@ -432,12 +266,7 @@ function BizSetup({ st }: { st: BzState }) {
       ) : b.verified === 'review' ? (
         <StatusPill kind="wait" text="Verification in progress" />
       ) : null}
-      <Field label="Trade register number (RCCM)">
-        <Input icon="file" autoCapitalize="characters" value={b.rccm} onChangeText={(v) => (set('rccm', v), re())} placeholder="e.g. RC/BUE/2024/B/123" editable={b.verified === 'none'} />
-      </Field>
-      <Field label="Taxpayer number (NIU)">
-        <Input icon="idcard" autoCapitalize="characters" value={b.niu} onChangeText={(v) => (set('niu', v), re())} placeholder="e.g. M012345678901A" editable={b.verified === 'none'} />
-      </Field>
+      <BizDocs b={b} set={put} locked={b.verified !== 'none'} />
       <Note icon="verified">With your RCCM and NIU we verify your business. Only verified businesses can hire under company contracts.</Note>
       {nav(true)}
     </View>
@@ -524,141 +353,6 @@ export function openStatus() {
   });
 }
 
-/* ---------------- settings sheets ---------------- */
-export function openPayments() {
-  sheet.show(() => <Payments />);
-}
-/** The person's default way to pay, e.g. "MTN MoMo ••• 456". */
-export const defaultPay = () => {
-  const d = db.PREF.momo.find((m) => m[2]) || db.PREF.momo[0];
-  return d ? `${d[0]} ${d[1].includes('•') ? '•••' + d[1].split('•').pop() : ''}`.trim() : 'Add a payment method';
-};
-export function PayBadge({ name, size = 38 }: { name: string; size?: number }) {
-  const m = payOf(name);
-  return (
-    <View style={{ width: size, height: size, borderRadius: 10, backgroundColor: m.color, alignItems: 'center', justifyContent: 'center', borderWidth: m.color === '#ffffff' ? 1 : 0, borderColor: C.line }}>
-      {m.tag ? (
-        <Txt s={m.tag.length > 3 ? 9 : 11} w={8} c={m.fg}>
-          {m.tag}
-        </Txt>
-      ) : (
-        <Icon name="coins" size={16} color={m.fg} />
-      )}
-    </View>
-  );
-}
-function Payments() {
-  const [, f] = useState(0);
-  const [adding, setAdding] = useState<string | null>(null);
-  const [a, setA] = useState('');
-  const [b2, setB2] = useState('');
-  const [c2, setC2] = useState('');
-  const re = () => f((x) => x + 1);
-  const m = adding ? payOf(adding) : null;
-  const ok = !m ? false : m.kind === 'mobile' ? isPhone(a) : m.kind === 'card' ? digits(a).length >= 12 && /^\d{2}\/?\d{2}$/.test(b2.replace(/\s/g, '')) && digits(c2).length >= 3 : m.kind === 'wallet' ? m.name !== 'PayPal' || isEmail(a) : a.trim().length > 1 && digits(b2).length >= 6;
-  const save = () => {
-    if (!m || !ok) return;
-    const tail = m.kind === 'mobile' ? showPhone(intlPhone(a)).replace(/\d(?=\d{3})/g, '•').replace(/•+/, '••• ') : m.kind === 'card' ? '••• ' + digits(a).slice(-4) : m.kind === 'bank' ? `${a.trim()} ••• ${digits(b2).slice(-4)}` : m.name === 'PayPal' ? a.trim() : 'This phone';
-    if (!db.PREF.momo.length) db.PREF.momo.push([m.name, tail, 1]);
-    else db.PREF.momo.push([m.name, tail, 0]);
-    setAdding(null);
-    setA('');
-    setB2('');
-    setC2('');
-    bump();
-    toast(`${m.name} added`);
-  };
-  return (
-    <View style={{ gap: 8 }}>
-      <SheetTitle sub="Pay for jobs, courses and ads, and receive payouts, the way that suits you.">Payments</SheetTitle>
-      {db.PREF.momo.map(([n, no, d], i) => (
-        <View key={n + no + i} style={[S.row, { gap: 12, padding: 12, borderRadius: 14, backgroundColor: C.s2 }]}>
-          <PayBadge name={n} />
-          <View style={{ flex: 1 }}>
-            <Txt s={14} w={8}>
-              {n}
-            </Txt>
-            <Txt s={12} c={C.muted}>
-              {KIND_LABEL[payOf(n).kind]} · {no}
-            </Txt>
-          </View>
-          {d ? (
-            <StatusPill kind="acc" text="Default" />
-          ) : (
-            <View style={[S.row, { gap: 6 }]}>
-              <Btn small variant="dark" title="Default" onPress={() => (db.PREF.momo.forEach((x) => (x[2] = 0)), (db.PREF.momo[i][2] = 1), bump(), re())} />
-              <Pressable accessibilityLabel={`Remove ${n}`} hitSlop={8} onPress={() => (db.PREF.momo.splice(i, 1), bump(), re())}>
-                <Icon name="x" size={18} color={C.muted} />
-              </Pressable>
-            </View>
-          )}
-        </View>
-      ))}
-      {!m ? (
-        <>
-          <Label>Add a way to pay</Label>
-          {(['mobile', 'card', 'wallet', 'bank'] as const).map((k) => (
-            <View key={k} style={{ marginBottom: 6 }}>
-              <Txt s={12} w={7} c={C.muted} style={{ marginBottom: 6, marginLeft: 4 }}>
-                {KIND_LABEL[k]}
-              </Txt>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {PAY_METHODS.filter((x) => x.kind === k).map((x) => (
-                  <Pressable key={x.name} testID={`pay-${x.name}`} accessibilityRole="button" onPress={() => (tap(), setAdding(x.name))} style={[S.row, { gap: 8, paddingLeft: 4, paddingRight: 12, height: 40, borderRadius: 20, backgroundColor: C.s2, borderWidth: 1, borderColor: C.line }]}>
-                    <PayBadge name={x.name} size={30} />
-                    <Txt s={13} w={7}>
-                      {x.name}
-                    </Txt>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-          ))}
-        </>
-      ) : (
-        <View style={{ gap: 10, padding: 14, borderRadius: 18, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, marginTop: 6 }}>
-          <View style={[S.row, { gap: 10 }]}>
-            <PayBadge name={m.name} />
-            <View style={{ flex: 1 }}>
-              <Txt s={15} w={8}>
-                Add {m.name}
-              </Txt>
-              {m.where ? (
-                <Txt s={11} c={C.muted} lines={1}>
-                  {m.where}
-                </Txt>
-              ) : null}
-            </View>
-            <Pressable hitSlop={8} onPress={() => setAdding(null)}>
-              <Icon name="x" size={18} color={C.muted} />
-            </Pressable>
-          </View>
-          {m.kind === 'mobile' ? <PhoneInput value={a} onChange={setA} /> : null}
-          {m.kind === 'card' ? (
-            <>
-              <Input value={a} onChangeText={(v) => setA(digits(v).slice(0, 19).replace(/(\d{4})(?=\d)/g, '$1 '))} icon="money" keyboardType="number-pad" placeholder="Card number" />
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <Input style={{ flex: 1 }} value={b2} onChangeText={(v) => setB2(digits(v).slice(0, 4).replace(/(\d{2})(?=\d)/, '$1/'))} keyboardType="number-pad" placeholder="MM/YY" />
-                <Input style={{ flex: 1 }} value={c2} onChangeText={(v) => setC2(digits(v).slice(0, 4))} keyboardType="number-pad" placeholder="CVC" secure />
-              </View>
-            </>
-          ) : null}
-          {m.kind === 'wallet' ? m.name === 'PayPal' ? <Input value={a} onChangeText={setA} icon="mail" keyboardType="email-address" placeholder="PayPal email" /> : <Note icon="lock">You’ll confirm with {m.name} on this phone when you pay.</Note> : null}
-          {m.kind === 'bank' ? (
-            <>
-              <Input value={a} onChangeText={setA} icon="city" placeholder="Bank name" autoCapitalize="words" />
-              <Input value={b2} onChangeText={setB2} keyboardType="number-pad" placeholder="Account number or IBAN" />
-            </>
-          ) : null}
-          <Btn variant="yellow" title={`Save ${m.name}`} disabled={!ok} onPress={save} />
-          <Txt s={11} c={C.faint}>
-            Card and account details are sent straight to our payment partner. bolo never stores full card numbers.
-          </Txt>
-        </View>
-      )}
-    </View>
-  );
-}
 
 /** Pick any country in the world. */
 export function pickCountry(title: string, value: string, onPick: (name: string, iso: string) => void, extra: string[] = []) {

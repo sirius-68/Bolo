@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, FlatList, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { db, ui, REELS, Post } from '../../src/data/db';
+import { db, ui, Post } from '../../src/data/db';
 import { Avatar, Btn, Empty, Txt, net, tap } from '../../src/ui/kit';
 import { FeedSkeleton } from '../../src/ui/skeleton';
 import { Icon } from '../../src/ui/Icon';
@@ -12,14 +12,14 @@ import { bump, useLive } from '../../src/logic/live';
 import { openBrowse, openProfile } from '../../src/logic/nav';
 import { notchScale, Rail, SearchBar, Sec, TabHeader, Pull } from '../../src/components/common';
 import { follow } from '../../src/logic/work';
-import { PersonRow, PostCard, RecCard, ReelThumb, ReqPost, JobCard } from '../../src/components/cards';
+import { PersonRow, PostCard, RecCard, ReqPost, JobCard } from '../../src/components/cards';
 import { activeFilters, openFilters, resetFilters } from '../../src/sheets/filters';
 import { openDoc, openService } from '../../src/sheets/profile';
 import { services } from '../../src/logic/account';
 
 type FV = 'all' | 'feed' | 'jobs' | 'people';
 /** Height of the header row (avatar, name, icons) the bubble starts below. */
-type Item = { k: string; po?: Post; id?: string; sp?: 'compose' | 'reels' | 'follow'; from?: number };
+type Item = { k: string; po?: Post; id?: string; sp?: 'compose' | 'follow' };
 
 export default function Feed() {
   useLive();
@@ -79,11 +79,8 @@ export default function Feed() {
     items = [{ k: 'compose', sp: 'compose' }];
     W.forEach((po, i) => {
       items.push({ k: po.id, po });
-      if (i === 2) items.push({ k: 'reels1', sp: 'reels', from: 0 });
       if (i === 6) items.push({ k: 'follow', sp: 'follow' });
-      if (i === 11) items.push({ k: 'reels2', sp: 'reels', from: 3 });
     });
-    if (W.length && W.length <= 2) items.push({ k: 'reels1', sp: 'reels', from: 0 });
   } else {
     let L = db.POSTS.filter(postVisible).filter((p) => (p.kind === 'request' ? matchJob(p, q, cat) : !q || (p.text || '').toLowerCase().includes(q) || (P(p.by || '')?.name || '').toLowerCase().includes(q)));
     if (cat) L = L.filter((p) => (p.kind === 'request' ? p.cat === cat : P(p.by || '')?.role === cat));
@@ -179,19 +176,6 @@ export default function Feed() {
 
   const render = ({ item }: { item: Item }) => {
     if (item.sp === 'compose') return <Composer />;
-    if (item.sp === 'reels' && !REELS.length) return null;
-    if (item.sp === 'reels')
-      return (
-        <View style={{ marginBottom: 18 }}>
-          <Sec title={item.from ? 'More work in action' : 'Work in action'} action="Watch all" onAction={() => router.push(`/reels?i=${item.from || 0}` as any)} style={{ marginTop: 4 }} />
-          <Rail>
-            {[...REELS.slice(item.from || 0), ...REELS.slice(0, item.from || 0)].map((r) => {
-              const i = REELS.indexOf(r);
-              return <ReelThumb key={i} r={r} i={i} onPress={() => router.push(`/reels?i=${i}` as any)} />;
-            })}
-          </Rail>
-        </View>
-      );
     if (item.sp === 'follow') return <FollowSuggest />;
     if (item.id)
       return (
