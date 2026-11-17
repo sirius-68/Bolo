@@ -1,0 +1,215 @@
+Target: local stack (127.0.0.1:54322)
+3.36: Pulling from supabase/pg_prove
+dcccee43ad5d: Pulling fs layer
+4f4fb700ef54: Pulling fs layer
+06d62d0de6d7: Pulling fs layer
+a22cb17b3b93: Pulling fs layer
+4f4fb700ef54: Already exists
+4f4fb700ef54: Pull complete
+dcccee43ad5d: Download complete
+a22cb17b3b93: Download complete
+dcccee43ad5d: Pull complete
+06d62d0de6d7: Download complete
+a008cf086da5: Download complete
+06d62d0de6d7: Pull complete
+a22cb17b3b93: Pull complete
+Digest: sha256:eda7c5e68719e9c8287e78c017118407b48df904a51c935f5ab6098b8c0bc6bc
+Status: Downloaded newer image for public.ecr.aws/supabase/pg_prove:3.36
+public.ecr.aws/supabase/pg_prove:3.36
+psql:/home/runner/work/Bolo/Bolo/supabase/tests/database/account.test.sql:3: NOTICE:  extension "pgtap" already exists, skipping
+/home/runner/work/Bolo/Bolo/supabase/tests/database/account.test.sql ......... ok
+psql:/home/runner/work/Bolo/Bolo/supabase/tests/database/admin.test.sql:3: NOTICE:  extension "pgtap" already exists, skipping
+/home/runner/work/Bolo/Bolo/supabase/tests/database/admin.test.sql ........... ok
+psql:/home/runner/work/Bolo/Bolo/supabase/tests/database/admin_controls.test.sql:3: NOTICE:  extension "pgtap" already exists, skipping
+psql:/home/runner/work/Bolo/Bolo/supabase/tests/database/admin_controls.test.sql:23: ERROR:  column reference "n" is ambiguous
+LINE 54: ..._state', (select coalesce(jsonb_object_agg(state, n), '{}') ...
+                                                              ^
+DETAIL:  It could refer to either a PL/pgSQL variable or a table column.
+QUERY:  with days as (
+    select g.d from generate_series(t0, date_trunc('day', now()), interval '1 day') as g(d)
+  ),
+  acts as (   -- who did something, and when: posted, commented, wrote, offered, booked
+    select author_id as u, created_at as at from posts where created_at >= p0
+    union all select author_id, created_at from comments where created_at >= p0
+    union all select sender_id, created_at from messages where created_at >= p0 and sender_id is not null
+    union all select applicant_id, created_at from applications where created_at >= p0
+    union all select client_id, created_at from bookings where created_at >= p0
+  ),
+  series as (
+    select d.d::date as day,
+      (select count(*) from profiles p where p.created_at >= d.d and p.created_at < d.d + interval '1 day' and p.deleted_at is null)::int as signups,
+      (select count(distinct a.u) from acts a where a.at >= d.d and a.at < d.d + interval '1 day')::int as active,
+      (select count(*) from posts x where x.kind <> 'request' and x.created_at >= d.d and x.created_at < d.d + interval '1 day')::int as posts,
+      (select count(*) from posts x where x.kind = 'request' and x.created_at >= d.d and x.created_at < d.d + interval '1 day')::int as jobs,
+      (select count(*) from bookings b where b.created_at >= d.d and b.created_at < d.d + interval '1 day')::int as bookings,
+      (select count(*) from messages m where m.created_at >= d.d and m.created_at < d.d + interval '1 day')::int as messages
+    from days d
+  ),
+  tot as (
+    select jsonb_build_object(
+      'signups', (select count(*) from profiles where created_at >= a and created_at < b and deleted_at is null),
+      'active', (select count(distinct u) from acts where at >= a and at < b),
+      'posts', (select count(*) from posts where kind <> 'request' and created_at >= a and created_at < b),
+      'jobs', (select count(*) from posts where kind = 'request' and created_at >= a and created_at < b),
+      'bookings', (select count(*) from bookings where created_at >= a and created_at < b),
+      'messages', (select count(*) from messages where created_at >= a and created_at < b),
+      'calls', (select count(*) from calls where created_at >= a and created_at < b),
+      'reports', (select count(*) from reports where created_at >= a and created_at < b)) as j, k
+    from (values (t0, now() + interval '1 second', 'now'), (p0, t0, 'prev')) v(a, b, k)
+  ),
+  cohort as (select id from profiles where created_at >= t0 and deleted_at is null)
+  select jsonb_build_object(
+    'days', n,
+    'series', (select coalesce(jsonb_agg(to_jsonb(s) order by s.day), '[]') from series s),
+    'now', (select j from tot where k = 'now'),
+    'prev', (select j from tot where k = 'prev'),
+    'types', jsonb_build_object(
+      'workers', (select count(*) from profiles where deleted_at is null and not biz_only and coalesce(array_length(skills, 1), 0) > 0),
+      'hirers', (select count(*) from profiles where deleted_at is null and not biz_only and coalesce(array_length(skills, 1), 0) = 0),
+      'business_accounts', (select count(*) from profiles where deleted_at is null and biz_only),
+      'businesses', (select count(*) from businesses)),
+    'cities', (select coalesce(jsonb_agg(c), '[]') from (
+        select initcap(trim(city)) as city, count(*)::int as n from profiles
+         where deleted_at is null and coalesce(trim(city), '') <> '' group by initcap(trim(city)) order by n desc, city limit 6) c),
+    'funnel', jsonb_build_object(
+      'signed_up', (select count(*) from cohort),
+      'profile', (select count(*) from profiles p join cohort c on c.id = p.id
+                   where coalesce(trim(p.city), '') <> '' and (coalesce(array_length(p.skills, 1), 0) > 0 or coalesce(p.bio, '') <> '' or p.biz_only)),
+      'verified', (select count(*) from profiles p join cohort c on c.id = p.id where p.verified),
+      'acted', (select count(*) from cohort c where exists (select 1 from acts a where a.u = c.id)),
+      'booked', (select count(*) from cohort c where exists (select 1 from bookings b where c.id in (b.worker_id, b.client_id)))),
+    'bookings_by_state', (select coalesce(jsonb_object_agg(state, n), '{}') from (select state, count(*)::int as n from bookings group by state) b)
+  )
+CONTEXT:  PL/pgSQL function admin_stats(integer) line 9 at SQL statement
+/home/runner/work/Bolo/Bolo/supabase/tests/database/admin_controls.test.sql .. 
+Dubious, test returned 3 (wstat 768, 0x300)
+Failed 29/30 subtests 
+psql:/home/runner/work/Bolo/Bolo/supabase/tests/database/admin_more.test.sql:4: NOTICE:  extension "pgtap" already exists, skipping
+/home/runner/work/Bolo/Bolo/supabase/tests/database/admin_more.test.sql ...... ok
+psql:/home/runner/work/Bolo/Bolo/supabase/tests/database/calls.test.sql:3: NOTICE:  extension "pgtap" already exists, skipping
+/home/runner/work/Bolo/Bolo/supabase/tests/database/calls.test.sql ........... ok
+psql:/home/runner/work/Bolo/Bolo/supabase/tests/database/marketplace.test.sql:4: NOTICE:  extension "pgtap" already exists, skipping
+/home/runner/work/Bolo/Bolo/supabase/tests/database/marketplace.test.sql ..... ok
+psql:/home/runner/work/Bolo/Bolo/supabase/tests/database/privacy.test.sql:3: NOTICE:  extension "pgtap" already exists, skipping
+/home/runner/work/Bolo/Bolo/supabase/tests/database/privacy.test.sql ......... ok
+psql:/home/runner/work/Bolo/Bolo/supabase/tests/database/push.test.sql:3: NOTICE:  extension "pgtap" already exists, skipping
+/home/runner/work/Bolo/Bolo/supabase/tests/database/push.test.sql ............ ok
+psql:/home/runner/work/Bolo/Bolo/supabase/tests/database/ring.test.sql:4: NOTICE:  extension "pgtap" already exists, skipping
+/home/runner/work/Bolo/Bolo/supabase/tests/database/ring.test.sql ............ ok
+psql:/home/runner/work/Bolo/Bolo/supabase/tests/database/rls.test.sql:5: NOTICE:  extension "pgtap" already exists, skipping
+/home/runner/work/Bolo/Bolo/supabase/tests/database/rls.test.sql ............. 
+# Failed test 18: "Ben comments on Ana's post"
+#     died: 42703: record "new" has no field "title"
+#         CONTEXT:
+#             PL/pgSQL assignment "txt := case tg_table_name when 'posts' then coalesce(new.title, '') || ' ' || coalesce(new.body, '') else coalesce(new.body, '') end"
+#             PL/pgSQL function stop_blocked_words() line 4 at assignment
+#             SQL statement " insert into public.comments (post_id, body) values ('post1', 'Great work') "
+#             PL/pgSQL function lives_ok(text,text) line 14 at EXECUTE
+# Failed test 22: "Ana is notified of Ben's comment once"
+#         have: 0
+#         want: 1
+# Looks like you failed 2 tests of 54
+Failed 2/54 subtests 
+psql:/home/runner/work/Bolo/Bolo/supabase/tests/database/social.test.sql:4: NOTICE:  extension "pgtap" already exists, skipping
+psql:/home/runner/work/Bolo/Bolo/supabase/tests/database/social.test.sql:89: ERROR:  record "new" has no field "title"
+CONTEXT:  PL/pgSQL assignment "txt := case tg_table_name when 'posts' then coalesce(new.title, '') || ' ' || coalesce(new.body, '') else coalesce(new.body, '') end"
+PL/pgSQL function stop_blocked_words() line 4 at assignment
+/home/runner/work/Bolo/Bolo/supabase/tests/database/social.test.sql .......... 
+# Failed test 2: "Ben comments"
+#     died: 42703: record "new" has no field "title"
+#         CONTEXT:
+#             PL/pgSQL assignment "txt := case tg_table_name when 'posts' then coalesce(new.title, '') || ' ' || coalesce(new.body, '') else coalesce(new.body, '') end"
+#             PL/pgSQL function stop_blocked_words() line 4 at assignment
+#             SQL statement " insert into public.comments (id, post_id, body) values ('11111111-0000-0000-0000-000000000001', 'p1', 'Clean work') "
+#             PL/pgSQL function lives_ok(text,text) line 14 at EXECUTE
+# Failed test 3: "Carl replies to Ben"
+#     died: 42703: record "new" has no field "title"
+#         CONTEXT:
+#             PL/pgSQL assignment "txt := case tg_table_name when 'posts' then coalesce(new.title, '') || ' ' || coalesce(new.body, '') else coalesce(new.body, '') end"
+#             PL/pgSQL function stop_blocked_words() line 4 at assignment
+#             SQL statement " insert into public.comments (id, post_id, body, parent_id) values ('11111111-0000-0000-0000-000000000002', 'p1', '@Ben agreed', '11111111-0000-0000-0000-000000000001') "
+#             PL/pgSQL function lives_ok(text,text) line 14 at EXECUTE
+# Failed test 4: "the reply knows who it answers"
+#         have: NULL
+#         want: b0000000-0000-0000-0000-000000000002
+# Failed test 6: "Dee replies to Carl's reply"
+#     died: 42703: record "new" has no field "title"
+#         CONTEXT:
+#             PL/pgSQL assignment "txt := case tg_table_name when 'posts' then coalesce(new.title, '') || ' ' || coalesce(new.body, '') else coalesce(new.body, '') end"
+#             PL/pgSQL function stop_blocked_words() line 4 at assignment
+#             SQL statement " insert into public.comments (id, post_id, body, parent_id) values ('11111111-0000-0000-0000-000000000003', 'p1', '@Carl same here', '11111111-0000-0000-0000-000000000002') "
+#             PL/pgSQL function lives_ok(text,text) line 14 at EXECUTE
+# Failed test 7: "a reply to a reply joins the same thread"
+#         have: NULL
+#         want: 11111111-0000-0000-0000-000000000001
+# Failed test 8: "and still answers Carl"
+#         have: NULL
+#         want: c0000000-0000-0000-0000-000000000003
+# Failed test 9: "Dee likes Ben's comment"
+#     died: 23503: insert or update on table "comment_likes" violates foreign key constraint "comment_likes_comment_id_fkey"
+#         DETAIL:     Key is not present in table "comments".
+#         SCHEMA:     public
+#         TABLE:      comment_likes
+#         CONSTRAINT: comment_likes_comment_id_fkey
+#         CONTEXT:
+#             SQL statement " insert into public.comment_likes (comment_id) values ('11111111-0000-0000-0000-000000000001') "
+#             PL/pgSQL function lives_ok(text,text) line 14 at EXECUTE
+# Failed test 12: "the comment shows one like"
+#         have: NULL
+#         want: 1
+# Failed test 13: "Dee sees that she liked it"
+#         have: NULL
+#         want: true
+# Failed test 14: "Dee cannot delete Ben's comment"
+#         have: 0
+#         want: 1
+# Failed test 15: "Ben did not like his own comment"
+#         have: NULL
+#         want: false
+# Failed test 16: "Ben is told about the reply"
+#         have: 0
+#         want: 1
+# Failed test 17: "and about the like"
+#         have: 0
+#         want: 1
+# Failed test 18: "Ana hears about each comment and reply on her post"
+#         have: 0
+#         want: 3
+# Failed test 20: "only that reply is gone"
+#         have: 0
+#         want: 2
+# Failed test 36: "Ben comments on it"
+#     died: 42703: record "new" has no field "title"
+#         CONTEXT:
+#             PL/pgSQL assignment "txt := case tg_table_name when 'posts' then coalesce(new.title, '') || ' ' || coalesce(new.body, '') else coalesce(new.body, '') end"
+#             PL/pgSQL function stop_blocked_words() line 4 at assignment
+#             SQL statement " insert into public.comments (id, post_id, body) values ('11111111-0000-0000-0000-000000000009', 'p2', 'Hello Dee') "
+#             PL/pgSQL function lives_ok(text,text) line 14 at EXECUTE
+Dubious, test returned 3 (wstat 768, 0x300)
+Failed 18/38 subtests 
+psql:/home/runner/work/Bolo/Bolo/supabase/tests/database/tidy.test.sql:3: NOTICE:  extension "pgtap" already exists, skipping
+psql:/home/runner/work/Bolo/Bolo/supabase/tests/database/tidy.test.sql:21: ERROR:  record "new" has no field "title"
+CONTEXT:  PL/pgSQL assignment "txt := case tg_table_name when 'posts' then coalesce(new.title, '') || ' ' || coalesce(new.body, '') else coalesce(new.body, '') end"
+PL/pgSQL function stop_blocked_words() line 4 at assignment
+/home/runner/work/Bolo/Bolo/supabase/tests/database/tidy.test.sql ............ 
+Dubious, test returned 3 (wstat 768, 0x300)
+Failed 24/24 subtests 
+
+Test Summary Report
+-------------------
+/home/runner/work/Bolo/Bolo/supabase/tests/database/admin_controls.test.sql (Wstat: 768 (exited 3) Tests: 1 Failed: 0)
+  Non-zero exit status: 3
+  Parse errors: Bad plan.  You planned 30 tests but ran 1.
+/home/runner/work/Bolo/Bolo/supabase/tests/database/rls.test.sql           (Wstat: 0 Tests: 54 Failed: 2)
+  Failed tests:  18, 22
+/home/runner/work/Bolo/Bolo/supabase/tests/database/social.test.sql        (Wstat: 768 (exited 3) Tests: 36 Failed: 16)
+  Failed tests:  2-4, 6-9, 12-18, 20, 36
+  Non-zero exit status: 3
+  Parse errors: Bad plan.  You planned 38 tests but ran 36.
+/home/runner/work/Bolo/Bolo/supabase/tests/database/tidy.test.sql          (Wstat: 768 (exited 3) Tests: 0 Failed: 0)
+  Non-zero exit status: 3
+  Parse errors: Bad plan.  You planned 24 tests but ran 0.
+Files=12, Tests=289,  1 wallclock secs ( 0.05 usr  0.02 sys +  0.07 cusr  0.05 csys =  0.19 CPU)
+Result: FAIL
+error running container: exit 1
+Try rerunning the command with --debug to troubleshoot the error.
