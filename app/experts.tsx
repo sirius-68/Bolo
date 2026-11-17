@@ -176,7 +176,6 @@ function openHowChecked() {
         ['exam', 'Ethics check and a real sample answer', 'We read how they’d actually help a job seeker'],
         ['video', '15-minute interview', 'A bolo reviewer talks with every applicant'],
         ['star', 'Rated after every session', 'Experts keep their badge only while ratings stay at 4.5★ or above'],
-        ['lock', 'Your payment is protected', 'bolo holds the money until you confirm the session happened'],
       ].map(([i, t, s]) => (
         <View key={t} style={[S.row, { gap: 12, alignItems: 'flex-start' }]}>
           <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>

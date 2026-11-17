@@ -301,11 +301,11 @@ function Session({ b }: { b: ExBooking }) {
       <View style={{ padding: 14, borderRadius: 18, backgroundColor: C.s2, gap: 8 }}>
         <Line k="Status" v={STATE[b.state][0]} c={STATE[b.state][1]} />
         <Line k="When" v={b.when || `${b.date} or later · the expert confirms in chat`} />
-        <Line k={b.state === 'done' ? 'Paid' : b.state === 'cancelled' ? 'Refunded' : 'Held by bolo'} v={xaf(b.amt) + (b.code ? ` · ${b.code}` : '')} />
+        <Line k="Price" v={xaf(b.amt) + (b.code ? ` · ${b.code}` : '')} />
       </View>
       {open ? (
         <Txt s={12} c={C.muted}>
-          Your money stays with bolo until you confirm the session happened. Cancel before it starts for a full refund.
+          You pay {e.name.split(' ')[0]} directly, as you agree in chat. bolo takes no payment.
         </Txt>
       ) : null}
       <Btn testID="exb-chat" variant="yellow" icon="chat" title={`Message ${e.name.split(' ')[0]}`} onPress={() => (sheet.close(), afterSheet(() => openChat(expertContact(e))))} />

@@ -550,10 +550,10 @@ const NT_SET: [string, string][] = [
   ['Reminders', 'Before a job starts'],
   ['Applicants', 'New applications to your jobs and programs'],
   ['Tips and news', 'Career tips and product news'],
-  ['Courses and classes', 'Enrolments, new courses, recordings and materials'],
+  ['Courses', 'New courses and updates to the ones you saved'],
   ['Mentorship', 'Requests, new mentees and group activity'],
   ['Comments and follows', 'People reacting to your posts and profile'],
-  ['Account and payments', 'Verification, wallet, Pro and security'],
+  ['Account', 'Verification and security'],
 ];
 export function openNotifSettings() {
   sheet.show(() => {

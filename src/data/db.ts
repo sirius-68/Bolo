@@ -402,7 +402,6 @@ export function makeDb() {
     savedMentors: [] as string[],
     myLearning: [] as string[],
     DMREQ: {} as Record<string, 'pending' | 'ok'>,
-    /** bolo wallet. Hidden until mobile money is connected (see src/logic/money.ts). */
     /** server conversation id → where it shows in the app */
     CONV: {} as Record<string, { key: string; inbox: 'W' | 'C' }>,
     /** comments per post, loaded when a post is opened */

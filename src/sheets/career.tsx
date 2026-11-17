@@ -239,7 +239,7 @@ function OppFormSheet({ f }: { f: OF }) {
   const set = (k: keyof OF, v: any) => ((f as any)[k] = v);
   return (
     <View style={{ gap: 14 }}>
-      <SheetTitle sub={course ? `Published by ${by} in Career → Courses. Students enrol and join your class group; fees go to your wallet.` : `Published by ${by} in Career, where anyone can apply or join.`}>
+      <SheetTitle sub={course ? `Published by ${by} in Career → Courses.` : `Published by ${by} in Career, where anyone can apply or join.`}>
         {f.edit ? 'Edit' : 'New'} {f.kind.toLowerCase()}
       </SheetTitle>
       {tutor || f.edit ? null : <View>
