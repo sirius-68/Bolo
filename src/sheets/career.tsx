@@ -264,7 +264,7 @@ function OppFormSheet({ f }: { f: OF }) {
         <SelectBox value={f.cat} placeholder="Choose a field" onPress={() => pick('Field', CATS.map((c) => c[0]), f.cat, (v) => (set('cat', v), re()))} />
       </Field>
       <Field label="What will people do and learn?">
-        <Input multiline maxHeight={300} value={f.desc} onChangeText={(v) => (set('desc', v), re())} maxLength={4000} />
+        <Input multiline maxHeight={300} value={f.desc} onChangeText={(v) => (set('desc', v), re())} />
       </Field>
       {course ? (
         <View>
@@ -552,7 +552,7 @@ function MentorForm({ f }: { f: MF }) {
             {f.price === 'Paid' ? <Input style={{ marginTop: 10 }} value={f.amount} onChangeText={(v) => ((f.amount = digits(v)), re())} prefix="XAF" keyboardType="number-pad" placeholder="Per month, e.g. 10,000" invalid={tried && !(Number(f.amount) > 0)} /> : null}
           </View>
           <Field label="What will mentees get? · optional">
-            <Input multiline maxHeight={300} value={f.desc} onChangeText={(v) => ((f.desc = v), re())} maxLength={4000} placeholder="e.g. Weekly calls, CV feedback, help with your first applications" />
+            <Input multiline maxHeight={300} value={f.desc} onChangeText={(v) => ((f.desc = v), re())} placeholder="e.g. Weekly calls, CV feedback, help with your first applications" />
           </Field>
         </>
       ) : null}

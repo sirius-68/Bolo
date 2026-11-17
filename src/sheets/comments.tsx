@@ -6,7 +6,7 @@ import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Avatar, OptRow, Txt, Verified, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
-import { afterSheet, sheet, SheetTitle } from '../ui/overlay';
+import { afterSheet, sheet, sheetScrollTo, SheetTitle, SHEET_PAD_TOP } from '../ui/overlay';
 import { C, S, tx } from '../ui/theme';
 import { P, fname, myPhoto } from '../logic/core';
 import { Cmt, addComment, canDeleteComment, canThread, cmtName, commentsLoading, commentsOf, deleteComment, likeComment, threadsOf } from '../logic/comments';
@@ -15,7 +15,15 @@ import { openProfile } from '../logic/nav';
 import { openReport } from './safety';
 
 /** What the list and the writing box share: who is being answered, and which threads are open. */
-const st = { reply: null as Cmt | null, open: {} as Record<string, boolean> };
+const st = {
+  reply: null as Cmt | null,
+  open: {} as Record<string, boolean>,
+  /** the comment a notification points at: brought into view and lit up for a moment */
+  focus: '' as string,
+  /** where things sit, measured as they are laid out (thread → y; reply → y inside its thread) */
+  pos: { wrap: -1, thread: {} as Record<string, number>, replies: {} as Record<string, number>, reply: {} as Record<string, number> },
+  scrolled: false,
+};
 const subs = new Set<() => void>();
 const poke = () => subs.forEach((f) => f());
 function useSt() {
@@ -29,10 +37,34 @@ function useSt() {
   }, []);
 }
 
-export function openComments(id: string) {
+export function openComments(id: string, focus?: string) {
   st.reply = null;
   st.open = {};
+  st.focus = focus || '';
+  st.pos = { wrap: -1, thread: {}, replies: {}, reply: {} };
+  st.scrolled = false;
   sheet.show(() => <Comments id={id} />, { tag: 'cmt:' + id, full: true, footer: () => <Box id={id} /> });
+}
+
+/** Once the comment a notification points at has been laid out: scroll to it, then let the highlight fade. */
+function showFocus(id: string) {
+  if (!st.focus || st.scrolled) return;
+  const c = commentsOf(id).find((x) => x.id === st.focus);
+  if (!c) return;
+  const top = c.parent || c.id;
+  const p = st.pos;
+  if (p.wrap < 0 || p.thread[top] == null) return;
+  let y = SHEET_PAD_TOP + p.wrap + p.thread[top];
+  if (c.parent) {
+    if (p.replies[top] == null || p.reply[c.id] == null) return;
+    y += p.replies[top] + p.reply[c.id];
+  }
+  st.scrolled = true;
+  setTimeout(() => sheetScrollTo(y), 120);
+  setTimeout(() => {
+    st.focus = '';
+    poke();
+  }, 3500);
 }
 
 function answer(c: Cmt) {
@@ -75,11 +107,18 @@ function menu(id: string, c: Cmt) {
   );
 }
 
-function Line({ id, c, small }: { id: string; c: Cmt; small?: boolean }) {
+function Line({ id, c, small, onY }: { id: string; c: Cmt; small?: boolean; onY?: (y: number) => void }) {
   const p = c.by === 'me' ? null : P(c.by);
   const at = c.t.match(/^@\S+/);
   return (
-    <Pressable testID="cmt-row" onLongPress={() => menu(id, c)} delayLongPress={300} accessibilityHint="Hold for more" style={{ flexDirection: 'row', gap: 10, paddingVertical: 7 }}>
+    <Pressable
+      testID={st.focus === c.id ? 'cmt-focus' : 'cmt-row'}
+      onLayout={onY ? (e) => onY(e.nativeEvent.layout.y) : undefined}
+      onLongPress={() => menu(id, c)}
+      delayLongPress={300}
+      accessibilityHint="Hold for more"
+      style={[{ flexDirection: 'row', gap: 10, paddingVertical: 7 }, st.focus === c.id ? { backgroundColor: 'rgba(246,238,92,.14)', borderRadius: 14, marginHorizontal: -8, paddingHorizontal: 8 } : null]}
+    >
       <Pressable accessibilityLabel={`${cmtName(c)}’s profile`} onPress={() => afterSheet(() => openProfile(c.by))}>
         <Avatar pic={p ? p.photo : myPhoto()} size={small ? 28 : 36} />
       </Pressable>
@@ -129,7 +168,11 @@ function Comments({ id }: { id: string }) {
   useLive();
   useSt();
   const T = threadsOf(id);
-  const n = commentsOf(id).length;
+  const all = commentsOf(id);
+  const n = all.length;
+  // the comment a notification points at sits in a thread: open that thread
+  const aim = st.focus ? all.find((x) => x.id === st.focus) : undefined;
+  if (aim?.parent && st.open[aim.parent] == null) st.open[aim.parent] = true;
   return (
     <View>
       <SheetTitle sub={n ? `${n} comment${n === 1 ? '' : 's'}` : undefined}>Comments</SheetTitle>
@@ -148,14 +191,32 @@ function Comments({ id }: { id: string }) {
           </Txt>
         </View>
       ) : (
-        <View style={{ marginTop: 6 }}>
+        <View
+          style={{ marginTop: 6 }}
+          onLayout={(e) => {
+            st.pos.wrap = e.nativeEvent.layout.y;
+            showFocus(id);
+          }}
+        >
           {T.map(({ c, replies }) => {
             const open = st.open[c.id] ?? replies.length <= 2;
             return (
-              <View key={c.id}>
+              <View
+                key={c.id}
+                onLayout={(e) => {
+                  st.pos.thread[c.id] = e.nativeEvent.layout.y;
+                  showFocus(id);
+                }}
+              >
                 <Line id={id} c={c} />
                 {replies.length ? (
-                  <View style={{ marginLeft: 46 }}>
+                  <View
+                    style={{ marginLeft: 46 }}
+                    onLayout={(e) => {
+                      st.pos.replies[c.id] = e.nativeEvent.layout.y;
+                      showFocus(id);
+                    }}
+                  >
                     <Pressable
                       testID="cmt-replies"
                       hitSlop={6}
@@ -170,7 +231,20 @@ function Comments({ id }: { id: string }) {
                         {open ? 'Hide replies' : `View ${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`}
                       </Txt>
                     </Pressable>
-                    {open ? replies.map((r) => <Line key={r.id} id={id} c={r} small />) : null}
+                    {open
+                      ? replies.map((r) => (
+                          <Line
+                            key={r.id}
+                            id={id}
+                            c={r}
+                            small
+                            onY={(y) => {
+                              st.pos.reply[r.id] = y;
+                              showFocus(id);
+                            }}
+                          />
+                        ))
+                      : null}
                   </View>
                 ) : null}
               </View>

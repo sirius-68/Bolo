@@ -34,7 +34,8 @@ export function goTo(g: Go) {
     case 'track':
       return openTrack(g.id);
     case 'post':
-      return openComments(g.id);
+      // from a like or a reply: straight to that comment
+      return openComments(g.id, g.c);
     case 'wallet':
       return router.push('/wallet' as any);
     case 'teach':
@@ -65,6 +66,9 @@ export function goTo(g: Go) {
       }
       return db.PR.docs.id === 'verified' ? openMe() : router.push('/id-verify' as any);
     }
+    case 'me':
+      // with a tab name: straight to that part of my profile (Reviews, Posts…)
+      return openMe(g.id);
     default:
       return openMe();
   }

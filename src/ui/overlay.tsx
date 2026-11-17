@@ -66,6 +66,12 @@ export const sheet = {
   is: (tag: string) => !!sheetState.render && sheetState.opts.tag === tag,
   tag: () => (sheetState.render ? sheetState.opts.tag : undefined),
 };
+/** The scrolling area of the sheet on top, so a sheet can bring one of its rows into view. */
+let topScroll: ScrollView | null = null;
+export const SHEET_PAD_TOP = 4;
+/** Scroll the open sheet so that `y` (measured from the top of its content) is near the top. */
+export const sheetScrollTo = (y: number) => topScroll?.scrollTo({ y: Math.max(0, y - 12), animated: true });
+
 /** Close the sheet (and any it was opened over: we are leaving for another screen), then run fn once the
     close animation finished (prototype used 260 ms). */
 export function afterSheet(fn: () => void, ms = 280) {
@@ -139,7 +145,7 @@ function SheetHost() {
           {[...(open ? under : []), cur].map((L, i, all) => (
             // a sheet with a footer (the comment box) fills the sheet's height, so the footer sits at the bottom
             <View key={L.key} style={i === all.length - 1 ? { flexShrink: 1, flexGrow: L.opts.footer ? 1 : 0 } : { display: 'none' }}>
-              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, paddingTop: 4 }}>
+              <ScrollView ref={i === all.length - 1 ? (r) => void (topScroll = r) : undefined} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, paddingTop: SHEET_PAD_TOP }}>
                 {L.render ? L.render() : null}
               </ScrollView>
               {L.opts.footer ? <View style={{ paddingHorizontal: 20, paddingTop: 8 }}>{L.opts.footer()}</View> : null}

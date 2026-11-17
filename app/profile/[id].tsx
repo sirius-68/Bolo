@@ -18,6 +18,7 @@ import { OppCard, ReqPost, ReelThumb, PostCard } from '../../src/components/card
 import type { Reel } from '../../src/data/db';
 import { router } from 'expo-router';
 import { PersonCV } from '../../src/components/cv';
+import { EmptyTab, ReviewsPanel } from '../../src/components/PersonReviews';
 
 export default function Profile() {
   useLive();
@@ -182,31 +183,6 @@ function Cred({ icon, t, s }: { icon: string; t: string; s: string }) {
   );
 }
 /** Friendly empty state used by every profile tab. */
-function EmptyTab({ icon, title, text, action, onAction }: { icon: string; title: string; text: string; action?: string; onAction?: () => void }) {
-  return (
-    <View style={{ alignItems: 'center', paddingVertical: 28, paddingHorizontal: 20, borderRadius: 22, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }}>
-      <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
-        <Icon name={icon} size={24} color={C.yellow} />
-      </View>
-      <Txt s={16} w={8} center style={{ marginTop: 12 }}>
-        {title}
-      </Txt>
-      <Txt s={13} c={C.muted} center style={{ marginTop: 4 }}>
-        {text}
-      </Txt>
-      {action ? <Btn small variant="dark" title={action} onPress={onAction} style={{ marginTop: 14 }} /> : null}
-    </View>
-  );
-}
-function Stars({ n, size = 14 }: { n: number; size?: number }) {
-  return (
-    <View style={[S.row, { gap: 2 }]}>
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Icon key={i} name="star" size={size} color={i <= Math.round(n) ? C.yellow : C.s3} />
-      ))}
-    </View>
-  );
-}
 function ReviewGate({ id }: { id: string }) {
   const r = reviewable(id);
   if (!r)
@@ -235,42 +211,6 @@ function ReviewGate({ id }: { id: string }) {
     </Pressable>
   );
 }
-type RV = { pic: any; name: string; time: string; stars: number; text: string; tags?: string[] };
-function ReviewCard({ r }: { r: RV }) {
-  return (
-    <View style={{ padding: 16, borderRadius: 20, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, gap: 10 }}>
-      <View style={[S.row, { gap: 10 }]}>
-        <Avatar pic={r.pic} size={36} />
-        <View style={{ flex: 1 }}>
-          <Txt s={14} w={8}>
-            {r.name}
-          </Txt>
-          <Txt s={11} c={C.faint}>
-            {r.time}
-          </Txt>
-        </View>
-        <Stars n={r.stars} size={13} />
-      </View>
-      {r.tags?.length ? (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-          {r.tags.map((x) => (
-            <View key={x} style={{ paddingHorizontal: 10, height: 26, borderRadius: 13, backgroundColor: C.s2, justifyContent: 'center' }}>
-              <Txt s={11} w={7} c={C.lav}>
-                {x}
-              </Txt>
-            </View>
-          ))}
-        </View>
-      ) : null}
-      {r.text ? (
-        <Txt s={14} c="#d9d9de">
-          {r.text}
-        </Txt>
-      ) : null}
-    </View>
-  );
-}
-
 /** Every person's profile has the same tabs; tabs with nothing yet show a helpful empty state. */
 function PersonTab({ id, t, kind }: { id: string; t: string; kind: string }) {
   const p = P(id);
@@ -389,49 +329,8 @@ function PersonTab({ id, t, kind }: { id: string; t: string; kind: string }) {
     );
   }
 
-  if (t === 'Reviews') {
-    const mine: Review[] = db.REVIEWS[id] || [];
-    const all: RV[] = mine.map((r) => ({ pic: r.photo, name: r.name, time: r.time, stars: r.stars, text: r.text, tags: r.tags }));
-    const dist = [5, 4, 3, 2, 1].map((n) => (mine.length ? mine.filter((r) => r.stars === n).length / mine.length : 0));
-    if (!mine.length)
-      return (
-        <>
-          <ReviewGate id={id} />
-          <EmptyTab icon="star" title="No reviews yet" text={`Reviews appear after someone completes a job with ${f} on bolo.`} />
-        </>
-      );
-    return (
-      <>
-        <View style={[S.row, { gap: 18, padding: 18, borderRadius: 22, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }]}>
-          <View style={{ alignItems: 'center', minWidth: 84 }}>
-            <Txt s={42} w={8}>
-              {p.rate}
-            </Txt>
-            <Stars n={Number(p.rate)} size={12} />
-            <Txt s={11} c={C.muted} style={{ marginTop: 4 }}>
-              {p.reviews} reviews
-            </Txt>
-          </View>
-          <View style={{ flex: 1, gap: 5 }}>
-            {dist.map((d, i) => (
-              <View key={i} style={[S.row, { gap: 8 }]}>
-                <Txt s={11} c={C.muted} style={{ width: 8 }}>
-                  {5 - i}
-                </Txt>
-                <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: C.s3 }}>
-                  <View style={{ width: `${d * 100}%`, height: 6, borderRadius: 3, backgroundColor: C.yellow }} />
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-        <ReviewGate id={id} />
-        {all.map((r, i) => (
-          <ReviewCard key={i} r={r} />
-        ))}
-      </>
-    );
-  }
+  if (t === 'Reviews')
+    return <ReviewsPanel id={id} rate={Number(p.rate) || 0} count={Number(p.reviews) || 0} gate={<ReviewGate id={id} />} empty={`Reviews appear after someone completes a job with ${f} on bolo.`} />;
 
   if (t === 'CV') {
     if (!worker) return <EmptyTab icon="file" title="No CV yet" text={`${f} hasn’t added work history to bolo yet.`} />;

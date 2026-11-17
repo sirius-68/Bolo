@@ -761,7 +761,8 @@ function notifFrom(n: any): Notif {
     read: n.read_at ? 1 : 0,
     text: msg ? 'sent you a message' : n.body,
     snip: msg ? n.body : undefined,
-    go: goFrom(n.target),
+    // a review about me opens my own reviews
+    go: n.type === 'review' && n.target?.id === db.uid ? { k: 'me', id: 'Reviews' } : goFrom(n.target),
     key: n.event_key,
     cat: n.category,
     count: Number(n.target?.n) || undefined,

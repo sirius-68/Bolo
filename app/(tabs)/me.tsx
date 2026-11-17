@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Pull } from '../../src/components/common';
 import { MONEY_LIVE } from '../../src/logic/money';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, ui } from '../../src/data/db';
-import { myStats } from '../../src/logic/server';
+import { loadReviewsOf, myStats } from '../../src/logic/server';
+import { ReviewsPanel } from '../../src/components/PersonReviews';
 import { DOCS, ST_C, ST_W, catIcon } from '../../src/data/catalog';
 import { Avatar, Btn, Empty, IconBtn, PTabs, Ring, StatusPill, Txt, Verified, tap } from '../../src/ui/kit';
 import { Icon } from '../../src/ui/Icon';
@@ -256,12 +257,18 @@ function MeRegular() {
     ['Profile', 'Profile', null],
     ['My jobs', 'My jobs', mj.length],
     ['Posts', 'Posts', mw.length],
+    ['Reviews', 'Reviews', myStats().reviews || null],
     ['Applications', 'Offers sent', offers.length],
     ...(hired.length ? ([['Hired', 'Hired', hired.length]] as [string, string, number][]) : []),
     ['Saved', 'Saved', savedN],
   ];
   if (!tabs.some((t) => t[0] === ui.meTab)) ui.meTab = 'Profile';
   const tab = ui.meTab;
+  // what people wrote about me: fresh each time the tab opens
+  useEffect(() => {
+    if (tab === 'Reviews') void loadReviewsOf('me').then(bump);
+  }, [tab]);
+  const rating = myStats().rating;
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} refreshControl={<Pull />} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top, paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}>
       <TopRow />
@@ -277,6 +284,7 @@ function MeRegular() {
         onAvatar={PR_ACT.photo}
         stats={[
           [myStats().jobs_done, 'Jobs done', openJobHistory],
+          [rating ? rating.toFixed(1) + ' ★' : '–', 'Rating', () => ((ui.meTab = 'Reviews'), bump())],
           [k(myStats().followers), 'Followers', () => openFollows('Followers')],
           [followingCount(), 'Following', () => openFollows('Following')],
         ]}
@@ -313,6 +321,11 @@ function MeRegular() {
               <ListRow key={x.id} icon={x.kind === 'avail' ? 'clock' : 'post'} title={x.kind === 'avail' ? 'Availability' : 'Post'} sub={(x.text || '').slice(0, 90)} onPress={() => router.push('/feed')} />
             ))}
             {!mw.length ? <Empty title="No posts yet" text="Share a photo or a few words about a job you did. Posts help people trust your work." /> : null}
+          </View>
+        ) : null}
+        {tab === 'Reviews' ? (
+          <View testID="me-reviews" style={{ gap: 12, marginTop: 10 }}>
+            <ReviewsPanel id="me" rate={rating} count={myStats().reviews} empty="Reviews appear here after you complete a job for someone on bolo and they rate you." />
           </View>
         ) : null}
         {tab === 'Applications' ? (
@@ -664,10 +677,15 @@ function MeBusiness() {
     ['Vacancies', 'Vacancies', v.length],
     ['Programs', 'Programs', o.length + cs.length],
     ['Team', 'Team', b.team.length],
+    ['Reviews', 'Reviews', myStats().reviews || null],
     ['Saved', 'Saved', savedN],
   ];
   if (!tabs.some((t) => t[0] === ui.meTab)) ui.meTab = 'Company';
   const tab = ui.meTab;
+  // what the people you hired wrote about you
+  useEffect(() => {
+    if (tab === 'Reviews') void loadReviewsOf('me').then(bump);
+  }, [tab]);
   const pct = bizPct(b);
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} onScroll={onScrollFab} scrollEventThrottle={32} refreshControl={<Pull />} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top, paddingHorizontal: 20, paddingBottom: 120 + ins.bottom }}>
@@ -703,6 +721,7 @@ function MeBusiness() {
         }}
       />
       <View style={{ marginTop: 10, gap: 10 }}>
+        {tab === 'Reviews' ? <ReviewsPanel id="me" rate={myStats().rating} count={myStats().reviews} empty="Reviews appear here after a job is completed and the person you hired rates you." /> : null}
         {tab === 'Company' ? (
           <>
             {pct < 100 ? (
