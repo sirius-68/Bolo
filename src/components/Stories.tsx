@@ -32,12 +32,8 @@ export function showStories(list: Story[], opts: Opts = {}) {
   holdSheets(true);
   subs.forEach((f) => f());
 }
-/** When the viewer last closed: for a moment after, a tap meant for its close button can't reach the screen under it. */
-let closedAt = 0;
-const SHIELD_MS = 600;
 function closeStories(_why = 'close') {
   const o = state?.opts;
-  if (state) closedAt = Date.now();
   state = null;
   holdSheets(false);
   subs.forEach((f) => f());
@@ -55,14 +51,7 @@ export function StoryHost() {
       subs.delete(force);
     };
   }, []);
-  // just closed: an invisible cover that swallows the rest of that tap (it sat right over the notifications bell)
-  const shield = !state && Date.now() - closedAt < SHIELD_MS;
-  useEffect(() => {
-    if (!shield) return;
-    const t = setTimeout(force, SHIELD_MS - (Date.now() - closedAt) + 20);
-    return () => clearTimeout(t);
-  }, [shield]);
-  if (!state) return shield ? <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onStartShouldSetResponder={() => true} /> : null;
+  if (!state) return null;
   return <Viewer key={state.list.map((s) => s.key).join('|')} list={state.list} opts={state.opts} />;
 }
 
