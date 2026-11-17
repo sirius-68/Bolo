@@ -11,6 +11,8 @@ insert into auth.users (id, email, raw_user_meta_data) values
 insert into public.admin_users (user_id, role) values ('a0000000-0000-0000-0000-000000000001', 'owner'), ('d0000000-0000-0000-0000-000000000004', 'moderator');
 update public.profiles set city = 'Buea', skills = '{Plumber}' where id = 'b0000000-0000-0000-0000-000000000002';
 update public.profiles set city = 'buea ' where id = 'c0000000-0000-0000-0000-000000000003';
+-- (new accounts start in Buea; the other two live elsewhere)
+update public.profiles set city = 'Douala' where id in ('a0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000004');
 
 set local role authenticated;
 set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-000000000002"}';
