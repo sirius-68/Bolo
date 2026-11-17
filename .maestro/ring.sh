@@ -32,7 +32,9 @@ tap_label() {
   adb shell uiautomator dump /sdcard/ring-ui.xml > /dev/null 2>&1
   adb shell cat /sdcard/ring-ui.xml > "$OUT/ui-$1.xml" 2>/dev/null
   local b
-  b=$(tr '>' '>\n' < "$OUT/ui-$1.xml" | grep "content-desc=\"$1\"" | head -1 | sed -E 's/.*bounds="\[([0-9]+),([0-9]+)\]\[([0-9]+),([0-9]+)\]".*/\1 \2 \3 \4/')
+  # one element per line, then the bounds of the one with this label
+  b=$(sed 's/>/>\n/g' "$OUT/ui-$1.xml" | grep "content-desc=\"$1\"" | head -1 | sed -E 's/.*bounds="\[([0-9]+),([0-9]+)\]\[([0-9]+),([0-9]+)\]".*/\1 \2 \3 \4/')
+  echo "tap $1 at: $b" >> "$OUT/state.txt"
   set -- $b
   [ -n "$4" ] || return 1
   adb shell input tap $(( ($1 + $3) / 2 )) $(( ($2 + $4) / 2 ))
