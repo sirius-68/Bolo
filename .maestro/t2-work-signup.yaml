@@ -201,3 +201,24 @@ name: New account that offers skills - sign-up, full onboarding, send an offer
     optional: true
 - takeScreenshot: w16-services
 - assertNotVisible: "Not published"
+# write to bolo from Settings: the keyboard stays open while typing, and the message is sent
+- openLink: "bolo://settings"
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: "Help & support"
+    direction: DOWN
+- tapOn: "Help & support"
+- tapOn:
+    id: "help-write"
+- tapOn:
+    id: "fb-body"
+- inputText: "Tour ${RUN}: checking that this box keeps the keyboard"
+- takeScreenshot: w17-write-to-bolo-typing
+- assertVisible: ".*keeps the keyboard.*"
+- hideKeyboard
+- tapOn:
+    id: "fb-send"
+- extendedWaitUntil:
+    visible: ".*bolo team reads every message.*"
+    timeout: 10000
+- takeScreenshot: w18-write-to-bolo-sent

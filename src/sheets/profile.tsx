@@ -501,27 +501,25 @@ export async function openVideo() {
 }
 export function openLangs() {
   const d = { langs: db.PR.langs.map((x) => [...x] as [string, string]) };
-  sheet.show(() => {
-    const L = () => {
-      const [, f] = useState(0);
-      return (
-        <View style={{ gap: 12 }}>
-          <SheetTitle>Languages</SheetTitle>
-          <LanguagesEditor langs={d.langs} onChange={() => f((x) => x + 1)} />
-          <Btn
-            variant="yellow"
-            title="Save"
-            disabled={!d.langs.length}
-            onPress={() => {
-              db.PR.langs = d.langs;
-              sheet.close('Languages saved');
-            }}
-          />
-        </View>
-      );
-    };
-    return <L />;
-  }, { full: true });
+  sheet.show(() => <LangsSheet d={d} />, { full: true });
+}
+function LangsSheet({ d }: { d: { langs: [string, string][] } }) {
+  const [, f] = useState(0);
+  return (
+    <View style={{ gap: 12 }}>
+      <SheetTitle>Languages</SheetTitle>
+      <LanguagesEditor langs={d.langs} onChange={() => f((x) => x + 1)} />
+      <Btn
+        variant="yellow"
+        title="Save"
+        disabled={!d.langs.length}
+        onPress={() => {
+          db.PR.langs = d.langs;
+          sheet.close('Languages saved');
+        }}
+      />
+    </View>
+  );
 }
 
 /* ---------------- followers ---------------- */

@@ -207,60 +207,58 @@ export type CourseF = { cat: string; lv: string; price: string; fmt: string; rat
 export const courseF: CourseF = { cat: '', lv: '', price: '', fmt: '', rate: '' };
 export function openCourseFilters() {
   const t = { ...courseF };
-  sheet.show(() => {
-    const S = () => {
-      const [, f] = useState(0);
-      const re = () => f((x) => x + 1);
-      const row = (label: string, k: keyof CourseF, opts: [string, string][]) => (
-        <View>
-          <Label>{label}</Label>
-          <Chips>
-            {opts.map(([v, l]) => (
-              <Chip key={v || 'any'} small label={l} on={t[k] === v} onPress={() => ((t[k] = v), re())} />
-            ))}
-          </Chips>
-        </View>
-      );
-      return (
-        <View style={{ gap: 16 }}>
-          <SheetTitle>Filter courses</SheetTitle>
-          {row('Field', 'cat', [['', 'All'], ...COURSE_CATS.map(([c]) => [c, c] as [string, string])])}
-          {row('Level', 'lv', [
-            ['', 'Any'],
-            ['Beginner', 'From zero'],
-            ['Advanced', 'Advanced'],
-          ])}
-          {row('Price', 'price', [
-            ['', 'Any'],
-            ['free', 'Free'],
-            ['paid', 'Paid'],
-          ])}
-          {row('Format', 'fmt', [
-            ['', 'Any'],
-            ['Online', 'Online'],
-            ['Offline', 'In person'],
-          ])}
-          {row('Rating', 'rate', [
-            ['', 'Any'],
-            ['4', '4★ & up'],
-            ['4.5', '4.5★ & up'],
-          ])}
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Btn variant="ghost" title="Reset" style={{ flex: 1 }} onPress={() => (Object.assign(t, { cat: '', lv: '', price: '', fmt: '', rate: '' }), re())} />
-            <Btn
-              variant="yellow"
-              title="Show courses"
-              style={{ flex: 2 }}
-              onPress={() => {
-                Object.assign(courseF, t);
-                bump();
-                sheet.close();
-              }}
-            />
-          </View>
-        </View>
-      );
-    };
-    return <S />;
-  });
+  sheet.show(() => <CourseFilterSheet t={t} />);
+}
+function CourseFilterSheet({ t }: { t: CourseF }) {
+  const [, f] = useState(0);
+  const re = () => f((x) => x + 1);
+  const row = (label: string, k: keyof CourseF, opts: [string, string][]) => (
+    <View>
+      <Label>{label}</Label>
+      <Chips>
+        {opts.map(([v, l]) => (
+          <Chip key={v || 'any'} small label={l} on={t[k] === v} onPress={() => ((t[k] = v), re())} />
+        ))}
+      </Chips>
+    </View>
+  );
+  return (
+    <View style={{ gap: 16 }}>
+      <SheetTitle>Filter courses</SheetTitle>
+      {row('Field', 'cat', [['', 'All'], ...COURSE_CATS.map(([c]) => [c, c] as [string, string])])}
+      {row('Level', 'lv', [
+        ['', 'Any'],
+        ['Beginner', 'From zero'],
+        ['Advanced', 'Advanced'],
+      ])}
+      {row('Price', 'price', [
+        ['', 'Any'],
+        ['free', 'Free'],
+        ['paid', 'Paid'],
+      ])}
+      {row('Format', 'fmt', [
+        ['', 'Any'],
+        ['Online', 'Online'],
+        ['Offline', 'In person'],
+      ])}
+      {row('Rating', 'rate', [
+        ['', 'Any'],
+        ['4', '4★ & up'],
+        ['4.5', '4.5★ & up'],
+      ])}
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <Btn variant="ghost" title="Reset" style={{ flex: 1 }} onPress={() => (Object.assign(t, { cat: '', lv: '', price: '', fmt: '', rate: '' }), re())} />
+        <Btn
+          variant="yellow"
+          title="Show courses"
+          style={{ flex: 2 }}
+          onPress={() => {
+            Object.assign(courseF, t);
+            bump();
+            sheet.close();
+          }}
+        />
+      </View>
+    </View>
+  );
 }

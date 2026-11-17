@@ -299,35 +299,33 @@ export default function CVFlow() {
 }
 
 function openProfPicker(c: CVF, re: () => void) {
-  sheet.show(() => {
-    const PP = () => {
-      const [q, setQ] = useState('');
-      const qq = q.trim().toLowerCase();
-      const L = qq ? SKILLS.map((s) => s.n).filter((n) => n.toLowerCase().includes(qq)).slice(0, 30) : POPULAR.map((s) => s.n);
-      const choose = (n: string) => {
-        c.prof = n;
-        c.any = false;
-        sheet.close();
-        re();
-      };
-      return (
-        <View style={{ gap: 8 }}>
-          <SheetTitle center>Profession</SheetTitle>
-          <Input icon="search" value={q} onChangeText={setQ} placeholder="Search" autoFocus />
-          <Txt s={12} w={7} c={C.muted}>
-            {qq ? 'Results' : 'Popular'}
-          </Txt>
-          {L.map((n) => (
-            <Pressable key={n} onPress={() => choose(n)} style={({ pressed }) => ({ paddingVertical: 12, paddingHorizontal: 8, borderRadius: 10, backgroundColor: pressed ? C.s2 : 'transparent' })}>
-              <Txt s={15}>{n}</Txt>
-            </Pressable>
-          ))}
-          {qq && !L.length ? <Btn variant="soft" title={`Use “${q.trim()}”`} onPress={() => choose(q.trim())} /> : null}
-        </View>
-      );
-    };
-    return <PP />;
-  }, { full: true });
+  sheet.show(() => <ProfPickerSheet c={c} re={re} />, { full: true });
+}
+function ProfPickerSheet({ c, re }: { c: CVF; re: () => void }) {
+  const [q, setQ] = useState('');
+  const qq = q.trim().toLowerCase();
+  const L = qq ? SKILLS.map((s) => s.n).filter((n) => n.toLowerCase().includes(qq)).slice(0, 30) : POPULAR.map((s) => s.n);
+  const choose = (n: string) => {
+    c.prof = n;
+    c.any = false;
+    sheet.close();
+    re();
+  };
+  return (
+    <View style={{ gap: 8 }}>
+      <SheetTitle center>Profession</SheetTitle>
+      <Input icon="search" value={q} onChangeText={setQ} placeholder="Search" autoFocus />
+      <Txt s={12} w={7} c={C.muted}>
+        {qq ? 'Results' : 'Popular'}
+      </Txt>
+      {L.map((n) => (
+        <Pressable key={n} onPress={() => choose(n)} style={({ pressed }) => ({ paddingVertical: 12, paddingHorizontal: 8, borderRadius: 10, backgroundColor: pressed ? C.s2 : 'transparent' })}>
+          <Txt s={15}>{n}</Txt>
+        </Pressable>
+      ))}
+      {qq && !L.length ? <Btn variant="soft" title={`Use “${q.trim()}”`} onPress={() => choose(q.trim())} /> : null}
+    </View>
+  );
 }
 function EduForm({ onSave }: { onSave: (e: Edu) => void }) {
   const [lv, setLv] = useState('University');
