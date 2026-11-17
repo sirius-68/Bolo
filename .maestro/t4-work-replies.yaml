@@ -63,3 +63,41 @@ name: The worker logs back in - sees the booking and the message, replies
 - waitForAnimationToEnd
 - takeScreenshot: b08-calls
 - assertNotVisible: "This screen hit a problem"
+# a comment notification opens the post's comments at that very comment (it is marked for a moment)
+- back
+- back
+- tapOn:
+    id: "tab-feed"
+- waitForAnimationToEnd
+- tapOn: "Notifications"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*commented on your post.*"
+    timeout: 15000
+- tapOn: ".*commented on your post.*"
+- extendedWaitUntil:
+    visible:
+      id: "cmt-focus"
+    timeout: 15000
+- takeScreenshot: b09-comment-focused
+- back
+- runFlow:
+    when:
+      visible:
+        id: "cmt-input"
+    commands:
+      - back
+- waitForAnimationToEnd
+- back
+# my own rating and reviews, on my profile
+- tapOn:
+    id: "tab-me"
+- waitForAnimationToEnd
+- tapOn: "Rating"
+- scrollUntilVisible:
+    element:
+      id: "me-reviews"
+    direction: DOWN
+    timeout: 15000
+- takeScreenshot: b10-my-reviews
+- assertNotVisible: "This screen hit a problem"
