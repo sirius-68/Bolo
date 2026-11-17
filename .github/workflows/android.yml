@@ -233,13 +233,13 @@ jobs:
         with:
           name: bolo-apk
           path: out
-      # the previous version (the build on main before this audit), for the update test
+      # the previous version, for the update test: a test build (staging server) of what build 166 released
       - uses: actions/download-artifact@v4
         continue-on-error: true
         with:
           name: bolo-apk
           path: old
-          run-id: ${{ vars.PREVIOUS_BUILD_RUN || '43336438014' }}
+          run-id: ${{ vars.PREVIOUS_BUILD_RUN || '43921977668' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Enable KVM
         run: |
