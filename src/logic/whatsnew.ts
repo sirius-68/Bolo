@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db, ui } from '../data/db';
 import { showStories, Story } from '../components/Stories';
-import { openNotifSettings } from '../sheets/account';
+import { openFeedback, openNotifSettings } from '../sheets/account';
 
 export const WHATS_NEW_ID = '2026-11-20';
 
@@ -12,7 +12,7 @@ const LATEST = ['rightplace', 'boloreply'];
 
 export const WHATS_NEW: Story[] = [
   { key: 'rightplace', colors: ['#7c5cff', '#3b1fa8'], icon: 'bell', chip: 'Notifications', title: 'Straight to the right place', text: 'A notification for your business page now switches you to that page and opens it, even when you were on your Regular profile (and the other way round). The Notifications page tells you when your other profile has news, and opening a notification no longer stacks up copies of the page.' },
-  { key: 'boloreply', colors: ['#f6ee5c', '#e3c400'], icon: 'chat', chip: 'Help', title: 'Write to bolo, and read our replies', text: 'The message box in Settings → Help → Write to bolo keeps the keyboard open again. Messages from the bolo team open in full, with Reply to bolo.', cta: 'Write to bolo', onCta: () => require('../sheets/account').openFeedback(), dark: true },
+  { key: 'boloreply', colors: ['#f6ee5c', '#e3c400'], icon: 'chat', chip: 'Help', title: 'Write to bolo, and read our replies', text: 'The message box in Settings → Help → Write to bolo keeps the keyboard open again. Messages from the bolo team open in full, with Reply to bolo.', cta: 'Write to bolo', onCta: () => openFeedback(), dark: true },
   { key: 'fullring', colors: ['#2fbf7a', '#0f6e45'], icon: 'phone', chip: 'Calls', title: 'Calls fill your lock screen', text: 'When someone calls and bolo is closed, your phone now rings full screen, even when it is locked, with Accept and Decline. Accept unlocks the phone and connects the call; Decline ends it without opening bolo.' },
   { key: 'myratings', colors: ['#f6ee5c', '#e3c400'], icon: 'star', chip: 'Your profile', title: 'See your own ratings', text: 'Your profile has a new Reviews tab with your rating and what people wrote about you. Tap your Rating number to open it. And a notification about a comment now takes you to that very comment.', dark: true },
   { key: 'lighter', colors: ['#3d5af1', '#1b2a9b'], icon: 'sparkle', chip: 'Faster', title: 'Opens faster, less clutter', text: 'Home appears as soon as its posts are in, while the rest loads behind it. Screens that only said “coming soon” are gone. Internship, program, mentorship and course descriptions can be as long as you need.' },
