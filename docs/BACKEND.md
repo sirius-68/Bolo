@@ -125,7 +125,6 @@ The emulator tour always checks the signed-out screens. To also tour the app sig
 | People | `admin_people(query, filter, limit, offset)`, `admin_person(user)`, `admin_suspend(user, on, note)` | search, a person's page, suspend and restore |
 | Settings | `admin_set_config(key, value)`, `admin_admins()`, `admin_grant(email, role)`, `admin_revoke(user)` | minimum app version, the service notice, the admin team (owners only) |
 | Activity | `admin_audit(limit)` | every admin action; `audit_log` can't be edited or deleted |
-
 | Content | `admin_latest_content(kind, query, limit)` | the newest posts, jobs and comments of everyone, with remove buttons |
 
 **Roles** (checked on the server, in `bolo_audit`, which every admin action goes through): *support* reads everything, answers feedback and messages people; *moderators* also review, remove and suspend; *admins* also send announcements and give Pro; *owners* also change settings, the admin team, and close accounts.
