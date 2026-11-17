@@ -166,7 +166,7 @@ jobs:
           for part in call.BoloMessagingService call.IncomingCallActivity call.CallActionReceiver bolo.api bolo.key; do
             grep -q "$part" ci-out/manifest.txt || { echo "::error::$part is missing from the app"; exit 1; }
           done
-          "$BT/aapt" dump resources phone/bolo.apk | grep -E "raw/bolo_ring|drawable/notification_icon" | head -4 | tee ci-out/ring-resources.txt
+          "$BT/aapt" dump resources phone/bolo.apk | grep -E "raw/bolo_ring|drawable/notification_icon:" | tee ci-out/ring-resources.txt
           grep -q "raw/bolo_ring" ci-out/ring-resources.txt || { echo "::error::The ringtone is missing from the app"; exit 1; }
       - uses: actions/upload-artifact@v4
         with:
