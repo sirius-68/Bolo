@@ -454,6 +454,24 @@ if (ready) {
       const biz = must(await A.sb.rpc('admin_businesses', { p_status: 'all', p_query: 'no such business e2e' }));
       expect(Array.isArray(biz) && biz.length === 0, 'the business search did not answer');
     });
+    await step('admin: dashboard numbers for a period, with the period before for trends', async () => {
+      const st = must(await A.sb.rpc('admin_stats', { p_days: 30 }));
+      expect(Array.isArray(st.series) && st.series.length === 30, 'not one line per day');
+      expect(st.now && st.prev && st.types && st.funnel && Array.isArray(st.cities), 'parts of the dashboard are missing');
+      expect(st.now.signups >= 2 && st.now.messages >= 1, 'this run\'s accounts and messages are not counted');
+      return `${st.now.signups} new accounts, ${st.now.active} active in 30 days`;
+    });
+    await step('admin: a blocked word stops a post (and the list is put back)', async () => {
+      const before = must(await A.sb.rpc('admin_blocked_words'));
+      const word = 'e2eblocked' + run.replace(/[^a-z0-9]/g, '');
+      must(await A.sb.rpc('admin_set_blocked_words', { p_words: [...before, word] }));
+      try {
+        const r = await B.sb.from('posts').insert({ id: 'e2eb' + run, author_id: B.id, kind: 'text', body: `hello ${word.toUpperCase()} there` });
+        expect(r.error && /not allowed/i.test(r.error.message), 'a post with a blocked word went through');
+      } finally {
+        must(await A.sb.rpc('admin_set_blocked_words', { p_words: before }));
+      }
+    });
     await step('admin: the app notice can be set and cleared, and every action is in the activity list', async () => {
       const before = must(await A.sb.from('app_config').select('value').eq('key', 'maintenance').maybeSingle());
       must(await A.sb.rpc('admin_set_config', { p_key: 'maintenance', p_value: { on: true, message: 'e2e notice' } }));

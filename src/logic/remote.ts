@@ -42,6 +42,8 @@ export function friendly(e: any): string {
 /** Returns needsCode=true when the account must be confirmed with a code (email/SMS). */
 export async function signUp(contact: string, password: string, meta: { name: string; biz_only?: boolean }): Promise<{ needsCode: boolean; error?: string }> {
   try {
+    // the bolo team can pause new sign-ups for a while: say so plainly instead of a server error
+    if (!(await featureOn('signups'))) return { needsCode: false, error: 'New sign-ups are paused for a moment. Please try again later.' };
     const { data, error } = await supabase.auth.signUp({ ...(cred(contact) as any), password, options: { data: meta } });
     if (error) return { needsCode: false, error: friendly(error) };
     // Supabase returns a user with no identities when the email is already taken (to avoid leaking accounts).
@@ -525,6 +527,15 @@ export async function updateRequired(platform: 'android' | 'ios', build: number)
 }
 
 /** A notice from the bolo team shown when the app opens (set from the admin panel: Settings → Service notice). */
+/** Is this part of bolo switched on? (The bolo team can pause sign-ups, calls or posting; on when unsure.) */
+export async function featureOn(name: 'signups' | 'calls' | 'posting'): Promise<boolean> {
+  try {
+    const { data } = await supabase.from('app_config').select('value').eq('key', 'features').maybeSingle();
+    return (data?.value as Record<string, boolean> | undefined)?.[name] !== false;
+  } catch {
+    return true;
+  }
+}
 export async function serviceNotice(): Promise<string | null> {
   try {
     const { data } = await supabase.from('app_config').select('value').eq('key', 'maintenance').maybeSingle();

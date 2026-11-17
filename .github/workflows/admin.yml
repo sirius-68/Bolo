@@ -54,7 +54,12 @@ jobs:
           # the database library, bundled into one file so the page loads nothing from other sites
           mkdir -p /tmp/lib && cd /tmp/lib
           npm init -y > /dev/null
-          npm i --no-audit --no-fund @supabase/supabase-js@2 esbuild@0.24 > /dev/null
+          npm i --no-audit --no-fund @supabase/supabase-js@2 esbuild@0.24 @expo-google-fonts/plus-jakarta-sans@0.2 > /dev/null
+          # the app's own font, served from the site itself (the page loads nothing from other websites)
+          mkdir -p "$GITHUB_WORKSPACE/site/fonts"
+          for w in 500Medium 600SemiBold 700Bold 800ExtraBold; do
+            cp "node_modules/@expo-google-fonts/plus-jakarta-sans/$w/PlusJakartaSans_$w.ttf" "$GITHUB_WORKSPACE/site/fonts/" || echo "::warning::font $w not found; the panel uses the system font"
+          done
           echo "export { createClient } from '@supabase/supabase-js';" > entry.js
           npx esbuild entry.js --bundle --format=esm --target=es2020 --minify --legal-comments=none --outfile="$GITHUB_WORKSPACE/site/lib/supabase.js"
           cd "$GITHUB_WORKSPACE"
