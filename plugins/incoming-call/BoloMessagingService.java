@@ -11,13 +11,19 @@ import expo.modules.notifications.service.ExpoFirebaseMessagingService;
 
 /**
  * Receives every push for bolo. A call that arrives while bolo is not on screen is rung here, by the phone
- * itself (full screen on the lock screen, with Accept and Decline); everything else goes on to the app as before.
+ * itself (full screen on the lock screen, with Accept and Decline). A "clear" takes down pop-ups that were read
+ * on another phone. Everything else goes on to the app as before.
  */
 public class BoloMessagingService extends ExpoFirebaseMessagingService {
   @Override
   public void onMessageReceived(RemoteMessage message) {
     try {
       Map<String, String> data = message.getData();
+      // read on another phone: take those pop-ups down here too (nothing is shown for this)
+      if (data != null && "clear".equals(data.get("type"))) {
+        IncomingCall.clear(getApplicationContext(), data.get("tags"));
+        return;
+      }
       if (data != null && "call".equals(data.get("type")) && "1".equals(data.get("ring")) && !IncomingCall.inFront(this)) {
         Bundle d = new Bundle();
         for (String k : IncomingCall.KEYS) {

@@ -69,6 +69,28 @@ Deno.serve(async (req) => {
 
   const sa = serviceAccount();
   if (!sa) return json({ error: 'Firebase is not configured' }, 500);
+
+  // Notifications were read on one phone: the person's other phones take the pop-ups down.
+  // A quiet data message that the app's own receiver understands ("r2" phones); nothing is shown.
+  if (body.clear && typeof body.clear.user === 'string' && Array.isArray(body.clear.tags)) {
+    const tags = body.clear.tags.filter((t: unknown) => typeof t === 'string' && t).slice(0, 40);
+    const { data: phones } = await admin.from('push_tokens').select('token, app_version').eq('user_id', body.clear.user);
+    const to = (phones || []).filter((t) => /\br2\b/.test(String(t.app_version || '')));
+    if (!tags.length || !to.length) return json({ ok: true, skipped: 'nothing to clear' });
+    const access = await accessToken(sa);
+    let cleared = 0;
+    await Promise.all(
+      to.map(async (t) => {
+        const res = await fetch(`https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${access}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: { token: t.token, data: { type: 'clear', tags: tags.join('\n') }, android: { priority: 'NORMAL', ttl: '3600s' } } }),
+        });
+        if (res.ok) cleared++;
+      }),
+    );
+    return json({ ok: true, cleared });
+  }
   if (typeof body.id !== 'string') return json({ error: 'id required' }, 400);
 
   const { data: n } = await admin.from('notifications').select('id, recipient_id, actor_id, type, category, body, target, event_key, read_at').eq('id', body.id).maybeSingle();
@@ -117,6 +139,8 @@ Deno.serve(async (req) => {
     id: n.id,
     type: n.type,
     target: JSON.stringify(n.target || {}),
+    // the name the pop-up is shown under, so it can be replaced and taken down later
+    tag,
     ...(callId ? { call: callId } : {}),
   };
 
@@ -134,7 +158,7 @@ Deno.serve(async (req) => {
       const message = ownRing
         ? {
             token: to,
-            data: { ...data, ring: '1', name: cut(title, 80), kind, tag, pass, ...(photo ? { photo } : {}) },
+            data: { ...data, ring: '1', name: cut(title, 80), kind, pass, ...(photo ? { photo } : {}) },
             android: { priority: 'HIGH', ttl: '40s' },
           }
         : null;

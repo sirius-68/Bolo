@@ -123,6 +123,7 @@ const VIEWS = [
   ['feedback', 'Feedback', 'feedback'],
   ['experts', 'Experts', 'experts'],
   ['people', 'People'],
+  ['content', 'Content'],
   ['announce', 'Announcements'],
   ['settings', 'Settings'],
   ['activity', 'Activity'],
@@ -232,7 +233,7 @@ function tabs(options, current, pick) {
 
 /* ------------------------------------------------------------------ pages */
 const PAGES = {};
-const filters = { ids: 'pending', businesses: 'review', reports: 'open', feedback: 'open', experts: 'pending', people: 'all', q: '', bq: '' };
+const filters = { ids: 'pending', businesses: 'review', reports: 'open', feedback: 'open', experts: 'pending', people: 'all', q: '', bq: '', content: 'posts', cq: '' };
 
 PAGES.overview = async () => {
   const o = (state.overview = await rpc('admin_overview'));
@@ -493,6 +494,61 @@ PAGES.people = async () => {
     withGap(tabs([['all', 'Everyone'], ['reported', 'Reported'], ['suspended', 'Suspended'], ['verified', 'ID verified'], ['deleted', 'Deleted']], filters.people, (s) => ((filters.people = s), show('people')))),
     withGap(rows.length ? h('div', { class: 'card scroll-x' }, table) : empty('Nobody matches', 'Try another name, email or city.')),
     rows.length === 100 ? h('p', { class: 'small faint' }, 'Showing the 100 newest. Search to narrow it down.') : null,
+  ];
+};
+
+/* What each role may do (the server decides; this only keeps buttons that would be refused out of the way). */
+const canModerate = () => ['owner', 'admin', 'moderator'].includes(state.me.role);
+const ROLE_NOTE = {
+  support: 'Your role is Support: you can read everything, answer feedback and message people. Removing, suspending and reviewing are for moderators.',
+  moderator: 'Your role is Moderator: you can review, remove and suspend. Announcements and Pro are for admins; settings and the admin team for owners.',
+};
+
+/** The newest posts, jobs and comments of everyone, each with its author and a way to remove it. */
+PAGES.content = async () => {
+  let rows;
+  try {
+    rows = await rpc('admin_latest_content', { p_kind: filters.content, p_query: filters.cq || null, p_limit: 80 });
+  } catch (e) {
+    // a server that doesn't have this page yet
+    if (/admin_latest_content|schema cache|does not exist/i.test(e.message)) return [head('Content', 'The newest posts, jobs and comments.'), empty('Not available yet', 'This page needs the latest server update.')];
+    throw e;
+  }
+  const search = h('input', { class: 'input', type: 'search', placeholder: 'A word in the text', value: filters.cq, 'aria-label': 'Search content' });
+  const form = h('form', { class: 'row' }, h('div', { class: 'grow' }, search), h('button', { class: 'btn y', type: 'submit' }, 'Search'));
+  form.addEventListener('submit', (e) => (e.preventDefault(), (filters.cq = search.value.trim()), show('content')));
+  const list = rows.map((r) =>
+    h(
+      'div',
+      { class: 'card col' },
+      h(
+        'div',
+        { class: 'row wrap' },
+        pill(KIND_LABEL[r.type] || r.type),
+        h('b', { class: 'grow clip' }, r.title || ''),
+        r.reports > 0 ? pill(r.reports + ' report' + (r.reports > 1 ? 's' : ''), 'o') : null,
+        r.status && r.status !== 'open' ? pill(r.status) : null,
+        h('span', { class: 'tiny faint num' }, ago(r.created_at)),
+      ),
+      r.body ? h('p', { class: 'pre small' }, r.body) : null,
+      h('p', { class: 'tiny faint' }, ['By ' + (r.author || 'a deleted account'), r.business ? 'as ' + r.business : null, r.photos ? r.photos + ' photo' + (r.photos > 1 ? 's' : '') : null].filter(Boolean).join(' · ')),
+      h(
+        'div',
+        { class: 'row wrap' },
+        r.author_id ? h('button', { class: 'btn sm', onclick: () => person(r.author_id) }, 'See account') : null,
+        canModerate()
+          ? h('button', { class: 'btn sm danger', onclick: () => decide({ title: `Remove this ${(KIND_LABEL[r.type] || 'item').toLowerCase()}?`, text: 'It is deleted for everyone and its author is told why. This cannot be undone.', note: 'Reason shown to the author', required: true, danger: true, ok: 'Remove', run: async (n) => (await rpc('admin_remove_content', { p_type: r.type, p_id: String(r.id), p_note: n }), toast('Removed'), show('content')) }) }, 'Remove')
+          : null,
+      ),
+    ),
+  );
+  return [
+    head('Content', 'The newest posts, jobs and comments from everyone. Remove what breaks the rules; the author is told why.'),
+    form,
+    withGap(tabs([['posts', 'Posts'], ['jobs', 'Jobs and vacancies'], ['comments', 'Comments']], filters.content, (s) => ((filters.content = s), show('content')))),
+    ROLE_NOTE[state.me.role] && !canModerate() ? withGap(h('p', { class: 'small faint' }, ROLE_NOTE[state.me.role])) : null,
+    withGap(rows.length ? h('div', { class: 'col' }, list) : empty('Nothing here', filters.cq ? 'No ' + filters.content + ' contain “' + filters.cq + '”.' : 'Nothing has been posted yet.')),
+    rows.length === 80 ? h('p', { class: 'small faint' }, 'Showing the 80 newest. Search to narrow it down.') : null,
   ];
 };
 
