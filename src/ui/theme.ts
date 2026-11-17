@@ -1,6 +1,6 @@
 import { Platform, StyleSheet, TextStyle } from 'react-native';
 
-/** Design tokens — same values as the bolo prototype (index.html :root). */
+/** Design tokens: the app's colours. */
 export const C = {
   bg: '#000000',
   s1: '#121214',
@@ -8,9 +8,7 @@ export const C = {
   s3: '#2a2a2e',
   line: '#26262a',
   yellow: '#f6ee5c',
-  yellowH: '#fff46e',
   blue: '#3d5af1',
-  blueD: '#2f49d8',
   lav: '#a9b6ff',
   orange: '#f47b3b',
   pink: '#f6a4b4',
@@ -52,10 +50,6 @@ export function tx(size: number, w: Weight = 5, color: string = C.text, extra?: 
 export const S = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   rowB: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  center: { alignItems: 'center', justifyContent: 'center' },
-  flex: { flex: 1 },
-  card: { backgroundColor: C.s1, borderRadius: R.lg, padding: 16 },
-  hair: { height: StyleSheet.hairlineWidth, backgroundColor: C.line },
 });
 
 export const hit = { top: 8, bottom: 8, left: 8, right: 8 };

@@ -107,7 +107,7 @@ Set **secret** `SENTRY_AUTH_TOKEN` and **variables** `SENTRY_ORG`, `SENTRY_PROJE
 - `src/logic/work.ts`, `career.ts`, `comments.ts`, `reviews.ts`, `listings.ts`, `experts.ts` write each action to the server.
 - `src/logic/tracking.ts` shares the worker's position while on the way (only while bolo is open).
 - There is no demo mode and no sample data: everything comes from real accounts.
-- Money is switched off in `src/logic/money.ts` until a payment provider is connected: no wallet, escrow, Pro or ads; people pay each other directly.
+- bolo takes no payments: there is no wallet, escrow or ads; people pay each other directly.
 
 ### Testing with the emulator
 The emulator tour always checks the signed-out screens. To also tour the app signed in, create a test account in the app and add two GitHub secrets: `QA_EMAIL` and `QA_PASSWORD`.

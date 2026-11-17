@@ -1,12 +1,8 @@
 name: iOS
 
+# Started by hand only: there is no Apple signing yet, so this is an unsigned simulator build for looking at
+# the iOS side when it is needed. (It used to run, and fail, on every push.)
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - ".maestro/**"
-      - ".github/workflows/qa.yml"
-      - "README.md"
   workflow_dispatch: {}
 
 concurrency:

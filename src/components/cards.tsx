@@ -295,39 +295,10 @@ export function PostCard({ po }: { po: Post }) {
           {tags ? <Txt s={14} w={7} c={C.lav}>{' ' + tags}</Txt> : null}
         </Txt>
       ) : null}
-      {po.kind === 'image' ? (
-        <Pressable onPress={() => openMedia(po.img!)}>
-          <Pict pic={po.img!} style={{ width: '100%', aspectRatio: po.img === 'img/post-portfolio' ? 399 / 185 : 16 / 10 }} />
-        </Pressable>
-      ) : null}
       {po.kind === 'photo' && po.src ? (
         <Pressable onPress={() => openMedia(po.src!)}>
           <Pict pic={po.src} style={{ width: '100%', aspectRatio: 16 / 10 }} />
         </Pressable>
-      ) : null}
-      {po.kind === 'art' ? (
-        <Pressable onPress={() => openMedia(`scenes/${po.art}`)}>
-          <Pict pic={`scenes/${po.art}`} style={{ width: '100%', aspectRatio: 4 / 3 }} />
-        </Pressable>
-      ) : null}
-      {po.kind === 'job' ? (
-        <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center', marginHorizontal: 12, marginBottom: 12, padding: 12, borderRadius: 18, backgroundColor: C.s2 }}>
-          <Pict pic={po.img!} style={{ width: 76, height: 76, borderRadius: 14 }} />
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <View style={[S.row, { gap: 5 }]}>
-              <Icon name="check" size={14} color={C.ok} />
-              <Txt s={11} w={8} c={C.ok}>
-                Job completed
-              </Txt>
-            </View>
-            <Txt s={15} w={8} lines={1} style={{ marginVertical: 2 }}>
-              {po.job}
-            </Txt>
-            <Txt s={12} w={6} c={C.muted}>
-              {po.took} · {po.paid} · Client gave <Txt s={12} w={8} c={C.yellow}>{'★'.repeat(po.stars || 5)}</Txt>
-            </Txt>
-          </View>
-        </View>
       ) : null}
       {po.kind === 'avail' ? (
         <View style={{ marginHorizontal: 12, marginBottom: 12, borderRadius: 18, backgroundColor: C.blue, padding: 16, gap: 12 }}>

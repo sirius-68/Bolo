@@ -39,21 +39,16 @@ export type Post = {
   /** changed after it was posted */
   edited?: number;
   id: string;
-  kind: 'image' | 'request' | 'job' | 'avail' | 'art' | 'photo' | 'text';
+  kind: 'request' | 'avail' | 'photo' | 'text';
   by?: string;
   client?: string;
-  img?: string;
   src?: string;
-  art?: string;
   text?: string;
   tags?: string[];
   time: string;
   likes?: number;
   comments?: number;
   job?: string;
-  took?: string;
-  paid?: string;
-  stars?: number;
   slots?: string[];
   // requests / vacancies
   cat?: string;
@@ -438,21 +433,11 @@ export const ui = {
   q: '',
   /** `city` + `cityAt`: look in a chosen city (its position when known) instead of around me */
   F: { dist: 0, rate: 0, ver: false, urgent: false, budget: 0, sort: 'best', type: '', posted: 0, by: '' as '' | 'company' | 'person', exp: 0, city: '', cityAt: null as null | [number, number] },
-  openChat: null as string | null,
-  current: '' as string,
-  reelFilter: 'all' as 'all' | 'following' | 'near',
-  stFilter: 'all',
-  svF: 'All',
   appStarted: false,
-  /** set when ID verification was opened from inside the app (not sign-up): finish returns there */
-  verifyReturn: '' as string,
   /** opened the app already logged in (an existing user, e.g. after an update) */
   returning: false,
   /** the start-up checks (saved copy, session) have finished, whether or not the app opened before them */
   bootDone: false,
-  cvT: 'Classic',
-  proBill: 'month' as 'month' | 'year',
-  justJoined: false,
 };
 
 export const uid = (p = 'x') => `${p}${Date.now().toString(36)}${Math.floor(Math.random() * 1e4).toString(36)}`;

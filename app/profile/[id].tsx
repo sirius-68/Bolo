@@ -312,9 +312,9 @@ function PersonTab({ id, t, kind }: { id: string; t: string; kind: string }) {
     return (
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
         {posts.map((x) => (
-          <Pressable key={x.id} style={{ width: '48.5%', aspectRatio: 3 / 4, borderRadius: 20, overflow: 'hidden', backgroundColor: C.s2, padding: 12, justifyContent: 'flex-end' }} onPress={() => (x.img || x.src ? openMedia((x.img || x.src)!) : null)}>
-            {x.img || x.src ? <Pict pic={(x.img || x.src)!} style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }} /> : null}
-            {x.img || x.src ? <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 80, backgroundColor: 'rgba(0,0,0,.45)' }} /> : null}
+          <Pressable key={x.id} style={{ width: '48.5%', aspectRatio: 3 / 4, borderRadius: 20, overflow: 'hidden', backgroundColor: C.s2, padding: 12, justifyContent: 'flex-end' }} onPress={() => (x.src ? openMedia(x.src) : null)}>
+            {x.src ? <Pict pic={x.src} style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }} /> : null}
+            {x.src ? <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 80, backgroundColor: 'rgba(0,0,0,.45)' }} /> : null}
             <Txt s={12} w={7} lines={3}>
               {x.text}
             </Txt>
