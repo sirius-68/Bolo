@@ -20,6 +20,8 @@ const st = {
   open: {} as Record<string, boolean>,
   /** the comment a notification points at: brought into view and lit up for a moment */
   focus: '' as string,
+  /** the same comment, kept while the sheet is open (the highlight fades, the mark for automatic tests stays) */
+  aim: '' as string,
   /** where things sit, measured as they are laid out (thread → y; reply → y inside its thread) */
   pos: { wrap: -1, thread: {} as Record<string, number>, replies: {} as Record<string, number>, reply: {} as Record<string, number> },
   scrolled: false,
@@ -40,7 +42,7 @@ function useSt() {
 export function openComments(id: string, focus?: string) {
   st.reply = null;
   st.open = {};
-  st.focus = focus || '';
+  st.focus = st.aim = focus || '';
   st.pos = { wrap: -1, thread: {}, replies: {}, reply: {} };
   st.scrolled = false;
   sheet.show(() => <Comments id={id} />, { tag: 'cmt:' + id, full: true, footer: () => <Box id={id} /> });
@@ -112,7 +114,7 @@ function Line({ id, c, small, onY }: { id: string; c: Cmt; small?: boolean; onY?
   const at = c.t.match(/^@\S+/);
   return (
     <Pressable
-      testID={st.focus === c.id ? 'cmt-focus' : 'cmt-row'}
+      testID={st.aim === c.id ? 'cmt-focus' : 'cmt-row'}
       onLayout={onY ? (e) => onY(e.nativeEvent.layout.y) : undefined}
       onLongPress={() => menu(id, c)}
       delayLongPress={300}
