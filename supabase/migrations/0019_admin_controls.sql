@@ -12,9 +12,9 @@ set search_path = public, extensions;
 create or replace function public.admin_stats(p_days int default 30) returns jsonb
 language plpgsql stable security definer set search_path = public, private as $$
 declare
-  n int := least(greatest(coalesce(p_days, 30), 7), 180);
-  t0 timestamptz := date_trunc('day', now()) - make_interval(days => n - 1);   -- first day of this period
-  p0 timestamptz := t0 - make_interval(days => n);                             -- first day of the period before
+  v_days int := least(greatest(coalesce(p_days, 30), 7), 180);
+  t0 timestamptz := date_trunc('day', now()) - make_interval(days => v_days - 1);   -- first day of this period
+  p0 timestamptz := t0 - make_interval(days => v_days);                             -- first day of the period before
   r jsonb;
 begin
   perform private.need_admin();
@@ -22,7 +22,7 @@ begin
     select g.d from generate_series(t0, date_trunc('day', now()), interval '1 day') as g(d)
   ),
   acts as (   -- who did something, and when: posted, commented, wrote, offered, booked
-    select author_id as u, created_at as at from posts where created_at >= p0
+    select author_id as u, created_at as ts from posts where created_at >= p0
     union all select author_id, created_at from comments where created_at >= p0
     union all select sender_id, created_at from messages where created_at >= p0 and sender_id is not null
     union all select applicant_id, created_at from applications where created_at >= p0
@@ -31,7 +31,7 @@ begin
   series as (
     select d.d::date as day,
       (select count(*) from profiles p where p.created_at >= d.d and p.created_at < d.d + interval '1 day' and p.deleted_at is null)::int as signups,
-      (select count(distinct a.u) from acts a where a.at >= d.d and a.at < d.d + interval '1 day')::int as active,
+      (select count(distinct a.u) from acts a where a.ts >= d.d and a.ts < d.d + interval '1 day')::int as active,
       (select count(*) from posts x where x.kind <> 'request' and x.created_at >= d.d and x.created_at < d.d + interval '1 day')::int as posts,
       (select count(*) from posts x where x.kind = 'request' and x.created_at >= d.d and x.created_at < d.d + interval '1 day')::int as jobs,
       (select count(*) from bookings b where b.created_at >= d.d and b.created_at < d.d + interval '1 day')::int as bookings,
@@ -40,19 +40,19 @@ begin
   ),
   tot as (
     select jsonb_build_object(
-      'signups', (select count(*) from profiles where created_at >= a and created_at < b and deleted_at is null),
-      'active', (select count(distinct u) from acts where at >= a and at < b),
-      'posts', (select count(*) from posts where kind <> 'request' and created_at >= a and created_at < b),
-      'jobs', (select count(*) from posts where kind = 'request' and created_at >= a and created_at < b),
-      'bookings', (select count(*) from bookings where created_at >= a and created_at < b),
-      'messages', (select count(*) from messages where created_at >= a and created_at < b),
-      'calls', (select count(*) from calls where created_at >= a and created_at < b),
-      'reports', (select count(*) from reports where created_at >= a and created_at < b)) as j, k
+      'signups', (select count(*) from profiles where created_at >= v.a and created_at < v.b and deleted_at is null),
+      'active', (select count(distinct x.u) from acts x where x.ts >= v.a and x.ts < v.b),
+      'posts', (select count(*) from posts where kind <> 'request' and created_at >= v.a and created_at < v.b),
+      'jobs', (select count(*) from posts where kind = 'request' and created_at >= v.a and created_at < v.b),
+      'bookings', (select count(*) from bookings where created_at >= v.a and created_at < v.b),
+      'messages', (select count(*) from messages where created_at >= v.a and created_at < v.b),
+      'calls', (select count(*) from calls where created_at >= v.a and created_at < v.b),
+      'reports', (select count(*) from reports where created_at >= v.a and created_at < v.b)) as j, k
     from (values (t0, now() + interval '1 second', 'now'), (p0, t0, 'prev')) v(a, b, k)
   ),
   cohort as (select id from profiles where created_at >= t0 and deleted_at is null)
   select jsonb_build_object(
-    'days', n,
+    'days', v_days,
     'series', (select coalesce(jsonb_agg(to_jsonb(s) order by s.day), '[]') from series s),
     'now', (select j from tot where k = 'now'),
     'prev', (select j from tot where k = 'prev'),
@@ -137,7 +137,8 @@ revoke all on function private.has_blocked_word(text) from public, anon, authent
 create or replace function public.stop_blocked_words() returns trigger language plpgsql security definer set search_path = public, private as $$
 declare txt text;
 begin
-  txt := case tg_table_name when 'posts' then coalesce(new.title, '') || ' ' || coalesce(new.body, '') else coalesce(new.body, '') end;
+  -- read through json: comments have no title, and a record field that does not exist cannot even be named
+  txt := coalesce(to_jsonb(new) ->> 'title', '') || ' ' || coalesce(to_jsonb(new) ->> 'body', '');
   if private.has_blocked_word(txt) then
     raise exception 'This contains words that are not allowed on bolo. Please change it and try again.' using errcode = 'P0001', hint = 'blocked_word';
   end if;
