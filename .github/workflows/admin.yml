@@ -62,7 +62,7 @@ jobs:
             f=$(find node_modules/@expo-google-fonts/plus-jakarta-sans -name "PlusJakartaSans_$w.ttf" | head -1)
             if [ -n "$f" ]; then cp "$f" "$GITHUB_WORKSPACE/site/fonts/"; else echo "::error::font $w not found in the package"; ls -R node_modules/@expo-google-fonts/plus-jakarta-sans | head -40; exit 1; fi
           done
-          ls -la "$GITHUB_WORKSPACE/site/fonts
+          ls -la "$GITHUB_WORKSPACE/site/fonts"
           echo "export { createClient } from '@supabase/supabase-js';" > entry.js
           npx esbuild entry.js --bundle --format=esm --target=es2020 --minify --legal-comments=none --outfile="$GITHUB_WORKSPACE/site/lib/supabase.js"
           cd "$GITHUB_WORKSPACE"
