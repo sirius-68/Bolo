@@ -3,8 +3,8 @@ import { router } from 'expo-router';
 import { toast } from '../ui/overlay';
 import { db } from '../data/db';
 import { curBiz, isW, postById } from '../logic/core';
-import { openBizSetup, switchToBiz } from './account';
-import { openMe, openProfile, openTrack } from '../logic/nav';
+import { openBizSetup, openBoloMessage, switchToBiz } from './account';
+import { openMe, openProfile, openScreen, openTrack } from '../logic/nav';
 import { Go } from '../logic/notify';
 import { openComments, openJob } from './work';
 import { openChat } from './chat';
@@ -31,20 +31,26 @@ export function goTo(g: Go) {
       // from a like or a reply: straight to that comment
       return openComments(g.id, g.c);
     case 'teach':
-      return router.push('/teach' as any);
+      return openScreen('/teach');
     case 'courses':
-      return router.push('/courses?tab=saved' as any);
+      return openScreen('/courses?tab=saved');
     case 'cv':
       return openCV();
     case 'expert':
-      return router.push(`/expert/${g.id}` as any);
+      return openScreen(`/expert/${g.id}`);
     case 'experts':
-      return router.push('/experts' as any);
+      return openScreen('/experts');
     case 'notifs':
-      return router.push('/notifs' as any);
+      // a message from the bolo team: read it in full (on the Notifications page, opened once)
+      openScreen('/notifs');
+      if (g.id) {
+        const n = [...db.NOTIFS_W, ...db.NOTIFS_C].find((x) => x.id === g.id);
+        if (n) setTimeout(() => openBoloMessage(n), 350);
+      }
+      return;
     case 'verify': {
       // from the bolo team: "please verify" or the answer to a verification
-      if (g.id === 'expert') return router.push('/experts' as any);
+      if (g.id === 'expert') return openScreen('/experts');
       if (g.id === 'business') {
         const b = db.BIZ.list.find((x) => x.remoteId === g.biz) || curBiz();
         if (!b) return openMe();
@@ -56,7 +62,7 @@ export function goTo(g: Go) {
         }
         return openBizSetup('edit', 3);
       }
-      return db.PR.docs.id === 'verified' ? openMe() : router.push('/id-verify' as any);
+      return db.PR.docs.id === 'verified' ? openMe() : openScreen('/id-verify');
     }
     case 'me':
       // with a tab name: straight to that part of my profile (Reviews, Posts…)

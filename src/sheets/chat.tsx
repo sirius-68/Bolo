@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
+import { openScreen } from '../logic/nav';
 import { db } from '../data/db';
 import { RULES } from '../data/catalog';
 import { AlertIll, Avatar, Btn, Chip, Chips, Field, Input, Label, OptRow, Txt, tap } from '../ui/kit';
@@ -36,7 +37,7 @@ export function openChat(id: string) {
             requestDM(m.id);
             sheet.close();
             openThread(id);
-            router.push(`/chat/${id}` as any);
+            openScreen(`/chat/${id}`);
           }}
         />
         <Btn variant="ghost" title="Not now" onPress={() => sheet.close()} />
@@ -45,7 +46,7 @@ export function openChat(id: string) {
     return;
   }
   openThread(id);
-  router.push(`/chat/${id}` as any);
+  openScreen(`/chat/${id}`);
 }
 
 /* ---------------- quotes ---------------- */

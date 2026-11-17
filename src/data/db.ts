@@ -140,6 +140,12 @@ export type Notif = {
   go?: import('../logic/notify').Go;
   /** event key: the same event is never notified twice */
   key?: string;
+  /** when it happened (server time) */
+  at?: string;
+  /** the business page it is for (app id); none = the Regular profile */
+  biz?: string;
+  /** from the bolo team (no person behind it) */
+  bolo?: number;
   cat?: string;
   /** how many events this one line stands for (missed calls from the same person) */
   count?: number;

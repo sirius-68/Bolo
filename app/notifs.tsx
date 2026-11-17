@@ -8,7 +8,7 @@ import { NT_ICON } from '../src/data/catalog';
 import { Avatar, Empty, PTabs, Pill, Quiet, TopBar, Txt, Verified, tap } from '../src/ui/kit';
 import { Icon } from '../src/ui/Icon';
 import { C, S } from '../src/ui/theme';
-import { NOTIFS, P, fname, has, isW, postById } from '../src/logic/core';
+import { NOTIFS, P, bizLogo, bizName, fname, has, isW, otherUnread, postById } from '../src/logic/core';
 import { bump, useLive } from '../src/logic/live';
 import { answerQuoteNotif, bk, confirmDone, deleteNotifs, follow, markAllRead, NT_TABS, readNotif, removeNotif } from '../src/logic/work';
 import { openMe, openProfile, openTrack } from '../src/logic/nav';
@@ -17,6 +17,7 @@ import { openChat } from '../src/sheets/chat';
 import { startCall } from '../src/logic/calls';
 import { goTo } from '../src/sheets/goto';
 import { openNotifSettings } from '../src/sheets/account';
+import { setRole, useBiz } from '../src/logic/account';
 
 export default function Notifs() {
   useLive();
@@ -36,6 +37,14 @@ export default function Notifs() {
   const open = (n: Notif) => {
     if (sel) return toggle(n.id);
     readNotif(n.id);
+    // business pages share one list: one for another of my pages switches to that page first
+    if (!isW() && n.biz && n.biz !== db.BIZ.active && db.BIZ.list.some((b) => b.id === n.biz)) {
+      useBiz(n.biz);
+      return void setTimeout(() => open2(n), 400);
+    }
+    open2(n);
+  };
+  const open2 = (n: Notif) => {
     // missed calls have their own screen (the picture on the row opens the chat instead)
     if (n.type === 'missed') return router.push('/calls?tab=missed' as any);
     if (n.go) return goTo(n.go);
@@ -95,6 +104,7 @@ export default function Notifs() {
             </Txt>
           </Pressable>
         </View>
+        <OtherProfiles />
         <PTabs
           style={{ marginTop: 12 }}
           items={Object.keys(NT_TABS).map((t) => [t, t, L.filter((n) => !n.read && NT_TABS[t](n)).length || null] as [string, string, number | null])}
@@ -124,6 +134,49 @@ export default function Notifs() {
         ListEmptyComponent={<Empty style={{ marginTop: 30 }} title="Nothing here" text={tab === 'Mentions' ? 'When someone mentions or reviews you, it’ll show up here.' : tab === 'Jobs' ? 'No job updates yet.' : 'New activity will show up here.'} />}
         initialNumToRender={10}
       />
+    </View>
+  );
+}
+
+/** "3 new on Tour Works": news waiting on my other profiles. Switch shows them here at once. */
+function OtherProfiles() {
+  const rows = otherUnread();
+  if (!rows.length) return null;
+  return (
+    <View style={{ gap: 8, marginTop: 12 }}>
+      {rows.map(({ biz, n }) => {
+        const b = biz ? db.BIZ.list.find((x) => x.id === biz) : null;
+        const name = b ? bizName(b) : 'Your Regular profile';
+        return (
+          <Pressable
+            key={biz || 'W'}
+            testID={b ? 'nt-other-biz' : 'nt-other-regular'}
+            accessibilityRole="button"
+            accessibilityLabel={`${n} new on ${name}. Switch`}
+            onPress={() => {
+              tap();
+              if (b) useBiz(b.id);
+              else setRole('worker');
+              ui.ntTab = 'All';
+              bump();
+            }}
+            style={({ pressed }) => [S.row, { gap: 12, padding: 12, borderRadius: 16, backgroundColor: pressed ? C.s3 : C.s2, borderWidth: 1, borderColor: 'rgba(246,238,92,.35)' }]}
+          >
+            <Avatar pic={b ? bizLogo(b) : P('me').photo} square={!!b} size={36} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Txt s={14} w={8} lines={1}>
+                {n} new on {name}
+              </Txt>
+              <Txt s={12} c={C.muted} lines={1}>
+                {b ? 'Business page' : 'Regular profile'} · tap to switch and see {n === 1 ? 'it' : 'them'}
+              </Txt>
+            </View>
+            <Txt s={13} w={8} c={C.yellow}>
+              Switch
+            </Txt>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }

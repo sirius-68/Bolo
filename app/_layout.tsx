@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
@@ -22,7 +22,7 @@ import { loadAuthCaps } from '../src/components/auth';
 import { locate } from '../src/logic/here';
 import { StoryHost } from '../src/components/Stories';
 import { Linking, Platform, Pressable, Text, View } from 'react-native';
-import { resetTo } from '../src/logic/nav';
+import { resetTo, setHere } from '../src/logic/nav';
 import { report, setMonitorUser, startMonitoring } from '../src/lib/monitor';
 import { serviceNotice, updateRequired } from '../src/logic/remote';
 import { confirm } from '../src/ui/overlay';
@@ -101,6 +101,15 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Pro
 }
 let crashes = 0;
 
+/** Keeps track of the screen on top, so a screen is never opened on top of itself (see openScreen). */
+function Here() {
+  const path = usePathname();
+  useEffect(() => {
+    setHere(path);
+  }, [path]);
+  return null;
+}
+
 SplashScreen.preventAutoHideAsync().catch(() => {});
 SystemUI.setBackgroundColorAsync('#000000').catch(() => {});
 
@@ -178,6 +187,7 @@ export default function Root() {
       </Stack>
       <Overlays />
       <StoryHost />
+      <Here />
     </SafeAreaProvider>
   );
 }

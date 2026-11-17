@@ -3,7 +3,7 @@ import { NCAT_PREF } from '../logic/notify';
 import { supabase } from '../lib/supabase';
 import { Keyboard, Linking, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
-import { db, ui, MyBiz } from '../data/db';
+import { db, ui, MyBiz, Notif } from '../data/db';
 import { CITIES, ST_C, ST_W } from '../data/catalog';
 import { AlertIll, Avatar, Btn, Chip, Chips, Field, Input, Note, OptRow, SwitchRow, Txt, Verified, StatusPill } from '../ui/kit';
 import { Icon } from '../ui/Icon';
@@ -68,7 +68,9 @@ export function openAccounts() {
 function Accounts() {
   const w = isW();
   const bo = db.user.bizOnly;
-  const Row = ({ on, pic, sq, name, sub, onPress, verified }: { on: boolean; pic: any; sq?: boolean; name: string; sub: string; onPress: () => void; verified?: boolean }) => (
+  // unread notifications per profile, shown on each row
+  const unread = (biz?: string) => (biz ? db.NOTIFS_C.filter((n) => !n.read && (n.biz || db.BIZ.active) === biz).length : db.NOTIFS_W.filter((n) => !n.read).length);
+  const Row = ({ on, pic, sq, name, sub, onPress, verified, count }: { on: boolean; pic: any; sq?: boolean; name: string; sub: string; onPress: () => void; verified?: boolean; count?: number }) => (
     <Pressable accessibilityRole="button" accessibilityState={{ selected: on }} onPress={onPress} style={({ pressed }) => [S.row, { gap: 12, padding: 12, borderRadius: 16, backgroundColor: on ? 'rgba(246,238,92,.10)' : pressed ? C.s3 : C.s2, borderWidth: 1, borderColor: on ? C.yellow : 'transparent' }]}>
       <Avatar pic={pic} square={sq} size={44} />
       <View style={{ flex: 1, minWidth: 0 }}>
@@ -82,6 +84,13 @@ function Accounts() {
           {sub}
         </Txt>
       </View>
+      {count && !on ? (
+        <View accessibilityLabel={`${count} unread`} style={{ minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
+          <Txt s={12} w={8} c="#000">
+            {count > 99 ? '99+' : count}
+          </Txt>
+        </View>
+      ) : null}
       {on ? <Icon name="check" size={20} color={C.yellow} /> : null}
     </Pressable>
   );
@@ -94,6 +103,7 @@ function Accounts() {
           pic={myPhoto()}
           name={db.user.name || 'Your name'}
           sub="Regular · find work and hire for personal jobs"
+          count={unread()}
           onPress={() => {
             sheet.close();
             if (!w) switchRole('worker');
@@ -101,7 +111,7 @@ function Accounts() {
         />
       ) : null}
       {db.BIZ.list.map((b) => (
-        <Row key={b.id} on={!w && db.BIZ.active === b.id} pic={bizLogo(b)} sq verified={b.verified === 'verified'} name={bizName(b)} sub={'Business' + (b.draft ? ` · profile ${bizPct(b)}% complete` : b.sector ? ' · ' + b.sector : '')} onPress={() => (!w && db.BIZ.active === b.id ? sheet.close() : switchToBiz(b.id))} />
+        <Row key={b.id} on={!w && db.BIZ.active === b.id} pic={bizLogo(b)} sq verified={b.verified === 'verified'} name={bizName(b)} count={unread(b.id)} sub={'Business' + (b.draft ? ` · profile ${bizPct(b)}% complete` : b.sector ? ' · ' + b.sector : '')} onPress={() => (!w && db.BIZ.active === b.id ? sheet.close() : switchToBiz(b.id))} />
       ))}
       <Pressable accessibilityRole="button" onPress={addBusiness} style={({ pressed }) => [S.row, { gap: 12, padding: 12, borderRadius: 16, backgroundColor: pressed ? C.s3 : 'transparent', borderWidth: 1, borderColor: C.line, borderStyle: 'dashed' }]}>
         <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
@@ -484,6 +494,36 @@ const TOPICS: [string, string][] = [
   ['other', 'Something else'],
 ];
 /** A message to the bolo team. It is stored on the server for the team to read; there is no live chat. */
+/** A message or announcement from the bolo team, in full, with a way to answer. */
+export function openBoloMessage(n: Notif) {
+  sheet.show(() => <BoloMessageSheet n={n} />);
+}
+function BoloMessageSheet({ n }: { n: Notif }) {
+  const when = n.at ? new Date(n.at).toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : n.time;
+  return (
+    <View style={{ gap: 14 }}>
+      <View style={[S.row, { gap: 12 }]}>
+        <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
+          <Txt s={20} w={8} c="#000">
+            b
+          </Txt>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Txt s={18} w={8}>
+            Message from bolo
+          </Txt>
+          <Txt s={12} c={C.muted}>
+            {when}
+          </Txt>
+        </View>
+      </View>
+      <Txt testID="bolo-msg-text" s={15} c="#e6e6ea" selectable style={{ lineHeight: 22 }}>
+        {n.text || ''}
+      </Txt>
+      <Btn testID="bolo-msg-reply" variant="yellow" icon="chat" title="Reply to bolo" onPress={() => afterSheet(openFeedback)} />
+    </View>
+  );
+}
 export function openFeedback() {
   sheet.show(() => <FeedbackSheet />, { full: true });
 }

@@ -751,6 +751,9 @@ function notifFrom(n: any): Notif {
   const who = n.actor_id ? L(n.actor_id) : undefined;
   const msg = n.type === 'message';
   const d = dayLabel(n.created_at);
+  // a review about me opens my own reviews; a message from the bolo team opens itself, to be read in full
+  let go: Notif['go'] = n.type === 'review' && n.target?.id === db.uid ? { k: 'me', id: 'Reviews' } : goFrom(n.target);
+  if (go?.k === 'notifs') go = { k: 'notifs', id: n.id };
   return {
     id: n.id,
     g: d === 'Today' ? 'Today' : d === 'Yesterday' ? 'Yesterday' : 'Earlier',
@@ -760,14 +763,22 @@ function notifFrom(n: any): Notif {
     read: n.read_at ? 1 : 0,
     text: msg ? 'sent you a message' : n.body,
     snip: msg ? n.body : undefined,
-    // a review about me opens my own reviews
-    go: n.type === 'review' && n.target?.id === db.uid ? { k: 'me', id: 'Reviews' } : goFrom(n.target),
+    go,
     key: n.event_key,
+    at: n.created_at,
+    // the business page it is for (its id in the app), when it is for one of mine
+    biz: n.business_id ? myBizOf(n.business_id)?.id : undefined,
+    bolo: !n.actor_id ? 1 : undefined,
     cat: n.category,
     count: Number(n.target?.n) || undefined,
   } as Notif;
 }
 const NOTIF_RAW: Record<string, any> = {};
+/** The business a notification is for (server id), when it is loaded; null = the Regular profile, undefined = not known here. */
+export function notifBusiness(id: string): string | null | undefined {
+  const n = NOTIF_RAW[id];
+  return n ? n.business_id || null : undefined;
+}
 function placeNotif(n: any) {
   NOTIF_RAW[n.id] = n;
   const C = !!(n.business_id && myBizOf(n.business_id));

@@ -189,6 +189,21 @@ export function thread(id: string): Thread {
 }
 export const unreadMsgs = () => ORDER().reduce((a, id) => a + (THREADS()[id]?.unread || 0), 0);
 export const unreadNotifs = () => NOTIFS().filter((n) => !n.read).length;
+/** Unread notifications on my other profiles: on the Regular profile, one line per business page with news;
+    on a business page, the Regular profile's. (Business pages share one list, so they count together there.) */
+export function otherUnread(): { biz?: string; n: number }[] {
+  if (!isW()) {
+    const n = db.user.bizOnly ? 0 : db.NOTIFS_W.filter((x) => !x.read).length;
+    return n ? [{ n }] : [];
+  }
+  const per: Record<string, number> = {};
+  db.NOTIFS_C.forEach((x) => {
+    if (x.read) return;
+    const b = x.biz || db.BIZ.active || db.BIZ.list[0]?.id || '';
+    if (b) per[b] = (per[b] || 0) + 1;
+  });
+  return Object.entries(per).map(([biz, n]) => ({ biz, n }));
+}
 
 /* ---------------- jobs ---------------- */
 /** A post by id (also by the temporary id it had before the server saved it). */

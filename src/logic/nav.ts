@@ -3,6 +3,16 @@ import { ui } from '../data/db';
 
 /** Thin wrappers over expo-router so screens read like the prototype (go / back / reset). */
 export const go = (path: string) => router.push(path as any);
+
+/** The screen on top right now (kept by the root layout). */
+let here = '';
+export const setHere = (path: string) => (here = path);
+/** Open a screen, unless it is already the one on top: a second tap, or a pop-up about the screen you are on,
+    must not stack a copy of it (Back would then only lead to the copy). */
+export function openScreen(path: string) {
+  if (here && here === path.split('?')[0]) return;
+  router.push(path as any);
+}
 export const back = () => (router.canGoBack() ? router.back() : router.replace('/feed' as any));
 /** Clear the stack and land on a tab. */
 export function resetTo(path: string) {

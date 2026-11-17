@@ -7,11 +7,11 @@ import { CATS } from '../data/catalog';
 import { Avatar, IconBtn, Txt, tap, Verified } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { C, S, tx } from '../ui/theme';
-import { bizLogo, bizName, curBiz, fname, isPro, isW, cityLabel, myPhoto, P, unreadMsgs, unreadNotifs } from '../logic/core';
+import { bizLogo, bizName, curBiz, fname, isPro, isW, cityLabel, myPhoto, P, unreadMsgs, unreadNotifs, otherUnread } from '../logic/core';
 import { liveInfo, myBookings, pctOf, trOther } from '../logic/work';
 import { bump, useTick } from '../logic/live';
 import { afterSheet, sheet, SheetTitle } from '../ui/overlay';
-import { openMe, openTrack } from '../logic/nav';
+import { openMe, openScreen, openTrack } from '../logic/nav';
 import { openAccounts, openCities } from '../sheets/account';
 import { openReview } from '../sheets/work';
 
@@ -42,6 +42,8 @@ export function TabHeader({ hello = true }: { hello?: boolean }) {
               {isPro() ? ' · PRO' : ''}
             </Txt>
             <Icon name="down" size={12} color={C.muted} />
+            {/* news waiting on another of my profiles */}
+            {otherUnread().length ? <View testID="hdr-other-unread" accessibilityLabel="New notifications on another profile" style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: C.yellow }} /> : null}
             <Pressable
               testID="hdr-city"
               accessibilityRole="button"
@@ -58,8 +60,8 @@ export function TabHeader({ hello = true }: { hello?: boolean }) {
           </View>
         </Pressable>
       </View>
-      <IconBtn name="chat" ring count={m} label="Messages" onPress={() => router.push('/inbox')} />
-      <IconBtn name="bell" ring count={n} label="Notifications" onPress={() => router.push('/notifs')} />
+      <IconBtn name="chat" ring count={m} label="Messages" onPress={() => openScreen('/inbox')} />
+      <IconBtn name="bell" ring count={n} label="Notifications" onPress={() => openScreen('/notifs')} />
     </View>
   );
 }

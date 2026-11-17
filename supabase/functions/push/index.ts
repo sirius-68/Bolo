@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
   }
   if (typeof body.id !== 'string') return json({ error: 'id required' }, 400);
 
-  const { data: n } = await admin.from('notifications').select('id, recipient_id, actor_id, type, category, body, target, event_key, read_at').eq('id', body.id).maybeSingle();
+  const { data: n } = await admin.from('notifications').select('id, recipient_id, actor_id, type, category, body, target, event_key, read_at, business_id').eq('id', body.id).maybeSingle();
   if (!n || n.read_at) return json({ ok: true, skipped: 'read or gone' });
 
   const { data: tokens } = await admin.from('push_tokens').select('token, app_version').eq('user_id', n.recipient_id);
@@ -142,6 +142,8 @@ Deno.serve(async (req) => {
     target: JSON.stringify(n.target || {}),
     // the name the pop-up is shown under, so it can be replaced and taken down later
     tag,
+    // the business page it is for: tapping it switches the app to that page first ('' = the Regular profile)
+    biz: n.business_id || '',
     ...(callId ? { call: callId } : {}),
   };
 
