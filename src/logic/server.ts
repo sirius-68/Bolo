@@ -130,7 +130,7 @@ export const PROFILE_RAW: Record<string, any> = {};
 
 function bizFrom(b: any): { p: Person; s: BizSample } {
   const logo = pic(b.logo_url) || logoPic(initials(b.name), b.color || '#f6ee5c', b.color === '#3d5af1' ? '#fff' : '#000');
-  const p: Person = { name: b.name || 'Business', role: 'Business', client: 1, biz: 1, area: b.area || b.city || '', dist: '', rate: 0, years: 0, photo: logo, pin: logo, verified: b.verified === 'verified' ? 1 : 0, jobs: 0, reviews: '0', followers: 0, hires: 0, sector: b.sector, about: b.about, uid: b.owner_id, bizId: b.id } as Person;
+  const p: Person = { name: b.name || 'Business', role: 'Business', client: 1, biz: 1, area: b.area || b.city || '', dist: '', rate: 0, years: 0, photo: logo, pin: logo, verified: b.verified === 'verified' ? 1 : 0, jobs: 0, reviews: '0', followers: 0, hires: 0, sector: b.sector, about: b.about, uid: b.owner_id } as Person;
   const s = { name: p.name, sector: b.sector || '', size: b.size || '', area: p.area, logo, about: b.about || '', rate: 0, jobs: 0, hires: 0, reviews: '0', followers: 0, web: b.web || '', email: b.email || '', phone: b.phone || '' } as BizSample;
   return { p, s };
 }
@@ -484,7 +484,6 @@ function buildThread(cid: string) {
     group: c.kind === 'group' ? 1 : undefined,
     members: c.kind === 'group' ? others.map((o) => L(o.user_id)) : undefined,
     muted: me?.muted ? 1 : undefined,
-    uids: members.map((m) => m.user_id),
     // live signals come from what is known right now (see presence.ts), never from what was saved on the phone
     ...require('./presence').liveFor(cid),
   };
@@ -814,7 +813,6 @@ function courseFrom(r: any): Course {
     old: 0,
     prof: d.prof || '',
     skills: d.skills || [],
-    mo: 0,
     url: r.url,
     desc: d.desc || '',
     priceText: d.priceText || undefined,

@@ -11,7 +11,6 @@ import { bump, subscribe } from './live';
 import { fill } from './persist';
 import { madeUpService } from './core';
 
-export const isReal = () => true;
 const digits = (s: string) => (s || '').replace(/\D/g, '');
 /** Cameroon numbers in E.164 (+2376XXXXXXXX). */
 /** +<country><number>. Numbers saved before international support were local Cameroon numbers. */
@@ -147,8 +146,7 @@ export function startServer() {
   // it would cover whatever opens at start (What's new, a call). It is asked during sign-up, on the map, and from "Use my current location".
   void require('./here').locate(false);
   void loadAll(true).then(() => {
-    const { resumeSims } = require('./work');
-    resumeSims();
+    require('./work').resumeSharing();
   });
 }
 /** App opened with a saved session but no saved copy of the app's data (first start after an update). */
@@ -296,7 +294,6 @@ export async function pull() {
           team: old?.team || [],
           contracts: old?.contracts || [],
           events: old?.events || [],
-          ads: old?.ads || [],
         };
         const f = [b.name, b.sector, b.size, b.city, b.address, b.phone, b.email, b.about, b.rccm, b.niu, b.logo || b.color];
         b.draft = f.filter(Boolean).length < f.length;
@@ -388,7 +385,7 @@ async function upload(local: string, name: string): Promise<string | null> {
 const isLocalPic = (p?: string | null) => !!p && p.startsWith('uri:') && !p.startsWith('uri:http');
 
 export async function push() {
-  if (!isReal() || !db.uid || !db.loggedIn) return;
+  if (!db.uid || !db.loggedIn) return;
   if (pulledFor !== db.uid) {
     // read the server's copy first (its end triggers the next push)
     if (!pulling) {
@@ -469,7 +466,7 @@ export function startSync() {
   if (started) return;
   started = true;
   subscribe(() => {
-    if (isReal() && db.uid && db.loggedIn) schedule();
+    if (db.uid && db.loggedIn) schedule();
   });
   AppState.addEventListener('change', (s) => {
     if (s === 'active' && db.uid && db.loggedIn) {

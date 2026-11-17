@@ -1,6 +1,5 @@
-/* The app's data model. Mutable (like the prototype); call bump() after changes. */
+/* The app's data model. Mutable; call bump() after changes. */
 import type { Pic } from '../ui/kit';
-import { CATS } from './catalog';
 
 /* ------------------------------ types ------------------------------ */
 export type Person = {
@@ -29,7 +28,6 @@ export type Person = {
   self?: number;
   /** server ids: the account behind this person or business page */
   uid?: string;
-  bizId?: string;
   /** [lng, lat], rounded to about 1 km */
   coord?: [number, number];
   skills?: string[];
@@ -78,7 +76,6 @@ export type Post = {
   coord?: [number, number];
   at?: number;
 };
-export type Reel = { by: string; scene: string; cap: string; tags: string[]; job: string; likes: number; comments: number; views: string; live?: number };
 export type Msg = {
   d?: string;
   sys?: string;
@@ -92,7 +89,6 @@ export type Msg = {
   k?: 'offer' | 'voice' | 'file' | 'img' | 'loc' | 'ts';
   /** k='ts': a question asked at this second of recording `rec` */
   ts?: number;
-  rec?: string;
   job?: string;
   price?: string;
   when?: string;
@@ -124,12 +120,9 @@ export type Thread = {
   group?: number;
   members?: string[];
   rulesOk?: number;
-  course?: number;
   muted?: number;
   /** server conversation id */
   cid?: string;
-  /** the people in this chat (server ids) */
-  uids?: string[];
 };
 export type Notif = {
   id: string;
@@ -170,11 +163,7 @@ export type Booking = {
   log: Record<string, string>;
   as?: 'regular' | 'business';
   reviewed?: number;
-  simRunning?: number;
-  /** escrow: the client's money for this job. unfunded = booked but not paid in yet */
-  escrow?: 'unfunded' | 'held' | 'released' | 'refunded';
   amt?: number;
-  paidOut?: number;
   /** the chat this booking belongs to */
   cid?: string;
   /** where the job is [lng, lat] */
@@ -202,7 +191,6 @@ export type Opp = {
   applied?: number;
   people?: string[];
   st?: Record<string, 'acc' | 'dec'>;
-  emp?: number;
 };
 export type Course = {
   id: string;
@@ -218,19 +206,11 @@ export type Course = {
   old: number;
   prof: string;
   skills: string[];
-  mo: number;
   mine?: number;
   biz?: string;
   seats?: number;
-  enrolled?: number;
   people?: string[];
   prog?: Record<string, number>;
-  emp?: number;
-  /** timestamp of the next live class for learners; quick = test course that starts 1 minute after enrolling */
-  startAt?: number;
-  quick?: number;
-  /** demo course that is always live, for trying the live class */
-  live?: number;
   /** lessons the learner has finished */
   done?: number;
   /** the course page on the school's or trainer's own website (courses are listings) */
@@ -260,9 +240,7 @@ export type Mentorship = {
   joinedMe?: 'req' | 'yes' | null;
   st?: Record<string, 'acc' | 'dec' | 'pending'>;
   plain?: number;
-  course?: string;
   color?: string;
-  emp?: number;
 };
 export type BizSample = {
   name: string;
@@ -290,27 +268,7 @@ export type Contract = {
   terms: string;
   status: 'sent' | 'active' | 'ended';
   vac: string;
-  endedAt?: string;
   reviewed?: number;
-};
-export type Ad = {
-  id: string;
-  t: [string, string, string, string];
-  head: string;
-  text: string;
-  areas: string[];
-  fields: string[];
-  reach: number;
-  days: number;
-  reached: number;
-  clicks: number;
-  apps: number;
-  status: 'active' | 'paused' | 'done';
-  paid: number;
-  start: string;
-  /** 'story' = full-screen ad; skip = seconds before it can be closed (0–10) */
-  fmt?: 'card' | 'story';
-  skip?: number;
 };
 export type MyBiz = {
   id: string;
@@ -334,7 +292,6 @@ export type MyBiz = {
   team: string[];
   contracts: Contract[];
   events: { icon: string; text: string; at: string }[];
-  ads: Ad[];
   hires?: string[];
   hireTypes?: string[];
   /** id of this page in Supabase */
@@ -346,8 +303,6 @@ export type Review = { stars: number; tags: string[]; text: string; name: string
 export type Service = { id: string; skill: string; price: number | string; unit: string; where: string; desc: string; pub: boolean; boost: number; draft?: boolean };
 
 /* ------------------------------ catalogue only: no sample people, posts or chats ------------------------------ */
-/** Short work videos. Filled from people's video posts once video upload is live. */
-export const REELS: Reel[] = [];
 export function makeDb() {
   const P: Record<string, Person> = {};
   const BIZ_SAMPLE: Record<string, BizSample> = {};
@@ -450,11 +405,8 @@ export function makeDb() {
     savedCourses: [] as string[],
     savedCos: [] as string[],
     savedMentors: [] as string[],
-    reelLiked: [] as number[],
     myLearning: [] as string[],
     DMREQ: {} as Record<string, 'pending' | 'ok'>,
-    mutedG: [] as string[],
-    stats: { nextId: 1 },
     /** bolo wallet. Hidden until mobile money is connected (see src/logic/money.ts). */
     /** server conversation id → where it shows in the app */
     CONV: {} as Record<string, { key: string; inbox: 'W' | 'C' }>,
@@ -504,4 +456,3 @@ export const ui = {
 };
 
 export const uid = (p = 'x') => `${p}${Date.now().toString(36)}${Math.floor(Math.random() * 1e4).toString(36)}`;
-export const CAT_NAMES = CATS.map((c) => c[0]);

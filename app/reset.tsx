@@ -6,7 +6,7 @@ import { Icon } from '../src/ui/Icon';
 import { C } from '../src/ui/theme';
 import { toast } from '../src/ui/overlay';
 import { db } from '../src/data/db';
-import { isReal, updatePassword } from '../src/logic/remote';
+import { updatePassword } from '../src/logic/remote';
 import { startApp } from '../src/logic/account';
 import { resetTo } from '../src/logic/nav';
 
@@ -49,12 +49,10 @@ export default function Reset() {
           loading={busy}
           style={{ marginTop: 12 }}
           onPress={async () => {
-            if (isReal()) {
-              setBusy(true);
-              const e = await updatePassword(a);
-              setBusy(false);
-              if (e) return toast(e);
-            }
+            setBusy(true);
+            const e = await updatePassword(a);
+            setBusy(false);
+            if (e) return toast(e);
             if (db.loggedIn) {
               toast('Password updated');
               router.dismissTo('/settings');

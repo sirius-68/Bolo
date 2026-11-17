@@ -3,27 +3,27 @@ import { db, makeDb, setDb, ui, uid, MyBiz, Service } from '../data/db';
 import { toast } from '../ui/overlay';
 import { bump, cancelAll } from './live';
 import { curBiz, bizName, cityLabel, isW, nowT, madeUpService, ensureSkillList, P } from './core';
-import { resumeSims } from './work';
+import { resumeSharing } from './work';
 import { clearSaved } from './persist';
 import { signOut } from './remote';
 
 export const wantsWork = () => db.user.intents.includes('find');
 
-/** Fresh account after sign-up / log-in (keeps the demo data). */
+/** Fresh account after sign-up / log-in. */
 export function startApp(viaLogin = false) {
   db.loggedIn = true;
   db.user.role = db.user.bizOnly && db.BIZ.list.length ? 'client' : 'worker';
   if (db.user.role === 'client' && !db.BIZ.active) db.BIZ.active = db.BIZ.list[0].id;
   ui.feedView = 'all';
   ui.appStarted = true;
-  resumeSims();
+  resumeSharing();
   toast(viaLogin ? 'Welcome back!' : 'Welcome to bolo' + (db.user.name ? ', ' + db.user.name.split(' ')[0] : '') + '!');
   bump();
 }
 export function enterBusinessOnly() {
   db.loggedIn = true;
   ui.appStarted = true;
-  resumeSims();
+  resumeSharing();
   bump();
 }
 
@@ -65,7 +65,7 @@ export function useBiz(id: string) {
 
 /* ---------------- businesses ---------------- */
 export function newBizDraft(): MyBiz {
-  return { id: uid('mb'), name: '', sector: '', size: '', city: cityLabel(), area: '', address: '', phone: '', email: '', web: '', about: '', rccm: '', niu: '', logo: null, color: '#f6ee5c', verified: 'none', draft: true, recruiters: [], team: [], contracts: [], events: [], ads: [] };
+  return { id: uid('mb'), name: '', sector: '', size: '', city: cityLabel(), area: '', address: '', phone: '', email: '', web: '', about: '', rccm: '', niu: '', logo: null, color: '#f6ee5c', verified: 'none', draft: true, recruiters: [], team: [], contracts: [], events: [] };
 }
 export function saveBiz(b: MyBiz, opts: { submitDocs?: boolean } = {}) {
   const pct = (() => {

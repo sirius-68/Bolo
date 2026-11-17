@@ -2,7 +2,7 @@ import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { useFocusEffect } from 'expo-router';
 
 /**
- * bolo keeps its demo data in one mutable model (see data/db.ts), like the prototype did.
+ * bolo keeps what it shows in one mutable model (see data/db.ts).
  * After changing it, call bump(). Screens re-render through useLive().
  *
  * Optimisation: screens that are not focused (e.g. tabs in the background or screens
@@ -67,7 +67,7 @@ export function useLive() {
   return tick;
 }
 
-/** Managed timers so simulations can be cancelled on log out. */
+/** Timers that are cancelled on log out. */
 const timers = new Set<ReturnType<typeof setTimeout>>();
 export function later(ms: number, fn: () => void) {
   const t = setTimeout(() => {

@@ -93,7 +93,7 @@ export default function ExpertBook() {
               How it works
             </Txt>
             <Txt s={12} c={C.muted}>
-              Your request goes to {e.name.split(' ')[0]} in chat. When they accept, the session is booked and you agree the time there. Pay {e.name.split(' ')[0]} directly as agreed: payments through bolo are coming soon.
+              Your request goes to {e.name.split(' ')[0]} in chat. When they accept, the session is booked and you agree the time there. Pay {e.name.split(' ')[0]} directly as agreed.
             </Txt>
           </View>
         </View>

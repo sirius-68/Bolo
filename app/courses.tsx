@@ -96,8 +96,6 @@ function Explore({ bottom }: { bottom: number }) {
   const qq = q.trim().toLowerCase();
   let L = db.COURSES.filter(
     (c) =>
-      !c.live &&
-      !c.quick &&
       (!courseF.cat || c.cat === courseF.cat) &&
       (!courseF.lv || c.lv === courseF.lv) &&
       (!courseF.price || (courseF.price === 'free' ? isFree(c) : !isFree(c))) &&
@@ -110,7 +108,7 @@ function Explore({ bottom }: { bottom: number }) {
   if (sort === 'Cheapest') L = L.slice().sort((a, b) => a.price - b.price);
   const nf = (courseF.lv ? 1 : 0) + (courseF.price ? 1 : 0) + (courseF.fmt ? 1 : 0) + (courseF.rate ? 1 : 0);
   const plain = !qq && !courseF.cat && !nf;
-  const free = db.COURSES.filter((c) => isFree(c) && !c.mine && !c.live && !c.quick).slice(0, 8);
+  const free = db.COURSES.filter((c) => isFree(c) && !c.mine).slice(0, 8);
   return (
     <FlatList
       data={L}

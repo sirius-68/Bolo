@@ -14,7 +14,7 @@ import { bizLogo, isEmail, isPhone } from '../src/logic/core';
 import { resetTo } from '../src/logic/nav';
 import { BizAbout, BizDocs, BizWhere, LogoPicker } from '../src/components/business';
 import { signup } from '../src/components/auth';
-import { isReal, signUp } from '../src/logic/remote';
+import { signUp } from '../src/logic/remote';
 import { db } from '../src/data/db';
 import { PhoneInput, authCaps, intlPhone } from '../src/components/auth';
 
@@ -62,8 +62,7 @@ export default function BizOnboarding() {
       createBusinessAccount({ owner: o.owner.trim(), email: o.email.trim(), phone: o.phone ? intlPhone(o.phone) : '', biz });
       resetTo('/home');
     };
-    if (!isReal()) return done();
-    // Real account: log-in uses the work email (or the phone when there's no email).
+    // log-in uses the work email (or the phone when there's no email).
     const contact = isEmail(o.email) || !authCaps.phone ? o.email.trim() : intlPhone(o.phone);
     setBusy(true);
     const r = await signUp(contact, o.pass, { name: o.owner.trim(), biz_only: true });

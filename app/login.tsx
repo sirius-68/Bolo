@@ -4,10 +4,10 @@ import { router } from 'expo-router';
 import { Btn, Field, Grow, Input, Page, Pict, TextLink, TopBar, Txt } from '../src/ui/kit';
 import { C } from '../src/ui/theme';
 import { db } from '../src/data/db';
-import { ContactField, firstMode, Divider, Mode, Socials, contactOk, contactValue, signup } from '../src/components/auth';
+import { ContactField, firstMode, Mode, contactOk, contactValue, signup } from '../src/components/auth';
 import { startApp } from '../src/logic/account';
 import { resetTo } from '../src/logic/nav';
-import { isReal, resendCode, signIn } from '../src/logic/remote';
+import { resendCode, signIn } from '../src/logic/remote';
 
 export default function Login() {
   const [mode, setMode] = useState<Mode>(firstMode());
@@ -26,10 +26,6 @@ export default function Login() {
     setErr('');
     if (!contactOk(mode, contact) || pwd.length < 4) return;
     const c = contactValue(mode, contact);
-    if (!isReal()) {
-      db.user.contact = db.user.contact || c;
-      return enter();
-    }
     setBusy(true);
     const e = await signIn(c, pwd);
     setBusy(false);
@@ -76,12 +72,6 @@ export default function Login() {
         ) : null}
         <Btn testID="li-submit" title="Log in" loading={busy} onPress={submit} />
       </View>
-      {!isReal() ? (
-        <>
-          <Divider text="or log in with" />
-          <Socials onPick={() => enter()} />
-        </>
-      ) : null}
       <Grow />
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 24 }}>
         <Txt s={14} c={C.muted}>Don’t have an account?</Txt>

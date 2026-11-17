@@ -76,10 +76,6 @@ export function likePost(id: string) {
     }
   })();
 }
-export function likeReel(i: number) {
-  toggle(db.reelLiked, i);
-  bump();
-}
 
 /* =========================== hiring a person directly =========================== */
 /** My position to send with a hire request, so the worker can find the place. */
@@ -470,7 +466,6 @@ export function endContract(id: string) {
   const b = curBiz()!;
   const k = b.contracts.find((x) => x.id === id)!;
   k.status = 'ended';
-  k.endedAt = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   b.team = b.team.filter((x) => x !== k.person);
   bizLog('file', `Contract with <b>${P(k.person).name}</b> ended`);
   toast(`Contract with ${P(k.person).name} ended`);
@@ -545,8 +540,8 @@ export async function cancelBooking(id: string) {
     bump();
   }
 }
-/** No simulations any more: after a restart, keep sharing my position if I'm on the way. */
-export function resumeSims() {
+/** After a restart: keep sharing my position if I'm on the way to a job. */
+export function resumeSharing() {
   const b = db.BOOKINGS.find((x) => x.worker === 'me' && x.state === 'onway');
   if (b) void startSharing(b, true);
 }

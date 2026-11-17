@@ -309,7 +309,7 @@ export default function Track() {
             </View>
           ))}
         </View>
-        {<Note icon="money">Pay {fname(o.name)} directly as you agreed. Payments through bolo are coming soon.</Note>}
+        {<Note icon="money">Pay {fname(o.name)} directly as you agreed.</Note>}
         <View style={{ gap: 10 }}>{act}</View>
       </ScrollView>
     </View>

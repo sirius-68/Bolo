@@ -1,4 +1,4 @@
-/** Tiny event bus so background simulations can ask the UI to show something. */
+/** Tiny event bus, so code that runs away from the screens can ask the UI to show something. */
 type H = (...a: any[]) => void;
 const hs: Record<string, Set<H>> = {};
 export function on(e: string, h: H) {

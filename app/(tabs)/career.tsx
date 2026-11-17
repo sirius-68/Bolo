@@ -27,7 +27,7 @@ export default function Career() {
   const mine = db.MENTORSHIPS.filter((m) => m.mine && !m.plain && (w ? !m.asBiz : m.asBiz === db.BIZ.active));
   const others = db.MENTORSHIPS.filter((m) => !m.mine);
   const joined = others.filter((m) => m.joinedMe === 'yes' || m.joinedMe === 'req');
-  const courses = db.COURSES.filter((c) => !c.live && !c.quick && (w ? !c.mine : true)).slice(0, 10);
+  const courses = db.COURSES.filter((c) => (w ? !c.mine : true)).slice(0, 10);
   const sessions = w ? activeExBookings() : [];
   const myOpps = db.OPPS.filter((o) => (w ? o.applied : o.mine && o.biz === db.BIZ.active));
 

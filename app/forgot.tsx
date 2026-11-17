@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { Btn, Page, Pict, Sub, TextLink, Title, TopBar, Txt } from '../src/ui/kit';
 import { C } from '../src/ui/theme';
 import { ContactField, firstMode, Mode, contactOk, contactValue, signup } from '../src/components/auth';
-import { isReal, sendReset } from '../src/logic/remote';
+import { sendReset } from '../src/logic/remote';
 
 export default function Forgot() {
   const [mode, setMode] = useState<Mode>(firstMode());
@@ -36,12 +36,10 @@ export default function Forgot() {
             signup.otpMode = 'reset';
             signup.contact = contactValue(mode, contact);
             signup.next = null;
-            if (isReal()) {
-              setBusy(true);
-              const e = await sendReset(signup.contact);
-              setBusy(false);
-              if (e) return setErr(e);
-            }
+            setBusy(true);
+            const e = await sendReset(signup.contact);
+            setBusy(false);
+            if (e) return setErr(e);
             router.push('/otp');
           }}
         />

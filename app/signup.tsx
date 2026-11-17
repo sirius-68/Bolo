@@ -4,10 +4,9 @@ import { router } from 'expo-router';
 import { Btn, Check, Field, Input, Page, Steps, Sub, TextLink, Title, TopBar, Txt } from '../src/ui/kit';
 import { C } from '../src/ui/theme';
 import { db } from '../src/data/db';
-import { ContactField, firstMode, Divider, Mode, Socials, Strength, contactOk, contactValue, signup } from '../src/components/auth';
-import { toast } from '../src/ui/overlay';
+import { ContactField, firstMode, Mode, Strength, contactOk, contactValue, signup } from '../src/components/auth';
 import { wantsWork } from '../src/logic/account';
-import { isReal, signUp } from '../src/logic/remote';
+import { signUp } from '../src/logic/remote';
 
 export default function Signup() {
   const [mode, setMode] = useState<Mode>(firstMode());
@@ -31,7 +30,6 @@ export default function Signup() {
     signup.contact = db.user.contact;
     signup.next = null;
     signup.pwd = pwd;
-    if (!isReal()) return router.push('/otp');
     setBusy(true);
     const r = await signUp(db.user.contact, pwd, { name: db.user.name });
     setBusy(false);
@@ -63,17 +61,6 @@ export default function Signup() {
         ) : null}
         <Btn testID="su-submit" title="Create account" disabled={!terms} loading={busy} onPress={submit} />
       </View>
-      {!isReal() ? (
-        <>
-          <Divider text="or sign up with" />
-          <Socials
-            onPick={(n) => {
-              toast(`Connected with ${n}`);
-              router.push('/setup');
-            }}
-          />
-        </>
-      ) : null}
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 22 }}>
         <Txt s={14} c={C.muted}>Already have an account?</Txt>
         <TextLink title="Log in" s={14} onPress={() => router.replace('/login')} />

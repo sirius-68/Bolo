@@ -8,7 +8,7 @@ import { signup, splitPhone } from '../src/components/auth';
 import { showPhone } from '../src/data/countries';
 import { toast } from '../src/ui/overlay';
 import { wantsWork } from '../src/logic/account';
-import { isReal, resendCode, signIn, verifyCode } from '../src/logic/remote';
+import { resendCode, signIn, verifyCode } from '../src/logic/remote';
 
 /** +7 9•• ••• •• 67 — keeps the country code and the last two digits. */
 function maskPhone(p: string) {
@@ -22,8 +22,7 @@ export default function Otp() {
   const [bad, setBad] = useState(false);
   const [t, setT] = useState(60);
   const [busy, setBusy] = useState(false);
-  const real = isReal();
-  const LEN = real ? 6 : 4;
+  const LEN = 6;
   const inp = useRef<TextInput>(null);
   const shake = useRef(new Animated.Value(0)).current;
   const reset = signup.otpMode === 'reset';
@@ -69,10 +68,9 @@ export default function Otp() {
     if (e) return toast(/confirm/i.test(e) ? 'Not confirmed yet. Tap the link in the email first' : e);
     ok();
   };
-  const canLink = real && !reset && c.includes('@') && !!signup.pwd;
+  const canLink = !reset && c.includes('@') && !!signup.pwd;
   const verify = async (code: string) => {
     if (code.length < LEN || busy) return;
-    if (!real) return code === '1234' ? ok() : fail('That code isn’t right. Try 1234');
     setBusy(true);
     const e = await verifyCode(c, code, reset ? 'recovery' : 'signup');
     setBusy(false);
@@ -91,7 +89,7 @@ export default function Otp() {
       {!reset ? <Steps total={wantsWork() ? 7 : 3} on={2} /> : null}
       <Title sm>Enter the code</Title>
       <Sub>
-        We sent a {LEN}‑digit code to <Txt s={14} w={8}>{to}</Txt>.{real ? (c.includes('@') ? ' Check your inbox and spam folder.' : '') : <Txt s={14} c={C.faint}> (Demo code: 1234)</Txt>}
+        We sent a {LEN}‑digit code to <Txt s={14} w={8}>{to}</Txt>.{c.includes('@') ? ' Check your inbox and spam folder.' : ''}
       </Sub>
       <Pressable onPress={() => inp.current?.focus()} accessibilityLabel={`Enter the ${LEN}-digit code`}>
         <Animated.View style={{ flexDirection: 'row', gap: LEN > 4 ? 8 : 12, justifyContent: 'center', marginTop: 30, transform: [{ translateX: shake }] }}>
@@ -130,10 +128,8 @@ export default function Otp() {
               title="Resend code"
               onPress={async () => {
                 setT(60);
-                if (real) {
-                  const e = await resendCode(c, reset ? 'recovery' : 'signup');
-                  if (e) return toast(e);
-                }
+                const e = await resendCode(c, reset ? 'recovery' : 'signup');
+                if (e) return toast(e);
                 toast('New code sent');
               }}
             />

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { Field, Input, Pict, Seg, Txt, tap } from '../ui/kit';
+import { Field, Input, Seg, Txt, tap } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { pick } from '../ui/overlay';
 import { C, R } from '../ui/theme';
@@ -167,38 +167,4 @@ export function Strength({ v }: { v: string }) {
   );
 }
 
-export function Divider({ text }: { text: string }) {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 24, marginBottom: 16 }}>
-      <View style={{ flex: 1, height: 1, backgroundColor: C.s3 }} />
-      <Txt s={12} w={6} c={C.muted}>
-        {text}
-      </Txt>
-      <View style={{ flex: 1, height: 1, backgroundColor: C.s3 }} />
-    </View>
-  );
-}
 
-export function Socials({ onPick }: { onPick: (n: string) => void }) {
-  return (
-    <View style={{ flexDirection: 'row', gap: 10 }}>
-      {[
-        ['Apple', 'img/apple'],
-        ['Google', 'img/google'],
-        ['Facebook', 'img/facebook'],
-      ].map(([n, f]) => (
-        <Pressable
-          key={n}
-          accessibilityLabel={`Continue with ${n}`}
-          onPress={() => {
-            tap();
-            onPick(n);
-          }}
-          style={({ pressed }) => ({ flex: 1, height: 52, borderRadius: R.md, backgroundColor: pressed ? C.s3 : C.s2, alignItems: 'center', justifyContent: 'center' })}
-        >
-          <Pict pic={f} style={{ width: 26, height: 26 }} fit="contain" />
-        </Pressable>
-      ))}
-    </View>
-  );
-}

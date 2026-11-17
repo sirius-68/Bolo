@@ -91,7 +91,7 @@ export function saveListing(f: ListingForm, id?: string): Course {
   const isNew = !c;
   if (c) Object.assign(c, fields);
   else {
-    c = { id: uid('c_tmp'), type: 'Skill', prof: '', skills: [], mo: 0, mine: 1, biz: tutor ? undefined : db.BIZ.active, views: 0, ...fields } as Course;
+    c = { id: uid('c_tmp'), type: 'Skill', prof: '', skills: [], mine: 1, biz: tutor ? undefined : db.BIZ.active, views: 0, ...fields } as Course;
     db.COURSES.unshift(c);
   }
   bump();

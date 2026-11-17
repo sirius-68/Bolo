@@ -1,6 +1,5 @@
-/* Career experts: search, filters, matching, booking a service with escrow, and reviews.
-   Money for a session is taken from the wallet when you book and held by bolo until you
-   confirm the session happened (or refunded if it's cancelled). */
+/* Career experts: search, filters, matching, booking a service, and reviews.
+   A booking is a request sent in chat; the session is paid for directly, as the two agree. */
 import { db } from '../data/db';
 import { Expert, ExReview, Service } from '../data/experts';
 import { bump } from './live';
