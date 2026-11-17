@@ -139,7 +139,6 @@ function BizSetup({ st }: { st: BzState }) {
   const [, f] = useState(0);
   const re = () => f((x) => x + 1);
   const b = st.b;
-  const set = (k: keyof MyBiz, v: any) => ((b as any)[k] = v);
   const put = (p: Partial<MyBiz>) => (Object.assign(b, p), re());
   const finish = () => {
     if (!b.name.trim()) {

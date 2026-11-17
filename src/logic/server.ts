@@ -984,11 +984,30 @@ export function loadAll(force = false): Promise<void> {
     };
     net.loading = !db.syncedAt;
     try {
-      await run([loadMine]);
-      await run([loadPeople, loadPosts, loadCourses, loadMyStats]);
-      await run([loadApplications, loadMentorships, loadOpps, loadExperts]);
-      await run([loadChats]);
-      await run([loadBookings, loadNotifs]);
+      // Everything that doesn't wait for something else starts at once; the rest follows what it needs
+      // (posts need my blocks, applications read the posts, chats read the mentorship groups, notifications
+      // read the chats). The home screen needs only people and posts, so it is drawn as soon as those two
+      // are in, while the rest keeps arriving.
+      const t0 = Date.now();
+      const mineIn = run([loadMine]);
+      const home = (async () => {
+        await Promise.all([run([loadPeople]), mineIn.then(() => run([loadPosts]))]);
+        if (db.uid === me && net.opening) {
+          net.opening = false;
+          bump();
+        }
+        console.log('bolo: home ready in', Date.now() - t0, 'ms');
+        await run([loadApplications]);
+      })();
+      const talk = (async () => {
+        await Promise.all([mineIn, run([loadMentorships])]);
+        await run([loadChats]);
+        await run([loadNotifs]);
+        bump();
+      })();
+      const rest = mineIn.then(() => run([loadCourses, loadMyStats, loadOpps, loadExperts, loadBookings]));
+      await Promise.all([home, talk, rest]);
+      console.log('bolo: everything loaded in', Date.now() - t0, 'ms');
       if (!failed.length) db.syncedAt = loadedAt = Date.now();
       else console.warn('bolo: loading failed', failed.length, String(failed[0]?.message || failed[0]));
       net.offline = failed.length > 0;
