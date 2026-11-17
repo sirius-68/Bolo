@@ -219,14 +219,26 @@ public final class IncomingCall {
     }
   }
 
-  /** Take down the pop-ups shown under these names (one per line): they were read on another phone. */
-  static void clear(Context c, String tags) {
+  /**
+   * Take down the pop-ups shown under these names (one per line): they were read, or the call was answered or
+   * declined, on another phone. "at" is when that happened; a pop-up that arrived after it is a newer one and stays.
+   */
+  static void clear(Context c, String tags, String at) {
     if (tags == null || tags.isEmpty()) return;
     try {
       NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
       if (nm == null) return;
-      for (String tag : tags.split("\n")) {
-        if (!tag.isEmpty()) nm.cancel(tag, 0);
+      long when = 0;
+      try {
+        when = at == null ? 0 : Long.parseLong(at);
+      } catch (NumberFormatException ignored) {
+      }
+      java.util.HashSet<String> names = new java.util.HashSet<String>(java.util.Arrays.asList(tags.split("\n")));
+      for (StatusBarNotification s : nm.getActiveNotifications()) {
+        if (s.getTag() == null || !names.contains(s.getTag())) continue;
+        // a few seconds of grace for clocks that differ a little
+        if (when > 0 && s.getPostTime() > when + 5000) continue;
+        nm.cancel(s.getTag(), s.getId());
       }
     } catch (Throwable ignored) {
     }

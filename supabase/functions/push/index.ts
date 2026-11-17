@@ -84,7 +84,8 @@ Deno.serve(async (req) => {
         const res = await fetch(`https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${access}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: { token: t.token, data: { type: 'clear', tags: tags.join('\n') }, android: { priority: 'NORMAL', ttl: '3600s' } } }),
+          // "at": when it was read, so a pop-up that arrived after that is left alone if this message comes late
+          body: JSON.stringify({ message: { token: t.token, data: { type: 'clear', tags: tags.join('\n'), at: String(Number(body.clear.at) || Date.now()) }, android: { priority: 'HIGH', ttl: '600s' } } }),
         });
         if (res.ok) cleared++;
       }),

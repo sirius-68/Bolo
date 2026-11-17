@@ -21,7 +21,7 @@ public class BoloMessagingService extends ExpoFirebaseMessagingService {
       Map<String, String> data = message.getData();
       // read on another phone: take those pop-ups down here too (nothing is shown for this)
       if (data != null && "clear".equals(data.get("type"))) {
-        IncomingCall.clear(getApplicationContext(), data.get("tags"));
+        IncomingCall.clear(getApplicationContext(), data.get("tags"), data.get("at"));
         return;
       }
       if (data != null && "call".equals(data.get("type")) && "1".equals(data.get("ring")) && !IncomingCall.inFront(this)) {

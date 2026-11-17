@@ -1,5 +1,6 @@
 -- 0018: pop-ups that clear on every phone, admin roles that mean something, and one page of all content.
---   • Reading a chat (or any notification) on one phone removes its pop-up from the person's other phones.
+--   • Reading a chat (or any notification) on one phone removes its pop-up from the person's other phones,
+--     and a call answered or declined on one phone stops ringing on the others.
 --   • Admin roles: support reads and answers; moderators also review, remove and suspend; admins also announce;
 --     owners also change settings, the admin team and close accounts. Checked in one place, on the server.
 --   • admin_latest_content: the newest posts, jobs and comments of everyone, for the panel's Content page.
@@ -31,7 +32,7 @@ begin
     begin
       perform net.http_post(
         url := cfg.url,
-        body := jsonb_build_object('clear', jsonb_build_object('user', r.uid, 'tags', r.tags)),
+        body := jsonb_build_object('clear', jsonb_build_object('user', r.uid, 'tags', r.tags, 'at', floor(extract(epoch from clock_timestamp()) * 1000))),
         headers := jsonb_build_object('Content-Type', 'application/json', 'x-push-secret', cfg.secret),
         timeout_milliseconds := 8000
       );
@@ -47,6 +48,34 @@ drop trigger if exists notification_cleared on public.notifications;
 create trigger notification_cleared after update on public.notifications
 referencing old table as old_rows new table as new_rows
 for each statement execute function public.push_clear_on_read();
+
+/** A call declined on one phone stops ringing on the person's other phones. (An answered call does so through
+    its notification being read; a missed one through the "missed call" pop-up that takes the ringing one's place.) */
+create or replace function public.push_clear_on_decline() returns trigger
+language plpgsql security definer set search_path = public, private as $$
+declare cfg private.push_config;
+begin
+  select * into cfg from private.push_config where id = 1;
+  if cfg.url is null or to_regnamespace('net') is null then return new; end if;
+  if not exists (select 1 from push_tokens t where t.user_id = new.callee_id and t.app_version ~ '\mr2\M') then return new; end if;
+  begin
+    perform net.http_post(
+      url := cfg.url,
+      body := jsonb_build_object('clear', jsonb_build_object('user', new.callee_id, 'tags', jsonb_build_array('calls:' || new.conversation_id),
+                                                             'at', floor(extract(epoch from clock_timestamp()) * 1000))),
+      headers := jsonb_build_object('Content-Type', 'application/json', 'x-push-secret', cfg.secret),
+      timeout_milliseconds := 8000
+    );
+  exception when others then
+    raise warning 'push: could not queue a clear: %', sqlerrm;
+  end;
+  return new;
+end $$;
+revoke all on function public.push_clear_on_decline() from public, anon, authenticated;
+
+drop trigger if exists call_declined_clear on public.calls;
+create trigger call_declined_clear after update of status on public.calls
+for each row when (new.status = 'declined' and old.status = 'ringing') execute function public.push_clear_on_decline();
 
 -- ================================================================ admin roles
 -- Every admin action is written to the audit log through bolo_audit, in the same transaction as the action
