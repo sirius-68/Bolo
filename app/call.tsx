@@ -9,7 +9,8 @@ import { toast } from '../src/ui/overlay';
 import { P, fname } from '../src/logic/core';
 import { useLive } from '../src/logic/live';
 import { db } from '../src/data/db';
-import { CALLS, Call, agora, answerCall, callAlive, callPass, callPermissions, endCall, loadCall, onCall, otherOf, setActiveCall } from '../src/logic/calls';
+import { CALLS, Call, agora, answerCall, askAnswer, callAlive, callPass, callPermissions, endCall, enterCallScreen, leaveCallScreen, loadCall, onCall, otherOf, setActiveCall, takeAnswer } from '../src/logic/calls';
+import { clearCallPopups } from '../src/logic/push';
 import { ring, stopRing } from '../src/logic/ring';
 
 type Phase = 'loading' | 'incoming' | 'calling' | 'connecting' | 'live' | 'ended';
@@ -18,7 +19,8 @@ const RING_LIMIT = 45_000;
 /** A voice or video call through Agora. Opened for calls you start, and when someone calls you. */
 export default function CallScreen() {
   useLive();
-  const { id, incoming } = useLocalSearchParams<{ id: string; incoming?: string }>();
+  // answer=1: Accept was tapped on the phone's own ringing screen (bolo was closed), so this screen answers by itself
+  const { id, incoming, answer } = useLocalSearchParams<{ id: string; incoming?: string; answer?: string }>();
   const ins = useSafeAreaInsets();
   const [call, setCall] = useState<Call | null>(CALLS[id] || null);
   const [phase, setPhase] = useState<Phase>('loading');
@@ -34,6 +36,8 @@ export default function CallScreen() {
   // this phone tapped Accept (so an "answered" update is ours, not another phone's)
   const answering = useRef(false);
   const done = useRef(false);
+  // a second screen for a call that already has one (two ways in at the same moment): it only steps aside
+  const extra = useRef(false);
 
   const video = call?.kind === 'video';
   const other = call ? otherOf(call) : '';
@@ -57,7 +61,19 @@ export default function CallScreen() {
     setActiveCall(null, id);
     if (tellServer && id) void endCall(id);
     // (when the screen was already left with Back there is nothing to close: going back again would leave the chat too)
-    if (close) setTimeout(() => (router.canGoBack() ? router.back() : router.replace('/inbox' as any)), 1200);
+    if (close) setTimeout(leave, 1200);
+  };
+  // (bolo opened straight onto the call from the lock screen has nothing behind it: go to the chats)
+  const leave = () => (router.canGoBack() ? router.back() : router.replace((db.loggedIn ? '/inbox' : '/') as any));
+
+  /** Accept: the phone's own microphone question comes now, before the call is answered (a refusal leaves it ringing). */
+  const accept = async () => {
+    if (answering.current || done.current) return;
+    if (!(await callPermissions(call?.kind || CALLS[id]?.kind || 'voice'))) return;
+    if (answering.current || done.current) return;
+    answering.current = true;
+    if (await answerCall(id, true)) void join(call?.kind || CALLS[id]?.kind || 'voice');
+    else finish('Call ended', false);
   };
 
   /** Join the call's Agora channel with a pass from the server. */
@@ -112,8 +128,17 @@ export default function CallScreen() {
 
   // load the call, then follow it live
   useEffect(() => {
+    if (answer) askAnswer(id);
+    if (!enterCallScreen(id)) {
+      extra.current = true;
+      done.current = true;
+      leave();
+      return;
+    }
     let alive = true;
     setActiveCall(id);
+    // from here this screen rings: the pop-up that rang while bolo was closed stops
+    if (incoming) void clearCallPopups();
     (async () => {
       const c = CALLS[id] || (await loadCall(id));
       if (!alive) return;
@@ -136,6 +161,7 @@ export default function CallScreen() {
     return () => {
       alive = false;
       off();
+      leaveCallScreen(id);
       // leaving the screen hangs up
       if (!done.current) finish('Call ended', true, false);
       setActiveCall(null, id);
@@ -150,6 +176,12 @@ export default function CallScreen() {
     else if (phase === 'incoming') ring('in');
     else if (phase !== 'ended') stopRing();
   }, [phase]);
+
+  // Accept was tapped outside the app: answer as soon as the call is here and still ringing
+  useEffect(() => {
+    if (phase === 'incoming' && takeAnswer(id)) void accept();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, call]);
 
   // nobody answers: give up after 45 seconds
   useEffect(() => {
@@ -228,14 +260,7 @@ export default function CallScreen() {
               testID="call-accept"
               accessibilityRole="button"
               accessibilityLabel="Accept"
-              onPress={async () => {
-                if (answering.current) return;
-                // the phone's own microphone question comes now, before the call is answered: a refusal leaves it ringing
-                if (!(await callPermissions(call?.kind || 'voice'))) return;
-                answering.current = true;
-                if (await answerCall(id, true)) void join(call?.kind || 'voice');
-                else finish('Call ended', false);
-              }}
+              onPress={accept}
               style={{ alignItems: 'center', gap: 6 }}
             >
               <View style={{ width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: C.ok }}>

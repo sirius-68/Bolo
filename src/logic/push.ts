@@ -58,14 +58,23 @@ async function clearFor(cid: string) {
   } catch {}
 }
 
-/** The call screen is taking over: remove the ringing pop-up (and its ringtone) so the two don't ring together. */
+/** The call screen is taking over: remove the ringing pop-up (and its ringtone) so the two don't ring together.
+    Covers the three kinds there can be: the phone's own full-screen ring (it carries type "call"), a pop-up the
+    app showed itself, and one Android showed for an older server ("Incoming … call" under the calls tag). */
 export async function clearCallPopups() {
   if (!N) return;
   try {
     const shown = await N.getPresentedNotificationsAsync();
-    for (const n of shown) if (payload(n).type === 'call') await N.dismissNotificationAsync(n.request.identifier);
+    for (const n of shown) {
+      const c = n?.request?.content || {};
+      const id = String(n?.request?.identifier || '');
+      const ringing = payload(n).type === 'call' || (/tag=calls(%3A|:)/i.test(id) && /^incoming /i.test(String(c.body || '')));
+      if (ringing) await N.dismissNotificationAsync(n.request.identifier);
+    }
   } catch {}
 }
+/** This phone is registered for pop-ups, so a call that comes while bolo is in the background rings through them. */
+export const pushReady = () => !!myToken;
 
 async function channels() {
   await N.setNotificationChannelAsync('messages', {
@@ -151,8 +160,9 @@ function wire() {
 
 async function save(token: string) {
   myToken = token;
-  // "r1" tells the server this phone has the ringing channel for calls
-  const version = `${Constants.expoConfig?.version || '1.0.0'}${BUILD ? ' (' + BUILD + ')' : ''} r1`;
+  // what this phone can do with a call, for the server: "r1" it has the ringing channel, "r2" it rings by itself
+  // (full screen on the lock screen) when the call comes as data
+  const version = `${Constants.expoConfig?.version || '1.0.0'}${BUILD ? ' (' + BUILD + ')' : ''} r1 r2`;
   const { error } = await supabase.rpc('register_push_token', { p_token: token, p_platform: 'android', p_version: version });
   if (error) console.warn('bolo: push register failed', error.message);
 }

@@ -158,9 +158,16 @@ jobs:
           # A setting elsewhere once removed the microphone from the app: calls then dropped with no question asked.
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           "$BT/aapt" dump permissions phone/bolo.apk | tee ci-out/permissions.txt
-          for p in RECORD_AUDIO CAMERA POST_NOTIFICATIONS MODIFY_AUDIO_SETTINGS; do
+          for p in RECORD_AUDIO CAMERA POST_NOTIFICATIONS MODIFY_AUDIO_SETTINGS USE_FULL_SCREEN_INTENT; do
             grep -q "android.permission.$p'" ci-out/permissions.txt || { echo "::error::The app has lost the $p permission"; exit 1; }
           done
+          # the phone's own ringing for calls: its three parts, the server address it declines through, and the ringtone
+          "$BT/aapt" dump xmltree phone/bolo.apk AndroidManifest.xml > ci-out/manifest.txt
+          for part in call.BoloMessagingService call.IncomingCallActivity call.CallActionReceiver bolo.api bolo.key; do
+            grep -q "$part" ci-out/manifest.txt || { echo "::error::$part is missing from the app"; exit 1; }
+          done
+          "$BT/aapt" dump resources phone/bolo.apk | grep -E "raw/bolo_ring|drawable/notification_icon" | head -4 | tee ci-out/ring-resources.txt
+          grep -q "raw/bolo_ring" ci-out/ring-resources.txt || { echo "::error::The ringtone is missing from the app"; exit 1; }
       - uses: actions/upload-artifact@v4
         with:
           name: bolo-apk
@@ -176,7 +183,8 @@ jobs:
           body: |
             Automatic build from the latest commit on main (run ${{ github.run_number }}). For testing.
       - name: Publish to the public download page
-        if: env.RELEASES_TOKEN != ''
+        # releases only: test builds talk to the staging server and must never reach people
+        if: env.RELEASES_TOKEN != '' && github.event_name == 'workflow_dispatch' && inputs.release
         uses: softprops/action-gh-release@v2
         with:
           repository: ${{ vars.RELEASES_REPO || 'sirius-68/bolo-download' }}
@@ -253,6 +261,9 @@ jobs:
           QA_PASSWORD: ${{ secrets.QA_PASSWORD }}
           # test builds (staging): two fresh accounts sign up and do a job together
           TOUR_SIGNUP: ${{ !inputs.release && vars.STAGING_SUPABASE_URL != '' && '1' || '' }}
+          # the public address and key of the staging server, for the real test call
+          SB_URL: ${{ !inputs.release && vars.STAGING_SUPABASE_URL || '' }}
+          SB_KEY: ${{ !inputs.release && vars.STAGING_SUPABASE_KEY || '' }}
         with:
           api-level: 34
           arch: x86_64

@@ -308,6 +308,21 @@ if (ready) {
     expect(c?.status === 'accepted' && c.alive_at, 'a live call was closed or not kept alive');
     must(await B.sb.rpc('end_call', { p_call: id }));
   });
+  await step('lock-screen pass: a phone with nobody signed in can only act with the right pass', async () => {
+    const id = must(await A.sb.rpc('start_call', { p_conversation: cid, p_kind: 'voice' }));
+    // exactly what the phone's own code sends: the public key, no session
+    const ask = async (fn, token) => {
+      const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: 'POST', headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_call: id, p_token: token }) });
+      expect(r.ok, `${fn} answered ${r.status}`);
+      return r.json();
+    };
+    expect((await ask('call_state_token', 'not-the-pass')) === 'gone', 'a wrong pass learned something about the call');
+    expect((await ask('decline_call_token', 'not-the-pass')) === 'gone', 'a wrong pass declined the call');
+    const c = must(await A.sb.from('calls').select('status').eq('id', id).maybeSingle());
+    expect(c?.status === 'ringing', 'the call stopped ringing');
+    expect((await B.sb.rpc('call_ring_token', { p_call: id })).error, 'a signed-in person could fetch the pass');
+    must(await A.sb.rpc('end_call', { p_call: id }));
+  });
   await step('voice call: ring, answer, hang up', async () => {
     callId = must(await A.sb.rpc('start_call', { p_conversation: cid, p_kind: 'voice' }));
     const c = must(await B.sb.from('calls').select('status').eq('id', callId).maybeSingle());
@@ -357,6 +372,12 @@ if (ready) {
     must(await A.sb.from('mentorships').select('id').limit(5));
     must(await A.sb.from('experts').select('user_id').limit(5));
     return `${c.length} courses`;
+  });
+  await step('a course can carry a long description', async () => {
+    const desc = 'Everything the course covers, week by week. '.repeat(600);
+    const row = must(await A.sb.from('course_listings').insert({ owner_id: A.id, url: 'https://example.org/e2e-course', title: 'E2E long course ' + run, data: { desc } }).select('id').single());
+    must(await A.sb.from('course_listings').delete().eq('id', row.id));
+    return `${desc.length} characters`;
   });
 
   // ---- admin panel (the same calls the web panel makes)

@@ -5,12 +5,15 @@ import { db, ui } from '../data/db';
 import { showStories, Story } from '../components/Stories';
 import { openNotifSettings } from '../sheets/account';
 
-export const WHATS_NEW_ID = '2026-11-18';
+export const WHATS_NEW_ID = '2026-11-19';
 
 /** Slides added in the latest update. */
-const LATEST = ['talk', 'chatsigns', 'ringing'];
+const LATEST = ['fullring', 'myratings', 'lighter'];
 
 export const WHATS_NEW: Story[] = [
+  { key: 'fullring', colors: ['#2fbf7a', '#0f6e45'], icon: 'phone', chip: 'Calls', title: 'Calls fill your lock screen', text: 'When someone calls and bolo is closed, your phone now rings full screen, even when it is locked, with Accept and Decline. Accept unlocks the phone and connects the call; Decline ends it without opening bolo.' },
+  { key: 'myratings', colors: ['#f6ee5c', '#e3c400'], icon: 'star', chip: 'Your profile', title: 'See your own ratings', text: 'Your profile has a new Reviews tab with your rating and what people wrote about you. Tap your Rating number to open it. And a notification about a comment now takes you to that very comment.', dark: true },
+  { key: 'lighter', colors: ['#3d5af1', '#1b2a9b'], icon: 'sparkle', chip: 'Faster', title: 'Opens faster, less clutter', text: 'Home appears as soon as its posts are in, while the rest loads behind it. Screens that only said “coming soon” are gone. Internship, program, mentorship and course descriptions can be as long as you need.' },
   { key: 'talk', colors: ['#7c5cff', '#3b1fa8'], icon: 'chat', chip: 'Comments', title: 'Like and reply to comments', text: 'Tap the heart on a comment to like it, or Reply to answer it: replies sit in a thread under the comment. Hold a comment to copy, delete or report it. You can also delete any comment under your own post.' },
   { key: 'chatsigns', colors: ['#2fbf7a', '#0f6e45'], icon: 'check2', chip: 'Messages', title: 'Typing, delivered, seen', text: 'See when someone is typing, when they are online or were last here, and follow each message: one tick is sent, two ticks is delivered, green with “Seen” means it was read. You can hide your own online status in Settings → Privacy & security.', cta: 'Open messages', onCta: () => router.push('/inbox') },
   { key: 'ringing', colors: ['#f6ee5c', '#e3c400'], icon: 'phone', chip: 'Calls and updates', title: 'Calls ring when bolo is closed', text: 'An incoming call now rings with a ringtone and shows on the lock screen even when bolo is closed: tap it to answer. You can also edit internships, programs and mentorships after publishing, and the app download is much smaller.', dark: true },
@@ -28,7 +31,7 @@ export const WHATS_NEW: Story[] = [
   { key: 'live', colors: ['#f6ee5c', '#e3c400'], icon: 'sparkle', chip: 'bolo is live', title: 'Real people, real jobs', text: 'Everything you see is now from real bolo members: jobs, people, posts and courses. Post a job or share your work and people near you see it right away.', dark: true },
   { key: 'chatlive', colors: ['#3d5af1', '#1b2a9b'], icon: 'chat', chip: 'Messages', title: 'Chat in real time', text: 'Messages arrive instantly, with read ticks. Send photos, documents and your location, or a quote that books the job when it’s accepted.', cta: 'Open messages', onCta: () => router.push('/inbox') },
   { key: 'calls', colors: ['#7c5cff', '#3b1fa8'], icon: 'video', chip: 'Calls', title: 'Voice and video calls', text: 'Call anyone you’re chatting with, or the worker on your booking, from the phone and camera buttons. Missed calls show in the chat.' },
-  { key: 'tracklive', colors: ['#2fbf7a', '#0f6e45'], icon: 'nav', chip: 'Bookings', title: 'Follow the worker live', text: 'When a worker taps Start trip, you see them move on the map with an arrival time, until they arrive. Pay them directly as agreed: payments in bolo are coming soon.' },
+  { key: 'tracklive', colors: ['#2fbf7a', '#0f6e45'], icon: 'nav', chip: 'Bookings', title: 'Follow the worker live', text: 'When a worker taps Start trip, you see them move on the map with an arrival time, until they arrive. Pay them directly as agreed.' },
   { key: 'safety', colors: ['#ff8a3d', '#c2410c'], icon: 'shield', chip: 'Safety', title: 'Report and block', text: 'Tap ⋯ on a post or the chat menu to report something to our team or block someone. Real ID checks are done by a bolo reviewer.' },
   { key: 'yourdata', colors: ['#2fbf7a', '#0f6e45'], icon: 'shield', chip: 'Privacy', title: 'Your data, your call', text: 'Download everything bolo stores about you, or delete your account for good, from Settings → Privacy & safety.', cta: 'Open settings', onCta: () => router.push('/settings' as any) },
   { key: 'experts', colors: ['#3d5af1', '#1b2a9b'], icon: 'verified', chip: 'Career', title: 'Book a career expert', text: 'CV reviews, mock interviews and career plans with checked, rated experts. Pick a service and agree the time in chat.', cta: 'Find an expert', onCta: () => router.push('/experts' as any) },
@@ -37,7 +40,7 @@ export const WHATS_NEW: Story[] = [
   { key: 'cvpro', colors: ['#6d4cff', '#14206e'], icon: 'file', chip: 'Pro', title: 'New CV designs', text: 'Five professional CV templates, Classic and Modern. Preview any of them with your own details.' },
   { key: 'rate', colors: ['#f6ee5c', '#e3c400'], icon: 'star', chip: 'Courses', title: 'Rate courses you took', text: 'Took a course? Open it, tap More → About this course and give it 1 to 5 stars. Ratings help everyone choose.', dark: true },
   { key: 'jobshare', colors: ['#2fbf7a', '#0f6e45'], icon: 'share', chip: 'Jobs', title: 'Share jobs, find them faster', text: 'Share any job with friends in one tap. New filters for jobs and people, and a clearer notifications page.' },
-  { key: 'feed', colors: ['#3d5af1', '#1b2a9b'], icon: 'feed', chip: 'New tab', title: 'Your work feed', text: 'Home → Feed shows only the work people share, people you follow first, with Work in action videos along the way.' },
+  { key: 'feed', colors: ['#3d5af1', '#1b2a9b'], icon: 'feed', chip: 'New tab', title: 'Your work feed', text: 'Home → Feed shows only the work people share, people you follow first.' },
   { key: 'group', colors: ['#3d5af1', '#1b2a9b'], icon: 'follow', chip: 'Messages', title: 'Group pages', text: 'Tap a group’s name in a chat to see its members, photos, files, links and invite link. Mute or leave in one tap.', cta: 'Open messages', onCta: () => router.push('/inbox') },
   { key: 'world', colors: ['#7c5cff', '#3b1fa8'], icon: 'globe', chip: 'Everywhere', title: 'Every country, every city', text: 'Pick your country and city anywhere in the world. The map, distances and phone numbers follow you.' },
 ];

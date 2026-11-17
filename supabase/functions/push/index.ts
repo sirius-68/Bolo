@@ -78,9 +78,11 @@ Deno.serve(async (req) => {
   if (!tokens?.length) return json({ ok: true, skipped: 'no phones' });
 
   let name = 'bolo';
+  let photo = '';
   if (n.actor_id) {
-    const { data: p } = await admin.from('profiles').select('name').eq('id', n.actor_id).maybeSingle();
+    const { data: p } = await admin.from('profiles').select('name, avatar_url').eq('id', n.actor_id).maybeSingle();
     if (p?.name) name = p.name;
+    if (typeof p?.avatar_url === 'string' && p.avatar_url.startsWith('https://')) photo = p.avatar_url;
   }
 
   // calls: ring only while the call is still ringing
@@ -91,6 +93,13 @@ Deno.serve(async (req) => {
     const { data: c } = await admin.from('calls').select('status, kind').eq('id', callId).maybeSingle();
     if (!c || c.status !== 'ringing') return json({ ok: true, skipped: 'call over' });
     kind = c.kind;
+  }
+  // Phones that ring by themselves ("r2") get the call as data, with a one-time pass for this call: it lets the
+  // phone decline from the lock screen, where nobody is signed in. (Null on a server without that part yet.)
+  let pass = '';
+  if (isCall && tokens.some((t) => /\br2\b/.test(String(t.app_version || '')))) {
+    const { data: p } = await admin.rpc('call_ring_token', { p_call: callId });
+    if (typeof p === 'string') pass = p;
   }
 
   const title = n.actor_id ? name : 'bolo';
@@ -119,11 +128,21 @@ Deno.serve(async (req) => {
     tokens.map(async ({ token: to, app_version }) => {
       // newer apps have a channel that rings like a phone call ("r1" in the version they registered with)
       const rings = isCall && /\br1\b/.test(String(app_version || ''));
+      // newer still ("r2"): the phone rings by itself, full screen on the lock screen, with Accept and Decline.
+      // That needs the call sent as data only (Android hands those to the app even when it is closed).
+      const ownRing = isCall && !!pass && /\br2\b/.test(String(app_version || ''));
+      const message = ownRing
+        ? {
+            token: to,
+            data: { ...data, ring: '1', name: cut(title, 80), kind, tag, pass, ...(photo ? { photo } : {}) },
+            android: { priority: 'HIGH', ttl: '40s' },
+          }
+        : null;
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: {
+          message: message || {
             token: to,
             notification: { title: cut(title, 80), body: cut(text, 240) },
             data,

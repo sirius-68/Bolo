@@ -2,7 +2,7 @@
    and hands out the Agora pass; this module starts calls, answers them, and opens the call screen when
    someone rings while bolo is open. */
 import { router } from 'expo-router';
-import { Linking, PermissionsAndroid, Platform, Vibration } from 'react-native';
+import { AppState, Linking, PermissionsAndroid, Platform, Vibration } from 'react-native';
 import { db } from '../data/db';
 import { supabase } from '../lib/supabase';
 import { confirm, toast } from '../ui/overlay';
@@ -135,12 +135,32 @@ export async function callPass(id: string): Promise<{ appId: string; token: stri
 }
 
 let ringing: string | null = null;
+/** A call that came while bolo was in the background: the phone rings for it (see below); looked at again when bolo opens. */
+let waiting: string | null = null;
+let watchingApp = false;
 function incoming(c: Call) {
   if (c.callee_id !== db.uid || c.status !== 'ringing' || ringing === c.id) return;
   // ignore old rings (e.g. a missed call from when the app was closed)
   if (Date.now() - +new Date(c.created_at) > 45_000) return;
   // already ringing or on a call: this one is not shown on top (it ends as a missed call)
   if (ringing || active || starting) return;
+  // bolo is not on screen: the phone itself rings (the pop-up, full screen on a locked phone). Opening the call
+  // screen here would do it where nobody can see it, and would silence that ring. When bolo comes back to the
+  // front and the call is still ringing, it shows then.
+  if (AppState.currentState !== 'active' && require('./push').pushReady()) {
+    waiting = c.id;
+    if (!watchingApp) {
+      watchingApp = true;
+      AppState.addEventListener('change', (s) => {
+        if (s !== 'active' || !waiting) return;
+        const id = waiting;
+        waiting = null;
+        // "Accept" on the phone's own ringing screen opens the call screen itself: give it a moment to arrive first
+        setTimeout(() => !active && !ringing && void loadCall(id), 1200);
+      });
+    }
+    return;
+  }
   ringing = c.id;
   active = c.id;
   // the pop-up that rang while bolo was closed stops; from here the call screen rings
@@ -152,11 +172,35 @@ function incoming(c: Call) {
     router.push(`/call?id=${c.id}&incoming=1` as any);
   });
 }
+/* "Accept" tapped on the phone's own ringing screen (bolo was closed): the call screen answers as soon as it has the call. */
+const answerAsked = new Set<string>();
+export function askAnswer(id: string) {
+  answerAsked.add(id);
+  if (!CALLS[id]) return;
+  // (a fresh copy, so a call screen that is already open notices)
+  CALLS[id] = { ...CALLS[id] };
+  listeners.forEach((fn) => fn(CALLS[id]));
+}
+/** True once for a call whose Accept was tapped outside the app. */
+export function takeAnswer(id: string) {
+  return answerAsked.delete(id);
+}
+/** One call screen per call: a second one for the same call (two ways in at the same moment) steps aside. */
+const screens = new Set<string>();
+export function enterCallScreen(id: string) {
+  if (screens.has(id)) return false;
+  screens.add(id);
+  return true;
+}
+export function leaveCallScreen(id: string) {
+  screens.delete(id);
+}
 /** Live updates on my calls (subscribed with the rest of realtime). */
 export function applyCallChange(row: any) {
   if (!row?.id) return;
   const c = row as Call;
   CALLS[c.id] = { ...(CALLS[c.id] || {}), ...c };
+  if (c.status !== 'ringing' && waiting === c.id) waiting = null;
   if (c.status !== 'ringing' && ringing === c.id) {
     Vibration.cancel();
     stopRing();
