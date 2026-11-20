@@ -402,13 +402,15 @@ if (ready) {
   // Sign-in emails must be a 6-digit code, never a link. Supabase's own email is a link on the free plan, so
   // our send-email function sends the code through Brevo. The address below is a test one: Brevo checks
   // the request and drops it, so no email is really sent.
-  await step('sign-in emails carry a code (Supabase → send-email → Brevo)', async () => {
+  await step('sign-in emails carry a 6-digit code, not a link', async () => {
     if (!TOKEN || !REF) return 'not checked: no access to the settings in this run';
     const r = await fetch(`https://api.supabase.com/v1/projects/${REF}/config/auth`, { headers: { Authorization: `Bearer ${TOKEN}` } });
     if (!r.ok) throw new Error(`sign-in settings not readable (HTTP ${r.status})`);
     const cfg = await r.json();
-    // not switched on (the deploy step says why, as a warning): nothing to test, and no email to a test address
-    if (cfg.hook_send_email_enabled !== true) return 'NOT ON YET: emails still come from Supabase as a link (see the warning of the deploy step)';
+    const smtp = !!cfg.smtp_host && /\{\{ *\.Token *\}\}/.test(cfg.mailer_templates_magic_link_content || '') && !/ConfirmationURL/.test(cfg.mailer_templates_magic_link_content || '');
+    expect(smtp || cfg.hook_send_email_enabled === true, 'sign-in emails still come from Supabase as a LINK (see the warnings of the deploy step)');
+    // through SMTP a test email would really go out (and bounce): the settings are proof enough
+    if (smtp) return `SMTP ${cfg.smtp_host} with the code template · up to ${cfg.rate_limit_email_sent ?? '?'} emails an hour`;
     const email = `e2e-${run}-code@bolo-qa.com`;
     const { error } = await client().auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
     await sql(`delete from auth.users where email = '${email}'`).catch(() => {});
