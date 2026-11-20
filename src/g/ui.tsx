@@ -231,19 +231,20 @@ export function Lockup({ mark = 92, word = 74, gap = 16 }: { mark?: number; word
 
 /* ---------------- the big button ---------------- */
 /** Rings that grow out of the big button and fade (it is listening for a tap). `still` shows two quiet rings instead. */
-export function BigButton({ label, onPress, still, dim, size = 300, testID }: { label: string; onPress?: () => void; still?: boolean; dim?: boolean; size?: number; testID?: string }) {
+export function BigButton({ label, onPress, still, dim, size = 300, testID, period = 2400, peak = 0.32 }: { label: string; onPress?: () => void; still?: boolean; dim?: boolean; size?: number; testID?: string; /** how long one ring takes to grow, and how strong it starts (listening is faster and stronger) */ period?: number; peak?: number }) {
   const t = useG();
-  const core = Math.round(size * (196 / 300));
+  // the button itself is always 196 wide in the design; a bigger `size` only gives the rings more room
+  const core = size >= 300 ? 196 : Math.round(size * (196 / 300));
   const a = [useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current];
   useEffect(() => {
     if (still) return;
     // three rings, each growing for 2.4 s and starting 0.8 s after the one before (as in the design)
     a.forEach((v) => v.setValue(0));
-    const runs = a.map((v, i) => Animated.sequence([Animated.delay(i * 800), Animated.loop(Animated.timing(v, { toValue: 1, duration: 2400, easing: Easing.linear, useNativeDriver: true }))]));
+    const runs = a.map((v, i) => Animated.sequence([Animated.delay((i * period) / 3), Animated.loop(Animated.timing(v, { toValue: 1, duration: period, easing: Easing.linear, useNativeDriver: true }))]));
     runs.forEach((r) => r.start());
     return () => runs.forEach((r) => r.stop());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [still]);
+  }, [still, period]);
   const press = usePressOnce(onPress);
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
@@ -257,7 +258,7 @@ export function BigButton({ label, onPress, still, dim, size = 300, testID }: { 
           <Animated.View
             key={i}
             pointerEvents="none"
-            style={{ position: 'absolute', width: size, height: size, borderRadius: size / 2, backgroundColor: BRAND, opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.32, 0] }), transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [196 / 300, 1] }) }] }}
+            style={{ position: 'absolute', width: size, height: size, borderRadius: size / 2, backgroundColor: BRAND, opacity: v.interpolate({ inputRange: [0, 1], outputRange: [peak, 0] }), transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [core / size, 1] }) }] }}
           />
         ))
       )}

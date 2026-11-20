@@ -4,7 +4,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyAvoid } from '../src/ui/keyboard';
 import { tap } from '../src/ui/kit';
-import { NEEDS, titleOf, tradeFor } from '../src/g/data';
+import { NEEDS, understand } from '../src/g/data';
+import { canListen } from '../src/g/speech';
 import { GIcon } from '../src/g/icons';
 import { RED, ft, useG } from '../src/g/theme';
 import { Big, Round, Screen, T } from '../src/g/ui';
@@ -13,24 +14,30 @@ import { Big, Round, Screen, T } from '../src/g/ui';
 export default function Need() {
   const t = useG();
   const ins = useSafeAreaInsets();
-  const p = useLocalSearchParams<{ q?: string }>();
+  const p = useLocalSearchParams<{ q?: string; miss?: string }>();
   const [q, setQ] = useState(typeof p.q === 'string' ? p.q : '');
-  const [miss, setMiss] = useState(false);
+  // miss=1: what was said out loud matched no kind of worker, so it arrives here to be put another way
+  const [miss, setMiss] = useState(p.miss === '1');
+  const [busy, setBusy] = useState(false);
   const input = useRef<TextInput>(null);
   const close = () => (router.canGoBack() ? router.back() : router.replace('/find' as any));
   const open = (need: string, trade: string) => router.push(`/workers?trade=${encodeURIComponent(trade)}&need=${encodeURIComponent(need)}` as any);
-  const find = () => {
+  const find = async () => {
     const text = q.trim();
     if (!text) return input.current?.focus();
-    const trade = tradeFor(text);
-    if (!trade) return setMiss(true);
-    open(titleOf(text), trade);
+    if (busy) return;
+    setBusy(true);
+    const u = await understand(text);
+    setBusy(false);
+    if (!u.trade) return setMiss(true);
+    open(u.title, u.trade);
   };
   return (
     <KeyAvoid style={{ flex: 1, backgroundColor: t.bg }}>
       <Screen style={{ paddingHorizontal: 20, paddingBottom: 28 + ins.bottom }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Round testID="need-close" icon="x" label="Close" onPress={close} />
+          {canListen() ? <Round testID="need-say" icon="mic" label="Say it instead" color={t.accent} onPress={() => router.replace('/listen' as any)} /> : null}
         </View>
         <T s={28} w={8} lh={1.15} ls={-0.6} style={{ marginTop: 22, marginBottom: 14 }}>
           What do you need?
@@ -47,7 +54,7 @@ export default function Need() {
             placeholderTextColor={t.muted}
             selectionColor={RED}
             returnKeyType="search"
-            onSubmitEditing={find}
+            onSubmitEditing={() => void find()}
             autoFocus={!q}
             maxLength={120}
             style={[ft(16, 6, t.text), { flex: 1, height: '100%', paddingVertical: 0, lineHeight: undefined }]}
@@ -76,7 +83,7 @@ export default function Need() {
             </Pressable>
           ))}
         </ScrollView>
-        <Big testID="need-find" title="Find workers" onPress={find} style={{ marginTop: 12 }} />
+        <Big testID="need-find" title="Find workers" loading={busy} onPress={() => void find()} style={{ marginTop: 12 }} />
       </Screen>
     </KeyAvoid>
   );

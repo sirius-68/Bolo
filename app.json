@@ -18,7 +18,8 @@
         "NSCameraUsageDescription": "getit uses the camera for your profile photo, ID check and job photos.",
         "NSPhotoLibraryUsageDescription": "getit lets you pick photos for your profile, jobs and chats.",
         "NSMicrophoneUsageDescription": "getit uses the microphone for voice messages and calls.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSSpeechRecognitionUsageDescription": "getit turns what you say into words to find the right worker."
       }
     },
     "android": {
@@ -75,6 +76,17 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "getit uses your location to show workers and jobs near you."
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "getit uses the microphone so you can say what you need, and for calls.",
+          "speechRecognitionPermission": "getit turns what you say into words to find the right worker.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox",
+            "com.google.android.tts"
+          ]
         }
       ],
       [

@@ -57,7 +57,7 @@ if [ -n "${BREVO_API_KEY:-}" ]; then
   if [ -n "$BREVO_OK" ]; then
     HOOK="v1,whsec_$(openssl rand -base64 32)"
     echo "::add-mask::$HOOK"
-    supabase secrets set --yes --project-ref "$REF" "BREVO_API_KEY=$BREVO_API_KEY" "SEND_SMS_HOOK_SECRET=$HOOK" "SMS_SENDER=${SMS_SENDER:-bolo}"
+    supabase secrets set --yes --project-ref "$REF" "BREVO_API_KEY=$BREVO_API_KEY" "SEND_SMS_HOOK_SECRET=$HOOK" "SMS_SENDER=${SMS_SENDER:-getit}"
     sms=$(jq -nc --arg uri "https://$REF.supabase.co/functions/v1/send-sms" --arg s "$HOOK" \
       '{external_phone_enabled: true, hook_send_sms_enabled: true, hook_send_sms_uri: $uri, hook_send_sms_secrets: $s}')
     if patch "$sms"; then

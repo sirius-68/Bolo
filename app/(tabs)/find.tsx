@@ -17,7 +17,8 @@ import { GIcon } from '../../src/g/icons';
 import { openMe } from '../../src/g/me';
 import { TAB_SPACE } from '../../src/g/TabBar';
 import { RED, ft, useG } from '../../src/g/theme';
-import { BigButton, Face, Round, Screen, T } from '../../src/g/ui';
+import { BigButton, Face, Link, Round, Screen, T } from '../../src/g/ui';
+import { canListen } from '../../src/g/speech';
 
 /** Home. Hiring: one big button to find a worker. Working: one big button to go available or pause, and jobs near you. */
 export default function Find() {
@@ -67,8 +68,9 @@ export default function Find() {
         {work ? (
           <BigButton testID="home-big" label={avail ? 'You are available. Tap to pause' : 'You are paused. Tap to go back online'} still dim={!avail} onPress={toggleAvail} />
         ) : (
-          <BigButton testID="home-big" label="Find a worker" onPress={() => router.push('/need' as any)} />
+          <BigButton testID="home-big" label={canListen() ? 'Say what you need' : 'Find a worker'} onPress={() => router.push((canListen() ? '/listen' : '/need') as any)} />
         )}
+        {!work && canListen() ? <Link testID="home-type" icon="keyboard" title="Type instead" style={{ marginTop: 12, paddingHorizontal: 18 }} onPress={() => router.push('/need' as any)} /> : null}
         {work ? (
           <T s={14} lh={1.5} c={t.muted} center style={{ maxWidth: 270, marginTop: 14 }}>
             {avail ? 'Clients near you can see you and call you. Tap the button to pause.' : 'Nobody can see you right now. Tap the button to go back online.'}

@@ -92,6 +92,23 @@ export function tradeFor(text: string): string | null {
   const guess = detectCat(q);
   return guess && CATS.some(([c]) => c === guess) ? guess : null;
 }
+/** What was understood from someone's words. */
+export type Understood = { trade: string | null; title: string };
+/** Understand a need: the word list first (instant, works offline); when it finds nothing, the server's AI,
+    which also reads French and Pidgin. Gives up after a few seconds so nobody waits on a slow connection. */
+export async function understand(text: string): Promise<Understood> {
+  const said = text.trim();
+  const local = tradeFor(said);
+  if (local) return { trade: local, title: titleOf(said) };
+  if (said.length < 3) return { trade: null, title: titleOf(said) };
+  try {
+    const ask = supabase.functions.invoke('understand', { body: { text: said.slice(0, 200) } });
+    const r: any = await Promise.race([ask, new Promise((res) => setTimeout(() => res(null), 7000))]);
+    const d = r?.data;
+    if (d && typeof d.trade === 'string' && CATS.some(([c]) => c === d.trade)) return { trade: d.trade, title: typeof d.title === 'string' && d.title.trim() ? titleOf(d.title) : titleOf(said) };
+  } catch {}
+  return { trade: null, title: titleOf(said) };
+}
 /** "Plumber" → "plumbers", "Delivery" → "delivery people". */
 export function plural(trade: string) {
   const t = trade.toLowerCase();

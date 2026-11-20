@@ -37,6 +37,10 @@ verify_jwt = false
 [functions.push]
 verify_jwt = false
 
+# Open to people who are only looking (no account yet); limits itself per connection and per day.
+[functions.understand]
+verify_jwt = false
+
 # Called by Supabase Auth (Send SMS hook); checks the hook's signature itself.
 [functions.send-sms]
 verify_jwt = false
