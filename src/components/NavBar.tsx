@@ -58,7 +58,7 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
     <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ins.top, backgroundColor: 'rgba(0,0,0,0.94)' }} />
     {W && cur === 'feed' ? <NotchBubble /> : null}
     <LivePop />
-    {/* The last refresh couldn't reach bolo: say so (what's on screen is the saved copy) and let people retry */}
+    {/* The last refresh couldn't reach getit: say so (what's on screen is the saved copy) and let people retry */}
     {net.offline ? (
       <Pressable
         testID="offline-pill"
@@ -109,7 +109,7 @@ export function NavBar({ state, navigation }: BottomTabBarProps) {
             style={{ flex: 1, height: 54, marginHorizontal: 2, borderRadius: 18, alignItems: 'center', justifyContent: 'center', gap: 2, backgroundColor: on ? C.yellow : 'transparent' }}
           >
             <View style={{ height: 26, alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name={t.icon} size={22} color={on ? '#000' : C.muted} />
+              <Icon name={t.icon} size={22} color={on ? C.onAccent : C.muted} />
               {t.name === 'me' && todo ? (
                 <View style={{ position: 'absolute', top: -4, right: -12, minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: 4, backgroundColor: C.blue, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: on ? C.yellow : '#18181b' }}>
                   <Text style={tx(9, 8, '#fff', { lineHeight: 12 })}>{todo}</Text>

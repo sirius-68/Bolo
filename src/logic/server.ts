@@ -95,12 +95,12 @@ export const facePic = (name: string, id: string) => logoPic(initials(name), col
 const pic = (url?: string | null) => (url ? 'uri:' + url : null);
 
 /* ================================================================ people and business pages */
-const PROFILE_COLS = 'id,name,avatar_url,city,bio,role,biz_only,intents,skills,skill_list,level,years,work_status,hire_status,area,experience,education,languages,services,verified,availability,created_at,lng,lat,followers,following,jobs_done,hires,rating,reviews';
+export const PROFILE_COLS = 'id,name,avatar_url,city,bio,role,biz_only,intents,skills,skill_list,level,years,work_status,hire_status,area,experience,education,languages,services,verified,availability,created_at,lng,lat,followers,following,jobs_done,hires,rating,reviews';
 export function personFrom(r: any): Person {
   const skills: string[] = r.skills || [];
   // someone who lists no skills is here to hire (or just looking): no "Hire" button, no years of experience
   const client = !skills.length;
-  const name = r.name || 'bolo member';
+  const name = r.name || 'getit member';
   const photo = pic(r.avatar_url) || facePic(name, r.id);
   return {
     name,
@@ -225,7 +225,7 @@ export async function loadReviewsOf(id: string) {
   const { data } = await supabase.from('reviews').select('id,reviewer_id,stars,tags,body,what,created_at').eq('reviewee_id', uid).order('created_at', { ascending: false }).limit(50);
   await ensurePeople((data || []).map((r: any) => r.reviewer_id));
   db.REVIEWS[id] = (data || []).map(
-    (r: any): Review => ({ stars: r.stars, tags: r.tags || [], text: r.body || '', name: r.reviewer_id === db.uid ? db.user.name || 'You' : db.P[r.reviewer_id]?.name || 'bolo member', photo: r.reviewer_id === db.uid ? db.user.avatar || facePic(db.user.name, ME()) : db.P[r.reviewer_id]?.photo || facePic('?', r.reviewer_id), time: ago(r.created_at) }),
+    (r: any): Review => ({ stars: r.stars, tags: r.tags || [], text: r.body || '', name: r.reviewer_id === db.uid ? db.user.name || 'You' : db.P[r.reviewer_id]?.name || 'getit member', photo: r.reviewer_id === db.uid ? db.user.avatar || facePic(db.user.name, ME()) : db.P[r.reviewer_id]?.photo || facePic('?', r.reviewer_id), time: ago(r.created_at) }),
   );
 }
 
@@ -751,7 +751,7 @@ function notifFrom(n: any): Notif {
   const who = n.actor_id ? L(n.actor_id) : undefined;
   const msg = n.type === 'message';
   const d = dayLabel(n.created_at);
-  // a review about me opens my own reviews; a message from the bolo team opens itself, to be read in full
+  // a review about me opens my own reviews; a message from the getit team opens itself, to be read in full
   let go: Notif['go'] = n.type === 'review' && n.target?.id === db.uid ? { k: 'me', id: 'Reviews' } : goFrom(n.target);
   if (go?.k === 'notifs') go = { k: 'notifs', id: n.id };
   return {
@@ -916,7 +916,7 @@ async function loadMentorships() {
 }
 export function expertFrom(e: any, p?: any): Expert {
   const d = e.data || {};
-  const name = p?.name || 'bolo expert';
+  const name = p?.name || 'getit expert';
   const amount = Number(d.amount) || 0;
   const fmts: string[] = d.formats || [];
   const services: ExService[] = (d.services as ExService[]) || fmts.map((f, i) => ({ id: 's' + i, t: f, price: d.price === 'Free' ? 0 : amount, mins: /60/.test(f) ? 60 : /30/.test(f) ? 30 : undefined, fmt: /CV|written/i.test(f) ? 'Written review' : /Chat/i.test(f) ? 'Chat' : 'Video call', d: f, gets: [] }));
@@ -1005,7 +1005,7 @@ export function loadAll(force = false): Promise<void> {
           net.opening = false;
           bump();
         }
-        console.log('bolo: home ready in', Date.now() - t0, 'ms');
+        console.log('getit: home ready in', Date.now() - t0, 'ms');
         await run([loadApplications]);
       })();
       const talk = (async () => {
@@ -1016,9 +1016,9 @@ export function loadAll(force = false): Promise<void> {
       })();
       const rest = mineIn.then(() => run([loadCourses, loadMyStats, loadOpps, loadExperts, loadBookings]));
       await Promise.all([home, talk, rest]);
-      console.log('bolo: everything loaded in', Date.now() - t0, 'ms');
+      console.log('getit: everything loaded in', Date.now() - t0, 'ms');
       if (!failed.length) db.syncedAt = loadedAt = Date.now();
-      else console.warn('bolo: loading failed', failed.length, String(failed[0]?.message || failed[0]));
+      else console.warn('getit: loading failed', failed.length, String(failed[0]?.message || failed[0]));
       net.offline = failed.length > 0;
       // two ticks for what just arrived, and who is online now that the chats are known
       require('./presence').gotMessages();
@@ -1067,7 +1067,7 @@ export function startRealtime() {
   if (!db.uid || channel) return;
   wantLive = true;
   const me = db.uid;
-  const ch = supabase.channel('bolo-' + me);
+  const ch = supabase.channel('getit-' + me);
   channel = ch;
   require('./presence').startSignals();
   ch

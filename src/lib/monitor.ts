@@ -13,7 +13,7 @@ export function startMonitoring() {
   Sentry.init({
     dsn: DSN,
     environment: APP_ENV,
-    release: `bolo@${Constants.expoConfig?.version || '1.0.0'}`,
+    release: `getit@${Constants.expoConfig?.version || '1.0.0'}`,
     sendDefaultPii: false,
     tracesSampleRate: 0.1,
     beforeSend(e) {

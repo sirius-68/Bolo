@@ -1,4 +1,4 @@
-/* Identity and document checks. Photos go to the private "verifications" folder (only the owner and bolo's
+/* Identity and document checks. Photos go to the private "verifications" folder (only the owner and getit's
    reviewers can open them) and a request is filed for a reviewer. Nothing is approved on the phone. */
 import { db } from '../data/db';
 import { supabase } from '../lib/supabase';
@@ -7,7 +7,7 @@ import { friendly } from './remote';
 import { uuid } from './server';
 
 
-/** Upload the photos and ask bolo to check them. Returns an error message, or null when sent. */
+/** Upload the photos and ask getit to check them. Returns an error message, or null when sent. */
 export async function submitDocs(files: string[], kind: 'id' | 'business' | 'expert' = 'id', businessId?: string | null): Promise<string | null> {
   try {
     if (!db.uid) return 'Sign in first';

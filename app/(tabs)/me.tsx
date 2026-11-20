@@ -67,7 +67,7 @@ function AddTile({ t, onPress }: { t: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={[S.row, { gap: 10, padding: 14, borderRadius: 18, borderWidth: 1, borderStyle: 'dashed', borderColor: C.s3 }]}>
       <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
-        <Icon name="plus" size={18} color="#000" />
+        <Icon name="plus" size={18} color={C.onAccent} />
       </View>
       <Txt s={14} w={7}>
         {t}
@@ -83,7 +83,7 @@ function Head({ pic, sq, name, handle, role, roleColor, bio, contact, stats, ver
           <Avatar pic={pic} square={sq} size={78} />
           {onAvatar ? (
             <View style={{ position: 'absolute', right: -2, bottom: -2, width: 26, height: 26, borderRadius: 13, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.bg }}>
-              <Icon name="camera" size={13} color="#000" />
+              <Icon name="camera" size={13} color={C.onAccent} />
             </View>
           ) : null}
         </Pressable>
@@ -182,7 +182,7 @@ function SwitchAndPro() {
               Your course listings · {myListings().length}
             </Txt>
             <Txt s={12} c={C.muted}>
-              {myListings().reduce((n, c) => n + (c.views || 0), 0)} site visits from bolo · edit or add a course
+              {myListings().reduce((n, c) => n + (c.views || 0), 0)} site visits from getit · edit or add a course
             </Txt>
           </View>
           <Icon name="chev" size={18} color={C.faint} />
@@ -285,14 +285,14 @@ function MeRegular() {
           <View style={{ marginTop: 10, gap: 10 }}>
             <AddTile t="Share your work" onPress={() => router.push('/new-post')} />
             {mw.map((x) => (
-              <ListRow key={x.id} icon={x.kind === 'avail' ? 'clock' : 'post'} title={x.kind === 'avail' ? 'Availability' : 'Post'} sub={(x.text || '').slice(0, 90)} onPress={() => router.push('/feed')} />
+              <ListRow key={x.id} icon={x.kind === 'avail' ? 'clock' : 'post'} title={x.kind === 'avail' ? 'Availability' : 'Post'} sub={(x.text || '').slice(0, 90)} onPress={() => router.push('/find')} />
             ))}
             {!mw.length ? <Empty title="No posts yet" text="Share a photo or a few words about a job you did. Posts help people trust your work." /> : null}
           </View>
         ) : null}
         {tab === 'Reviews' ? (
           <View testID="me-reviews" style={{ gap: 12, marginTop: 10 }}>
-            <ReviewsPanel id="me" rate={rating} count={myStats().reviews} empty="Reviews appear here after you complete a job for someone on bolo and they rate you." />
+            <ReviewsPanel id="me" rate={rating} count={myStats().reviews} empty="Reviews appear here after you complete a job for someone on getit and they rate you." />
           </View>
         ) : null}
         {tab === 'Applications' ? (
@@ -308,7 +308,7 @@ function MeRegular() {
             </View>
           ) : (
             <Empty title="No offers yet" text="Open a job near you and send your first offer.">
-              <Btn small variant="yellow" title="Browse jobs" style={{ marginTop: 12, alignSelf: 'center' }} onPress={() => ((ui.feedView = 'jobs'), router.push('/feed'))} />
+              <Btn small variant="yellow" title="Browse jobs" style={{ marginTop: 12, alignSelf: 'center' }} onPress={() => ((ui.feedView = 'jobs'), router.push('/find'))} />
             </Empty>
           )
         ) : null}
@@ -437,7 +437,7 @@ function ProfilePanel() {
                   onPress={() => {
                     ui.cat = s.skill;
                     ui.feedView = 'jobs';
-                    router.push('/feed');
+                    router.push('/find');
                   }}
                 />
               </View>
@@ -705,7 +705,7 @@ function MeBusiness() {
               </Pressable>
             ) : null}
             {b.verified !== 'verified' ? (
-              <Pressable onPress={() => (b.verified === 'review' ? toast('A person at bolo is checking your documents') : openBizSetup('edit', 3))} style={[S.row, { gap: 12, padding: 14, borderRadius: 20, backgroundColor: 'rgba(255,179,122,.12)', borderWidth: 1, borderColor: 'rgba(255,179,122,.4)' }]}>
+              <Pressable onPress={() => (b.verified === 'review' ? toast('A person at getit is checking your documents') : openBizSetup('edit', 3))} style={[S.row, { gap: 12, padding: 14, borderRadius: 20, backgroundColor: 'rgba(255,179,122,.12)', borderWidth: 1, borderColor: 'rgba(255,179,122,.4)' }]}>
                 <Icon name={b.verified === 'review' ? 'timer' : 'verified'} size={22} color={C.orange} />
                 <View style={{ flex: 1 }}>
                   <Txt s={14} w={8}>

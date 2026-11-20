@@ -21,7 +21,7 @@ async function downloadData() {
   const r = await exportMyData();
   if (r.error || !r.uri) return toast(r.error || 'Couldn’t prepare your data. Try again');
   try {
-    if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(r.uri, { mimeType: 'application/json', dialogTitle: 'Your bolo data', UTI: 'public.json' });
+    if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(r.uri, { mimeType: 'application/json', dialogTitle: 'Your getit data', UTI: 'public.json' });
     else toast('Saved on this phone');
   } catch {}
 }
@@ -29,7 +29,7 @@ async function downloadData() {
 function askDelete() {
   confirm({
     title: 'Delete your account?',
-    text: 'Your profile, business pages, posts and photos are removed for good. This can’t be undone. To use bolo again you’ll need a new account.',
+    text: 'Your profile, business pages, posts and photos are removed for good. This can’t be undone. To use getit again you’ll need a new account.',
     ok: 'Delete account',
     danger: true,
     icon: 'trash',
@@ -41,7 +41,7 @@ function askDelete() {
       try {
         if (router.canDismiss()) router.dismissAll();
       } catch {}
-      router.replace('/welcome');
+      router.replace('/splash');
       toast('Your account has been deleted');
     },
   });
@@ -74,7 +74,7 @@ export default function Settings() {
       <G t="Account" />
       <Box>
         
-        <OptRow icon="sparkle" bg={C.lav} title="What’s new" sub="The latest updates to bolo" onPress={openWhatsNew} />
+        <OptRow icon="sparkle" bg={C.lav} title="What’s new" sub="The latest updates to getit" onPress={openWhatsNew} />
         
         
         {b ? <OptRow icon="storefront" bg="#fff" title="Business page" sub="Details, logo, RCCM & NIU" onPress={() => openBizSetup('edit', 1)} /> : <OptRow icon="edit" bg="#fff" title="Edit profile" sub="Name, bio, contact" onPress={openEdit} />}
@@ -90,12 +90,12 @@ export default function Settings() {
       <Box>
         <OptRow icon="shield" bg={C.orange} title="Privacy & security" sub="Who can find you, password, blocked people" onPress={openPrivacy} />
         <OptRow icon="idcard" bg={C.mint} title="Verification" sub={b ? 'RCCM and NIU' : 'ID, documents and badges'} onPress={() => (b ? openBizSetup('edit', 3) : openDoc('id'))} />
-        <OptRow testID="set-export" icon="download" bg={C.s3} iconColor="#fff" title="Download my data" sub="Everything bolo stores about you" onPress={downloadData} />
+        <OptRow testID="set-export" icon="download" bg={C.s3} iconColor="#fff" title="Download my data" sub="Everything getit stores about you" onPress={downloadData} />
         <OptRow testID="set-delete" icon="trash" bg="#3a1a1a" iconColor={C.err} title="Delete account" sub="Remove your account and data for good" onPress={askDelete} />
       </Box>
       <G t="Support" />
       <Box>
-        <OptRow icon="help" bg="#fff" title="Help & support" sub="Common questions, write to bolo" onPress={openHelp} />
+        <OptRow icon="help" bg="#fff" title="Help & support" sub="Common questions, write to getit" onPress={openHelp} />
         <OptRow icon="file" bg={C.s3} iconColor="#fff" title="Terms & privacy policy" sub="How we use your data" onPress={() => toast('Terms open in your browser on the live app')} />
       </Box>
       <View style={{ marginTop: 22 }}>
@@ -109,7 +109,7 @@ export default function Settings() {
             title="Log out"
             onPress={() =>
               confirm({
-                title: 'Log out of bolo?',
+                title: 'Log out of getit?',
                 text: 'Your account stays saved. Log back in any time.',
                 ok: 'Log out',
                 danger: true,
@@ -119,7 +119,7 @@ export default function Settings() {
                   try {
                     if (router.canDismiss()) router.dismissAll();
                   } catch {}
-                  router.replace('/welcome');
+                  router.replace('/splash');
                 },
               })
             }
@@ -127,7 +127,7 @@ export default function Settings() {
         </Box>
       </View>
       <Txt s={12} c={C.faint} center style={{ marginTop: 18 }}>
-        bolo · version {Constants.expoConfig?.version || '1.0.0'} · Powered by igne-industries
+        getit · version {Constants.expoConfig?.version || '1.0.0'} · Powered by igne-industries
       </Txt>
     </Page>
   );

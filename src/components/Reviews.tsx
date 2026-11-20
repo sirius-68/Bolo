@@ -128,7 +128,7 @@ export function CourseReviews({ c }: { c: Course }) {
       ))}
       {!L.length && !mine ? (
         <Txt s={13} c={C.muted}>
-          {c.url ? 'No ratings from bolo members yet.' : 'No reviews yet.'}
+          {c.url ? 'No ratings from getit members yet.' : 'No reviews yet.'}
         </Txt>
       ) : null}
     </View>

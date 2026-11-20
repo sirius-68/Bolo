@@ -17,7 +17,7 @@ export default function Done() {
   const hire = db.user.intents.includes('hire');
   const enter = (then?: () => void) => {
     startApp();
-    resetTo('/feed');
+    resetTo('/find');
     if (then) setTimeout(then, 450);
     else if (db.user.intents.includes('biz') && !db.BIZ.list.length) setTimeout(openBizPrompt, 900);
   };

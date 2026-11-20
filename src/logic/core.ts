@@ -76,7 +76,7 @@ export const P = (id: string): Person => {
   if (id && id.startsWith('b_') && real.test(id.slice(2))) void ensureBiz([id.slice(2)]).then(() => require('./live').bump());
   else if (id && real.test(id)) void ensurePeople([id]).then(() => require('./live').bump());
   id = id || '?';
-  return { name: 'bolo member', role: 'Member', years: 0, rate: 0, dist: '', area: '', photo: facePic('?', id), jobs: 0, reviews: '0', followers: 0 } as Person;
+  return { name: 'getit member', role: 'Member', years: 0, rate: 0, dist: '', area: '', photo: facePic('?', id), jobs: 0, reviews: '0', followers: 0 } as Person;
 };
 /** What the person wrote on their profile (bio, experience, services…), when loaded from the server. */
 export const profileRaw = (id: string): any => require('./server').PROFILE_RAW[id];

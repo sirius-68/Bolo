@@ -1,6 +1,8 @@
-# bolo
+# getit (formerly bolo)
 
-Jobs, talent and careers near you: an Android app. Powered by igne-industries.
+Find a good worker in seconds, or get work near you: an Android app. Powered by igne-industries.
+
+> The app is being rebuilt to the getit design. See [docs/GETIT.md](docs/GETIT.md) for what is done and what is next. The description below is the app before the redesign; its hidden sections are still in the code history.
 
 bolo has two kinds of profile on one account:
 

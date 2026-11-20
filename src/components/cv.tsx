@@ -94,7 +94,7 @@ export function MyCV({ modern }: { modern?: boolean }) {
   );
 }
 
-/** A CV for someone else, built only from what they put on their bolo profile. */
+/** A CV for someone else, built only from what they put on their getit profile. */
 export function PersonCV({ id }: { id: string }) {
   const p = P(id);
   const a = aboutOf(id);
@@ -115,7 +115,7 @@ export function PersonCV({ id }: { id: string }) {
             {p.years ? ` · ${p.years} years experience` : ''}
           </T>
           <Txt s={11} c="#555">
-            {[p.area, p.rate ? `${p.rate}★ on bolo` : ''].filter(Boolean).join(' · ')}
+            {[p.area, p.rate ? `${p.rate}★ on getit` : ''].filter(Boolean).join(' · ')}
           </Txt>
         </View>
       </View>
@@ -148,9 +148,9 @@ export function PersonCV({ id }: { id: string }) {
           </View>
         ))
       ) : (
-        <T>{p.jobs ? `${k(p.jobs)} jobs completed on bolo with ${p.reviews} reviews.` : 'Not added yet.'}</T>
+        <T>{p.jobs ? `${k(p.jobs)} jobs completed on getit with ${p.reviews} reviews.` : 'Not added yet.'}</T>
       )}
-      {exp.length && p.jobs ? <T>{`${k(p.jobs)} jobs completed on bolo with ${p.reviews} reviews.`}</T> : null}
+      {exp.length && p.jobs ? <T>{`${k(p.jobs)} jobs completed on getit with ${p.reviews} reviews.`}</T> : null}
       {edu.level || edu.courses?.length ? (
         <>
           <H>Education</H>

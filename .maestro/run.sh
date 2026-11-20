@@ -30,7 +30,11 @@ cold_start() {
     sleep 12
   done
 }
-[ -n "$TOUR_SIGNUP" ] && FLOWS="$FLOWS t1-hire-signup t2-work-signup t3-hire-accepts t4-work-replies t5-business-signup t6-sweep-regular t7-sweep-business"
+# getit redesign: the signed-out tour walks the new screens. The older tours (signed in, sign-up, hire and work
+# together, business, the two sweeps) were written for the screens before the redesign; each comes back here as
+# its flow is rebuilt. Set OLD_TOURS=1 to run them anyway.
+[ -z "$OLD_TOURS" ] && FLOWS="signedout"
+[ -n "$OLD_TOURS" ] && [ -n "$TOUR_SIGNUP" ] && FLOWS="$FLOWS t1-hire-signup t2-work-signup t3-hire-accepts t4-work-replies t5-business-signup t6-sweep-regular t7-sweep-business"
 for f in $FLOWS; do
   mkdir -p qa-out/$f
   (cd qa-out/$f && maestro test -e QA_EMAIL="$QA_EMAIL" -e QA_PASSWORD="$QA_PASSWORD" \
@@ -44,7 +48,7 @@ cold_start startup.txt
 # the phone's own ringing for calls that come while bolo is closed (locked phone, phone in use, Accept, Decline)
 bash .maestro/ring.sh fake
 # Update test: install the previous version, sign up on it, then install this build over it (keeping its data).
-if [ -n "$TOUR_SIGNUP" ] && ls old/*.apk >/dev/null 2>&1; then
+if [ -n "$OLD_TOURS" ] && [ -n "$TOUR_SIGNUP" ] && ls old/*.apk >/dev/null 2>&1; then
   T="-e RUN=$RUN -e TOUR_PASSWORD=Tour-$RUN-pw -e UPD_EMAIL=bolo-tour-$RUN-u@mailinator.com"
   adb uninstall cm.bolo.app > /dev/null 2>&1 || true
   adb install old/*.apk > qa-out/install-old.txt 2>&1

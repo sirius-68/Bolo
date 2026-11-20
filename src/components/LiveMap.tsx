@@ -63,8 +63,8 @@ export function LiveMap({ mode, jobs, people, bottomInset = 64, topInset = 150, 
               <M.MarkerView key={po.id} coordinate={placeOf(po.id, po.area, po.coord)} allowOverlap anchor={{ x: 0.5, y: 1 }}>
                 <Pressable accessibilityRole="button" accessibilityLabel={`${po.title}, ${po.budget}`} onPress={() => (tap(), onSelect ? onSelect(po.id) : openJob(po.id))} style={{ alignItems: 'center' }}>
                   <View style={[S.row, { gap: 4, height: selected === po.id ? 34 : 30, paddingHorizontal: selected === po.id ? 11 : 8, borderRadius: 999, backgroundColor: selected === po.id ? '#fff' : po.urgent ? C.orange : C.yellow, borderWidth: selected === po.id ? 2 : 0, borderColor: '#000' }]}>
-                    <Icon name={catIcon(po.cat)} size={14} color="#000" />
-                    <Txt s={selected === po.id ? 13 : 12} w={8} c="#000" lines={1}>
+                    <Icon name={catIcon(po.cat)} size={14} color={C.onAccent} />
+                    <Txt s={selected === po.id ? 13 : 12} w={8} c={C.onAccent} lines={1}>
                       {shortBudget(po.budget)}
                     </Txt>
                   </View>
@@ -122,7 +122,7 @@ export function RouteMap({ from, to, progress, workerPic, height, live }: { from
         </M.ShapeSource>
         <M.MarkerView coordinate={to} allowOverlap>
           <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.yellow, borderWidth: 3, borderColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="house" size={18} color="#000" />
+            <Icon name="house" size={18} color={C.onAccent} />
           </View>
         </M.MarkerView>
         <M.MarkerView coordinate={cur} allowOverlap>

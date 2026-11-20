@@ -160,7 +160,7 @@ function Viewer({ list, opts }: { list: Story[]; opts: Opts }) {
               </View>
             ) : (
               <Txt s={13} w={8} c={fg}>
-                {opts.label || 'What’s new on bolo'}
+                {opts.label || 'What’s new on getit'}
               </Txt>
             )}
             {left > 0 ? (

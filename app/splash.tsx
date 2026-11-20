@@ -1,51 +1,61 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, Pressable, View } from 'react-native';
+import React from 'react';
+import { View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Pict, Txt } from '../src/ui/kit';
-import { C } from '../src/ui/theme';
+import { db } from '../src/data/db';
+import { markStarted, setMode } from '../src/g/data';
+import { GIcon } from '../src/g/icons';
+import { useG } from '../src/g/theme';
+import { Big, Link, Lockup, Screen, T } from '../src/g/ui';
 
-export default function Splash() {
+/** Start: one screen, one button. Looking needs no account. */
+export default function Intro() {
+  const t = useG();
   const ins = useSafeAreaInsets();
-  const dots = [useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current];
-  const float = useRef(new Animated.Value(0)).current;
-  const done = useRef(false);
-  const next = () => {
-    if (done.current) return;
-    done.current = true;
-    router.replace('/onboard');
+  const start = () => {
+    setMode('hire');
+    markStarted();
+    router.replace('/find' as any);
   };
-  useEffect(() => {
-    const loops = dots.map((d, i) =>
-      Animated.loop(Animated.sequence([Animated.delay(i * 150), Animated.timing(d, { toValue: 1, duration: 500, useNativeDriver: true }), Animated.timing(d, { toValue: 0, duration: 500, useNativeDriver: true })])),
-    );
-    loops.forEach((l) => l.start());
-    const f = Animated.loop(Animated.sequence([Animated.timing(float, { toValue: 1, duration: 2000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }), Animated.timing(float, { toValue: 0, duration: 2000, easing: Easing.inOut(Easing.sin), useNativeDriver: true })]));
-    f.start();
-    const t = setTimeout(next, 2400);
-    return () => {
-      clearTimeout(t);
-      loops.forEach((l) => l.stop());
-      f.stop();
-    };
-  }, []);
   return (
-    <Pressable style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }} onPress={next} accessibilityLabel="Continue">
-      <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, transform: [{ translateY: float.interpolate({ inputRange: [0, 1], outputRange: [0, -8] }) }] }}>
-        <Pict pic="art/splash" style={{ width: '100%', height: '100%' }} fit="cover" />
-      </Animated.View>
-      <Pict pic="img/logo-yellow" style={{ width: 230, height: 82 }} fit="contain" />
-      <Txt s={14} w={6} c={C.muted} center style={{ marginTop: 14 }}>
-        Jobs, talent and careers right around the corner
-      </Txt>
-      <View style={{ position: 'absolute', bottom: 48 + ins.bottom, flexDirection: 'row', gap: 6 }}>
-        {dots.map((d, i) => (
-          <Animated.View
-            key={i}
-            style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: [C.yellow, C.blue, C.orange][i], opacity: d.interpolate({ inputRange: [0, 1], outputRange: [1, 0.25] }), transform: [{ scale: d.interpolate({ inputRange: [0, 1], outputRange: [1, 0.7] }) }] }}
-          />
-        ))}
+    <Screen style={{ paddingHorizontal: 24, paddingBottom: 28 + ins.bottom }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+        <Link testID="intro-signin" title="Sign in" onPress={() => router.push('/login')} />
       </View>
-    </Pressable>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 32 }}>
+        <View style={{ marginBottom: 40 }}>
+          <Lockup mark={92} word={74} gap={16} />
+        </View>
+        <T s={31} w={8} lh={1.15} ls={-0.8} center style={{ paddingHorizontal: 6 }}>
+          Find a good worker{'\n'}in seconds
+        </T>
+        <T s={17} w={7} lh={1.45} center style={{ maxWidth: 310, marginTop: 20 }}>
+          Leaky tap? Torn dress? Lights out?{'\n'}
+          <T s={17} w={8} lh={1.45} c={t.accent}>
+            Just say it, and getit.
+          </T>
+        </T>
+      </View>
+      <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginBottom: 18 }}>
+        <View style={{ marginTop: 1 }}>
+          <GIcon name="shield" size={20} color={t.muted} />
+        </View>
+        <T s={13} lh={1.5} c={t.muted} style={{ flex: 1 }}>
+          No account needed to look. getit uses your area to show people near you, and asks for your number only when you contact someone.
+        </T>
+      </View>
+      <Big testID="intro-continue" title="Continue" onPress={start} />
+      <Link
+        testID="intro-work"
+        title="I offer a skill · get work"
+        color={t.text}
+        h={48}
+        style={{ marginTop: 8 }}
+        onPress={() => {
+          db.user.bizOnly = false;
+          router.push('/wland' as any);
+        }}
+      />
+    </Screen>
   );
 }

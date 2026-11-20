@@ -13,7 +13,7 @@ import { CODE, EXPERT_AREAS, EXPERT_FORMATS, EXPERT_LANGS, QUIZ, QUIZ_PASS, SAMP
 
 const STEPS = ['Check you qualify', 'What you can help with', 'Experience and proof', 'Your sessions', 'Ethics check', 'Answer a real question', 'Expert code'];
 
-/** Apply to become a bolo Career Expert — 7 short steps, saved as you go. */
+/** Apply to become a getit Career Expert — 7 short steps, saved as you go. */
 export default function ExpertApply() {
   useLive();
   const E = db.EXPERT;
@@ -91,14 +91,14 @@ export default function ExpertApply() {
             </View>
             {!c.ok && c.fix ? (
               <Pressable accessibilityRole="button" onPress={() => (tap(), c.fix!())} style={{ paddingHorizontal: 12, height: 32, borderRadius: 16, backgroundColor: C.yellow, justifyContent: 'center' }}>
-                <Txt s={12} w={8} c="#000">
+                <Txt s={12} w={8} c={C.onAccent}>
                   {c.fixLabel}
                 </Txt>
               </Pressable>
             ) : null}
           </View>
         ))}
-        <Note icon="shield">After you apply: a bolo reviewer reads your answers (2–3 working days), then a 15-minute video interview. New experts keep the badge while their first 5 sessions average 4.5★ or more.</Note>
+        <Note icon="shield">After you apply: a getit reviewer reads your answers (2–3 working days), then a 15-minute video interview. New experts keep the badge while their first 5 sessions average 4.5★ or more.</Note>
       </View>
     );
   if (step === 1)
@@ -157,7 +157,7 @@ export default function ExpertApply() {
             <View style={[S.row, { gap: 8 }]}>
               <Input testID="ex-cred" style={{ flex: 1 }} value={cred} onChangeText={setCred} placeholder="Degree, certificate or employer reference" onSubmit={() => cred.trim() && (E.creds.push(cred.trim()), setCred(''), bump())} />
               <Pressable accessibilityLabel="Add proof" onPress={() => cred.trim() && (E.creds.push(cred.trim()), setCred(''), bump())} style={{ width: 54, height: 54, borderRadius: R.md, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
-                <Icon name="plus" size={22} color="#000" />
+                <Icon name="plus" size={22} color={C.onAccent} />
               </Pressable>
             </View>
           </View>,
@@ -191,7 +191,7 @@ export default function ExpertApply() {
             </Chips>
             {E.price === 'Paid' ? <Input style={{ marginTop: 10 }} value={E.amount} onChangeText={(v) => ((E.amount = digits(v)), bump())} prefix="XAF" keyboardType="number-pad" placeholder="e.g. 5,000" /> : null}
           </>,
-          'Most experts start at XAF 3,000–10,000 for 30 minutes. bolo keeps 10%.',
+          'Most experts start at XAF 3,000–10,000 for 30 minutes. getit keeps 10%.',
         )}
         {sec(
           'Languages you’ll mentor in',
@@ -291,7 +291,7 @@ export default function ExpertApply() {
       <Title sm style={{ marginTop: 2 }}>
         {STEPS[step]}
       </Title>
-      {step === 0 ? <Sub>Every bolo Career Expert meets these. Fix anything missing here, your answers are saved.</Sub> : null}
+      {step === 0 ? <Sub>Every getit Career Expert meets these. Fix anything missing here, your answers are saved.</Sub> : null}
       {body}
       <View style={{ flex: 1, minHeight: 20 }} />
       <Btn testID="ex-next" variant="yellow" title={step < STEPS.length - 1 ? 'Continue' : 'Submit application'} onPress={next} style={{ marginTop: 20 }} />

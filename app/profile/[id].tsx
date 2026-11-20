@@ -69,7 +69,7 @@ export default function Profile() {
       V.map((v) => v.title!),
       null as any,
       (title) => {
-        sendText(id, `Hi ${f}! We’d love you to apply for our “${title}” vacancy on bolo.`);
+        sendText(id, `Hi ${f}! We’d love you to apply for our “${title}” vacancy on getit.`);
         toast(`Invite sent to ${f}`);
       },
     );
@@ -98,7 +98,7 @@ export default function Profile() {
               name="bookmark"
               label={has(kind === 'company' ? db.savedCos : db.saved, id) ? 'Unsave' : 'Save'}
               bg={has(kind === 'company' ? db.savedCos : db.saved, id) ? C.yellow : undefined}
-              color={has(kind === 'company' ? db.savedCos : db.saved, id) ? '#000' : C.text}
+              color={has(kind === 'company' ? db.savedCos : db.saved, id) ? C.onAccent : C.text}
               onPress={() => saveToggle(kind === 'company' ? 'savedCos' : 'saved', id, kind === 'company' ? 'Company' : f)}
             />
           }
@@ -118,7 +118,7 @@ export default function Profile() {
             <View style={[S.row, { gap: 6, flexWrap: 'wrap', marginTop: 3 }]}>
               {kind === 'company' ? <CoTag /> : null}
               <Txt s={13} c={C.muted}>
-                {kind === 'company' ? [b?.sector || p.sector, p.area].filter(Boolean).join(' · ') : p.role && kind === 'worker' ? `${p.role}${p.years ? ` · ${p.years} years` : ''}` : 'Hires on bolo'}
+                {kind === 'company' ? [b?.sector || p.sector, p.area].filter(Boolean).join(' · ') : p.role && kind === 'worker' ? `${p.role}${p.years ? ` · ${p.years} years` : ''}` : 'Hires on getit'}
               </Txt>
               <Rate r={p.rate} />
             </View>
@@ -191,15 +191,15 @@ function ReviewGate({ id }: { id: string }) {
           <Icon name="lock" size={16} color={C.lav} />
         </View>
         <Txt s={12} c={C.muted} style={{ flex: 1 }}>
-          Only people who completed a job with {fname(P(id).name)} on bolo can leave a review.
+          Only people who completed a job with {fname(P(id).name)} on getit can leave a review.
         </Txt>
       </View>
     );
   return (
     <Pressable onPress={() => openReview(id, r.bid.startsWith('k') ? null : r.bid)} style={[S.row, { gap: 12, padding: 14, borderRadius: 18, backgroundColor: C.yellow }]}>
-      <Icon name="star" size={20} color="#000" />
+      <Icon name="star" size={20} color={C.onAccent} />
       <View style={{ flex: 1 }}>
-        <Txt s={14} w={8} c="#000">
+        <Txt s={14} w={8} c={C.onAccent}>
           Rate {fname(P(id).name)}
         </Txt>
         <Txt s={12} c="#222">
@@ -243,10 +243,10 @@ function PersonTab({ id, t, kind }: { id: string; t: string; kind: string }) {
           </Card>
         ) : null}
         <Card title="Trust and verification">
-          {p.verified ? <Cred icon="idcard" t="Identity verified" s="ID checked by a bolo reviewer" /> : <Cred icon="idcard" t="ID not verified yet" s="Ask to see ID before work starts" />}
+          {p.verified ? <Cred icon="idcard" t="Identity verified" s="ID checked by a getit reviewer" /> : <Cred icon="idcard" t="ID not verified yet" s="Ask to see ID before work starts" />}
           <Cred icon="mail" t="Contact confirmed" s="Confirmed their email or phone when they joined" />
-          {worker ? <Cred icon="checkc" t={`${p.jobs} job${p.jobs === 1 ? '' : 's'} completed`} s="Confirmed by the client on bolo" /> : <Cred icon="checkc" t={`${p.hires || 0} people hired`} s="Jobs confirmed on bolo" />}
-          {since ? <Cred icon="calcheck" t={`On bolo since ${since}`} s="Member" /> : null}
+          {worker ? <Cred icon="checkc" t={`${p.jobs} job${p.jobs === 1 ? '' : 's'} completed`} s="Confirmed by the client on getit" /> : <Cred icon="checkc" t={`${p.hires || 0} people hired`} s="Jobs confirmed on getit" />}
+          {since ? <Cred icon="calcheck" t={`On getit since ${since}`} s="Member" /> : null}
         </Card>
       </>
     );
@@ -325,17 +325,17 @@ function PersonTab({ id, t, kind }: { id: string; t: string; kind: string }) {
   }
 
   if (t === 'Reviews')
-    return <ReviewsPanel id={id} rate={Number(p.rate) || 0} count={Number(p.reviews) || 0} gate={<ReviewGate id={id} />} empty={`Reviews appear after someone completes a job with ${f} on bolo.`} />;
+    return <ReviewsPanel id={id} rate={Number(p.rate) || 0} count={Number(p.reviews) || 0} gate={<ReviewGate id={id} />} empty={`Reviews appear after someone completes a job with ${f} on getit.`} />;
 
   if (t === 'CV') {
-    if (!worker) return <EmptyTab icon="file" title="No CV yet" text={`${f} hasn’t added work history to bolo yet.`} />;
+    if (!worker) return <EmptyTab icon="file" title="No CV yet" text={`${f} hasn’t added work history to getit yet.`} />;
     return (
       <>
         <PersonCV id={id} />
         <View style={[S.row, { gap: 8, justifyContent: 'center' }]}>
           <Icon name="sparkle" size={14} color={C.muted} />
           <Txt s={12} c={C.muted}>
-            Built from {f}’s bolo profile and job history
+            Built from {f}’s getit profile and job history
           </Txt>
         </View>
       </>
@@ -343,7 +343,7 @@ function PersonTab({ id, t, kind }: { id: string; t: string; kind: string }) {
   }
 
   // Schedule
-  if (!worker) return <EmptyTab icon="calplus" title="No booking times" text={`${f} doesn’t take bookings on bolo yet. Send a message to arrange a time.`} action={`Message ${f}`} onAction={() => openChat(id)} />;
+  if (!worker) return <EmptyTab icon="calplus" title="No booking times" text={`${f} doesn’t take bookings on getit yet. Send a message to arrange a time.`} action={`Message ${f}`} onAction={() => openChat(id)} />;
   const d0 = new Date();
   const N = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const SL = ['8:00', '9:30', '11:00', '12:30', '14:00', '15:30', '17:00', '18:30'];
@@ -370,7 +370,7 @@ function PersonTab({ id, t, kind }: { id: string; t: string; kind: string }) {
             const on = i === day;
             return (
               <Pressable key={i} disabled={off} accessibilityState={{ selected: on, disabled: off }} onPress={() => (setDay(i), setSlot(null))} style={{ flex: 1, paddingVertical: 10, borderRadius: 14, alignItems: 'center', backgroundColor: on ? C.yellow : C.s2, opacity: off ? 0.35 : 1 }}>
-                <Txt s={11} c={on ? '#000' : C.muted}>
+                <Txt s={11} c={on ? C.onAccent : C.muted}>
                   {N[d.getDay()]}
                 </Txt>
                 <Txt s={16} w={8} c={on ? '#000' : C.text}>
@@ -432,7 +432,7 @@ function CompanyTab({ id, t }: { id: string; t: string }) {
           <Cred icon="storefront" t={b?.sector || p.sector || 'Company'} s="Sector" />
           {b?.size ? <Cred icon="follow" t={`${b.size} people`} s="Company size" /> : null}
           {p.area ? <Cred icon="pin" t={p.area} s="Location" /> : null}
-          {p.verified ? <Cred icon="verified" t="Verified business" s="RCCM checked by bolo" /> : <Cred icon="verified" t="Not verified yet" s="bolo hasn’t checked this business’s registration" />}
+          {p.verified ? <Cred icon="verified" t="Verified business" s="RCCM checked by getit" /> : <Cred icon="verified" t="Not verified yet" s="getit hasn’t checked this business’s registration" />}
         </Card>
         {soc.length ? <Card title="Contact">
           {soc.map(([i, l, v]) => (
@@ -499,7 +499,7 @@ function CompanyTab({ id, t }: { id: string; t: string }) {
     ...js.map((j) => ['job', `Posted a vacancy: <b>${j.title}</b>`, j.time] as [string, string, string]),
     ...ops.map((o) => ['cap', `Published ${o.kind.toLowerCase()}: <b>${o.title}</b>`, 'This week'] as [string, string, string]),
     ...ms.map((m) => ['follow', `Started a mentorship: <b>${m.title}</b>`, 'This month'] as [string, string, string]),
-    ...(p.verified ? [['verified', 'Is a <b>verified business</b> on bolo', ''] as [string, string, string]] : []),
+    ...(p.verified ? [['verified', 'Is a <b>verified business</b> on getit', ''] as [string, string, string]] : []),
   ];
   if (!A.length) return <Empty title="No activity yet" text={`${f}’s vacancies, programs and mentorships will show here.`} />;
   return (

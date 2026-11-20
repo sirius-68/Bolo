@@ -305,7 +305,7 @@ function Session({ b }: { b: ExBooking }) {
       </View>
       {open ? (
         <Txt s={12} c={C.muted}>
-          You pay {e.name.split(' ')[0]} directly, as you agree in chat. bolo takes no payment.
+          You pay {e.name.split(' ')[0]} directly, as you agree in chat. getit takes no payment.
         </Txt>
       ) : null}
       <Btn testID="exb-chat" variant="yellow" icon="chat" title={`Message ${e.name.split(' ')[0]}`} onPress={() => (sheet.close(), afterSheet(() => openChat(expertContact(e))))} />

@@ -7,7 +7,7 @@ export type Service = { id: string; t: string; price: number; mins?: number; fmt
 export type ExReview = { n: string; at: string; r: number; t: string; s?: string };
 export type Expert = {
   id: string;
-  /** when the expert is also a bolo member, their profile id (chat goes there) */
+  /** when the expert is also a getit member, their profile id (chat goes there) */
   pid?: string;
   name: string;
   pic: Pic;

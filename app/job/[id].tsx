@@ -16,7 +16,7 @@ export default function JobLink() {
       router.replace('/');
       return;
     }
-    router.replace('/feed');
+    router.replace('/find');
     setTimeout(() => (postById(id) ? openJob(id) : toast('This job is no longer available')), 450);
   }, [id]);
   return <View style={{ flex: 1, backgroundColor: C.bg }} />;

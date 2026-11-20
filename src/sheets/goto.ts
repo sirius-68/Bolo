@@ -41,7 +41,7 @@ export function goTo(g: Go) {
     case 'experts':
       return openScreen('/experts');
     case 'notifs':
-      // a message from the bolo team: read it in full (on the Notifications page, opened once)
+      // a message from the getit team: read it in full (on the Notifications page, opened once)
       openScreen('/notifs');
       if (g.id) {
         const n = [...db.NOTIFS_W, ...db.NOTIFS_C].find((x) => x.id === g.id);
@@ -49,7 +49,7 @@ export function goTo(g: Go) {
       }
       return;
     case 'verify': {
-      // from the bolo team: "please verify" or the answer to a verification
+      // from the getit team: "please verify" or the answer to a verification
       if (g.id === 'expert') return openScreen('/experts');
       if (g.id === 'business') {
         const b = db.BIZ.list.find((x) => x.remoteId === g.biz) || curBiz();

@@ -161,8 +161,8 @@ export default function Chat() {
       <ScrollView horizontal keyboardShouldPersistTaps="always" showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0, borderTopWidth: 1, borderTopColor: C.line }} contentContainerStyle={{ paddingHorizontal: 12, gap: 8, paddingTop: 10, paddingBottom: 4, alignItems: 'center' }}>
         {!grp && !hiring ? (
           <Pressable onPress={() => openQuote(id)} style={[S.row, { gap: 4, height: 34, paddingHorizontal: 12, borderRadius: 999, backgroundColor: C.yellow }]}>
-            <Icon name="money" size={14} color="#000" />
-            <Txt s={12} w={8} c="#000">
+            <Icon name="money" size={14} color={C.onAccent} />
+            <Txt s={12} w={8} c={C.onAccent}>
               Send a quote
             </Txt>
           </Pressable>
@@ -192,7 +192,7 @@ export default function Chat() {
             />
             {text.trim() ? (
               <Pressable accessibilityLabel="Send" onPress={send} style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }} testID="chat-send">
-                <Icon name="send" size={20} color="#000" />
+                <Icon name="send" size={20} color={C.onAccent} />
               </Pressable>
             ) : null}
         </>
@@ -264,7 +264,7 @@ function Bubble({ id, r, hiring }: { id: string; r: Row; hiring: boolean }) {
           ) : !me ? (
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
               <Pressable onPress={() => answerOffer(id, i, 'acc')} style={{ flex: 1, height: 38, borderRadius: 12, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
-                <Txt s={13} w={8} c="#000">
+                <Txt s={13} w={8} c={C.onAccent}>
                   {m.wk === 'me' ? 'Accept offer' : 'Accept quote'}
                 </Txt>
               </Pressable>
@@ -315,7 +315,7 @@ function Bubble({ id, r, hiring }: { id: string; r: Row; hiring: boolean }) {
         style={[S.row, { gap: 8, width: 220, padding: 10, borderRadius: 18, backgroundColor: me ? C.blue : C.s1 }]}
       >
         <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: me ? '#fff' : C.yellow, alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name={playing ? 'pause' : 'playfill'} size={14} color="#000" />
+          <Icon name={playing ? 'pause' : 'playfill'} size={14} color={C.onAccent} />
         </View>
         <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 2, height: 24 }}>
           {Array.from({ length: 22 }, (_, j) => (
@@ -338,7 +338,7 @@ function Bubble({ id, r, hiring }: { id: string; r: Row; hiring: boolean }) {
       <Pressable accessibilityLabel="Open location in maps" onPress={() => (m.lat != null ? Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${m.lat},${m.lng}`).catch(() => {}) : toast('No exact position was shared'))} style={{ width: 240, height: 150, borderRadius: 18, overflow: 'hidden' }}>
         <Pict pic="img/map-bg" style={{ width: 240, height: 150, opacity: 0.8 }} />
         <View style={{ position: 'absolute', left: 103, top: 50, width: 34, height: 34, borderRadius: 17, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#000' }}>
-          <Icon name="pin" size={16} color="#000" />
+          <Icon name="pin" size={16} color={C.onAccent} />
         </View>
         <Txt s={12} w={8} style={{ position: 'absolute', left: 12, bottom: 10 }}>
           {m.t}

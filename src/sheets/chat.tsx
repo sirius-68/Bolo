@@ -167,7 +167,7 @@ export function openMsgMenu(id: string, i: number) {
       <OptRow icon="share" bg={C.lav} title="Forward to a chat" chev={false} onPress={() => openForward(id, (to) => forwardMsg(id, i, to))} />
       <OptRow
         icon="send"
-        title="Share outside bolo"
+        title="Share outside getit"
         chev={false}
         onPress={() => {
           sheet.close();
@@ -252,7 +252,7 @@ function NewChat() {
   const [q, setQ] = useState('');
   const [, force] = useState(0);
   const ql = q.toLowerCase();
-  // anyone on bolo, not only the people already loaded
+  // anyone on getit, not only the people already loaded
   useEffect(() => {
     if (ql.trim().length < 2) return;
     const t = setTimeout(() => searchPeople(ql.trim()).then(() => force((x) => x + 1)), 300);
@@ -331,7 +331,7 @@ function NewGroup({ g }: { g: NG }) {
                   {P(id).role}
                 </Txt>
               </View>
-              <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: on ? C.yellow : C.s3, backgroundColor: on ? C.yellow : 'transparent', alignItems: 'center', justifyContent: 'center' }}>{on ? <Icon name="check" size={14} color="#000" /> : null}</View>
+              <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: on ? C.yellow : C.s3, backgroundColor: on ? C.yellow : 'transparent', alignItems: 'center', justifyContent: 'center' }}>{on ? <Icon name="check" size={14} color={C.onAccent} /> : null}</View>
             </Pressable>
           );
         })}
@@ -394,7 +394,7 @@ export function RulePicker({ rules, onChange }: { rules: string[]; onChange: (r:
               <Txt s={13} w={6} style={{ flex: 1 }}>
                 {t}
               </Txt>
-              <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: on ? C.yellow : C.s3, backgroundColor: on ? C.yellow : 'transparent', alignItems: 'center', justifyContent: 'center' }}>{on ? <Icon name="check" size={13} color="#000" /> : null}</View>
+              <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: on ? C.yellow : C.s3, backgroundColor: on ? C.yellow : 'transparent', alignItems: 'center', justifyContent: 'center' }}>{on ? <Icon name="check" size={13} color={C.onAccent} /> : null}</View>
             </Pressable>
           );
         })}

@@ -80,7 +80,7 @@ export function findExperts(f = exF) {
 export const priceAfter = (price: number, _code?: string) => price;
 
 /* ---------------- booking ---------------- */
-/** The expert as a chat contact (their bolo account). */
+/** The expert as a chat contact (their getit account). */
 export function expertContact(e: Expert) {
   return e.pid || e.id;
 }

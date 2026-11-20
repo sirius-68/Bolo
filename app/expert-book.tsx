@@ -118,7 +118,7 @@ export default function ExpertBook() {
         </View>
         <Btn testID="book-pay" variant="yellow" icon="send" title="Send request" onPress={pay} />
         <Txt s={11} c={C.faint} center>
-          By booking you agree to bolo’s terms for expert sessions.
+          By booking you agree to getit’s terms for expert sessions.
         </Txt>
       </View>
     </View>

@@ -217,7 +217,7 @@ export default function Track() {
           <Circle cx={330 * k} cy={86 * k} r={22} fill={C.yellow} stroke="#000" strokeWidth={3} />
         </Svg>
         <View style={{ position: 'absolute', left: 330 * k - 10, top: ins.top + 86 * k - 10 }}>
-          <Icon name="house" size={20} color="#000" />
+          <Icon name="house" size={20} color={C.onAccent} />
         </View>
         <View style={{ position: 'absolute', left: px * k - 24, top: ins.top + py * k - 24 }}>
           <Avatar pic={W ? myPhoto() : P(b.worker).photo} size={48} ring={C.blue} />
@@ -227,8 +227,8 @@ export default function Track() {
         <View style={[S.rowB, { position: 'absolute', left: 16, right: 16, top: ins.top + 8 }]}>
           <IconBtn name="back" label="Back" bg="rgba(0,0,0,.6)" onPress={goBack} />
           <View style={[S.row, { gap: 6, height: 36, paddingHorizontal: 14, borderRadius: 999, backgroundColor: C.yellow }]}>
-            <Icon name={eta[b.state][0]} size={16} color="#000" />
-            <Txt s={13} w={8} c="#000">
+            <Icon name={eta[b.state][0]} size={16} color={C.onAccent} />
+            <Txt s={13} w={8} c={C.onAccent}>
               {eta[b.state][1]}
             </Txt>
           </View>
@@ -254,7 +254,7 @@ export default function Track() {
             return (
               <View key={key} style={{ flex: 1, alignItems: 'center', gap: 4 }} accessibilityLabel={`${l}${ok ? ', done' : cur ? ', now' : ''}`}>
                 <View style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: ok ? C.ok : cur ? C.yellow : C.s2 }}>
-                  <Icon name={ok ? 'check' : i} size={16} color={ok || cur ? '#000' : C.muted} />
+                  <Icon name={ok ? 'check' : i} size={16} color={ok || cur ? C.onAccent : C.muted} />
                 </View>
                 <Txt s={10} w={cur ? 8 : 6} c={cur ? C.text : C.muted}>
                   {l}

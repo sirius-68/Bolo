@@ -727,7 +727,7 @@ export function forwardMsg(from: string, i: number, to: string) {
 }
 export function shareContact(contact: string, to: string) {
   const p = P(contact);
-  sendMessage(to, inboxNow(), 'text', `👤 ${p.name} · ${p.role} on bolo`)
+  sendMessage(to, inboxNow(), 'text', `👤 ${p.name} · ${p.role} on getit`)
     .then(() => toast(`Shared with ${P(to).name}`))
     .catch(fail);
 }
@@ -785,7 +785,7 @@ export const REPORT_REASONS: [string, string][] = [
   ['inappropriate', 'Inappropriate content'],
   ['other', 'Something else'],
 ];
-/** Send a report to bolo's moderators (once per item). */
+/** Send a report to getit's moderators (once per item). */
 export async function report(targetType: string, targetId: string, reason: string, details = '') {
   const id = targetType === 'profile' ? R(targetId) || targetId : targetId;
   const { error } = await supabase.from('reports').insert({ target_type: targetType, target_id: id, reason, details: details.trim() || null });

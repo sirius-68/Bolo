@@ -297,7 +297,7 @@ export function viewCV(id: string, cv: CvFile) {
             {cv.name}
           </Txt>
           <Txt s={12} c={C.muted}>
-            {cv.src === 'profile' ? 'Made on bolo' : `${cv.kb ? cv.kb + ' KB · ' : ''}sent as a file in your chat`}
+            {cv.src === 'profile' ? 'Made on getit' : `${cv.kb ? cv.kb + ' KB · ' : ''}sent as a file in your chat`}
           </Txt>
         </View>
       </View>
@@ -316,12 +316,12 @@ function CvPicker({ mode, setMode, file, setFile }: { mode: CvMode; setMode: (m:
       <Chips>
         {(
           [
-            ['profile', 'My bolo CV'],
+            ['profile', 'My getit CV'],
             ['upload', 'Upload a file'],
             ['none', 'No CV'],
           ] as [CvMode, string][]
         )
-          // "My bolo CV" only when one has been made
+          // "My getit CV" only when one has been made
           .filter(([m]) => m !== 'profile' || !!db.user.cvDone)
           .map(([m, l]) => (
           <Chip key={m} small label={l} on={mode === m} onPress={() => setMode(m)} />
@@ -344,7 +344,7 @@ function CvPicker({ mode, setMode, file, setFile }: { mode: CvMode; setMode: (m:
     </View>
   );
 }
-const cvFor = (mode: CvMode, file: CvFile | null): CvFile | null => (mode === 'none' ? null : mode === 'upload' ? file : db.user.cvDone ? { name: `${myName()} · bolo CV`, kb: 0, src: 'profile' } : null);
+const cvFor = (mode: CvMode, file: CvFile | null): CvFile | null => (mode === 'none' ? null : mode === 'upload' ? file : db.user.cvDone ? { name: `${myName()} · getit CV`, kb: 0, src: 'profile' } : null);
 
 /* ---------- send an offer on a personal job ---------- */
 function OfferForm({ po }: { po: Post }) {
@@ -573,7 +573,7 @@ function HireSheet({ id, preset }: { id: string; preset?: { when?: string } }) {
       <View style={[S.row, { gap: 10, padding: 12, borderRadius: 14, backgroundColor: 'rgba(169,182,255,.12)' }]}>
         <Icon name="shield" size={18} color={C.lav} />
         <Txt s={12} c={C.lav} style={{ flex: 1 }}>
-          When {f} accepts, the job is booked and you can follow it live. Pay {f} directly as agreed: payments through bolo are coming soon.
+          When {f} accepts, the job is booked and you can follow it live. Pay {f} directly as agreed: payments through getit are coming soon.
         </Txt>
       </View>
       <Btn
@@ -695,7 +695,7 @@ export { openComments } from './comments';
 export function openMedia(pic: string) {
   sheet.show(() => <Pict pic={pic} style={{ width: '100%', aspectRatio: pic.startsWith('scenes/') ? 390 / 700 : 1, borderRadius: 18 }} fit="contain" />);
 }
-/** Share a job: title, company, a short preview and a link that opens this job in bolo. */
+/** Share a job: title, company, a short preview and a link that opens this job in getit. */
 export async function shareJob(id: string) {
   const po = postById(id);
   if (!po) return toast('This job is no longer available');
@@ -703,13 +703,13 @@ export async function shareJob(id: string) {
   const by = po.mine ? (po.as === 'business' ? bizName(curBiz()) : myName()) : c?.name || '';
   const preview = (po.text || '').replace(/\s+/g, ' ').trim();
   const link = Linking.createURL(`/job/${id}`);
-  const message = [`${po.title}${by ? ' · ' + by : ''}`, [po.budget, po.type, po.area].filter(Boolean).join(' · '), preview ? (preview.length > 160 ? preview.slice(0, 157) + '…' : preview) : '', `Open in bolo: ${link}`].filter(Boolean).join('\n\n');
+  const message = [`${po.title}${by ? ' · ' + by : ''}`, [po.budget, po.type, po.area].filter(Boolean).join(' · '), preview ? (preview.length > 160 ? preview.slice(0, 157) + '…' : preview) : '', `Open in getit: ${link}`].filter(Boolean).join('\n\n');
   try {
     await Share.share({ title: po.title, message });
   } catch {}
 }
 export async function sharePost(name?: string) {
   try {
-    await Share.share({ message: `Check out ${name ? name + ' ' : ''}on bolo: jobs, talent and careers near you.\n${shareTail()}` });
+    await Share.share({ message: `Check out ${name ? name + ' ' : ''}on getit: jobs, talent and careers near you.\n${shareTail()}` });
   } catch {}
 }

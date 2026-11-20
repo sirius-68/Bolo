@@ -1,4 +1,4 @@
-/* Course ratings: 1–5 stars and an optional review from bolo members who took the course, one each
+/* Course ratings: 1–5 stars and an optional review from getit members who took the course, one each
    (editing replaces it). Stored on the server (listing_reviews); the course owner can't rate their own. */
 import { db, Course } from '../data/db';
 import { bump } from './live';

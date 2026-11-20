@@ -141,7 +141,7 @@ function BecomeExpert() {
       style={{ marginTop: 16, padding: 18, borderRadius: 24, backgroundColor: C.yellow }}
     >
       <View style={S.rowB}>
-        <Txt s={18} w={8} c="#000">
+        <Txt s={18} w={8} c={C.onAccent}>
           {isExpert() ? 'You’re a Career Expert' : applying() ? 'Your expert application' : 'Become a career expert'}
         </Txt>
         <Icon name="chev" size={20} color="#000" />
@@ -170,11 +170,11 @@ function BecomeExpert() {
 function openHowChecked() {
   sheet.show(() => (
     <View style={{ gap: 14 }}>
-      <SheetTitle sub="Every expert on bolo goes through the same checks, and keeps the badge only while mentees rate them well.">How experts are checked</SheetTitle>
+      <SheetTitle sub="Every expert on getit goes through the same checks, and keeps the badge only while mentees rate them well.">How experts are checked</SheetTitle>
       {[
-        ['idcard', 'Identity and experience checked', '3+ years in their field, ID verified, work history on bolo'],
+        ['idcard', 'Identity and experience checked', '3+ years in their field, ID verified, work history on getit'],
         ['exam', 'Ethics check and a real sample answer', 'We read how they’d actually help a job seeker'],
-        ['video', '15-minute interview', 'A bolo reviewer talks with every applicant'],
+        ['video', '15-minute interview', 'A getit reviewer talks with every applicant'],
         ['star', 'Rated after every session', 'Experts keep their badge only while ratings stay at 4.5★ or above'],
       ].map(([i, t, s]) => (
         <View key={t} style={[S.row, { gap: 12, alignItems: 'flex-start' }]}>

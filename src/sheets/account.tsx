@@ -53,14 +53,14 @@ export function bizOnlyInfo() {
 export function switchToBiz(id: string) {
   sheet.close();
   useBiz(id);
-  resetTo('/home');
+  resetTo('/find');
 }
 /** Switch to the Regular profile or a business page, handling every edge case. */
 export function switchRole(r: 'worker' | 'client') {
   const res = setRole(r);
   if (res === 'bizOnly') return bizOnlyInfo();
   if (res === 'needBiz') return openBizSetup('prompt');
-  resetTo(r === 'client' ? '/home' : '/feed');
+  resetTo('/find');
 }
 export function openAccounts() {
   sheet.show(() => <Accounts />);
@@ -86,7 +86,7 @@ function Accounts() {
       </View>
       {count && !on ? (
         <View accessibilityLabel={`${count} unread`} style={{ minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
-          <Txt s={12} w={8} c="#000">
+          <Txt s={12} w={8} c={C.onAccent}>
             {count > 99 ? '99+' : count}
           </Txt>
         </View>
@@ -162,7 +162,7 @@ function BizSetup({ st }: { st: BzState }) {
     sheet.close();
     ui.meTab = 'Company';
     toast(isNew ? `${bizName(b)} is ready` : 'Business profile saved');
-    if (isNew) resetTo('/home');
+    if (isNew) resetTo('/find');
   };
   const skip = () => {
     if (st.mode === 'prompt' && st.step === 0) return sheet.close();
@@ -437,7 +437,7 @@ function BlockedSheet() {
           <View key={id} style={[S.row, { gap: 12, padding: 12, borderRadius: 14, backgroundColor: C.s2 }]}>
             <Avatar pic={db.P[id]?.photo || null} size={40} />
             <Txt s={14} w={7} style={{ flex: 1 }} lines={1}>
-              {db.P[id]?.name || 'bolo member'}
+              {db.P[id]?.name || 'getit member'}
             </Txt>
             <Btn small variant="ghost" title="Unblock" onPress={() => (unblockPerson(id), f((x) => x + 1))} />
           </View>
@@ -455,8 +455,8 @@ export function openLang() {
     <View>
       <SheetTitle>Language</SheetTitle>
       {[
-        ['English', 'Use bolo in English'],
-        ['Français', 'Utiliser bolo en français, bientôt disponible'],
+        ['English', 'Use getit in English'],
+        ['Français', 'Utiliser getit en français, bientôt disponible'],
       ].map(([l, s]) => (
         <OptRow
           key={l}
@@ -478,13 +478,13 @@ export function openLang() {
   ));
 }
 const FAQ: [string, string][] = [
-  ['How do I get paid?', 'For now you and the other person agree the price in chat and pay each other directly (cash or mobile money). Payments inside bolo are coming later; bolo never asks you to pay to get a job.'],
+  ['How do I get paid?', 'For now you and the other person agree the price in chat and pay each other directly (cash or mobile money). Payments inside getit are coming later; getit never asks you to pay to get a job.'],
   ['Is it free to post a job?', 'Yes. Posting jobs, sending offers, chatting and calling are all free.'],
   ['What’s the difference between Regular and Business?', 'Your Regular profile is you: find work and hire for personal jobs. A business page recruits for a company: vacancies, internships and programs.'],
-  ['How do I get the verified badge?', 'Send a photo of your ID and a selfie from Profile → Verification. A person at bolo checks them; you get a notification when it’s done.'],
-  ['How do I verify my business?', 'Add your RCCM and NIU on your business page. A person at bolo checks them before the badge appears.'],
-  ['When can I leave a review?', 'Only after the job is marked done and confirmed, so every review on bolo is from real work.'],
-  ['Someone is behaving badly. What can I do?', 'Open the ⋯ menu on their post or in the chat to report or block them. Reports go to the bolo team. Never send money to someone before the work, and meet in public places when you can.'],
+  ['How do I get the verified badge?', 'Send a photo of your ID and a selfie from Profile → Verification. A person at getit checks them; you get a notification when it’s done.'],
+  ['How do I verify my business?', 'Add your RCCM and NIU on your business page. A person at getit checks them before the badge appears.'],
+  ['When can I leave a review?', 'Only after the job is marked done and confirmed, so every review on getit is from real work.'],
+  ['Someone is behaving badly. What can I do?', 'Open the ⋯ menu on their post or in the chat to report or block them. Reports go to the getit team. Never send money to someone before the work, and meet in public places when you can.'],
 ];
 const TOPICS: [string, string][] = [
   ['problem', 'Something isn’t working'],
@@ -493,8 +493,8 @@ const TOPICS: [string, string][] = [
   ['safety', 'Safety'],
   ['other', 'Something else'],
 ];
-/** A message to the bolo team. It is stored on the server for the team to read; there is no live chat. */
-/** A message or announcement from the bolo team, in full, with a way to answer. */
+/** A message to the getit team. It is stored on the server for the team to read; there is no live chat. */
+/** A message or announcement from the getit team, in full, with a way to answer. */
 export function openBoloMessage(n: Notif) {
   sheet.show(() => <BoloMessageSheet n={n} />);
 }
@@ -504,13 +504,13 @@ function BoloMessageSheet({ n }: { n: Notif }) {
     <View style={{ gap: 14 }}>
       <View style={[S.row, { gap: 12 }]}>
         <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
-          <Txt s={20} w={8} c="#000">
+          <Txt s={20} w={8} c={C.onAccent}>
             b
           </Txt>
         </View>
         <View style={{ flex: 1 }}>
           <Txt s={18} w={8}>
-            Message from bolo
+            Message from getit
           </Txt>
           <Txt s={12} c={C.muted}>
             {when}
@@ -520,7 +520,7 @@ function BoloMessageSheet({ n }: { n: Notif }) {
       <Txt testID="bolo-msg-text" s={15} c="#e6e6ea" selectable style={{ lineHeight: 22 }}>
         {n.text || ''}
       </Txt>
-      <Btn testID="bolo-msg-reply" variant="yellow" icon="chat" title="Reply to bolo" onPress={() => afterSheet(openFeedback)} />
+      <Btn testID="bolo-msg-reply" variant="yellow" icon="chat" title="Reply to getit" onPress={() => afterSheet(openFeedback)} />
     </View>
   );
 }
@@ -540,11 +540,11 @@ function FeedbackSheet() {
     const { error } = await supabase.from('feedback').insert({ topic, body: body.trim(), app_version: `${process.env.EXPO_PUBLIC_BUILD || 'dev'}` });
     setBusy(false);
     if (error) return toast(friendly(error));
-    sheet.close('Sent. Thank you, the bolo team reads every message');
+    sheet.close('Sent. Thank you, the getit team reads every message');
   };
   return (
     <View style={{ gap: 14 }}>
-      <SheetTitle sub="Tell us what happened or what you’d like. We read every message and reply by email when we need more details.">Write to bolo</SheetTitle>
+      <SheetTitle sub="Tell us what happened or what you’d like. We read every message and reply by email when we need more details.">Write to getit</SheetTitle>
       <Chips>
         {TOPICS.map(([k, t]) => (
           <Chip key={k} small label={t} on={topic === k} onPress={() => setTopic(k)} />
@@ -580,7 +580,7 @@ function HelpSheet() {
           ) : null}
         </Pressable>
       ))}
-      <Btn testID="help-write" variant="yellow" icon="chat" title="Write to bolo" style={{ marginTop: 8 }} onPress={() => afterSheet(openFeedback)} />
+      <Btn testID="help-write" variant="yellow" icon="chat" title="Write to getit" style={{ marginTop: 8 }} onPress={() => afterSheet(openFeedback)} />
     </View>
   );
 }
@@ -759,7 +759,7 @@ function CitySheet({ onPick, current }: { onPick?: (c: string, place?: Place) =>
           setBusy(false);
           if (typeof r !== 'string') return done(r.city, r, true);
           if (r === 'blocked')
-            return confirm({ title: 'Turn on location for bolo', text: 'Location is switched off for bolo on this phone. Open bolo’s settings, tap Permissions and allow Location, or type your city here.', ok: 'Open settings', icon: 'gpsfix', onOk: () => void Linking.openSettings().catch(() => {}) });
+            return confirm({ title: 'Turn on location for getit', text: 'Location is switched off for getit on this phone. Open getit’s settings, tap Permissions and allow Location, or type your city here.', ok: 'Open settings', icon: 'gpsfix', onOk: () => void Linking.openSettings().catch(() => {}) });
           toast(r === 'off' ? 'Turn on Location on your phone, or type your city' : r === 'denied' ? 'Allow location, or type your city' : 'Couldn’t find where you are. Type your city instead');
         }}
       />

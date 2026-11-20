@@ -14,7 +14,7 @@ import { domainOf, isSavedCourse, priceLabel, toggleSaveCourse } from '../src/lo
 import { openAbout } from '../src/components/CourseListing';
 import { openReport } from '../src/sheets/safety';
 
-/** A course's own website, opened inside bolo. Only https pages load here; anything else opens outside. */
+/** A course's own website, opened inside getit. Only https pages load here; anything else opens outside. */
 export default function Web() {
   useLive();
   const { url, title, cid } = useLocalSearchParams<{ url: string; title?: string; cid?: string }>();
@@ -26,7 +26,7 @@ export default function Web() {
   const [cur, setCur] = useState(url);
   const [key, setKey] = useState(0);
   const c = cid ? db.COURSES.find((x) => x.id === cid) : undefined;
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/career' as any));
+  const close = () => (router.canGoBack() ? router.back() : router.replace('/find' as any));
   useFocusEffect(
     useCallback(() => {
       const s = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -40,8 +40,8 @@ export default function Web() {
     }, [back]),
   );
   const outside = () => Linking.openURL(cur || url).catch(() => toast('Couldn’t open the browser'));
-  // Only a listed course's own site opens inside bolo. A link from outside the app can't use this screen
-  // to show some other website under bolo's name.
+  // Only a listed course's own site opens inside getit. A link from outside the app can't use this screen
+  // to show some other website under getit's name.
   const safe = !!c && !!c.url && /^https:\/\//i.test(url || '') && domainOf(url) === domainOf(c.url);
   if (!safe) return <Missing bar="Course" title="This page can’t be opened here" text="Open the course from Career → Courses." />;
   return (
@@ -60,7 +60,7 @@ export default function Web() {
             </Txt>
           </View>
         </View>
-        {c ? <IconBtn testID="web-save" name="bookmark" bg={isSavedCourse(c.id) ? C.yellow : undefined} color={isSavedCourse(c.id) ? '#000' : undefined} label={isSavedCourse(c.id) ? 'Remove from saved' : 'Save course'} onPress={() => toggleSaveCourse(c.id)} /> : null}
+        {c ? <IconBtn testID="web-save" name="bookmark" bg={isSavedCourse(c.id) ? C.yellow : undefined} color={isSavedCourse(c.id) ? C.onAccent : undefined} label={isSavedCourse(c.id) ? 'Remove from saved' : 'Save course'} onPress={() => toggleSaveCourse(c.id)} /> : null}
         <IconBtn testID="web-more" name="dots" label="More" onPress={() => openMore()} />
       </View>
       <View style={{ height: 2, backgroundColor: C.s1 }}>{pct < 1 && !err ? <View style={{ width: `${Math.max(8, pct * 100)}%`, height: 2, backgroundColor: C.yellow }} /> : null}</View>
@@ -107,7 +107,7 @@ export default function Web() {
     sheet.show(() => (
       <View style={{ gap: 8 }}>
         <SheetTitle sub={c ? `${c.prov.n} · ${priceLabel(c)}` : domainOf(cur)}>{c ? c.title : domainOf(cur)}</SheetTitle>
-        {c ? <OptRow testID="web-about" icon="cap" bg={C.lav} title="About this course" sub="Details, and ratings from bolo members" onPress={() => (sheet.close(), afterSheet(() => openAbout(c.id)))} /> : null}
+        {c ? <OptRow testID="web-about" icon="cap" bg={C.lav} title="About this course" sub="Details, and ratings from getit members" onPress={() => (sheet.close(), afterSheet(() => openAbout(c.id)))} /> : null}
         <OptRow icon="globe" bg={C.s2} iconColor={C.text} title="Open in browser" onPress={() => (sheet.close(), outside())} />
         <OptRow icon="share" bg={C.s2} iconColor={C.text} title="Share" onPress={() => (sheet.close(), Share.share({ message: `${title ? title + ': ' : ''}${cur || url}` }).catch(() => {}))} />
         <OptRow icon="file" bg={C.s2} iconColor={C.text} title="Copy link" onPress={() => (Clipboard.setStringAsync(cur || url).catch(() => {}), sheet.close('Link copied'))} />

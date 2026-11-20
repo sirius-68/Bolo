@@ -52,7 +52,7 @@ export default function Signup() {
           <Strength v={pwd} />
         </Field>
         <Check testID="su-terms" on={terms} onPress={() => setTerms(!terms)}>
-          I agree to bolo’s <Txt s={13} w={7} c={C.lav}>Terms of Service</Txt> and <Txt s={13} w={7} c={C.lav}>Privacy Policy</Txt>.
+          I agree to getit’s <Txt s={13} w={7} c={C.lav}>Terms of Service</Txt> and <Txt s={13} w={7} c={C.lav}>Privacy Policy</Txt>.
         </Check>
         {err ? (
           <Txt s={13} w={7} c={C.err} center>

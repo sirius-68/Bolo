@@ -48,7 +48,7 @@ export default function Setup() {
           <Avatar pic={db.user.avatar} size={112} />
         ) : (
           <View style={{ width: 112, height: 112, borderRadius: 56, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="user" size={56} color="#000" />
+            <Icon name="user" size={56} color={C.onAccent} />
           </View>
         )}
         <View style={{ position: 'absolute', right: -2, bottom: 4, width: 36, height: 36, borderRadius: 18, backgroundColor: C.blue, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: C.bg }}>

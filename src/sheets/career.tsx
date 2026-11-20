@@ -25,7 +25,7 @@ const SaveBtn = ({ list, id, label }: { list: 'savedOpps' | 'savedCourses' | 'sa
   const on = has(db[list], id);
   return (
     <Pressable accessibilityLabel={on ? 'Unsave' : 'Save'} hitSlop={6} onPress={() => saveToggle(list, id, label)} style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: on ? C.yellow : C.s2, alignItems: 'center', justifyContent: 'center' }}>
-      <Icon name="bookmark" size={18} color={on ? '#000' : '#fff'} />
+      <Icon name="bookmark" size={18} color={on ? C.onAccent : '#fff'} />
     </Pressable>
   );
 };
@@ -699,7 +699,7 @@ export function openSalaries() {
               afterSheet(() => {
                     ui.cat = c;
                 ui.feedView = 'jobs';
-                resetTo('/feed');
+                resetTo('/find');
               })
             }
             style={({ pressed }) => [S.row, { gap: 12, padding: 12, borderRadius: 14, backgroundColor: pressed ? C.s3 : C.s2 }]}
@@ -712,7 +712,7 @@ export function openSalaries() {
                 {p}
               </Txt>
               <Txt s={12} c={C.muted}>
-                {n} open job{n === 1 ? '' : 's'} on bolo
+                {n} open job{n === 1 ? '' : 's'} on getit
               </Txt>
             </View>
             <Txt s={12} w={8} c={C.yellow}>
@@ -803,7 +803,7 @@ function openPath(k: number) {
       {steps.map((s, i) => (
         <View key={s} style={[S.row, { gap: 10, alignItems: 'flex-start' }]}>
           <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
-            <Txt s={12} w={8} c="#000">
+            <Txt s={12} w={8} c={C.onAccent}>
               {i + 1}
             </Txt>
           </View>
@@ -813,7 +813,7 @@ function openPath(k: number) {
         </View>
       ))}
       {(() => {
-        // only listings that really exist (the picks are refreshed by bolo)
+        // only listings that really exist (the picks are refreshed by getit)
         const courses = cs.map((id) => db.COURSES.find((x) => x.id === id)).filter(Boolean) as typeof db.COURSES;
         const opps = os.map((id) => db.OPPS.find((x) => x.id === id)).filter(Boolean) as typeof db.OPPS;
         return (

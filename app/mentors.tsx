@@ -35,7 +35,7 @@ export default function Mentors() {
               <Txt s={22} w={8} style={{ flex: 1 }}>
                 Mentorship
               </Txt>
-              <IconBtn testID="mentors-offer" name="plus" bg={C.yellow} color="#000" label="Offer a mentorship" onPress={() => openMentorForm()} />
+              <IconBtn testID="mentors-offer" name="plus" bg={C.yellow} color={C.onAccent} label="Offer a mentorship" onPress={() => openMentorForm()} />
             </View>
             <Txt s={13} c={C.muted}>
               Learn from experienced people and companies, 1-to-1 or in groups.

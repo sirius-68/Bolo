@@ -1,15 +1,19 @@
 import { Platform, StyleSheet, TextStyle } from 'react-native';
 
-/** Design tokens: the app's colours. */
+/** Colours for the screens not yet rebuilt in the getit design (src/g has the new tokens, in dark and light).
+    These keep the old names but carry getit's dark palette, so every screen already belongs to the same app:
+    `yellow` is the old accent's name and now holds the brand red; `onAccent` is the text colour on top of it. */
 export const C = {
-  bg: '#000000',
-  s1: '#121214',
-  s2: '#1c1c1f',
-  s3: '#2a2a2e',
-  line: '#26262a',
-  yellow: '#f6ee5c',
+  bg: '#171615',
+  s1: '#211f1d',
+  s2: '#2b2926',
+  s3: '#363330',
+  line: '#363330',
+  yellow: '#ff3b1f',
+  onAccent: '#ffffff',
+  red: '#e02f17',
   blue: '#3d5af1',
-  lav: '#a9b6ff',
+  lav: '#ff6a52',
   orange: '#f47b3b',
   pink: '#f6a4b4',
   ok: '#2fb36d',
@@ -17,9 +21,9 @@ export const C = {
   err: '#ff6b6b',
   errSoft: '#ff9b9b',
   peach: '#ffb37a',
-  text: '#ffffff',
-  muted: '#8d8d95',
-  faint: '#5d5d64',
+  text: '#f1efe9',
+  muted: '#a8a39b',
+  faint: '#6f6a62',
   white: '#ffffff',
   black: '#000000',
 } as const;

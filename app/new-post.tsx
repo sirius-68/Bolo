@@ -55,7 +55,7 @@ export default function NewPost() {
           </View>
         )}
         <Field label="Caption">
-          <Input testID="post-text" multiline value={text} onChangeText={setText} maxLength={300} placeholder={w ? 'e.g. Fixed a leaking kitchen faucet today, 40 minutes, no mess.' : 'e.g. We’re hiring 3 sales reps. Apply on bolo!'} />
+          <Input testID="post-text" multiline value={text} onChangeText={setText} maxLength={300} placeholder={w ? 'e.g. Fixed a leaking kitchen faucet today, 40 minutes, no mess.' : 'e.g. We’re hiring 3 sales reps. Apply on getit!'} />
         </Field>
         <View>
           <Label>Tags</Label>
@@ -80,7 +80,7 @@ export default function NewPost() {
             ui.feedView = 'all';
             bump();
             toast('Posted to the feed');
-            resetTo('/feed');
+            resetTo('/find');
           }}
         />
         {!ok ? (

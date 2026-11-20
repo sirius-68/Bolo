@@ -6,7 +6,7 @@ import { C } from '../ui/theme';
 import { sheet, SheetTitle } from '../ui/overlay';
 import { REPORT_REASONS, report } from '../logic/work';
 
-/** Ask why, then send the report to bolo's moderators. */
+/** Ask why, then send the report to getit's moderators. */
 export function openReport(targetType: 'profile' | 'business' | 'post' | 'comment' | 'job' | 'message' | 'course' | 'expert' | 'opportunity', targetId: string) {
   sheet.show(() => <Report type={targetType} id={targetId} />);
 }
@@ -18,7 +18,7 @@ function Report({ type, id }: { type: string; id: string }) {
     <View style={{ gap: 8 }}>
       <SheetTitle sub="Reports are private. The person isn’t told who reported them.">What’s wrong?</SheetTitle>
       {REPORT_REASONS.map(([k, t]) => (
-        <OptRow key={k} icon={reason === k ? 'checkc' : 'flag'} bg={reason === k ? C.yellow : C.s2} iconColor={reason === k ? '#000' : C.text} title={t} chev={false} onPress={() => setReason(k)} />
+        <OptRow key={k} icon={reason === k ? 'checkc' : 'flag'} bg={reason === k ? C.yellow : C.s2} iconColor={reason === k ? C.onAccent : C.text} title={t} chev={false} onPress={() => setReason(k)} />
       ))}
       <Input multiline value={details} onChangeText={setDetails} maxLength={1000} placeholder="Anything else we should know? (optional)" />
       <Btn

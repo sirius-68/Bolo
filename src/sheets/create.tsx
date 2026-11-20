@@ -75,7 +75,7 @@ function Availability() {
           bump();
           sheet.close();
           toast('People near you can now book your free slots');
-          resetTo('/feed');
+          resetTo('/find');
         }}
       />
     </View>

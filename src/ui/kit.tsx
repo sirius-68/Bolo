@@ -164,16 +164,17 @@ export function Btn({
   small?: boolean;
   testID?: string;
 }) {
+  // getit: the main action is red with white text (the old white and yellow buttons both become it)
   const bg = {
-    white: C.white,
-    yellow: C.yellow,
+    white: C.red,
+    yellow: C.red,
     ghost: 'transparent',
     dark: C.s2,
     soft: C.s2,
     danger: C.err,
     blue: C.blue,
   }[variant];
-  const fg = variant === 'ghost' || variant === 'dark' || variant === 'soft' || variant === 'danger' || variant === 'blue' ? C.white : C.black;
+  const fg = variant === 'ghost' || variant === 'dark' || variant === 'soft' ? C.text : C.white;
   const lastPress = useRef(0);
   return (
     <Pressable
@@ -191,7 +192,7 @@ export function Btn({
       }}
       style={({ pressed }) => [
         {
-          height: small ? 44 : 52,
+          height: small ? 44 : 56,
           borderRadius: R.pill,
           backgroundColor: bg,
           flexDirection: 'row',
@@ -207,7 +208,7 @@ export function Btn({
       ]}
     >
       {loading ? <ActivityIndicator color={fg} /> : icon ? <Icon name={icon} size={18} color={fg} /> : null}
-      <Text style={tx(small ? 13 : 14, 7, fg)} numberOfLines={1} maxFontSizeMultiplier={1.3}>
+      <Text style={tx(small ? 14 : 16, 8, fg)} numberOfLines={1} maxFontSizeMultiplier={1.3}>
         {title}
       </Text>
     </Pressable>
@@ -234,7 +235,7 @@ export function Pill({
 }) {
   const k = on ? 'white' : kind;
   const bg = { y: C.yellow, outline: 'transparent', dim: C.s2, white: C.white, black: C.black, red: 'transparent' }[k];
-  const fg = { y: C.black, outline: C.white, dim: C.white, white: C.black, black: C.white, red: C.errSoft }[k];
+  const fg = { y: C.onAccent, outline: C.white, dim: C.white, white: C.black, black: C.white, red: C.errSoft }[k];
   return (
     <Pressable
       disabled={disabled}
@@ -320,7 +321,7 @@ export function IconBtn({
       {dot ? <View style={st.dot} /> : null}
       {count ? (
         <View style={st.count}>
-          <Text style={tx(10, 8, C.black, { lineHeight: 13 })}>{count > 99 ? '99+' : count}</Text>
+          <Text style={tx(10, 8, C.onAccent, { lineHeight: 13 })}>{count > 99 ? '99+' : count}</Text>
         </View>
       ) : null}
     </Pressable>
@@ -356,7 +357,7 @@ export function Chip({
   testID?: string;
 }) {
   const onBg = tone === 'yellow' ? C.yellow : tone === 'white' ? C.white : C.blue;
-  const onFg = tone === 'blue' ? C.white : C.black;
+  const onFg = tone === 'white' ? C.black : C.white;
   return (
     <Pressable
       testID={testID}
@@ -452,8 +453,8 @@ export function PTabs<T extends string>({
             }}
             style={{ flexGrow: 1, height: 38, paddingHorizontal: 14, borderRadius: R.pill, backgroundColor: on ? (light ? C.yellow : C.white) : 'transparent', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
           >
-            <Text style={tx(13, 7, on ? C.black : C.muted)}>{l}</Text>
-            {n != null ? <Text style={tx(12, 6, on ? 'rgba(0,0,0,.55)' : 'rgba(141,141,149,.7)', { marginLeft: 5 })}>{n}</Text> : null}
+            <Text style={tx(13, 7, on ? (light ? C.onAccent : C.black) : C.muted)}>{l}</Text>
+            {n != null ? <Text style={tx(12, 6, on ? (light ? 'rgba(255,255,255,.8)' : 'rgba(0,0,0,.55)') : 'rgba(141,141,149,.7)', { marginLeft: 5 })}>{n}</Text> : null}
           </Pressable>
         );
       })}
@@ -604,7 +605,7 @@ export function Check({ on, onPress, children, testID }: { on: boolean; onPress:
   return (
     <Pressable testID={testID} onPress={onPress} style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 4 }} accessibilityRole="checkbox" accessibilityState={{ checked: on }}>
       <View style={{ width: 22, height: 22, borderRadius: 7, borderWidth: 1.5, borderColor: on ? C.yellow : C.s3, backgroundColor: on ? C.yellow : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-        {on ? <Icon name="check" size={14} color="#000" /> : null}
+        {on ? <Icon name="check" size={14} color={C.onAccent} /> : null}
       </View>
       <Text style={[tx(13, 5, C.muted), { flex: 1 }]}>{children}</Text>
     </Pressable>
@@ -766,7 +767,7 @@ export function StatusPill({ text, kind = 'wait', style }: { text: string; kind?
 export function ProTag({ text = 'PRO', small }: { text?: string; small?: boolean }) {
   return (
     <View style={{ paddingHorizontal: small ? 6 : 8, height: small ? 18 : 22, borderRadius: 6, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start' }}>
-      <Text style={tx(small ? 9 : 10, 8, '#000', { letterSpacing: 0.6 })}>{text}</Text>
+      <Text style={tx(small ? 9 : 10, 8, C.onAccent, { letterSpacing: 0.6 })}>{text}</Text>
     </View>
   );
 }
@@ -778,7 +779,7 @@ export function CoTag() {
   );
 }
 
-/** Connection state, set by the data loader: the first load is running / the last refresh couldn't reach bolo. */
+/** Connection state, set by the data loader: the first load is running / the last refresh couldn't reach getit. */
 /** loading: the very first load of an account. offline: the last load failed.
     opening: the app has just been opened and its first refresh hasn't finished (home shows its loading layout). */
 export const net = { loading: false, offline: false, opening: true };
@@ -937,7 +938,7 @@ export function TopBar({
 
 export function goBack() {
   if (router.canGoBack()) router.back();
-  else router.replace('/feed');
+  else router.replace('/find');
 }
 
 /** Standard scrolling page with safe-area padding. */
@@ -1032,7 +1033,7 @@ export function OptRow({
   chev = true,
   danger,
   right,
-  iconColor = '#000',
+  iconColor = bg === C.yellow ? C.onAccent : '#000',
   testID,
 }: {
   icon?: string;
@@ -1155,10 +1156,10 @@ export function Note({ icon = 'lock', children, style, color = C.lav }: { icon?:
 }
 
 /** Big illustrated circle used at the top of dialogs ("alert-ill"). */
-export function AlertIll({ icon, bg = C.yellow, color = '#000' }: { icon: string; bg?: string; color?: string }) {
+export function AlertIll({ icon, bg = C.yellow, color }: { icon: string; bg?: string; color?: string }) {
   return (
     <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: bg, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', marginTop: 4, marginBottom: 10 }}>
-      <Icon name={icon} size={30} color={color} />
+      <Icon name={icon} size={30} color={color || (bg === C.yellow || bg === C.red ? C.onAccent : '#000')} />
     </View>
   );
 }

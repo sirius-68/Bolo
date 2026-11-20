@@ -19,7 +19,7 @@ const RING_LIMIT = 45_000;
 /** A voice or video call through Agora. Opened for calls you start, and when someone calls you. */
 export default function CallScreen() {
   useLive();
-  // answer=1: Accept was tapped on the phone's own ringing screen (bolo was closed), so this screen answers by itself
+  // answer=1: Accept was tapped on the phone's own ringing screen (getit was closed), so this screen answers by itself
   const { id, incoming, answer } = useLocalSearchParams<{ id: string; incoming?: string; answer?: string }>();
   const ins = useSafeAreaInsets();
   const [call, setCall] = useState<Call | null>(CALLS[id] || null);
@@ -63,7 +63,7 @@ export default function CallScreen() {
     // (when the screen was already left with Back there is nothing to close: going back again would leave the chat too)
     if (close) setTimeout(leave, 1200);
   };
-  // (bolo opened straight onto the call from the lock screen has nothing behind it: go to the chats)
+  // (getit opened straight onto the call from the lock screen has nothing behind it: go to the chats)
   const leave = () => (router.canGoBack() ? router.back() : router.replace((db.loggedIn ? '/inbox' : '/') as any));
 
   /** Accept: the phone's own microphone question comes now, before the call is answered (a refusal leaves it ringing). */
@@ -137,7 +137,7 @@ export default function CallScreen() {
     }
     let alive = true;
     setActiveCall(id);
-    // from here this screen rings: the pop-up that rang while bolo was closed stops
+    // from here this screen rings: the pop-up that rang while getit was closed stops
     if (incoming) void clearCallPopups();
     (async () => {
       const c = CALLS[id] || (await loadCall(id));

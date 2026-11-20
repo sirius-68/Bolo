@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
-import { Btn, Field, Grow, Input, Page, Pict, TextLink, TopBar, Txt } from '../src/ui/kit';
+import { Btn, Field, Grow, Input, Page, TextLink, TopBar, Txt } from '../src/ui/kit';
+import { Lockup } from '../src/g/ui';
 import { C } from '../src/ui/theme';
 import { db } from '../src/data/db';
 import { ContactField, firstMode, Mode, contactOk, contactValue, signup } from '../src/components/auth';
@@ -19,7 +20,7 @@ export default function Login() {
   const bad = { contact: tried && !contactOk(mode, contact), pwd: tried && pwd.length < 4 };
   const enter = () => {
     startApp(true);
-    resetTo(db.user.role === 'client' ? '/home' : '/feed');
+    resetTo('/find');
   };
   const submit = async () => {
     setTried(true);
@@ -48,7 +49,9 @@ export default function Login() {
   return (
     <Page keyboard>
       <TopBar title="Log in" />
-      <Pict pic="img/logo-yellow" style={{ width: 150, height: 54, alignSelf: 'center', marginTop: 14 }} fit="contain" />
+      <View style={{ alignSelf: 'center', marginTop: 14 }}>
+        <Lockup mark={50} word={40} gap={9} />
+      </View>
       <Txt s={24} w={8} center style={{ marginTop: 10 }}>
         Welcome back
       </Txt>
@@ -75,7 +78,15 @@ export default function Login() {
       <Grow />
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 24 }}>
         <Txt s={14} c={C.muted}>Don’t have an account?</Txt>
-        <TextLink title="Sign up" s={14} onPress={() => router.replace('/role')} />
+        <TextLink
+          title="Sign up"
+          s={14}
+          onPress={() => {
+            // getit: an account to hire needs nothing more; offering a skill starts from the opening screen
+            db.user.intents = ['hire'];
+            router.replace('/signup');
+          }}
+        />
       </View>
     </Page>
   );

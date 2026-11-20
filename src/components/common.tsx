@@ -89,7 +89,7 @@ export function SearchBar({ value, onChange, placeholder, onFilter, filters }: {
       ) : null}
       {onFilter ? (
         <Pressable accessibilityLabel={`Filters${filters ? `, ${filters} on` : ''}`} onPress={() => (tap(), onFilter())} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: filters ? C.yellow : C.s2, alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name="filter" size={18} color={filters ? '#000' : '#fff'} />
+          <Icon name="filter" size={18} color={filters ? C.onAccent : '#fff'} />
           {filters ? (
             <View style={{ position: 'absolute', top: -2, right: -2, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: C.blue, alignItems: 'center', justifyContent: 'center' }}>
               <Txt s={10} w={8}>
@@ -292,8 +292,8 @@ export function CatRail({ value, onChange }: { value: string | null; onChange: (
             onPress={() => (tap(), onChange(on && c ? null : c))}
             style={[S.row, { gap: 6, height: 38, paddingHorizontal: 14, borderRadius: 999, backgroundColor: on ? C.yellow : C.s1, borderWidth: 1, borderColor: on ? C.yellow : C.line }]}
           >
-            {c ? <Icon name={CATS.find((x) => x[0] === c)![1]} size={16} color={on ? '#000' : C.yellow} /> : null}
-            <Txt s={13} w={7} c={on ? '#000' : C.text}>
+            {c ? <Icon name={CATS.find((x) => x[0] === c)![1]} size={16} color={on ? C.onAccent : C.yellow} /> : null}
+            <Txt s={13} w={7} c={on ? C.onAccent : C.text}>
               {c || 'All'}
             </Txt>
           </Pressable>
@@ -328,7 +328,7 @@ export function Rail({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Pull down to refresh: reloads everything from bolo. Use as refreshControl={<Pull />} on any list or scroll view.
+/** Pull down to refresh: reloads everything from getit. Use as refreshControl={<Pull />} on any list or scroll view.
     (Android wraps the list inside this element, so style and children are passed through.) */
 export function Pull(props: any) {
   const [busy, setBusy] = useState(false);
@@ -337,8 +337,8 @@ export function Pull(props: any) {
       {...props}
       refreshing={busy}
       tintColor={C.yellow}
-      colors={['#000']}
-      progressBackgroundColor={C.yellow}
+      colors={['#ffffff']}
+      progressBackgroundColor={C.red}
       onRefresh={async () => {
         setBusy(true);
         try {

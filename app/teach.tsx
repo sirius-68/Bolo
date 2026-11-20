@@ -8,7 +8,7 @@ import { useLive } from '../src/logic/live';
 import { domainOf, myListings, priceLabel } from '../src/logic/listings';
 import { toneOf, catIcon } from '../src/components/CourseListing';
 
-/** Offer a course: list it on bolo with a link to your own page. People sign up on your site. */
+/** Offer a course: list it on getit with a link to your own page. People sign up on your site. */
 export default function Teach() {
   useLive();
   const mine = myListings();
@@ -49,7 +49,7 @@ export default function Teach() {
               Your listings
             </Txt>
             <Txt s={13} c={C.muted}>
-              {visits} site visit{visits === 1 ? '' : 's'} from bolo
+              {visits} site visit{visits === 1 ? '' : 's'} from getit
             </Txt>
           </View>
           <View style={{ gap: 8 }}>

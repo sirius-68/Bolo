@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Stack, usePathname } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -26,6 +25,9 @@ import { resetTo, setHere } from '../src/logic/nav';
 import { report, setMonitorUser, startMonitoring } from '../src/lib/monitor';
 import { serviceNotice, updateRequired } from '../src/logic/remote';
 import { confirm } from '../src/ui/overlay';
+import { GSheetHost, GStatusBar } from '../src/g/ui';
+import { loadLook, useG } from '../src/g/theme';
+import { loadStarted } from '../src/g/data';
 
 startMonitoring();
 
@@ -35,10 +37,10 @@ const UPDATE_URL = process.env.EXPO_PUBLIC_UPDATE_URL || 'https://github.com/sir
 async function checkVersion() {
   if (Platform.OS !== 'android' && Platform.OS !== 'ios') return;
   const msg = await updateRequired(Platform.OS, BUILD);
-  if (msg) return confirm({ title: 'Update bolo', text: msg, ok: 'Update', cancel: 'Later', icon: 'download', onOk: () => Linking.openURL(UPDATE_URL).catch(() => {}) });
-  // a notice from the bolo team (for example planned maintenance)
+  if (msg) return confirm({ title: 'Update getit', text: msg, ok: 'Update', cancel: 'Later', icon: 'download', onOk: () => Linking.openURL(UPDATE_URL).catch(() => {}) });
+  // a notice from the getit team (for example planned maintenance)
   const note = await serviceNotice();
-  if (note) confirm({ title: 'A note from bolo', text: note, ok: 'OK', icon: 'bell', onOk: () => {} });
+  if (note) confirm({ title: 'A note from getit', text: note, ok: 'OK', icon: 'bell', onOk: () => {} });
 }
 
 /** Shown instead of a broken screen. Plain parts only, so it can't break too.
@@ -49,12 +51,12 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Pro
   useEffect(() => {
     report(error, 'screen');
     // also in the device log, so automatic tests can see which screen broke
-    console.error('bolo: screen crash ·', String(error?.message || error), String(error?.stack || '').slice(0, 600));
+    console.error('getit: screen crash ·', String(error?.message || error), String(error?.stack || '').slice(0, 600));
     crashes++;
   }, [error]);
   const home = () => {
     try {
-      resetTo(db.loggedIn ? (db.user.role === 'client' ? '/home' : '/feed') : '/splash');
+      resetTo(db.loggedIn ? ('/find') : '/splash');
     } catch {}
     void retry();
   };
@@ -77,15 +79,15 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Pro
     home();
   };
   const btn = (title: string, onPress: () => void, primary?: boolean) => (
-    <Pressable accessibilityRole="button" onPress={onPress} style={{ height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', backgroundColor: primary ? '#f6ee5c' : 'transparent', borderWidth: primary ? 0 : 1.5, borderColor: '#3a3a40' }}>
-      <Text style={{ color: primary ? '#000' : '#fff', fontSize: 16, fontWeight: '700' }}>{title}</Text>
+    <Pressable accessibilityRole="button" onPress={onPress} style={{ height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', backgroundColor: primary ? '#e02f17' : 'transparent', borderWidth: primary ? 0 : 1.5, borderColor: '#363330' }}>
+      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>{title}</Text>
     </Pressable>
   );
   return (
-    <View style={{ flex: 1, backgroundColor: '#000', padding: 24, paddingTop: 96, paddingBottom: 40 }}>
+    <View style={{ flex: 1, backgroundColor: '#171615', padding: 24, paddingTop: 96, paddingBottom: 40 }}>
       <Text style={{ color: '#fff', fontSize: 26, fontWeight: '800' }}>This screen hit a problem</Text>
       <Text style={{ color: '#a0a0a8', fontSize: 15, lineHeight: 22, marginTop: 10 }}>
-        Sorry about that. Your account and your data are safe. {crashes > 1 ? 'It happened again, so try “Repair and restart”: it reloads everything fresh from bolo.' : 'Try again, or go back to the home screen.'}
+        Sorry about that. Your account and your data are safe. {crashes > 1 ? 'It happened again, so try “Repair and restart”: it reloads everything fresh from getit.' : 'Try again, or go back to the home screen.'}
       </Text>
       <View style={{ flex: 1 }} />
       <View style={{ gap: 12 }}>
@@ -111,11 +113,16 @@ function Here() {
 }
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
-SystemUI.setBackgroundColorAsync('#000000').catch(() => {});
+SystemUI.setBackgroundColorAsync('#171615').catch(() => {});
 
 export default function Root() {
   const [fonts, fontErr] = useFonts({ PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, PlusJakartaSans_800ExtraBold });
   const [ready, setReady] = useState(false);
+  const t = useG();
+
+  useEffect(() => {
+    SystemUI.setBackgroundColorAsync(t.bg).catch(() => {});
+  }, [t.bg]);
 
   useEffect(() => {
     initPush();
@@ -131,9 +138,11 @@ export default function Root() {
     const safety = setTimeout(go, 10000);
     (async () => {
       try {
+        // the look (dark or light) and whether the opening screen was already passed, before the first screen shows
+        await Promise.all([loadLook(), loadStarted()]);
         // two starts in a row that didn't survive → skip the saved copy this time
         const skipped = await bootGuard();
-        // a saved copy of a signed-in account means this phone has used bolo before (What's new depends on it)
+        // a saved copy of a signed-in account means this phone has used getit before (What's new depends on it)
         if (!skipped && (await restore()) && db.loggedIn) ui.returning = true;
         startAutosave();
         startSync();
@@ -172,11 +181,11 @@ export default function Root() {
   if ((!fonts && !fontErr) || !ready) return null;
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
+      <GStatusBar />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#000' },
+          contentStyle: { backgroundColor: t.bg },
           animation: 'slide_from_right',
           animationDuration: 220,
         }}
@@ -186,6 +195,7 @@ export default function Root() {
         <Stack.Screen name="splash" options={{ animation: 'none' }} />
       </Stack>
       <Overlays />
+      <GSheetHost />
       <StoryHost />
       <Here />
     </SafeAreaProvider>

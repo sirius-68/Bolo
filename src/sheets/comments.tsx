@@ -102,7 +102,7 @@ function menu(id: string, c: Cmt) {
           }}
         />
         {canDeleteComment(id, c) ? <OptRow testID="cmt-delete" icon="trash" bg={C.pink} title={c.by === 'me' ? 'Delete' : 'Delete this comment'} sub={c.by === 'me' ? undefined : 'It is under your post'} chev={false} onPress={() => (sheet.close(), deleteComment(id, c.id))} /> : null}
-        {c.by !== 'me' ? <OptRow icon="flag" bg={C.s3} title="Report" sub="Tell bolo something is wrong with it" chev={false} onPress={() => openReport('comment', c.id)} /> : null}
+        {c.by !== 'me' ? <OptRow icon="flag" bg={C.s3} title="Report" sub="Tell getit something is wrong with it" chev={false} onPress={() => openReport('comment', c.id)} /> : null}
       </View>
     ),
     { over: true },
@@ -318,7 +318,7 @@ function Box({ id }: { id: string }) {
           style={[tx(15, 5, C.text), { flex: 1, minHeight: 44, maxHeight: 110, paddingHorizontal: 16, paddingTop: 11, paddingBottom: 11, borderRadius: 22, backgroundColor: C.s2 }]}
         />
         <Pressable testID="cmt-send" accessibilityLabel="Send" onPress={send} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: v.trim() ? C.yellow : C.s3, alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name="send" size={19} color="#000" />
+          <Icon name="send" size={19} color={C.onAccent} />
         </Pressable>
       </View>
     </View>

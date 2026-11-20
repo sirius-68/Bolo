@@ -2,7 +2,7 @@
    - After sign-in the phone asks once for permission and registers itself (register_push_token).
    - The server sends a pop-up for each new notification (supabase/functions/push).
    - Tapping a pop-up opens what it is about: the chat, job, booking… or the incoming call.
-   - While bolo is open, pop-ups for the chat on screen and for calls are not shown (the app already shows them). */
+   - While getit is open, pop-ups for the chat on screen and for calls are not shown (the app already shows them). */
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -74,7 +74,7 @@ export async function clearCallPopups() {
     }
   } catch {}
 }
-/** This phone is registered for pop-ups, so a call that comes while bolo is in the background rings through them. */
+/** This phone is registered for pop-ups, so a call that comes while getit is in the background rings through them. */
 export const pushReady = () => !!myToken;
 
 async function channels() {
@@ -94,11 +94,11 @@ async function channels() {
     lockscreenVisibility: N.AndroidNotificationVisibility?.PUBLIC,
     bypassDnd: false,
   });
-  // Incoming calls while bolo is closed: a real ringtone (30 seconds) and a long vibration, on the lock screen too.
+  // Incoming calls while getit is closed: a real ringtone (30 seconds) and a long vibration, on the lock screen too.
   // A channel keeps the sound it was created with, so this is a new one next to the older "Calls".
   await N.setNotificationChannelAsync('ring', {
     name: 'Incoming calls',
-    description: 'Rings when someone calls you and bolo is closed',
+    description: 'Rings when someone calls you and getit is closed',
     importance: N.AndroidImportance.MAX,
     sound: 'bolo_ring.mp3',
     audioAttributes: { usage: N.AndroidAudioUsage?.NOTIFICATION_RINGTONE, contentType: N.AndroidAudioContentType?.SONIFICATION },
@@ -134,7 +134,7 @@ async function openFrom(n: any) {
   if (d.id) void setNotifRead([d.id]).then(refreshNotifs);
   if (d.target?.k === 'chat' && !db.CONV[d.target.id]) await refreshChats();
   let go = goFrom(d.target);
-  // a message from the bolo team opens itself, to be read in full
+  // a message from the getit team opens itself, to be read in full
   if (go?.k === 'notifs' && d.id) go = { k: 'notifs', id: d.id };
   // first to the profile it is for (a business page of mine, or the Regular profile), then to the thing itself
   const switched = await toProfileOf(d);
@@ -163,12 +163,12 @@ async function toProfileOf(d: Payload): Promise<boolean> {
     const mine = myBizOf(biz);
     if (!mine || (!isW() && db.BIZ.active === mine.id)) return false;
     useBiz(mine.id);
-    resetTo('/home');
+    resetTo('/find');
     return true;
   }
   if (isW() || db.user.bizOnly) return false;
   if (setRole('worker') !== 'ok') return false;
-  resetTo('/feed');
+  resetTo('/find');
   return true;
 }
 
@@ -182,7 +182,7 @@ function wire() {
       return { shouldShowBanner: !quiet, shouldShowList: !quiet, shouldPlaySound: !quiet, shouldSetBadge: false, shouldShowAlert: !quiet };
     },
   });
-  // a call pop-up while bolo is open: make sure the call screen rings even if live updates were asleep
+  // a call pop-up while getit is open: make sure the call screen rings even if live updates were asleep
   N.addNotificationReceivedListener((n: any) => {
     const d = payload(n);
     if (d.type === 'call' && d.call && db.uid) require('./calls').loadCall(d.call);
@@ -199,7 +199,7 @@ async function save(token: string) {
   // (full screen on the lock screen) when the call comes as data
   const version = `${Constants.expoConfig?.version || '1.0.0'}${BUILD ? ' (' + BUILD + ')' : ''} r1 r2`;
   const { error } = await supabase.rpc('register_push_token', { p_token: token, p_platform: 'android', p_version: version });
-  if (error) console.warn('bolo: push register failed', error.message);
+  if (error) console.warn('getit: push register failed', error.message);
 }
 
 /** At app start: listen for taps, and open the pop-up that started the app, if any. */
@@ -233,7 +233,7 @@ export async function registerPush() {
     const t = await N.getDevicePushTokenAsync();
     if (t?.data) await save(String(t.data));
   } catch (e) {
-    console.warn('bolo: push unavailable', e);
+    console.warn('getit: push unavailable', e);
   }
 }
 

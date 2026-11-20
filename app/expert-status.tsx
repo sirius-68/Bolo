@@ -22,17 +22,17 @@ export default function ExpertStatus() {
       {approved ? (
         <View style={{ alignItems: 'center', marginTop: 10 }}>
           <View style={{ width: 84, height: 84, borderRadius: 42, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="verified" size={44} color="#000" />
+            <Icon name="verified" size={44} color={C.onAccent} />
           </View>
           <Title center style={{ marginTop: 14 }}>
-            You’re a bolo Career Expert
+            You’re a getit Career Expert
           </Title>
           <Sub center>Your expert page is live in Career. Job seekers can now book your sessions.</Sub>
         </View>
       ) : (
         <>
           <Title sm>{E.status === 'interview' ? 'Pick a time for your interview' : 'We’re reviewing your application'}</Title>
-          <Sub>{E.status === 'interview' ? 'Your answers passed review. The last step is a 15-minute video call with a bolo reviewer.' : 'You’ll get a notification at each step. You can close the app. Nothing else is needed from you right now.'}</Sub>
+          <Sub>{E.status === 'interview' ? 'Your answers passed review. The last step is a 15-minute video call with a getit reviewer.' : 'You’ll get a notification at each step. You can close the app. Nothing else is needed from you right now.'}</Sub>
         </>
       )}
 
@@ -44,7 +44,7 @@ export default function ExpertStatus() {
             <View key={k} style={{ flexDirection: 'row', gap: 12 }}>
               <View style={{ alignItems: 'center' }}>
                 <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: done ? C.mint : now ? C.yellow : C.s3, alignItems: 'center', justifyContent: 'center' }}>
-                  {done ? <Icon name="check" size={14} color="#000" /> : now ? <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#000' }} /> : null}
+                  {done ? <Icon name="check" size={14} color={C.onAccent} /> : now ? <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#000' }} /> : null}
                 </View>
                 {i < STAGES.length - 1 ? <View style={{ width: 2, flex: 1, minHeight: 22, backgroundColor: done ? C.mint : C.s3 }} /> : null}
               </View>
@@ -95,8 +95,8 @@ export default function ExpertStatus() {
         </View>
       ) : (
         <View style={{ gap: 10, marginTop: 18 }}>
-          {E.status === 'submitted' ? <Note icon="mail">Reviews start once bolo opens expert applications in your area. We’ll notify you when yours is picked up.</Note> : null}
-          <Btn variant="dark" title="Back to Career" onPress={() => router.navigate('/(tabs)/career')} />
+          {E.status === 'submitted' ? <Note icon="mail">Reviews start once getit opens expert applications in your area. We’ll notify you when yours is picked up.</Note> : null}
+          <Btn variant="dark" title="Back to Career" onPress={() => router.navigate('/find')} />
         </View>
       )}
     </Page>

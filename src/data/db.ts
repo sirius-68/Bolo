@@ -33,7 +33,7 @@ export type Person = {
   skills?: string[];
 };
 export type Offer = { by: string; price: string; when: string; msg: string; stage?: string; cv?: CvFile | null; seen?: number; pro?: number; id?: string };
-/** A CV attached to an offer: the person's bolo CV (src 'profile'), or a file they picked (sent in the chat; uri/mime only exist on the sender's phone). */
+/** A CV attached to an offer: the person's getit CV (src 'profile'), or a file they picked (sent in the chat; uri/mime only exist on the sender's phone). */
 export type CvFile = { name: string; kb: number; src?: string; uri?: string; mime?: string };
 export type Post = {
   /** changed after it was posted */
@@ -144,7 +144,7 @@ export type Notif = {
   at?: string;
   /** the business page it is for (app id); none = the Regular profile */
   biz?: string;
-  /** from the bolo team (no person behind it) */
+  /** from the getit team (no person behind it) */
   bolo?: number;
   cat?: string;
   /** how many events this one line stands for (missed calls from the same person) */
@@ -220,7 +220,7 @@ export type Course = {
   desc?: string;
   /** shown instead of the price when the site sets it (e.g. subscriptions) */
   priceText?: string;
-  /** times people opened the site from bolo */
+  /** times people opened the site from getit */
   views?: number;
 };
 export type Mentorship = {
@@ -320,6 +320,8 @@ export function makeDb() {
     user: {
       name: '',
       role: 'worker' as 'worker' | 'client',
+      /** getit: what the app is being used for right now: hiring someone, or getting work */
+      mode: 'hire' as 'hire' | 'work',
       contact: '',
       avatar: null as string | null,
       city: '',
@@ -357,7 +359,7 @@ export function makeDb() {
       tests: {} as Record<string, string>,
     },
     BIZ: { list: [] as MyBiz[], active: null as string | null },
-    /** Application to become a bolo Career Expert (see src/logic/expert.ts). */
+    /** Application to become a getit Career Expert (see src/logic/expert.ts). */
     EXPERT: {
       status: 'none' as 'none' | 'submitted' | 'review' | 'interview' | 'decision' | 'approved' | 'declined',
       step: 0,

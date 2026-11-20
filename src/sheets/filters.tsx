@@ -151,7 +151,7 @@ function FilterSheet({ mode, st }: { mode: 'jobs' | 'people'; st: Draft }) {
             [3, '3+ years'],
             [5, '5+ years'],
           ])}
-          <SwitchRow title="Verified only" sub="ID and skills checked by bolo" value={t.ver} onChange={(v) => ((t.ver = v), re())} />
+          <SwitchRow title="Verified only" sub="ID and skills checked by getit" value={t.ver} onChange={(v) => ((t.ver = v), re())} />
         </>
       )}
       {row(

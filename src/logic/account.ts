@@ -16,8 +16,10 @@ export function startApp(viaLogin = false) {
   if (db.user.role === 'client' && !db.BIZ.active) db.BIZ.active = db.BIZ.list[0].id;
   ui.feedView = 'all';
   ui.appStarted = true;
+  // getit: someone who joined to offer a skill (or already lists one) starts in working mode; everyone else starts hiring
+  db.user.mode = (viaLogin ? db.user.skills.length > 0 : wantsWork() && !db.user.intents.includes('hire')) ? 'work' : 'hire';
   resumeSharing();
-  toast(viaLogin ? 'Welcome back!' : 'Welcome to bolo' + (db.user.name ? ', ' + db.user.name.split(' ')[0] : '') + '!');
+  toast(viaLogin ? 'Welcome back!' : 'Welcome to getit' + (db.user.name ? ', ' + db.user.name.split(' ')[0] : '') + '!');
   bump();
 }
 export function enterBusinessOnly() {
@@ -83,7 +85,7 @@ export function saveBiz(b: MyBiz, opts: { submitDocs?: boolean } = {}) {
   db.user.role = 'client';
   if (opts.submitDocs && b.rccm && b.niu && b.verified === 'none') {
     b.verified = 'review';
-    // bolo staff check RCCM and NIU (remote.ts asks the server for review when the page syncs)
+    // getit staff check RCCM and NIU (remote.ts asks the server for review when the page syncs)
   }
   bump();
   return isNew;
@@ -101,7 +103,7 @@ export function createBusinessAccount(o: { owner: string; email: string; phone: 
   db.BIZ.list = [];
   saveBiz(o.biz, { submitDocs: true });
   enterBusinessOnly();
-  toast(`Welcome to bolo, ${o.biz.name}!`);
+  toast(`Welcome to getit, ${o.biz.name}!`);
 }
 
 

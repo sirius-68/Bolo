@@ -253,7 +253,7 @@ export default function IdVerify() {
           ))}
         </View>
         <Check on={agree} onPress={() => setAgree(!agree)}>
-          I confirm this is my own, valid document and that bolo may use these photos to verify my identity.
+          I confirm this is my own, valid document and that getit may use these photos to verify my identity.
         </Check>
       </View>
     );

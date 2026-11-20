@@ -60,7 +60,7 @@ export default function Reset() {
               // the code already proved who this is: go straight in with the new password set
               toast('Password updated');
               startApp(true);
-              resetTo(db.user.role === 'client' ? '/home' : '/feed');
+              resetTo('/find');
             }
           }}
         />

@@ -148,7 +148,7 @@ function About({ id }: { id: string }) {
         ))}
       </View>
       <Txt s={12} c={C.faint}>
-        You sign up and pay on {domainOf(c.url)}. bolo lists the course but doesn’t run it.
+        You sign up and pay on {domainOf(c.url)}. getit lists the course but doesn’t run it.
       </Txt>
       {isW() && !c.mine && !took ? <Btn testID="took-course" variant="dark" icon="checkc" title="I took this course · rate it" onPress={() => (tap(), markTook(c.id))} /> : null}
       <CourseReviews c={c} />

@@ -3,48 +3,18 @@ import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db, ui } from '../data/db';
 import { showStories, Story } from '../components/Stories';
-import { openFeedback, openNotifSettings } from '../sheets/account';
 
-export const WHATS_NEW_ID = '2026-11-20';
+export const WHATS_NEW_ID = '2026-11-20-getit';
 
 /** Slides added in the latest update. */
-const LATEST = ['rightplace', 'boloreply'];
+const LATEST = ['getit', 'threetabs', 'offerskill'];
 
+/* The slides from before the redesign described screens that are hidden for now (the feed, courses, mentors,
+   experts): they are in this file's history and come back with those screens. */
 export const WHATS_NEW: Story[] = [
-  { key: 'rightplace', colors: ['#7c5cff', '#3b1fa8'], icon: 'bell', chip: 'Notifications', title: 'Straight to the right place', text: 'A notification for your business page now switches you to that page and opens it, even when you were on your Regular profile (and the other way round). The Notifications page tells you when your other profile has news, and opening a notification no longer stacks up copies of the page.' },
-  { key: 'boloreply', colors: ['#f6ee5c', '#e3c400'], icon: 'chat', chip: 'Help', title: 'Write to bolo, and read our replies', text: 'The message box in Settings → Help → Write to bolo keeps the keyboard open again. Messages from the bolo team open in full, with Reply to bolo.', cta: 'Write to bolo', onCta: () => openFeedback(), dark: true },
-  { key: 'fullring', colors: ['#2fbf7a', '#0f6e45'], icon: 'phone', chip: 'Calls', title: 'Calls fill your lock screen', text: 'When someone calls and bolo is closed, your phone now rings full screen, even when it is locked, with Accept and Decline. Accept unlocks the phone and connects the call; Decline ends it without opening bolo.' },
-  { key: 'myratings', colors: ['#f6ee5c', '#e3c400'], icon: 'star', chip: 'Your profile', title: 'See your own ratings', text: 'Your profile has a new Reviews tab with your rating and what people wrote about you. Tap your Rating number to open it. And a notification about a comment now takes you to that very comment.', dark: true },
-  { key: 'lighter', colors: ['#3d5af1', '#1b2a9b'], icon: 'sparkle', chip: 'Faster', title: 'Opens faster, less clutter', text: 'Home appears as soon as its posts are in, while the rest loads behind it. Screens that only said “coming soon” are gone. Internship, program, mentorship and course descriptions can be as long as you need.' },
-  { key: 'talk', colors: ['#7c5cff', '#3b1fa8'], icon: 'chat', chip: 'Comments', title: 'Like and reply to comments', text: 'Tap the heart on a comment to like it, or Reply to answer it: replies sit in a thread under the comment. Hold a comment to copy, delete or report it. You can also delete any comment under your own post.' },
-  { key: 'chatsigns', colors: ['#2fbf7a', '#0f6e45'], icon: 'check2', chip: 'Messages', title: 'Typing, delivered, seen', text: 'See when someone is typing, when they are online or were last here, and follow each message: one tick is sent, two ticks is delivered, green with “Seen” means it was read. You can hide your own online status in Settings → Privacy & security.', cta: 'Open messages', onCta: () => router.push('/inbox') },
-  { key: 'ringing', colors: ['#f6ee5c', '#e3c400'], icon: 'phone', chip: 'Calls and updates', title: 'Calls ring when bolo is closed', text: 'An incoming call now rings with a ringtone and shows on the lock screen even when bolo is closed: tap it to answer. You can also edit internships, programs and mentorships after publishing, and the app download is much smaller.', dark: true },
-  { key: 'places', colors: ['#3d5af1', '#1b2a9b'], icon: 'pin', chip: 'Location', title: 'Any city, found as you type', text: 'Choose a country, start typing and your city appears in the list. Choosing a location no longer closes the form you were filling in, and search boxes stay above the keyboard. Filters now have a Location row: look around you or in any city, within 2 to 50 km.' },
-  { key: 'editjobs', colors: ['#f6ee5c', '#e3c400'], icon: 'edit', chip: 'Jobs', title: 'Edit your jobs, paste full descriptions', text: 'Open a job or vacancy you posted and tap Edit to change it. The description takes a full pasted text and keeps its line breaks. Search every category, or type your own.', dark: true },
-  { key: 'callsfixed', colors: ['#2fbf7a', '#0f6e45'], icon: 'mic', chip: 'Calls', title: 'Calls stay connected', text: 'bolo now asks for your microphone (and camera for video) before a call starts or is answered, so calls no longer drop with “Allow the microphone”. If you once said no for good, bolo takes you straight to the setting.' },
-  { key: 'callslist', colors: ['#7c5cff', '#3b1fa8'], icon: 'phone', chip: 'Calls', title: 'All your calls in one place', text: 'Open Messages and tap the phone button to see every call: made, received and missed. Several missed calls from one person show as one line with a count. Tap a call to open the chat, or call back in one tap.', cta: 'Open calls', onCta: () => router.push('/calls' as any) },
-  { key: 'yours', colors: ['#2fbf7a', '#0f6e45'], icon: 'pin', chip: 'Your details', title: 'Your city and your CV, as you set them', text: 'Type your city and tap Save: it now stays, on every phone you log in on. The date of birth adds its own slashes, and your CV shows your own profession and skills.' },
-  { key: 'photos', colors: ['#f6ee5c', '#e3c400'], icon: 'image', chip: 'Faster', title: 'Photos that load', text: 'Photos are made lighter before they are sent, so posts and jobs with pictures appear quickly. In a group, pull down to see its picture large. Mentorships and programs can now run for any length you choose.', dark: true },
-  { key: 'ring', colors: ['#7c5cff', '#3b1fa8'], icon: 'phone', chip: 'Calls', title: 'Calls that ring', text: 'You now hear a tone while the other phone rings, and a ringtone when someone calls you. One tap starts one call, and missed calls from the same person show as a single notification.' },
-  { key: 'tidy', colors: ['#f6ee5c', '#e3c400'], icon: 'sparkle', chip: 'Smoother', title: 'Faster to open, easier to trust', text: 'Home shows its layout while it loads. The notifications page, the message box and your service list are fixed, and your profile only counts what is really yours.', dark: true },
-  { key: 'steady', colors: ['#3d5af1', '#1b2a9b'], icon: 'shield', chip: 'Reliability', title: 'Steadier everywhere', text: 'Pull down to refresh. If your connection drops, bolo keeps what you had on screen and messages wait with “Tap to retry”. Sign-up, log-in and password reset are smoother too.' },
-  { key: 'honest', colors: ['#2fbf7a', '#0f6e45'], icon: 'eyeoff', chip: 'Privacy', title: 'You choose who finds you', text: 'Hide your profile from search in Settings → Privacy & security, review the people you blocked, and write to the bolo team from Help.', cta: 'Open settings', onCta: () => router.push('/settings' as any) },
-  { key: 'push', colors: ['#f6ee5c', '#e3c400'], icon: 'bell', chip: 'Notifications', title: 'Never miss a message', text: 'New messages, offers, booking updates and calls now pop up on your phone, even when bolo is closed. Tap one to go straight there. Choose what you get in Settings → Notifications.', cta: 'Notification settings', onCta: () => openNotifSettings(), dark: true },
-  { key: 'live', colors: ['#f6ee5c', '#e3c400'], icon: 'sparkle', chip: 'bolo is live', title: 'Real people, real jobs', text: 'Everything you see is now from real bolo members: jobs, people, posts and courses. Post a job or share your work and people near you see it right away.', dark: true },
-  { key: 'chatlive', colors: ['#3d5af1', '#1b2a9b'], icon: 'chat', chip: 'Messages', title: 'Chat in real time', text: 'Messages arrive instantly, with read ticks. Send photos, documents and your location, or a quote that books the job when it’s accepted.', cta: 'Open messages', onCta: () => router.push('/inbox') },
-  { key: 'calls', colors: ['#7c5cff', '#3b1fa8'], icon: 'video', chip: 'Calls', title: 'Voice and video calls', text: 'Call anyone you’re chatting with, or the worker on your booking, from the phone and camera buttons. Missed calls show in the chat.' },
-  { key: 'tracklive', colors: ['#2fbf7a', '#0f6e45'], icon: 'nav', chip: 'Bookings', title: 'Follow the worker live', text: 'When a worker taps Start trip, you see them move on the map with an arrival time, until they arrive. Pay them directly as agreed.' },
-  { key: 'safety', colors: ['#ff8a3d', '#c2410c'], icon: 'shield', chip: 'Safety', title: 'Report and block', text: 'Tap ⋯ on a post or the chat menu to report something to our team or block someone. Real ID checks are done by a bolo reviewer.' },
-  { key: 'yourdata', colors: ['#2fbf7a', '#0f6e45'], icon: 'shield', chip: 'Privacy', title: 'Your data, your call', text: 'Download everything bolo stores about you, or delete your account for good, from Settings → Privacy & safety.', cta: 'Open settings', onCta: () => router.push('/settings' as any) },
-  { key: 'experts', colors: ['#3d5af1', '#1b2a9b'], icon: 'verified', chip: 'Career', title: 'Book a career expert', text: 'CV reviews, mock interviews and career plans with checked, rated experts. Pick a service and agree the time in chat.', cta: 'Find an expert', onCta: () => router.push('/experts' as any) },
-  { key: 'courselinks', colors: ['#a9b6ff', '#5b6bd6'], icon: 'globe', chip: 'Courses', title: 'Courses open on the school’s site', text: 'Tap any course to open its own website right inside bolo, and sign up there. Save the ones you like with the bookmark.', cta: 'Explore courses', onCta: () => router.push('/courses' as any) },
-  { key: 'listcourse', colors: ['#7c5cff', '#3b1fa8'], icon: 'cap', chip: 'For trainers', title: 'List your course in a minute', text: 'Add the link to your course page, a title and price, and we send you learners.', cta: 'List a course', onCta: () => router.push('/teach' as any) },
-  { key: 'cvpro', colors: ['#6d4cff', '#14206e'], icon: 'file', chip: 'Pro', title: 'New CV designs', text: 'Five professional CV templates, Classic and Modern. Preview any of them with your own details.' },
-  { key: 'rate', colors: ['#f6ee5c', '#e3c400'], icon: 'star', chip: 'Courses', title: 'Rate courses you took', text: 'Took a course? Open it, tap More → About this course and give it 1 to 5 stars. Ratings help everyone choose.', dark: true },
-  { key: 'jobshare', colors: ['#2fbf7a', '#0f6e45'], icon: 'share', chip: 'Jobs', title: 'Share jobs, find them faster', text: 'Share any job with friends in one tap. New filters for jobs and people, and a clearer notifications page.' },
-  { key: 'feed', colors: ['#3d5af1', '#1b2a9b'], icon: 'feed', chip: 'New tab', title: 'Your work feed', text: 'Home → Feed shows only the work people share, people you follow first.' },
-  { key: 'group', colors: ['#3d5af1', '#1b2a9b'], icon: 'follow', chip: 'Messages', title: 'Group pages', text: 'Tap a group’s name in a chat to see its members, photos, files, links and invite link. Mute or leave in one tap.', cta: 'Open messages', onCta: () => router.push('/inbox') },
-  { key: 'world', colors: ['#7c5cff', '#3b1fa8'], icon: 'globe', chip: 'Everywhere', title: 'Every country, every city', text: 'Pick your country and city anywhere in the world. The map, distances and phone numbers follow you.' },
+  { key: 'getit', colors: ['#ff3b1f', '#a8240f'], icon: 'sparkle', chip: 'New name, new look', title: 'bolo is now getit', text: 'One big button. Tap it, say what you need in your own words, and see good workers near you. Call or message one, or ask several for a price.' },
+  { key: 'threetabs', colors: ['#2b2926', '#171615'], icon: 'chat', chip: 'Simpler', title: 'Find, Jobs, Inbox', text: 'Three tabs and nothing else to learn. Jobs follows each job from booked to done. Inbox keeps your chats and your updates. Your account, your area and dark or light mode are behind the person button at the top.', cta: 'Open Inbox', onCta: () => router.push('/inbox' as any) },
+  { key: 'offerskill', colors: ['#ff3b1f', '#a8240f'], icon: 'wrench', chip: 'For workers', title: 'Offer a skill', text: 'Tap the person button, then “Get work on getit”. Go available with one tap, pause when you are busy, and see jobs near you on your home screen.' },
 ];
 
 const SEEN_KEY = 'bolo.seenNew';
@@ -64,11 +34,11 @@ export async function maybeShowWhatsNew() {
     // A fresh install (or a first log-in on this phone) has nothing "new" to compare with.
     if (!seen && !ui.returning) return;
     const slides = WHATS_NEW.filter((x) => LATEST.includes(x.key));
-    if (slides.length) showStories(slides, { label: 'What’s new on bolo' });
+    if (slides.length) showStories(slides, { label: 'What’s new on getit' });
   } catch {
     // storage unavailable: better to skip than to show it on every start
   } finally {
     checking = false;
   }
 }
-export const openWhatsNew = () => showStories(WHATS_NEW, { label: 'What’s new on bolo' });
+export const openWhatsNew = () => showStories(WHATS_NEW, { label: 'What’s new on getit' });

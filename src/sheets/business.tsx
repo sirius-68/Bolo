@@ -21,7 +21,7 @@ export function openContract(pid: string, i: number) {
       sheet.show(() => (
         <View>
           <AlertIll icon="verified" bg={C.lav} />
-          <SheetTitle center sub={b?.verified === 'review' ? 'A person at bolo is checking your documents. You’ll get a notification when it’s done.' : 'Company contracts are only for verified businesses. Add your RCCM and NIU, verification usually takes a few minutes.'}>
+          <SheetTitle center sub={b?.verified === 'review' ? 'A person at getit is checking your documents. You’ll get a notification when it’s done.' : 'Company contracts are only for verified businesses. Add your RCCM and NIU, verification usually takes a few minutes.'}>
             {b?.verified === 'review' ? 'Verification in progress' : 'Verify your business first'}
           </SheetTitle>
           {b?.verified !== 'review' ? <Btn variant="yellow" title="Add documents" style={{ marginTop: 16 }} onPress={() => afterSheet(() => openBizSetup('edit', 3))} /> : null}
@@ -134,7 +134,7 @@ function contractHtml(id: string) {
     ['Hours', k.hours],
     ...(k.terms ? ([['Other terms', k.terms]] as [string, string][]) : []),
   ];
-  return `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Helvetica,Arial;max-width:680px;margin:32px auto;padding:0 20px;color:#111}h2{margin:0 0 4px}small{color:#666}table{width:100%;border-collapse:collapse;margin-top:18px}td{padding:10px 6px;border-bottom:1px solid #ddd;font-size:14px}td:first-child{color:#666;width:34%}.s{display:flex;gap:20px;margin-top:28px}.s div{flex:1;border-top:2px solid #111;padding-top:6px;font-size:13px}</style></head><body><h2>Employment contract</h2><small>No. ${id.slice(-6)} · ${esc(bizName(b))}</small><table>${rows.map(([a, v]) => `<tr><td>${a}</td><td>${esc(v)}</td></tr>`).join('')}</table><div class="s"><div>Signed by ${esc(bizName(b))}</div><div>${k.status === 'active' ? 'Signed by' : 'Waiting for'} ${esc(P(k.person).name)}</div></div><p style="font-size:11px;color:#888;margin-top:30px">Signed electronically on bolo. Governed by the Cameroon Labour Code.</p></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Helvetica,Arial;max-width:680px;margin:32px auto;padding:0 20px;color:#111}h2{margin:0 0 4px}small{color:#666}table{width:100%;border-collapse:collapse;margin-top:18px}td{padding:10px 6px;border-bottom:1px solid #ddd;font-size:14px}td:first-child{color:#666;width:34%}.s{display:flex;gap:20px;margin-top:28px}.s div{flex:1;border-top:2px solid #111;padding-top:6px;font-size:13px}</style></head><body><h2>Employment contract</h2><small>No. ${id.slice(-6)} · ${esc(bizName(b))}</small><table>${rows.map(([a, v]) => `<tr><td>${a}</td><td>${esc(v)}</td></tr>`).join('')}</table><div class="s"><div>Signed by ${esc(bizName(b))}</div><div>${k.status === 'active' ? 'Signed by' : 'Waiting for'} ${esc(P(k.person).name)}</div></div><p style="font-size:11px;color:#888;margin-top:30px">Signed electronically on getit. Governed by the Cameroon Labour Code.</p></body></html>`;
 }
 export function viewContract(id: string) {
   sheet.show(() => <ContractView id={id} />);

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { useFocusEffect } from 'expo-router';
 
 /**
- * bolo keeps what it shows in one mutable model (see data/db.ts).
+ * getit keeps what it shows in one mutable model (see data/db.ts).
  * After changing it, call bump(). Screens re-render through useLive().
  *
  * Optimisation: screens that are not focused (e.g. tabs in the background or screens

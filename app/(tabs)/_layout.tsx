@@ -1,30 +1,20 @@
-import React, { useCallback } from 'react';
-import { Tabs, useFocusEffect } from 'expo-router';
+import React from 'react';
+import { Tabs } from 'expo-router';
 import { View } from 'react-native';
-import { NavBar } from '../../src/components/NavBar';
-import { setToastOffset } from '../../src/ui/overlay';
-import { C } from '../../src/ui/theme';
-import { isW } from '../../src/logic/core';
+import { TabBar } from '../../src/g/TabBar';
+import { useG } from '../../src/g/theme';
 
+/** getit's three tabs. The old profile editor (me) stays reachable from the "you" sheet, without a tab of its own. */
 export default function TabsLayout() {
-  useFocusEffect(
-    useCallback(() => {
-      setToastOffset(98);
-      return () => setToastOffset(32);
-    }, []),
-  );
+  const t = useG();
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg }}>
-    <Tabs
-      initialRouteName={isW() ? 'feed' : 'home'}
-      tabBar={(p) => <NavBar {...p} />}
-      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: C.bg }, lazy: true, animation: 'fade' }}
-    >
-      <Tabs.Screen name="home" />
-      <Tabs.Screen name="feed" />
-      <Tabs.Screen name="career" />
-      <Tabs.Screen name="me" />
-    </Tabs>
+    <View style={{ flex: 1, backgroundColor: t.bg }}>
+      <Tabs initialRouteName="find" tabBar={(p) => <TabBar {...p} />} screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: t.bg }, lazy: true, animation: 'fade' }}>
+        <Tabs.Screen name="find" />
+        <Tabs.Screen name="jobs" />
+        <Tabs.Screen name="inbox" />
+        <Tabs.Screen name="me" />
+      </Tabs>
     </View>
   );
 }

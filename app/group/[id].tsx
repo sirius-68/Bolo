@@ -47,9 +47,9 @@ export default function GroupInfo() {
   if (!th || !p) return <Missing bar="Group" title="Group not found" text="It may have been deleted, or you’re no longer a member." />;
   const owner = m ? (m.by ? m.by : m.mine ? 'me' : null) : null;
   const members = ['me', ...(th.members || []).filter((x) => x !== 'me')];
-  // Groups are joined by being added by a member (there is no join-by-link yet): the invite brings people to bolo.
-  const invite = `Join me in “${p.name}” on bolo. Get the app, then tell me your name there and I’ll add you.\n${shareTail()}`;
-  const desc = m?.desc || `${p.name} on bolo. Share updates, files and questions with everyone in the group.`;
+  // Groups are joined by being added by a member (there is no join-by-link yet): the invite brings people to getit.
+  const invite = `Join me in “${p.name}” on getit. Get the app, then tell me your name there and I’ll add you.\n${shareTail()}`;
+  const desc = m?.desc || `${p.name} on getit. Share updates, files and questions with everyone in the group.`;
   const rules = (m?.rules || []).map((r) => RULES[r]?.[0]).filter(Boolean);
   const toggleBig = () => {
     tap();
@@ -200,7 +200,7 @@ export default function GroupInfo() {
                   Invite people to this group
                 </Txt>
                 <Txt s={12} c={C.faint} style={{ marginTop: 2 }}>
-                  Tap to copy an invite · add them under Members once they’ve joined bolo
+                  Tap to copy an invite · add them under Members once they’ve joined getit
                 </Txt>
               </View>
               <Pressable accessibilityLabel="Share invite link" hitSlop={10} onPress={() => Share.share({ message: invite }).catch(() => {})} style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>

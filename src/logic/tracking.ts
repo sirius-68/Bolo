@@ -1,5 +1,5 @@
 /* Live tracking: while a worker is on the way, their phone shares its position for that booking only.
-   It starts with "Start trip", stops on arrival (or cancel), and only runs while bolo is open.
+   It starts with "Start trip", stops on arrival (or cancel), and only runs while getit is open.
    The client sees it live on the booking's map; the server deletes the position when the trip ends. */
 import * as Location from 'expo-location';
 import { db, Booking } from '../data/db';

@@ -1,6 +1,6 @@
 /* Voice and video calls (Agora). The server keeps the call (who calls whom, ringing → accepted → ended)
    and hands out the Agora pass; this module starts calls, answers them, and opens the call screen when
-   someone rings while bolo is open. */
+   someone rings while getit is open. */
 import { router } from 'expo-router';
 import { AppState, Linking, PermissionsAndroid, Platform, Vibration } from 'react-native';
 import { db } from '../data/db';
@@ -53,7 +53,7 @@ export async function callPermissions(kind: 'voice' | 'video'): Promise<boolean>
     if (blocked)
       confirm({
         title: `Turn on the ${what}`,
-        text: `bolo needs the ${what} for ${kind} calls. Open bolo’s settings, tap Permissions and allow the ${what}.`,
+        text: `getit needs the ${what} for ${kind} calls. Open getit’s settings, tap Permissions and allow the ${what}.`,
         ok: 'Open settings',
         icon: mic !== 'granted' ? 'mic' : 'cam',
         onOk: () => void Linking.openSettings().catch(() => {}),
@@ -76,7 +76,7 @@ export function setActiveCall(id: string | null, was?: string) {
 
 /** Call someone from a 1-to-1 chat (key = the chat's app id). */
 export async function startCall(key: string, kind: 'voice' | 'video') {
-  if (!agora) return toast('Calls need the latest version of bolo');
+  if (!agora) return toast('Calls need the latest version of getit');
   if (key.startsWith('g_')) return toast('Calls are for 1-to-1 chats');
   // one call at a time: more taps while a call is starting or open do nothing
   if (starting || active) return;
@@ -135,7 +135,7 @@ export async function callPass(id: string): Promise<{ appId: string; token: stri
 }
 
 let ringing: string | null = null;
-/** A call that came while bolo was in the background: the phone rings for it (see below); looked at again when bolo opens. */
+/** A call that came while getit was in the background: the phone rings for it (see below); looked at again when getit opens. */
 let waiting: string | null = null;
 let watchingApp = false;
 function incoming(c: Call) {
@@ -144,8 +144,8 @@ function incoming(c: Call) {
   if (Date.now() - +new Date(c.created_at) > 45_000) return;
   // already ringing or on a call: this one is not shown on top (it ends as a missed call)
   if (ringing || active || starting) return;
-  // bolo is not on screen: the phone itself rings (the pop-up, full screen on a locked phone). Opening the call
-  // screen here would do it where nobody can see it, and would silence that ring. When bolo comes back to the
+  // getit is not on screen: the phone itself rings (the pop-up, full screen on a locked phone). Opening the call
+  // screen here would do it where nobody can see it, and would silence that ring. When getit comes back to the
   // front and the call is still ringing, it shows then.
   if (AppState.currentState !== 'active' && require('./push').pushReady()) {
     waiting = c.id;
@@ -163,7 +163,7 @@ function incoming(c: Call) {
   }
   ringing = c.id;
   active = c.id;
-  // the pop-up that rang while bolo was closed stops; from here the call screen rings
+  // the pop-up that rang while getit was closed stops; from here the call screen rings
   void require('./push').clearCallPopups();
   Vibration.vibrate([0, 700, 500, 700, 500, 700, 500, 700, 500, 700], false);
   ring('in');
@@ -172,7 +172,7 @@ function incoming(c: Call) {
     router.push(`/call?id=${c.id}&incoming=1` as any);
   });
 }
-/* "Accept" tapped on the phone's own ringing screen (bolo was closed): the call screen answers as soon as it has the call. */
+/* "Accept" tapped on the phone's own ringing screen (getit was closed): the call screen answers as soon as it has the call. */
 const answerAsked = new Set<string>();
 export function askAnswer(id: string) {
   answerAsked.add(id);

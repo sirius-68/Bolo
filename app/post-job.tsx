@@ -20,13 +20,14 @@ const TIMES = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '14:00', '1
 
 export default function PostJob() {
   // edit=<job id>: change a job or vacancy that is already posted
-  const { edit } = useLocalSearchParams<{ edit?: string }>();
+  // title and cat: a request started from getit's "What do you need?" arrives already filled in
+  const { edit, title: title0, cat: cat0 } = useLocalSearchParams<{ edit?: string; title?: string; cat?: string }>();
   const old = edit ? postById(edit) : undefined;
   const editing = !!old && !!old.mine;
   const w = editing ? old!.as !== 'business' : isW();
-  const [title, setTitle] = useState(old?.title || '');
+  const [title, setTitle] = useState(old?.title || (typeof title0 === 'string' ? title0 : ''));
   const [text, setText] = useState(old?.text && old.text !== old.title ? old.text : '');
-  const [cat, setCat] = useState<string | null>(old?.cat || null);
+  const [cat, setCat] = useState<string | null>(old?.cat || (typeof cat0 === 'string' && cat0 ? cat0 : null));
   const [photos, setPhotos] = useState<string[]>(old?.photos ? [...old.photos] : []);
   const [budget, setBudget] = useState(old ? digits(String(old.budget || '').split('/')[0]) : '');
   const [neg, setNeg] = useState(/negotiable/i.test(old?.budget || ''));
@@ -59,7 +60,7 @@ export default function PostJob() {
     const job = postJob(form);
     toast(w ? 'Job posted. People nearby will send offers' : `Vacancy published for ${bizName(curBiz())}`);
     if (w) back();
-    else resetTo('/home');
+    else resetTo('/find');
     later(450, () => openJob(job.id));
   };
   // the full list, searchable; a job that fits none of them can use its own word
@@ -200,7 +201,7 @@ export default function PostJob() {
         </Chips>
         {w ? <SwitchRow title="Urgent" sub="Show it first to people nearby" value={urgent} onChange={setUrgent} /> : null}
         <Btn variant="yellow" title={editing ? 'Save changes' : w ? 'Post job' : 'Publish vacancy'} onPress={submit} testID="pj-submit" />
-        <Fine style={{ marginTop: -6 }}>{w ? 'People see your phone number only after you hire them.' : 'Applicants can message you through bolo; your phone stays private.'}</Fine>
+        <Fine style={{ marginTop: -6 }}>{w ? 'People see your phone number only after you hire them.' : 'Applicants can message you through getit; your phone stays private.'}</Fine>
       </View>
     </Page>
   );

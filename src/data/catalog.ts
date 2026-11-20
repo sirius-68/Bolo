@@ -1,4 +1,4 @@
-/* Static reference data — ported from the bolo prototype. */
+/* Static reference data — ported from the getit prototype. */
 import { C } from '../ui/theme';
 
 /** Job categories: [name, icon]. */
@@ -279,7 +279,7 @@ export const WHERE = ['At the client’s place', 'At my workshop', 'Both'];
 export const UNITS = ['per job', 'per hour', 'per day', 'per visit'];
 export const EDU = ['No formal education', 'Primary', 'Secondary', 'Technical / vocational', 'University'];
 export const DOCS: Record<string, [string, string, string]> = {
-  id: ['National ID card', 'idcard', 'Required to work on bolo'],
+  id: ['National ID card', 'idcard', 'Required to work on getit'],
   biz: ['Business registration', 'storefront', 'Optional · shows clients you’re a registered business'],
   drive: ['Driving licence', 'steer', 'Needed for delivery and mechanic jobs'],
 };
@@ -411,14 +411,14 @@ export const SALARIES: [string, string, string][] = [
 export const ARTICLES: [string, string, string, string[]][] = [
   ['How to write a CV that gets calls back', '5 min', 'CV', ['Keep it to one page if you have less than 5 years of experience. Put your strongest skill and your phone number at the top.', 'For every job, write what you achieved, not just what you did: “Fixed plumbing in 40+ homes” beats “Plumber”.', 'Add your languages and any certificates, employers in Cameroon value English–French bilingualism highly.']],
   ['10 interview questions and how to answer them', '7 min', 'Interviews', ['“Tell me about yourself”. Answer in 60 seconds: who you are, what you do best, and why this job.', '“Why should we hire you?”, link one of your achievements to their need.', 'Always prepare one question for them, like “What does success look like in the first 3 months?”']],
-  ['Freelancing on the side: how to start', '6 min', 'Gigs', ['Start with people who already trust you: friends, former colleagues, your church or quarter.', 'Set a clear starting price and stick to it. Use bolo quotes so both sides agree before the work starts.', 'Collect reviews from your first five jobs. They bring the next twenty.']],
+  ['Freelancing on the side: how to start', '6 min', 'Gigs', ['Start with people who already trust you: friends, former colleagues, your church or quarter.', 'Set a clear starting price and stick to it. Use getit quotes so both sides agree before the work starts.', 'Collect reviews from your first five jobs. They bring the next twenty.']],
   ['Internship or first job? Getting your foot in the door', '4 min', 'Early career', ['Internships are a real way in: many companies hire their best interns.', 'Treat it like a job. Be on time, ask questions, and keep a list of what you learned.', 'Ask for a reference letter before you finish.']],
   ['Negotiating your salary without fear', '5 min', 'Pay', ['Check typical pay for your role in Professions & salaries before the conversation.', 'Give a range, not a single number, and start a little above what you want.', 'If the salary is fixed, negotiate transport, training or a review date instead.']],
 ];
 export const PATHS: [string, string, string[], string[], string[]][] = [
   ['From shop or sales work into marketing', 'cat-sales', ['Learn social media and WhatsApp Business selling', 'Run ads for one small business (even for free)', 'Build a portfolio of 3 results'], ['c1'], ['o5']],
   ['Into tech: become a web developer', 'cat-dev', ['Learn HTML, CSS and JavaScript', 'Build 3 small projects for real businesses', 'Apply for an internship or junior role'], ['c3', 'c4'], ['o4', 'o1']],
-  ['From helper to certified tradesperson', 'wrench', ['Join an apprenticeship', 'Get a recognised certificate', 'Start taking your own jobs on bolo'], ['c9', 'c10'], ['o3']],
+  ['From helper to certified tradesperson', 'wrench', ['Join an apprenticeship', 'Get a recognised certificate', 'Start taking your own jobs on getit'], ['c9', 'c10'], ['o3']],
   ['Into care work and nursing', 'cat-health', ['Take a home care course', 'Get first aid certified', 'Apply for a clinical internship'], ['c13'], ['o2']],
 ];
 export const OPP_KINDS = ['Internship', 'Graduate program', 'Apprenticeship', 'Training program', 'Course'];

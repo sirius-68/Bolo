@@ -10,7 +10,7 @@ import { useLive } from '../src/logic/live';
 import { blankListing, domainOf, formOf, listingErrors, normUrl, openCourseSite, removeListing, saveListing } from '../src/logic/listings';
 
 /** Quick setup for a course listing: the link to your course page and the basics.
-    People open your site from bolo and sign up there. The web version has the full toolkit. */
+    People open your site from getit and sign up there. The web version has the full toolkit. */
 export default function ListCourse() {
   useLive();
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -35,7 +35,7 @@ export default function ListCourse() {
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
           {(
             [
-              [String(existing.views || 0), 'Site visits from bolo'],
+              [String(existing.views || 0), 'Site visits from getit'],
               [String(db.savedCourses.includes(existing.id) ? 1 : 0), 'Saves'],
             ] as [string, string][]
           ).map(([v, l]) => (

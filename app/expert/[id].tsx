@@ -18,13 +18,13 @@ export default function ExpertProfile() {
   if (!e)
     return (
       <Page header={<TopBar />}>
-        <Empty title="Expert not found" text="They may no longer offer sessions on bolo." />
+        <Empty title="Expert not found" text="They may no longer offer sessions on getit." />
       </Page>
     );
   const { n } = exRating(e);
   const R = reviewsOfEx(e);
   const mine = exBookingsWith(e).filter((b) => b.state !== 'done' || !b.rated);
-  const share = () => Share.share({ message: `${e.name}, ${e.head}. Book a session on bolo.\n${shareTail(`/expert/${e.id}`)}` }).catch(() => {});
+  const share = () => Share.share({ message: `${e.name}, ${e.head}. Book a session on getit.\n${shareTail(`/expert/${e.id}`)}` }).catch(() => {});
   return (
     <Page header={<TopBar right={<IconBtn name="share" label="Share expert" onPress={share} />} />} bottom={32}>
       {/* who */}

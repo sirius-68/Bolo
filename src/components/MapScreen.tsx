@@ -108,7 +108,7 @@ export function MapScreen() {
             <Icon name="filter" size={20} color={nf ? C.yellow : C.text} />
             {nf ? (
               <View style={{ position: 'absolute', top: -5, right: -5, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
-                <Txt s={10} w={8} c="#000">
+                <Txt s={10} w={8} c={C.onAccent}>
                   {nf}
                 </Txt>
               </View>
@@ -151,7 +151,7 @@ export function MapScreen() {
         testID="map-home"
         accessibilityRole="button"
         accessibilityLabel="Home"
-        onPress={() => (tap(), router.navigate('/(tabs)/feed'))}
+        onPress={() => (tap(), router.navigate('/find'))}
         style={({ pressed }) => ({
           position: 'absolute',
           bottom: homeBottom,

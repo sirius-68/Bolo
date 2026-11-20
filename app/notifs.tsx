@@ -387,8 +387,8 @@ function Row({ n, sel, onPress, onLong }: { n: Notif; sel: string[] | null; onPr
     default:
       text = (
         <Txt s={14}>
-          {/* a notice from the bolo team has no person behind it */}
-          {name || (n.type === 'account' ? <B>bolo</B> : null)}
+          {/* a notice from the getit team has no person behind it */}
+          {name || (n.type === 'account' ? <B>getit</B> : null)}
           {name || n.type === 'account' ? ' ' : ''}
           {n.text}
           {T}

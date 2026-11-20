@@ -20,7 +20,7 @@ export default function Role() {
   return (
     <Page>
       <TopBar title="Sign up" />
-      <Title>What brings you to bolo?</Title>
+      <Title>What brings you to getit?</Title>
       <Sub>Pick all that apply. You can do both. Every skill is welcome, and you can add a business page any time.</Sub>
       <View style={{ gap: 14, marginTop: 28 }}>
         {ROLES.map(([k, t, s, art, bg, fg]) => {

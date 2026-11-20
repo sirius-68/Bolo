@@ -61,7 +61,7 @@ export default function JobTypes() {
                 </Txt>
                 {on ? (
                   <View style={{ position: 'absolute', top: 10, right: 10, width: 22, height: 22, borderRadius: 11, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon name="check" size={13} color="#000" />
+                    <Icon name="check" size={13} color={C.onAccent} />
                   </View>
                 ) : null}
               </Pressable>

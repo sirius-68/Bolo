@@ -13,7 +13,7 @@ export function openScreen(path: string) {
   if (here && here === path.split('?')[0]) return;
   router.push(path as any);
 }
-export const back = () => (router.canGoBack() ? router.back() : router.replace('/feed' as any));
+export const back = () => (router.canGoBack() ? router.back() : router.replace('/find' as any));
 /** Clear the stack and land on a tab. */
 export function resetTo(path: string) {
   try {

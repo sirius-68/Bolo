@@ -42,7 +42,7 @@ export function friendly(e: any): string {
 /** Returns needsCode=true when the account must be confirmed with a code (email/SMS). */
 export async function signUp(contact: string, password: string, meta: { name: string; biz_only?: boolean }): Promise<{ needsCode: boolean; error?: string }> {
   try {
-    // the bolo team can pause new sign-ups for a while: say so plainly instead of a server error
+    // the getit team can pause new sign-ups for a while: say so plainly instead of a server error
     if (!(await featureOn('signups'))) return { needsCode: false, error: 'New sign-ups are paused for a moment. Please try again later.' };
     const { data, error } = await supabase.auth.signUp({ ...(cred(contact) as any), password, options: { data: meta } });
     if (error) return { needsCode: false, error: friendly(error) };
@@ -480,7 +480,7 @@ export function startSync() {
 }
 
 /* ---------------------------------------------------------------- your data (Settings) */
-/** Everything bolo stores about this account, as a JSON file the person can save or share. */
+/** Everything getit stores about this account, as a JSON file the person can save or share. */
 export async function exportMyData(): Promise<{ uri?: string; error?: string }> {
   try {
     const { data, error } = await supabase.rpc('export_my_data');
@@ -520,14 +520,14 @@ export async function updateRequired(platform: 'android' | 'ios', build: number)
     const { data } = await supabase.from('app_config').select('value').eq('key', 'min_version').maybeSingle();
     const v = data?.value as { android?: number; ios?: number; message?: string } | undefined;
     const min = Number(v?.[platform] || 0);
-    return build && min > build ? v?.message || 'A new version of bolo is ready. Update to keep using the app.' : null;
+    return build && min > build ? v?.message || 'A new version of getit is ready. Update to keep using the app.' : null;
   } catch {
     return null;
   }
 }
 
-/** A notice from the bolo team shown when the app opens (set from the admin panel: Settings → Service notice). */
-/** Is this part of bolo switched on? (The bolo team can pause sign-ups, calls or posting; on when unsure.) */
+/** A notice from the getit team shown when the app opens (set from the admin panel: Settings → Service notice). */
+/** Is this part of getit switched on? (The getit team can pause sign-ups, calls or posting; on when unsure.) */
 export async function featureOn(name: 'signups' | 'calls' | 'posting'): Promise<boolean> {
   try {
     const { data } = await supabase.from('app_config').select('value').eq('key', 'features').maybeSingle();

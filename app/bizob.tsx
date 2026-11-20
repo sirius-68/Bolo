@@ -60,7 +60,7 @@ export default function BizOnboarding() {
     const biz = { ...b, phone: b.phone ? intlPhone(b.phone) : o.phone ? intlPhone(o.phone) : '', email: b.email || o.email.trim(), hires: areas, hireTypes: types };
     const done = () => {
       createBusinessAccount({ owner: o.owner.trim(), email: o.email.trim(), phone: o.phone ? intlPhone(o.phone) : '', biz });
-      resetTo('/home');
+      resetTo('/find');
     };
     // log-in uses the work email (or the phone when there's no email).
     const contact = isEmail(o.email) || !authCaps.phone ? o.email.trim() : intlPhone(o.phone);
@@ -191,7 +191,7 @@ export default function BizOnboarding() {
           {b.name} is live 🎉
         </Txt>
         <Txt s={14} c={C.muted} center style={{ marginTop: 6, maxWidth: 320 }}>
-          Your business page is ready. {b.rccm && b.niu ? 'A person at bolo will check your documents and you’ll get a notification.' : 'Verify any time from your dashboard to unlock company contracts.'}
+          Your business page is ready. {b.rccm && b.niu ? 'A person at getit will check your documents and you’ll get a notification.' : 'Verify any time from your dashboard to unlock company contracts.'}
         </Txt>
         <View style={{ gap: 12, marginTop: 24, alignSelf: 'stretch' }}>
           {[

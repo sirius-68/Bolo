@@ -452,7 +452,7 @@ function DocSheet({ k }: { k: string }) {
     return (
       <View>
         <AlertIll icon={st === 'verified' ? 'verified' : 'timer'} bg={st === 'verified' ? C.ok : C.s3} color={st === 'verified' ? '#000' : '#fff'} />
-        <SheetTitle center sub={st === 'verified' ? 'Checked by bolo. People see a verified badge on your profile.' : 'A person at bolo is checking your document. You’ll get a notification when it’s done.'}>
+        <SheetTitle center sub={st === 'verified' ? 'Checked by getit. People see a verified badge on your profile.' : 'A person at getit is checking your document. You’ll get a notification when it’s done.'}>
           {t}
         </SheetTitle>
         <Btn style={{ marginTop: 16 }} title="OK" onPress={() => sheet.close()} />

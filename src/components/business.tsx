@@ -69,7 +69,7 @@ export function BizWhere({ b, set, onCity, miss, email, id }: { b: MyBiz; set: S
   );
 }
 
-/** The two registration numbers bolo checks. `locked`: already sent or verified, so they can't be changed. */
+/** The two registration numbers getit checks. `locked`: already sent or verified, so they can't be changed. */
 export function BizDocs({ b, set, locked }: { b: MyBiz; set: Set; locked?: boolean }) {
   return (
     <>

@@ -79,7 +79,7 @@ export function SkillCombo({ taken, onPick, placeholder, autoFocus }: { taken: s
   if (!ql) {
     const sug = SKILLS.filter((s) => db.user.jobTypes.includes(s.a));
     if (sug.length) groups.push(['From the work you picked', sug.slice(0, 30)]);
-    groups.push(['Popular on bolo', POPULAR.filter((s) => !db.user.jobTypes.includes(s.a))]);
+    groups.push(['Popular on getit', POPULAR.filter((s) => !db.user.jobTypes.includes(s.a))]);
   } else {
     const m = SKILLS.filter((s) => s.n.toLowerCase().includes(ql) || s.a.toLowerCase().includes(ql) || s.x.some((k) => EX[k].o.some((o) => o.toLowerCase().includes(ql)))).sort(
       (a, b) => +b.n.toLowerCase().startsWith(ql) - +a.n.toLowerCase().startsWith(ql) || +b.n.toLowerCase().includes(ql) - +a.n.toLowerCase().includes(ql),
@@ -133,7 +133,7 @@ export function SkillCombo({ taken, onPick, placeholder, autoFocus }: { taken: s
             style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 10, borderRadius: 12, backgroundColor: pressed ? C.s3 : 'transparent', marginTop: 4, borderTopWidth: 1, borderTopColor: C.line })}
           >
             <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="plus" size={18} color="#000" />
+              <Icon name="plus" size={18} color={C.onAccent} />
             </View>
             <View style={{ flex: 1 }}>
               <Txt s={14} w={7}>
@@ -342,7 +342,7 @@ export function SkillCard({ e, onChange, onChangeSkill, main }: { e: SkillEntry;
     <View style={{ borderRadius: R.lg, backgroundColor: C.s1, borderWidth: main ? 1.5 : 1, borderColor: main ? C.yellow : C.line, overflow: 'hidden' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
         <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: main ? C.yellow : C.s3, alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name={skIcon(e)} size={20} color={main ? '#000' : C.yellow} />
+          <Icon name={skIcon(e)} size={20} color={main ? C.onAccent : C.yellow} />
         </View>
         <View style={{ flex: 1 }}>
           <Txt s={15} w={8}>

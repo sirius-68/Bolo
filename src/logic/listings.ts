@@ -1,6 +1,6 @@
-/* Courses on bolo are listings: the course itself lives on the school's or trainer's own website.
-   Tapping a course opens that site inside bolo. Anyone can list a course here with a quick setup;
-   the web version of bolo is the better place to manage many courses. */
+/* Courses on getit are listings: the course itself lives on the school's or trainer's own website.
+   Tapping a course opens that site inside getit. Anyone can list a course here with a quick setup;
+   the web version of getit is the better place to manage many courses. */
 import { router } from 'expo-router';
 import { db, uid, Course } from '../data/db';
 import { supabase } from '../lib/supabase';

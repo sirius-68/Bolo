@@ -37,7 +37,7 @@ export default function Courses() {
           <Txt s={22} w={8} style={{ flex: 1 }}>
             Courses
           </Txt>
-          <IconBtn testID="courses-create" name="plus" bg={C.yellow} color="#000" label="List your course" onPress={() => router.push('/teach' as any)} />
+          <IconBtn testID="courses-create" name="plus" bg={C.yellow} color={C.onAccent} label="List your course" onPress={() => router.push('/teach' as any)} />
         </View>
         <PTabs
           items={[
@@ -133,8 +133,8 @@ function Explore({ bottom }: { bottom: number }) {
                   }}
                   style={[S.row, { gap: 6, height: 36, paddingHorizontal: 14, borderRadius: 999, backgroundColor: on ? C.text : C.s1, borderWidth: 1, borderColor: on ? C.text : C.line }]}
                 >
-                  {c ? <Icon name={i} size={14} color={on ? '#000' : C.yellow} /> : null}
-                  <Txt s={12} w={7} c={on ? '#000' : C.text}>
+                  {c ? <Icon name={i} size={14} color={on ? C.onAccent : C.yellow} /> : null}
+                  <Txt s={12} w={7} c={on ? C.onAccent : C.text}>
                     {c || 'All'}
                   </Txt>
                 </Pressable>

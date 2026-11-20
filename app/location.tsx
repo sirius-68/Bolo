@@ -49,7 +49,7 @@ export default function LocationScreen() {
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 999, borderWidth: 1.5, borderColor: 'rgba(255,255,255,.5)', opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }), transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) }] }}
         />
         <View style={{ position: 'absolute', top: '50%', left: '50%', marginLeft: -42, marginTop: -42, width: 84, height: 84, borderRadius: 42, backgroundColor: C.yellow, borderWidth: 3, borderColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name="pin" size={36} color="#000" />
+          <Icon name="pin" size={36} color={C.onAccent} />
         </View>
         {PINS.map(([icon, label, x, y], i) => (
           <Animated.View key={icon} style={{ position: 'absolute', left: (`${x * 100}%` as any), top: (`${y * 100}%` as any), alignItems: 'center', gap: 4, transform: [{ scale: pop[i] }] }}>

@@ -1,10 +1,10 @@
-// Full-screen ringing for calls that arrive while bolo is closed.
+// Full-screen ringing for calls that arrive while getit is closed.
 // Adds a small piece of native Android code (plugins/incoming-call) to the app:
 //   - a push receiver that rings for a call itself instead of waiting for the app to start,
 //   - the full-screen "incoming call" screen shown over the lock screen, with Accept and Decline,
 //   - the receiver behind "Decline".
 // The server address and the public key the app already uses are written into the manifest, so "Decline" can
-// reach bolo's server without the app running. No secret is involved: this is the same public key the app ships with.
+// reach getit's server without the app running. No secret is involved: this is the same public key the app ships with.
 const fs = require('fs');
 const path = require('path');
 const { withAndroidManifest, withDangerousMod, withAppBuildGradle, AndroidConfig } = require('expo/config-plugins');

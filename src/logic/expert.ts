@@ -1,10 +1,10 @@
-/* bolo Career Experts — who can apply, the application, and the review.
+/* getit Career Experts — who can apply, the application, and the review.
    Modelled on how established platforms vet experts:
    - Toptal: communication interview → skills review → live screening → test project (<3% accepted)
    - Upwork Expert-Vetted: live interview on expertise, soft skills and experience
    - MentorCruise: application + vetting (<15% approved), then ongoing review from mentee feedback
    - ICF coach credential: training + practice hours, assessed real session, ethics exam
-   bolo keeps it proportionate for a local marketplace: automatic basics, a short ethics check,
+   getit keeps it proportionate for a local marketplace: automatic basics, a short ethics check,
    a real sample answer, a 15-minute interview, then a probation period judged by mentee ratings. */
 import { router } from 'expo-router';
 import { db } from '../data/db';
@@ -42,9 +42,9 @@ export function criteria(): Crit[] {
     },
     { k: 'photo', t: 'Real name and profile photo', why: 'Experts are people, not brands.', ok: !!u.name.trim() && !!u.avatar, fix: () => openEdit(), fixLabel: 'Add' },
     { k: 'years', t: '3+ years of work experience', why: 'Advice should come from experience in the field you advise on.', ok: u.years >= 3, fix: () => router.push({ pathname: '/skills', params: { mode: 'edit' } }), fixLabel: 'Update' },
-    { k: 'history', t: 'Work history on your profile', why: 'At least one job in your experience, or a CV built on bolo.', ok: db.PR.exp.length > 0 || u.cvDone, fix: () => router.push('/cvflow'), fixLabel: 'Add' },
+    { k: 'history', t: 'Work history on your profile', why: 'At least one job in your experience, or a CV built on getit.', ok: db.PR.exp.length > 0 || u.cvDone, fix: () => router.push('/cvflow'), fixLabel: 'Add' },
     { k: 'profile', t: 'Profile at least 70% complete', why: 'Mentees choose experts by reading their profiles.', ok: prPct() >= 70, fix: () => router.navigate('/(tabs)/me'), fixLabel: 'Finish' },
-    { k: 'standing', t: 'Good standing on bolo', why: 'No upheld reports in the last 12 months.', ok: true },
+    { k: 'standing', t: 'Good standing on getit', why: 'No upheld reports in the last 12 months.', ok: true },
   ];
 }
 export const qualifies = () => criteria().every((c) => c.ok);
@@ -62,8 +62,8 @@ export const QUIZ: [string, string[], number][] = [
     1,
   ],
   [
-    'A mentee offers to pay you directly by Mobile Money to avoid bolo fees.',
-    ['Accept. It saves them money', 'Keep payments on bolo, where both of you are protected', 'Accept but only once'],
+    'A mentee offers to pay you directly by Mobile Money to avoid getit fees.',
+    ['Accept. It saves them money', 'Keep payments on getit, where both of you are protected', 'Accept but only once'],
     1,
   ],
   [
@@ -85,7 +85,7 @@ export const SAMPLE_MIN = 250;
 export const CODE = [
   ['honest', 'I give honest, practical advice and never promise jobs or results'],
   ['private', 'I keep what mentees tell me private'],
-  ['onbolo', 'I keep bookings and payments on bolo'],
+  ['onbolo', 'I keep bookings and payments on getit'],
   ['scope', 'I say when something is outside my expertise'],
   ['respect', 'I treat every mentee with respect, whatever their background'],
 ];
@@ -93,7 +93,7 @@ export const CODE = [
 /** The review stages shown on the status screen. */
 export const STAGES: [string, string, string][] = [
   ['submitted', 'Application received', 'We check your answers and documents.'],
-  ['review', 'Expert review', 'A bolo reviewer reads your sample answer, usually 2–3 working days.'],
+  ['review', 'Expert review', 'A getit reviewer reads your sample answer, usually 2–3 working days.'],
   ['interview', '15-minute video interview', 'A short call about your experience and how you’d help mentees.'],
   ['decision', 'Decision', 'We let you know by notification and email.'],
   ['approved', 'You’re a Career Expert', 'Your expert page goes live in Career.'],
@@ -107,7 +107,7 @@ export function submitApplication() {
   bump();
   void saveApplication();
 }
-/** The application goes to bolo's reviewers; the status changes when they move it on. */
+/** The application goes to getit's reviewers; the status changes when they move it on. */
 async function saveApplication() {
   const { status, step, ...data } = db.EXPERT;
   const { supabase } = require('../lib/supabase');

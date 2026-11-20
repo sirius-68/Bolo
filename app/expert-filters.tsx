@@ -68,7 +68,7 @@ const Radio = ({ on }: { on: boolean }) => (
   <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: on ? C.yellow : C.s3, alignItems: 'center', justifyContent: 'center' }}>{on ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.yellow }} /> : null}</View>
 );
 const Box = ({ on }: { on: boolean }) => (
-  <View style={{ width: 22, height: 22, borderRadius: 7, borderWidth: 2, borderColor: on ? C.yellow : C.s3, backgroundColor: on ? C.yellow : 'transparent', alignItems: 'center', justifyContent: 'center' }}>{on ? <Icon name="check" size={13} color="#000" /> : null}</View>
+  <View style={{ width: 22, height: 22, borderRadius: 7, borderWidth: 2, borderColor: on ? C.yellow : C.s3, backgroundColor: on ? C.yellow : 'transparent', alignItems: 'center', justifyContent: 'center' }}>{on ? <Icon name="check" size={13} color={C.onAccent} /> : null}</View>
 );
 
 /** Single choice: tapping picks and closes. */

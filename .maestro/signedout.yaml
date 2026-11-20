@@ -1,43 +1,135 @@
 appId: cm.bolo.app
-name: Signed out (welcome, sign-up and log-in screens)
+name: getit, signed out (opening screen, home, what do you need, workers, tabs, you, light mode)
 ---
 - launchApp:
     clearState: true
 - runFlow: dismiss.yaml
 - extendedWaitUntil:
     visible:
-      id: "skip"
-    timeout: 30000
-- takeScreenshot: s01-onboard
+      id: "intro-continue"
+    timeout: 40000
+- takeScreenshot: g01-intro
+# the worker start screen
 - tapOn:
-    id: "skip"
+    id: "intro-work"
 - extendedWaitUntil:
     visible:
-      id: "create-account"
+      id: "wland-start"
     timeout: 10000
-- takeScreenshot: s02-welcome
-# no demo any more: only real accounts
-- assertNotVisible: "Explore the demo"
+- takeScreenshot: g02-worker-start
+- back
+# looking needs no account
 - tapOn:
-    id: "create-account"
-- takeScreenshot: s03-role
+    id: "intro-continue"
+- extendedWaitUntil:
+    visible:
+      id: "home-big"
+    timeout: 15000
+- takeScreenshot: g03-home
+- tapOn:
+    id: "home-big"
+- extendedWaitUntil:
+    visible:
+      id: "need-input"
+    timeout: 10000
+- takeScreenshot: g04-need
+- tapOn:
+    id: "need-Plumber"
+- extendedWaitUntil:
+    visible:
+      id: "workers-prices"
+    timeout: 20000
+- takeScreenshot: g05-workers-plumber
+- scrollUntilVisible:
+    element:
+      id: "workers-change"
+    direction: DOWN
+    timeout: 8000
+- takeScreenshot: g06-workers-bottom
+- tapOn:
+    id: "workers-change"
+# typed in your own words
+- extendedWaitUntil:
+    visible:
+      id: "need-input"
+    timeout: 10000
+- tapOn:
+    id: "need-input"
+- inputText: "my car will not start"
+- takeScreenshot: g07-need-typed
+- pressKey: Enter
+- extendedWaitUntil:
+    visible:
+      id: "workers-prices"
+    timeout: 20000
+- takeScreenshot: g08-workers-mechanic
+# asking for prices needs an account: the app says so and opens sign-up
+- tapOn:
+    id: "workers-prices"
+- extendedWaitUntil:
+    visible:
+      id: "su-submit"
+    timeout: 10000
+- takeScreenshot: g09-signup
 - back
 - tapOn:
-    id: "have-account"
+    id: "workers-close"
+- tapOn:
+    id: "need-close"
+# the other tabs, signed out
+- tapOn:
+    id: "tab-jobs"
+- takeScreenshot: g10-jobs-empty
+- tapOn:
+    id: "tab-inbox"
+- takeScreenshot: g11-inbox-empty
+- tapOn:
+    id: "tab-find"
+# you: appearance, area, sign in
+- tapOn:
+    id: "home-me"
+- extendedWaitUntil:
+    visible:
+      id: "me-signin"
+    timeout: 8000
+- takeScreenshot: g12-you
+- tapOn: "Light"
+- takeScreenshot: g13-you-light
+- back
+- takeScreenshot: g14-home-light
+- tapOn:
+    id: "tab-search"
+- extendedWaitUntil:
+    visible:
+      id: "need-input"
+    timeout: 10000
+- tapOn:
+    id: "need-Electrician"
+- extendedWaitUntil:
+    visible:
+      id: "workers-prices"
+    timeout: 20000
+- takeScreenshot: g15-workers-light
+- tapOn:
+    id: "workers-close"
+- tapOn:
+    id: "need-close"
+- tapOn:
+    id: "tab-inbox"
+- takeScreenshot: g16-inbox-light
+- tapOn:
+    id: "tab-find"
+- tapOn:
+    id: "home-me"
+- tapOn: "Dark"
+- tapOn:
+    id: "me-signin"
 - extendedWaitUntil:
     visible:
       id: "li-submit"
     timeout: 10000
-- takeScreenshot: s04-login
+- takeScreenshot: g17-login
 # empty form: the app explains what's missing instead of calling the server
 - tapOn:
     id: "li-submit"
-- takeScreenshot: s05-login-empty
-- tapOn: "Forgot password?"
-- takeScreenshot: s06-forgot
-- back
-- back
-- tapOn:
-    id: "create-business"
-- takeScreenshot: s07-business-signup
-- back
+- takeScreenshot: g18-login-empty
