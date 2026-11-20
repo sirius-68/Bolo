@@ -462,11 +462,12 @@ function OfferSheet({ o }: { o: { postId?: string; chat?: string } }) {
   const f = fname(P(who)?.name || '');
   // my own price for this kind of job, when I gave one
   const mine = (db.PR.services || []).find((s) => s && +s.price > 0);
-  const [price, setPrice] = useState(mine ? String(mine.price) : '');
+  // the field starts empty, so what is typed is exactly the price; the usual price is one of the chips below
+  const [price, setPrice] = useState('');
   const [when, setWhen] = useState(po?.urgent ? 'Now' : 'Today');
   const [note, setNote] = useState('');
   const [job, setJob] = useState(po?.title || THREADS()[who]?.job || '');
-  const base = amount(price) || amount(mine?.price) || 5000;
+  const base = amount(mine?.price) || amount(price) || 5000;
   const chips = [...new Set([0.8, 1, 1.25, 1.5].map((k) => Math.max(500, Math.round((base * k) / 500) * 500)))];
   const n = amount(price);
   const send = () => {
@@ -493,7 +494,7 @@ function OfferSheet({ o }: { o: { postId?: string; chat?: string } }) {
         </>
       ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, height: 64, paddingHorizontal: 18, borderRadius: 20, backgroundColor: t.card2, borderWidth: 2, borderColor: RED }}>
-        <Input testID="offer-price" accessibilityLabel="Your price in FCFA" value={price ? (+price).toLocaleString('en-US') : ''} onChangeText={(v) => setPrice(v.replace(/[^\d]/g, '').slice(0, 8))} placeholder="0" keyboardType="number-pad" autoFocus={!price} selectTextOnFocus style={[ft(28, 8, t.text), { flex: 1, height: 60, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 }]} />
+        <Input testID="offer-price" accessibilityLabel="Your price in FCFA" value={price ? (+price).toLocaleString('en-US') : ''} onChangeText={(v) => setPrice(v.replace(/[^\d]/g, '').slice(0, 8))} placeholder="0" keyboardType="number-pad" autoFocus style={[ft(28, 8, t.text), { flex: 1, height: 60, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 }]} />
         <T s={16} w={8} c="muted">
           FCFA
         </T>
