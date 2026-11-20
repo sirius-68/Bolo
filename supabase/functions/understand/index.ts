@@ -16,12 +16,14 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 /** The trades people can be matched to (the app's categories). */
 const TRADES = ['Delivery', 'Plumber', 'Electrician', 'Cleaner', 'Mechanic', 'Developer', 'Designer', 'Teacher', 'Driver', 'Accountant', 'Sales', 'Admin', 'Cook', 'Nurse', 'Builder', 'Hairdresser', 'Tailor', 'Security', 'Writer', 'Events', 'Nanny', 'Farmer', 'Engineer', 'Coach'];
 
-type Provider = 'anthropic' | 'openai' | 'openrouter' | 'google' | 'groq' | 'xai' | 'deepseek' | 'cerebras' | 'nvidia' | 'fireworks' | 'perplexity' | 'together' | 'huggingface' | 'custom';
+type Provider = 'anthropic' | 'openai' | 'openrouter' | 'google' | 'groq' | 'xai' | 'deepseek' | 'cerebras' | 'nvidia' | 'fireworks' | 'perplexity' | 'together' | 'huggingface' | 'vsegpt' | 'aitunnel' | 'custom';
 /** Which service a key belongs to, read from its shape. A key is only ever sent to the service it belongs to:
     one whose shape isn't recognised is sent nowhere (the answer then says what the key looks like, never the key). */
 function providerOf(key: string): Provider | null {
   if (Deno.env.get('AI_BASE_URL')) return 'custom';
   if (key.startsWith('sk-ant-')) return 'anthropic';
+  if (key.startsWith('sk-or-vv-')) return 'vsegpt';
+  if (key.startsWith('sk-aitunnel-')) return 'aitunnel';
   if (key.startsWith('sk-or-')) return 'openrouter';
   if (key.startsWith('AIza')) return 'google';
   if (key.startsWith('gsk_')) return 'groq';
@@ -42,7 +44,12 @@ function shapeOf(key: string): string {
   const pre = known.find((p) => key.startsWith(p)) || 'none';
   const body = key.slice(pre === 'none' ? 0 : pre.length);
   const kind = /^[0-9a-f]+$/.test(body) ? 'hex' : /^[0-9a-zA-Z]+$/.test(body) ? 'letters-digits' : /^[\w-]+$/.test(body) ? 'letters-digits-dashes' : /^[\w.-]+$/.test(body) ? 'with-dots' : 'other';
-  return `${pre}/${key.length}/${kind}`;
+  // the lengths of the parts between dashes and underscores (its layout, none of its characters), and a service's
+  // own name when the key carries one right after "sk-"
+  const parts = key.split(/[-_]/).map((x) => x.length).join('.');
+  const word = (key.match(/^sk-([a-z]{3,12})-/) || [])[1] || '';
+  const label = ['aitunnel', 'proxyapi', 'vsegpt', 'nano', 'kimi', 'live', 'test', 'user', 'api', 'ai', 'gen', 'polza', 'bothub', 'neuro', 'lite', 'litellm'].includes(word) ? word : word ? 'word' : '';
+  return `${pre}/${key.length}/${kind}/${parts}${label ? '/' + label : ''}`;
 }
 const DEFAULT_MODEL: Record<Provider, string> = {
   anthropic: 'claude-haiku-5-5',
@@ -58,6 +65,8 @@ const DEFAULT_MODEL: Record<Provider, string> = {
   perplexity: 'sonar',
   together: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
   huggingface: 'meta-llama/Llama-3.3-70B-Instruct',
+  vsegpt: 'openai/gpt-4o-mini',
+  aitunnel: 'gpt-4o-mini',
   custom: 'gpt-4o-mini',
 };
 /** Services that speak the same "chat completions" language as OpenAI. */
@@ -73,6 +82,8 @@ const BASE: Partial<Record<Provider, string>> = {
   perplexity: 'https://api.perplexity.ai',
   together: 'https://api.together.xyz/v1',
   huggingface: 'https://router.huggingface.co/v1',
+  vsegpt: 'https://api.vsegpt.ru/v1',
+  aitunnel: 'https://api.aitunnel.ru/v1',
 };
 /** Small, fast models are enough here. When the usual one is gone, the first of these the key can use is taken. */
 const SMALL = [/haiku/, /flash/, /-mini/, /nano/, /llama-3\.\d-70b/, /deepseek-chat/];
