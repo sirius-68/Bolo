@@ -2,7 +2,8 @@
 // of worker they need and a short title for the request. The app tries its own word list first and only asks
 // here when that finds nothing, so most searches never reach an AI model.
 // The AI key stays here (function secret AI_API_KEY, set by the deploy workflow); the app never sees it.
-// Which service the key belongs to is read from the key itself. Optional secret AI_MODEL picks the model.
+// Which service the key belongs to is read from the key itself. Optional secrets: AI_MODEL picks the model,
+// AI_BASE_URL points at any other service that speaks OpenAI's chat format.
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 
 const cors = {
@@ -15,14 +16,46 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 /** The trades people can be matched to (the app's categories). */
 const TRADES = ['Delivery', 'Plumber', 'Electrician', 'Cleaner', 'Mechanic', 'Developer', 'Designer', 'Teacher', 'Driver', 'Accountant', 'Sales', 'Admin', 'Cook', 'Nurse', 'Builder', 'Hairdresser', 'Tailor', 'Security', 'Writer', 'Events', 'Nanny', 'Farmer', 'Engineer', 'Coach'];
 
-type Provider = 'anthropic' | 'openai' | 'openrouter' | 'google';
+type Provider = 'anthropic' | 'openai' | 'openrouter' | 'google' | 'groq' | 'xai' | 'deepseek' | 'custom';
+/** Which service a key belongs to, read from its shape. A key is only ever sent to the service it belongs to. */
 function providerOf(key: string): Provider {
+  if (Deno.env.get('AI_BASE_URL')) return 'custom';
   if (key.startsWith('sk-ant-')) return 'anthropic';
   if (key.startsWith('sk-or-')) return 'openrouter';
   if (key.startsWith('AIza')) return 'google';
+  if (key.startsWith('gsk_')) return 'groq';
+  if (key.startsWith('xai-')) return 'xai';
+  if (/^sk-[0-9a-f]{32}$/.test(key)) return 'deepseek';
   return 'openai';
 }
-const DEFAULT_MODEL: Record<Provider, string> = { anthropic: 'claude-haiku-5-5', openai: 'gpt-4o-mini', openrouter: 'anthropic/claude-haiku-5.5', google: 'gemini-2.0-flash' };
+const DEFAULT_MODEL: Record<Provider, string> = {
+  anthropic: 'claude-haiku-5-5',
+  openai: 'gpt-4o-mini',
+  openrouter: 'anthropic/claude-haiku-5.5',
+  google: 'gemini-2.0-flash',
+  groq: 'llama-3.3-70b-versatile',
+  xai: 'grok-3-mini',
+  deepseek: 'deepseek-chat',
+  custom: 'gpt-4o-mini',
+};
+/** Services that speak the same "chat completions" language as OpenAI. */
+const BASE: Partial<Record<Provider, string>> = {
+  openai: 'https://api.openai.com/v1',
+  openrouter: 'https://openrouter.ai/api/v1',
+  groq: 'https://api.groq.com/openai/v1',
+  xai: 'https://api.x.ai/v1',
+  deepseek: 'https://api.deepseek.com/v1',
+};
+/** Small, fast models are enough here. When the usual one is gone, the first of these the key can use is taken. */
+const SMALL = [/haiku/, /flash/, /-mini/, /nano/, /llama-3\.\d-70b/, /deepseek-chat/];
+
+/** A failure worth explaining: the service, its status and its own short code. Never the key or the person's words. */
+class Why extends Error {
+  constructor(public status: number, public code: string) {
+    super(`${status} ${code}`.trim());
+  }
+}
+const short = (v: unknown) => String(v || '').replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 40);
 
 const SYSTEM = `You match what a person needs to one kind of worker, for an app that finds local workers in Cameroon and elsewhere.
 People write or speak in English, French or Cameroonian Pidgin, often with mistakes from speech recognition.
@@ -39,7 +72,7 @@ async function ask(provider: Provider, key: string, model: string, text: string)
       body: JSON.stringify({ model, max_tokens: 80, temperature: 0, system: SYSTEM, messages: [{ role: 'user', content: user }] }),
     });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(`anthropic ${r.status} ${String(j?.error?.type || '')}`);
+    if (!r.ok) throw new Why(r.status, short(j?.error?.type));
     return String(j?.content?.[0]?.text || '');
   }
   if (provider === 'google') {
@@ -49,17 +82,31 @@ async function ask(provider: Provider, key: string, model: string, text: string)
       body: JSON.stringify({ systemInstruction: { parts: [{ text: SYSTEM }] }, contents: [{ role: 'user', parts: [{ text: user }] }], generationConfig: { temperature: 0, maxOutputTokens: 80 } }),
     });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(`google ${r.status} ${String(j?.error?.status || '')}`);
+    if (!r.ok) throw new Why(r.status, short(j?.error?.status));
     return String(j?.candidates?.[0]?.content?.parts?.[0]?.text || '');
   }
-  const base = provider === 'openrouter' ? 'https://openrouter.ai/api/v1' : 'https://api.openai.com/v1';
-  const r = await fetch(`${base}/chat/completions`, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ model, max_tokens: 80, temperature: 0, messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: user }] }),
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(`${provider} ${r.status} ${String(j?.error?.code || j?.error?.type || '')}`);
+  const base = (provider === 'custom' ? String(Deno.env.get('AI_BASE_URL')) : BASE[provider]!).replace(/\/+$/, '');
+  const headers = { authorization: `Bearer ${key}`, 'content-type': 'application/json' };
+  const call = (m: string) =>
+    fetch(`${base}/chat/completions`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ model: m, ...(provider === 'openai' ? { max_completion_tokens: 400 } : { max_tokens: 80, temperature: 0 }), messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: user }] }),
+    });
+  let r = await call(model);
+  let j = await r.json().catch(() => ({}));
+  const code = () => short(j?.error?.code || j?.error?.type || j?.error?.status);
+  if (!r.ok && (r.status === 404 || /model/.test(code()))) {
+    // the usual model is not offered to this key: take a small one that is
+    const l = await fetch(`${base}/models`, { headers }).then((x) => x.json()).catch(() => ({}));
+    const ids: string[] = (Array.isArray(l?.data) ? l.data : []).map((x: any) => String(x?.id || ''));
+    const pick = SMALL.map((re) => ids.find((id) => re.test(id) && !/audio|realtime|transcribe|tts|image|search|embed|whisper|guard/.test(id))).find(Boolean);
+    if (pick && pick !== model) {
+      r = await call(pick);
+      j = await r.json().catch(() => ({}));
+    }
+  }
+  if (!r.ok) throw new Why(r.status, code());
   return String(j?.choices?.[0]?.message?.content || '');
 }
 
@@ -110,7 +157,8 @@ Deno.serve(async (req) => {
     return json({ ...out, by: provider });
   } catch (e) {
     // never the key, never the person's words: only which service and what kind of failure
-    console.warn('understand failed:', String((e as Error)?.message || e).slice(0, 120));
-    return json({ error: 'unavailable', by: provider }, 502);
+    const why = e instanceof Why ? e.message : 'no_answer';
+    console.warn('understand failed:', provider, why);
+    return json({ error: 'unavailable', by: provider, why }, 502);
   }
 });

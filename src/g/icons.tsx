@@ -28,10 +28,20 @@ const LINE: Record<string, Shape[]> = {
   camera: ['M4 8.5A2.5 2.5 0 0 1 6.5 6h1.8l1.5-2h4.4l1.5 2h1.8A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z', ['c', 12, 12.5, 3.5]],
   heart: ['M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z'],
   image: [['r', 3.5, 4.5, 17, 15, 2.5], ['c', 9, 10, 1.8], 'M20.5 16l-5-5-8.5 8.5'],
+  speaker: ['M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z', 'M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11'],
+  mute: [['r', 9, 3, 6, 11, 3], 'M5 11a7 7 0 0 0 14 0M12 18v3M4 4l16 16'],
+  send: ['M5 12h13M13 6l6 6-6 6'],
+  plus: ['M12 5v14M5 12h14'],
+  video: [['r', 3, 6.5, 12, 11, 2.5], 'M15 10.5l6-3v9l-6-3z'],
+  clock: [['c', 12, 12, 8.5], 'M12 7.5V12l3 2'],
+  download: ['M12 4v11M7 10.5l5 5 5-5M5 20h14'],
+  warn: ['M12 4.5l8.5 15h-17z', 'M12 10v4.5M12 17h.01'],
+  checks: ['M2.5 12.5l4 4L15 8', 'M11 15.5l1.5 1.5L21.5 8'],
+  flip: ['M4 9a8 8 0 0 1 14-3.5L20 8M20 4v4h-4', 'M20 15a8 8 0 0 1-14 3.5L4 16M4 20v-4h4'],
   refresh: ['M20 11a8 8 0 0 0-14.3-4.3L4 8.5M4 4v4.5h4.5', 'M4 13a8 8 0 0 0 14.3 4.3L20 15.5M20 20v-4.5h-4.5'],
 };
 
-export type GIconName = keyof typeof LINE | 'spark' | 'star' | 'tick';
+export type GIconName = keyof typeof LINE | 'spark' | 'star' | 'tick' | 'dots' | 'play' | 'pause';
 
 /** One icon. `spark` (Pro), `star` and `tick` (ID checked) are filled; everything else is a line drawing. */
 export const GIcon = memo(function GIcon({ name, size = 20, color = '#000', sw = 2, fill = 'none' }: { name: GIconName; size?: number; color?: string; sw?: number; /** fills the shape too (a saved heart) */ fill?: string }) {
@@ -46,6 +56,20 @@ export const GIcon = memo(function GIcon({ name, size = 20, color = '#000', sw =
     return (
       <Svg width={size} height={size} viewBox="0 0 24 24">
         <Path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" fill={color === '#000' ? STAR : color} />
+      </Svg>
+    );
+  if (name === 'dots')
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24">
+        <Circle cx={5} cy={12} r={1.8} fill={color} />
+        <Circle cx={12} cy={12} r={1.8} fill={color} />
+        <Circle cx={19} cy={12} r={1.8} fill={color} />
+      </Svg>
+    );
+  if (name === 'play' || name === 'pause')
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24">
+        {name === 'play' ? <Path d="M8 5.5v13l11-6.5z" fill={color} /> : <Path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill={color} />}
       </Svg>
     );
   if (name === 'tick')

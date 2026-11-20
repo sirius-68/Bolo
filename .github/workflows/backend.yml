@@ -74,6 +74,7 @@ jobs:
       FCM_SERVICE_ACCOUNT: ${{ secrets.FCM_SERVICE_ACCOUNT }}
       AI_API_KEY: ${{ secrets.AI_API_KEY }}
       AI_MODEL: ${{ vars.AI_MODEL }}
+      AI_BASE_URL: ${{ vars.AI_BASE_URL }}
       REF: ${{ vars.STAGING_PROJECT_REF }}
     steps:
       - uses: actions/checkout@v4
@@ -102,7 +103,7 @@ jobs:
           # AI for understanding what people need (the "understand" function). The key lives only in the functions' secrets.
           AI_KEY=$(printf '%s' "${AI_API_KEY:-}" | tr -d '[:space:]')
           if [ -n "$AI_KEY" ]; then
-            supabase secrets set --yes --project-ref "$REF" "AI_API_KEY=$AI_KEY" ${AI_MODEL:+"AI_MODEL=$AI_MODEL"}
+            supabase secrets set --yes --project-ref "$REF" "AI_API_KEY=$AI_KEY" ${AI_MODEL:+"AI_MODEL=$AI_MODEL"} ${AI_BASE_URL:+"AI_BASE_URL=$AI_BASE_URL"}
           else
             echo "::warning::AI_API_KEY is not set: getit matches needs with its own word list only"
           fi
@@ -180,6 +181,7 @@ jobs:
       FCM_SERVICE_ACCOUNT: ${{ secrets.FCM_SERVICE_ACCOUNT }}
       AI_API_KEY: ${{ secrets.AI_API_KEY }}
       AI_MODEL: ${{ vars.AI_MODEL }}
+      AI_BASE_URL: ${{ vars.AI_BASE_URL }}
       REF: ${{ vars.PROD_PROJECT_REF }}
     steps:
       - uses: actions/checkout@v4
@@ -213,7 +215,7 @@ jobs:
           # AI for understanding what people need (the "understand" function). The key lives only in the functions' secrets.
           AI_KEY=$(printf '%s' "${AI_API_KEY:-}" | tr -d '[:space:]')
           if [ -n "$AI_KEY" ]; then
-            supabase secrets set --yes --project-ref "$REF" "AI_API_KEY=$AI_KEY" ${AI_MODEL:+"AI_MODEL=$AI_MODEL"}
+            supabase secrets set --yes --project-ref "$REF" "AI_API_KEY=$AI_KEY" ${AI_MODEL:+"AI_MODEL=$AI_MODEL"} ${AI_BASE_URL:+"AI_BASE_URL=$AI_BASE_URL"}
           else
             echo "::warning::AI_API_KEY is not set: getit matches needs with its own word list only"
           fi
