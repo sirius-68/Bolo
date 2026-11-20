@@ -7,6 +7,10 @@ on:
         description: "APK file name in the latest-build release (empty = newest)"
         required: false
         default: ""
+      flows:
+        description: "Which tours, separated by spaces (empty = all four)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -15,7 +19,11 @@ jobs:
   qa:
     name: Emulator UI tour
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 100
+    env:
+      # the APK in latest-build is a test build (test server): the tours may make accounts
+      TOUR_SIGNUP: "1"
+      ONLY: ${{ inputs.flows }}
     steps:
       - uses: actions/checkout@v4
       - name: Download APK

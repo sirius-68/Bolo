@@ -17,10 +17,10 @@ name: getit, one job from request to rating (the worker sends a price, the clien
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - extendedWaitUntil:
-    visible: "Leaking kitchen sink"
+    visible: "Leaking sink ${RUN.slice(-4)}"
     timeout: 30000
 - takeScreenshot: j01-worker-home-with-job
-- tapOn: "Leaking kitchen sink"
+- tapOn: "Leaking sink ${RUN.slice(-4)}"
 - extendedWaitUntil:
     visible:
       id: "wreq-price"
@@ -69,10 +69,10 @@ name: getit, one job from request to rating (the worker sends a price, the clien
 - tapOn:
     id: "tab-jobs"
 - extendedWaitUntil:
-    visible: "Leaking kitchen sink"
+    visible: "Leaking sink ${RUN.slice(-4)}"
     timeout: 30000
 - takeScreenshot: j06-client-jobs
-- tapOn: "Leaking kitchen sink"
+- tapOn: "Leaking sink ${RUN.slice(-4)}"
 - extendedWaitUntil:
     visible:
       id: "asked-status"
@@ -128,10 +128,10 @@ name: getit, one job from request to rating (the worker sends a price, the clien
 - tapOn:
     id: "tab-jobs"
 - extendedWaitUntil:
-    visible: "Leaking kitchen sink"
+    visible: "Leaking sink ${RUN.slice(-4)}"
     timeout: 30000
 - takeScreenshot: j13-worker-jobs
-- tapOn: "Leaking kitchen sink"
+- tapOn: "Leaking sink ${RUN.slice(-4)}"
 - extendedWaitUntil:
     visible:
       id: "tk-start"
@@ -178,9 +178,9 @@ name: getit, one job from request to rating (the worker sends a price, the clien
 - tapOn:
     id: "tab-jobs"
 - extendedWaitUntil:
-    visible: "Leaking kitchen sink"
+    visible: "Leaking sink ${RUN.slice(-4)}"
     timeout: 30000
-- tapOn: "Leaking kitchen sink"
+- tapOn: "Leaking sink ${RUN.slice(-4)}"
 - extendedWaitUntil:
     visible:
       id: "tk-confirm"
@@ -233,9 +233,9 @@ name: getit, one job from request to rating (the worker sends a price, the clien
 - takeScreenshot: j24-worker-earnings
 - tapOn: "Done"
 - extendedWaitUntil:
-    visible: "Leaking kitchen sink"
+    visible: "Leaking sink ${RUN.slice(-4)}"
     timeout: 30000
-- tapOn: "Leaking kitchen sink"
+- tapOn: "Leaking sink ${RUN.slice(-4)}"
 - extendedWaitUntil:
     visible:
       id: "tk-rate"

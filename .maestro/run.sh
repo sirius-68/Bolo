@@ -31,6 +31,8 @@ cold_start() {
 # Test builds talk to the test server: a worker joins, someone hiring finds and messages them and asks for prices,
 # then the two do one whole job together (price, booking, on the way, done, rated).
 [ -n "$TOUR_SIGNUP" ] && FLOWS="signedout g1-work g2-hire g3-job"
+# only some of them, when asked (the tours-only workflow)
+[ -n "$ONLY" ] && FLOWS="$ONLY"
 for f in $FLOWS; do
   mkdir -p qa-out/$f
   (cd qa-out/$f && maestro test -e QA_EMAIL="$QA_EMAIL" -e QA_PASSWORD="$QA_PASSWORD" \

@@ -120,6 +120,12 @@ name: getit, someone hiring (find the plumber, profile, account, chat, call, ask
     visible:
       id: "req-need"
     timeout: 10000
+# a title of its own for this run, so the next tour finds exactly this request
+- tapOn:
+    id: "req-need"
+- eraseText: 40
+- inputText: "Leaking sink ${RUN.slice(-4)}"
+- hideKeyboard
 - tapOn:
     id: "req-details"
 - inputText: "Water drips under the sink"
