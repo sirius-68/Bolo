@@ -271,7 +271,12 @@ async function loadPosts() {
   ]);
   const rows = [...(mine.data || []), ...(recent.data || [])].filter((r: any, i, a) => a.findIndex((x: any) => x.id === r.id) === i);
   await Promise.all([ensurePeople(rows.map((r: any) => r.author_id)), ensureBiz(rows.map((r: any) => r.business_id))]);
-  db.POSTS = rows.filter((r: any) => !blockedIds().has(r.author_id)).map(postFrom).sort((a, b) => (b.at || 0) - (a.at || 0));
+  const fresh = rows.filter((r: any) => !blockedIds().has(r.author_id)).map(postFrom);
+  // A request I sent a moment ago may still be on its way to the server, or have arrived after this list was
+  // asked for: keep it, or it would vanish from the screen that is showing it.
+  const have = new Set(fresh.map((p) => p.id));
+  const mineNow = db.POSTS.filter((p) => !have.has(p.id) && (String(p.id).startsWith('tmp_') || ((p as any).tmp && Date.now() - (p.at || 0) < 60000)));
+  db.POSTS = [...mineNow, ...fresh].sort((a, b) => (b.at || 0) - (a.at || 0));
 }
 const BLOCKED = new Set<string>();
 const blockedIds = () => BLOCKED;

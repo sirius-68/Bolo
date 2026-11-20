@@ -38,6 +38,8 @@ for f in $FLOWS; do
   (cd qa-out/$f && maestro test -e QA_EMAIL="$QA_EMAIL" -e QA_PASSWORD="$QA_PASSWORD" \
     -e RUN="$RUN" -e TOUR_PASSWORD="Tour-$RUN-pw" -e HIRE_EMAIL="getit-tour-$RUN-h@mailinator.com" -e WORK_EMAIL="getit-tour-$RUN-w@mailinator.com" \
     ../../.maestro/$f.yaml > maestro.log 2>&1; echo "exit=$?" >> maestro.log)
+  # one line per tour, read by the workflow's last step: a tour that stopped makes the run red
+  if grep -q '^exit=0$' qa-out/$f/maestro.log; then echo "pass $f" >> qa-out/tours.txt; else echo "FAIL $f · $(grep -a -m1 -E 'Element not found|Assertion is false' qa-out/$f/maestro.log | sed 's/.*CommandFailed: //' | cut -c1-140)" >> qa-out/tours.txt; fi
   adb exec-out screencap -p > qa-out/$f/zz-last.png || true
 done
 cold_start startup.txt

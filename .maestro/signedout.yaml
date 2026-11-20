@@ -56,7 +56,8 @@ name: getit, looking around without an account (splash, opening, where are you, 
           commands:
             - tapOn:
                 id: "area-use-typed"
-      - hideKeyboard
+      # choosing a town hides the keyboard by itself (hiding it again would press Back and close the sheet)
+      - waitForAnimationToEnd
       - tapOn:
           id: "area-home"
       - inputText: "Molyko"

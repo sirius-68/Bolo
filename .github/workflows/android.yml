@@ -282,3 +282,9 @@ jobs:
           cd /tmp/pub && git init -q && git checkout -q -b logs && git add -A
           git -c user.name=ci -c user.email=ci@bolo.app commit -qm "qa ${{ github.run_id }}" || true
           git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" logs:refs/heads/ci-logs/qa-${{ github.run_id }}
+      - name: Did every tour finish?
+        if: always()
+        run: |
+          [ -f qa-out/tours.txt ] || { echo "The tours did not run"; exit 1; }
+          cat qa-out/tours.txt | tee -a "$GITHUB_STEP_SUMMARY"
+          ! grep -q '^FAIL' qa-out/tours.txt

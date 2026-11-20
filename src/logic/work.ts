@@ -167,6 +167,8 @@ export function postJob(f: JobForm): Post {
       (job as any).tmp = job.id;
       job.id = data.id;
       job.photos = photos;
+      // the list may have been reloaded meanwhile: this request stays in it, once
+      db.POSTS = [job, ...db.POSTS.filter((p) => p !== job && p.id !== data.id)].sort((a, b) => (b.at || 0) - (a.at || 0));
       bump();
     } catch (e) {
       db.POSTS = db.POSTS.filter((p) => p !== job);

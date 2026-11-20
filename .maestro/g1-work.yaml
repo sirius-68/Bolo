@@ -63,7 +63,8 @@ name: getit, a new worker (skill, how you work, number, you're on getit, prices,
     commands:
       - tapOn:
           id: "area-use-typed"
-- hideKeyboard
+# choosing a town hides the keyboard by itself (hiding it again would press Back and close the sheet)
+- waitForAnimationToEnd
 - tapOn:
     id: "area-done"
 - waitForAnimationToEnd
