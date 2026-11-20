@@ -154,10 +154,18 @@ name: getit, looking around without an account (splash, opening, where are you, 
       id: "story-close"
     timeout: 8000
 - takeScreenshot: g15-whats-new
+# no second tap: the close button sits where "You" is on the home screen
 - tapOn:
     id: "story-close"
-- tapOn:
-    id: "home-me"
+    retryTapIfNoChange: false
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      notVisible:
+        id: "me-help"
+    commands:
+      - tapOn:
+          id: "home-me"
 - tapOn:
     id: "me-help"
 - waitForAnimationToEnd

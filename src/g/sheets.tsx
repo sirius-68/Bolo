@@ -203,7 +203,12 @@ function RequestSheet({ o }: { o: RequestFor }) {
         </Hint>
       )}
       <SheetFoot>
-        <Big testID="req-send" title={old ? 'Save changes' : `Ask ${many} near you`} loading={busy} quiet={!ok} onPress={send} />
+        {/* no area yet: the button says so and opens the area picker (the reason may be out of sight) */}
+        {where !== 'online' && !place ? (
+          <Big testID="req-send" title="Choose your area to continue" quiet={need.trim().length < 3} onPress={() => need.trim().length >= 3 && openArea(() => openRequest({ ...o, need }))} />
+        ) : (
+          <Big testID="req-send" title={old ? 'Save changes' : `Ask ${many} near you`} loading={busy} quiet={!ok} onPress={send} />
+        )}
       </SheetFoot>
     </View>
   );

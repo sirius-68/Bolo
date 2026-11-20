@@ -19,7 +19,7 @@ import { loadAuthCaps } from '../src/g/auth';
 import { locate } from '../src/logic/here';
 import { StoryHost } from '../src/g/Stories';
 import { Linking, Platform, Pressable, Text, View } from 'react-native';
-import { resetTo, setHere } from '../src/logic/nav';
+import { hereNow, resetTo, setHere } from '../src/logic/nav';
 import { report, setMonitorUser, startMonitoring } from '../src/lib/monitor';
 import { serviceNotice, updateRequired } from '../src/logic/remote';
 import { NoticeHost, confirm } from '../src/g/notice';
@@ -175,13 +175,15 @@ export default function Root() {
       const b = bk(id);
       if (b && b.client === 'me') router.push(`/track/${id}` as any);
     });
-    // a new job arrives while a worker has the app open: show it at once
+    // A new job arrives while a worker has the app open: show it at once, but only on the main screens.
+    // Mid-way through something (signing up, a chat, a call, a form) it waits in Inbox instead.
+    const calm = () => /^\/(find|jobs|inbox)?$/.test(hereNow()) && !gsheet.isOpen();
     const n = on('notif', async (row: any) => {
-      if (row?.type !== 'newjob' || !working() || gsheet.isOpen()) return;
+      if (row?.type !== 'newjob' || !working() || !calm()) return;
       const id = row?.target?.id;
       if (!id) return;
       if (!postById(id)) await loadPost(id).catch(() => {});
-      if (postById(id)) openJobAlert(id);
+      if (postById(id) && calm()) openJobAlert(id);
     });
     return () => {
       a();
