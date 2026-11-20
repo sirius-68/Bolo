@@ -46,6 +46,10 @@ export function WorkerProfile({ id }: { id: string }) {
     .slice(0, 9);
   const reviews = db.REVIEWS[id] || [];
   const where = [p.role !== 'Member' ? p.role : '', p.area, kmText(p) ? `${kmText(p)} away` : ''].filter(Boolean).join(' · ');
+  // how they work, as they said when joining (older profiles have none of this, and show nothing)
+  const ar = (profileRaw(id)?.area || {}) as { ways?: string[]; radius?: number };
+  const ways = Array.isArray(ar.ways) ? ar.ways : [];
+  const how = [ways.includes('go') ? (ar.radius && ar.radius < 50 ? `Comes to you, up to ${ar.radius} km` : 'Comes to you') : '', ways.includes('come') ? 'Has a shop' : '', ways.includes('online') ? 'Works online' : ''].filter(Boolean).join(' · ');
   const stat = (value: string, label: string) => (
     <View style={{ flex: 1, paddingVertical: 10, paddingHorizontal: 6, borderRadius: 16, backgroundColor: t.card, borderWidth: 1, borderColor: t.line, alignItems: 'center' }}>
       <T s={17} w={8}>
@@ -92,6 +96,11 @@ export function WorkerProfile({ id }: { id: string }) {
           {where ? (
             <T s={14} c={t.muted} center style={{ marginTop: 4 }}>
               {where}
+            </T>
+          ) : null}
+          {how ? (
+            <T s={13} w={7} c={t.accent} center style={{ marginTop: 6 }}>
+              {how}
             </T>
           ) : null}
         </View>
