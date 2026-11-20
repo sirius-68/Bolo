@@ -374,6 +374,35 @@ export const gsheet = {
   },
   isOpen: () => !!sheetState.render,
 };
+/* The part of a sheet that never scrolls away: its main button. A form taller than the phone would otherwise
+   hide "Send" under the fold. Put <SheetFoot>…</SheetFoot> anywhere in the sheet's content. */
+let footNode: ReactNode = null;
+const footSubs = new Set<() => void>();
+const footEmit = () => footSubs.forEach((f) => f());
+export function SheetFoot({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    footNode = children;
+    footEmit();
+  });
+  useEffect(
+    () => () => {
+      footNode = null;
+      footEmit();
+    },
+    [],
+  );
+  return null;
+}
+function FootSlot({ pad }: { pad: number }) {
+  const [, tick] = useReducer((x: number) => x + 1, 0);
+  useEffect(() => {
+    footSubs.add(tick);
+    return () => {
+      footSubs.delete(tick);
+    };
+  }, []);
+  return <View style={{ paddingHorizontal: 24, paddingTop: footNode ? 10 : 0, paddingBottom: pad }}>{footNode}</View>;
+}
 /** Put once at the top of the app (see app/_layout.tsx). */
 export function GSheetHost() {
   const [, tick] = useReducer((x: number) => x + 1, 0);
@@ -447,9 +476,10 @@ export function GSheetHost() {
         }}
       >
         <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: t.line, alignSelf: 'center', marginTop: 10, marginBottom: 18 }} />
-        <ScrollView key={s.key} bounces={false} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: kb ? 20 : 30 + ins.bottom }}>
+        <ScrollView key={s.key} bounces={false} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={{ flexGrow: 0, flexShrink: 1 }} contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 12 }}>
           {s.render()}
         </ScrollView>
+        <FootSlot pad={kb ? 8 : 18 + ins.bottom} />
       </Animated.View>
     </Modal>
   );

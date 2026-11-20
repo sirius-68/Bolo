@@ -49,7 +49,7 @@ import { Details, Hint, RadioRow, SwitchCard } from './parts';
 import { withAccount } from './signin';
 import { RED, STAR, ft, useG } from './theme';
 import { tap } from './touch';
-import { Big, Face, Ghost, Input, Label, Link, MenuRow, Pill, Round, T, gsheet } from './ui';
+import { Big, Face, Ghost, Input, Label, Link, MenuRow, Pill, Round, SheetFoot, T, gsheet } from './ui';
 
 /** Close the sheet, then do something once it has slid away. */
 const then = (f: () => void) => {
@@ -202,7 +202,9 @@ function RequestSheet({ o }: { o: RequestFor }) {
           {where === 'online' ? 'You work together by chat and calls on getit. Agree the price before any work starts.' : `Workers only see “${place}” until you book one of them. You give the exact place by chat or call.`}
         </Hint>
       )}
-      <Big testID="req-send" title={old ? 'Save changes' : `Ask ${many} near you`} loading={busy} quiet={!ok} onPress={send} style={{ marginTop: 16 }} />
+      <SheetFoot>
+        <Big testID="req-send" title={old ? 'Save changes' : `Ask ${many} near you`} loading={busy} quiet={!ok} onPress={send} />
+      </SheetFoot>
     </View>
   );
 }
