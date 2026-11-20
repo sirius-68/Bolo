@@ -40,6 +40,27 @@ name: getit, signed out (opening screen, home, what do you need, workers, tabs, 
       id: "workers-prices"
     timeout: 20000
 - takeScreenshot: g05-workers-plumber
+# when someone offers this trade: their profile, as a client sees it
+- runFlow:
+    when:
+      visible:
+        id: "workers-top"
+    commands:
+      - tapOn:
+          id: "workers-top"
+      - extendedWaitUntil:
+          visible:
+            id: "profile-call"
+          timeout: 10000
+      - takeScreenshot: g05b-profile
+      - scrollUntilVisible:
+          element:
+            id: "profile-book"
+          direction: DOWN
+          timeout: 8000
+      - takeScreenshot: g05c-profile-bottom
+      - tapOn:
+          id: "profile-back"
 - scrollUntilVisible:
     element:
       id: "workers-change"

@@ -18,8 +18,18 @@ import { OppCard, ReqPost, PostCard } from '../../src/components/cards';
 import { router } from 'expo-router';
 import { PersonCV } from '../../src/components/cv';
 import { EmptyTab, ReviewsPanel } from '../../src/components/PersonReviews';
+import { WorkerProfile } from '../../src/g/WorkerProfile';
 
+/** A worker opens in the getit design. Clients, business pages and groups keep the earlier screen for now. */
 export default function Profile() {
+  useLive();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const p = id && id !== 'me' ? db.P[id] : undefined;
+  if (p && !p.biz && !p.client && !p.group && !isGone(id)) return <WorkerProfile id={id} />;
+  return <OldProfile />;
+}
+
+function OldProfile() {
   useLive();
   const { id } = useLocalSearchParams<{ id: string }>();
   const p = P(id);

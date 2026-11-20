@@ -26,13 +26,15 @@ const LINE: Record<string, Shape[]> = {
   jobs: [['r', 3, 7, 18, 13, 2.5], 'M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18'],
   calendar: [['r', 3.5, 5, 17, 15, 2.5], 'M8 3v4M16 3v4M3.5 10h17'],
   camera: ['M4 8.5A2.5 2.5 0 0 1 6.5 6h1.8l1.5-2h4.4l1.5 2h1.8A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z', ['c', 12, 12.5, 3.5]],
+  heart: ['M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z'],
+  image: [['r', 3.5, 4.5, 17, 15, 2.5], ['c', 9, 10, 1.8], 'M20.5 16l-5-5-8.5 8.5'],
   refresh: ['M20 11a8 8 0 0 0-14.3-4.3L4 8.5M4 4v4.5h4.5', 'M4 13a8 8 0 0 0 14.3 4.3L20 15.5M20 20v-4.5h-4.5'],
 };
 
 export type GIconName = keyof typeof LINE | 'spark' | 'star' | 'tick';
 
 /** One icon. `spark` (Pro), `star` and `tick` (ID checked) are filled; everything else is a line drawing. */
-export const GIcon = memo(function GIcon({ name, size = 20, color = '#000', sw = 2 }: { name: GIconName; size?: number; color?: string; sw?: number }) {
+export const GIcon = memo(function GIcon({ name, size = 20, color = '#000', sw = 2, fill = 'none' }: { name: GIconName; size?: number; color?: string; sw?: number; /** fills the shape too (a saved heart) */ fill?: string }) {
   if (name === 'spark')
     return (
       <Svg width={size} height={size} viewBox="0 0 24 24">
@@ -58,7 +60,7 @@ export const GIcon = memo(function GIcon({ name, size = 20, color = '#000', sw =
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       {shapes.map((s, i) =>
         typeof s === 'string' ? (
-          <Path key={i} d={s} stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          <Path key={i} d={s} stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill={fill} />
         ) : s[0] === 'c' ? (
           <Circle key={i} cx={s[1]} cy={s[2]} r={s[3]} stroke={color} strokeWidth={sw} fill="none" />
         ) : (

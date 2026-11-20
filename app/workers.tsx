@@ -8,22 +8,12 @@ import { fname } from '../src/logic/core';
 import { loadReviewsOf } from '../src/logic/server';
 import { startCall } from '../src/logic/calls';
 import { openChat } from '../src/sheets/chat';
-import { toast } from '../src/ui/overlay';
 import { tap } from '../src/ui/kit';
+import { needAccount } from '../src/g/account';
 import { areaLabel, findWorkers, kmText, localWorkers, plural } from '../src/g/data';
 import { GIcon } from '../src/g/icons';
 import { BRAND, useG } from '../src/g/theme';
 import { Big, Face, Link, Round, Screen, T } from '../src/g/ui';
-
-/** Contacting someone needs an account: say so, and take people to create one (free, a minute). */
-function needAccount(what: string) {
-  if (db.loggedIn) return false;
-  db.user.intents = ['hire'];
-  db.user.bizOnly = false;
-  toast(`Create your free account to ${what}`);
-  router.push('/signup');
-  return true;
-}
 
 /** Workers found for a need: the best match on top with one tap to call, the others below. */
 export default function Workers() {
