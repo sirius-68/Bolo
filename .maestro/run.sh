@@ -34,6 +34,8 @@ cold_start() {
 # together, business, the two sweeps) were written for the screens before the redesign; each comes back here as
 # its flow is rebuilt. Set OLD_TOURS=1 to run them anyway.
 [ -z "$OLD_TOURS" ] && FLOWS="signedout"
+# test builds (staging): a worker signs up and goes available, then someone hiring finds and messages them
+[ -z "$OLD_TOURS" ] && [ -n "$TOUR_SIGNUP" ] && FLOWS="signedout g1-work g2-hire"
 [ -n "$OLD_TOURS" ] && [ -n "$TOUR_SIGNUP" ] && FLOWS="$FLOWS t1-hire-signup t2-work-signup t3-hire-accepts t4-work-replies t5-business-signup t6-sweep-regular t7-sweep-business"
 for f in $FLOWS; do
   mkdir -p qa-out/$f

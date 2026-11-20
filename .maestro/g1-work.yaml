@@ -1,0 +1,137 @@
+appId: cm.bolo.app
+name: getit, a new worker (start screen, sign-up, skills, working home, pause, you)
+---
+- launchApp:
+    clearState: true
+- runFlow: dismiss.yaml
+- extendedWaitUntil:
+    visible:
+      id: "intro-work"
+    timeout: 40000
+- tapOn:
+    id: "intro-work"
+- extendedWaitUntil:
+    visible:
+      id: "wland-start"
+    timeout: 10000
+- tapOn:
+    id: "wland-start"
+- extendedWaitUntil:
+    visible:
+      id: "su-submit"
+    timeout: 10000
+- tapOn:
+    id: "su-name"
+- inputText: "Tour Wanda"
+- hideKeyboard
+- tapOn:
+    id: "su-contact"
+- inputText: ${WORK_EMAIL}
+- hideKeyboard
+- tapOn:
+    id: "su-pwd"
+- inputText: ${TOUR_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "su-terms"
+- takeScreenshot: w01-signup
+- tapOn:
+    id: "su-submit"
+# staging confirms test accounts at once, so the next screen is the profile step
+- extendedWaitUntil:
+    visible:
+      id: "setup-continue"
+    timeout: 40000
+- takeScreenshot: w02-setup
+- tapOn:
+    id: "setup-continue"
+- extendedWaitUntil:
+    visible:
+      id: "not-now"
+    timeout: 15000
+- takeScreenshot: w03-location
+- tapOn:
+    id: "not-now"
+- extendedWaitUntil:
+    visible: "What do you do?"
+    timeout: 15000
+- takeScreenshot: w04-jobtypes
+- scrollUntilVisible:
+    element:
+      id: "jt-Home repairs"
+    direction: DOWN
+- tapOn:
+    id: "jt-Home repairs"
+- scrollUntilVisible:
+    element:
+      id: "jt-continue"
+    direction: DOWN
+- tapOn:
+    id: "jt-continue"
+- extendedWaitUntil:
+    visible: "What are your skills?"
+    timeout: 15000
+- tapOn: "Search skills.*"
+- inputText: "Plumb"
+- hideKeyboard
+- tapOn: "Plumbing"
+- waitForAnimationToEnd
+- takeScreenshot: w05-skill-picked
+- scrollUntilVisible:
+    element:
+      id: "skills-continue"
+    direction: DOWN
+- tapOn:
+    id: "skills-continue"
+- extendedWaitUntil:
+    visible:
+      id: "idv-later"
+    timeout: 15000
+- takeScreenshot: w06-verify-id
+- tapOn:
+    id: "idv-later"
+- extendedWaitUntil:
+    visible:
+      id: "start-exploring"
+    timeout: 15000
+- takeScreenshot: w07-done
+- tapOn:
+    id: "start-exploring"
+# the working home: available, with jobs near you
+- extendedWaitUntil:
+    visible:
+      id: "home-big"
+    timeout: 20000
+- waitForAnimationToEnd
+- runFlow: dismiss.yaml
+- assertVisible: "You’re available"
+- takeScreenshot: w08-home-available
+- tapOn:
+    id: "home-big"
+- assertVisible: "You’re paused"
+- takeScreenshot: w09-home-paused
+- tapOn:
+    id: "home-big"
+- assertVisible: "You’re available"
+- tapOn:
+    id: "tab-jobs"
+- takeScreenshot: w10-jobs
+- tapOn:
+    id: "tab-inbox"
+- takeScreenshot: w11-inbox
+- tapOn: "Updates.*"
+- takeScreenshot: w12-updates
+- tapOn:
+    id: "tab-find"
+- tapOn:
+    id: "home-me"
+- extendedWaitUntil:
+    visible:
+      id: "me-mode"
+    timeout: 8000
+- takeScreenshot: w13-you
+# the profile editor from before the redesign, in getit's colours
+- tapOn:
+    id: "me-account"
+- waitForAnimationToEnd
+- takeScreenshot: w14-profile-editor

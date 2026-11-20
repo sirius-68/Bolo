@@ -1,0 +1,156 @@
+appId: cm.bolo.app
+name: getit, someone hiring (look signed out, open a worker, sign up to message, ask for prices)
+---
+- launchApp:
+    clearState: true
+- runFlow: dismiss.yaml
+- extendedWaitUntil:
+    visible:
+      id: "intro-continue"
+    timeout: 40000
+- tapOn:
+    id: "intro-continue"
+- extendedWaitUntil:
+    visible:
+      id: "home-big"
+    timeout: 15000
+- tapOn:
+    id: "home-big"
+- tapOn:
+    id: "need-Plumber"
+# the worker from the tour before offers plumbing
+- extendedWaitUntil:
+    visible:
+      id: "workers-top"
+    timeout: 20000
+- takeScreenshot: h01-workers
+- tapOn:
+    id: "workers-top"
+- extendedWaitUntil:
+    visible:
+      id: "profile-call"
+    timeout: 10000
+- takeScreenshot: h02-profile
+# messaging needs an account
+- tapOn:
+    id: "profile-chat"
+- extendedWaitUntil:
+    visible:
+      id: "su-submit"
+    timeout: 10000
+- tapOn:
+    id: "su-name"
+- inputText: "Tour Hira"
+- hideKeyboard
+- tapOn:
+    id: "su-contact"
+- inputText: ${HIRE_EMAIL}
+- hideKeyboard
+- tapOn:
+    id: "su-pwd"
+- inputText: ${TOUR_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "su-terms"
+- tapOn:
+    id: "su-submit"
+- extendedWaitUntil:
+    visible:
+      id: "setup-continue"
+    timeout: 40000
+- tapOn:
+    id: "setup-continue"
+- extendedWaitUntil:
+    visible:
+      id: "not-now"
+    timeout: 15000
+- tapOn:
+    id: "not-now"
+- extendedWaitUntil:
+    visible:
+      id: "start-exploring"
+    timeout: 15000
+- takeScreenshot: h03-done
+- tapOn:
+    id: "start-exploring"
+- extendedWaitUntil:
+    visible:
+      id: "home-big"
+    timeout: 20000
+- waitForAnimationToEnd
+- runFlow: dismiss.yaml
+- takeScreenshot: h04-home-signed-in
+# find the plumber again and write to them
+- tapOn:
+    id: "home-big"
+- tapOn:
+    id: "need-Plumber"
+- extendedWaitUntil:
+    visible:
+      id: "workers-chat"
+    timeout: 20000
+- tapOn:
+    id: "workers-chat"
+- extendedWaitUntil:
+    visible:
+      id: "chat-input"
+    timeout: 15000
+- tapOn:
+    id: "chat-input"
+- inputText: "Hello, my kitchen sink is leaking"
+- tapOn:
+    id: "chat-send"
+- waitForAnimationToEnd
+- hideKeyboard
+- takeScreenshot: h05-chat
+- back
+# ask several plumbers for a price
+- extendedWaitUntil:
+    visible:
+      id: "workers-prices"
+    timeout: 10000
+- tapOn:
+    id: "workers-prices"
+- extendedWaitUntil:
+    visible:
+      id: "pj-title"
+    timeout: 20000
+- takeScreenshot: h06-ask-prices
+- scrollUntilVisible:
+    element:
+      id: "pj-submit"
+    direction: DOWN
+- tapOn:
+    id: "pj-submit"
+- waitForAnimationToEnd
+- takeScreenshot: h07-request-sent
+- back
+- runFlow:
+    when:
+      visible:
+        id: "workers-close"
+    commands:
+      - tapOn:
+          id: "workers-close"
+- runFlow:
+    when:
+      visible:
+        id: "need-close"
+    commands:
+      - tapOn:
+          id: "need-close"
+- tapOn:
+    id: "tab-jobs"
+- takeScreenshot: h08-jobs
+- tapOn:
+    id: "tab-inbox"
+- takeScreenshot: h09-inbox
+- tapOn:
+    id: "tab-find"
+- tapOn:
+    id: "home-me"
+- extendedWaitUntil:
+    visible:
+      id: "me-mode"
+    timeout: 8000
+- takeScreenshot: h10-you
