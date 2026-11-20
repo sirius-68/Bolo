@@ -16,17 +16,33 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 /** The trades people can be matched to (the app's categories). */
 const TRADES = ['Delivery', 'Plumber', 'Electrician', 'Cleaner', 'Mechanic', 'Developer', 'Designer', 'Teacher', 'Driver', 'Accountant', 'Sales', 'Admin', 'Cook', 'Nurse', 'Builder', 'Hairdresser', 'Tailor', 'Security', 'Writer', 'Events', 'Nanny', 'Farmer', 'Engineer', 'Coach'];
 
-type Provider = 'anthropic' | 'openai' | 'openrouter' | 'google' | 'groq' | 'xai' | 'deepseek' | 'custom';
-/** Which service a key belongs to, read from its shape. A key is only ever sent to the service it belongs to. */
-function providerOf(key: string): Provider {
+type Provider = 'anthropic' | 'openai' | 'openrouter' | 'google' | 'groq' | 'xai' | 'deepseek' | 'cerebras' | 'nvidia' | 'fireworks' | 'perplexity' | 'together' | 'huggingface' | 'custom';
+/** Which service a key belongs to, read from its shape. A key is only ever sent to the service it belongs to:
+    one whose shape isn't recognised is sent nowhere (the answer then says what the key looks like, never the key). */
+function providerOf(key: string): Provider | null {
   if (Deno.env.get('AI_BASE_URL')) return 'custom';
   if (key.startsWith('sk-ant-')) return 'anthropic';
   if (key.startsWith('sk-or-')) return 'openrouter';
   if (key.startsWith('AIza')) return 'google';
   if (key.startsWith('gsk_')) return 'groq';
   if (key.startsWith('xai-')) return 'xai';
+  if (key.startsWith('csk-')) return 'cerebras';
+  if (key.startsWith('nvapi-')) return 'nvidia';
+  if (key.startsWith('fw_')) return 'fireworks';
+  if (key.startsWith('pplx-')) return 'perplexity';
+  if (key.startsWith('tgp_')) return 'together';
+  if (key.startsWith('hf_')) return 'huggingface';
   if (/^sk-[0-9a-f]{32}$/.test(key)) return 'deepseek';
-  return 'openai';
+  if (/^sk-(proj|svcacct|admin)-/.test(key) || /^sk-[A-Za-z0-9]{40,}$/.test(key)) return 'openai';
+  return null;
+}
+/** What a key looks like, without giving any of it away: a well-known beginning (or none), its length, its alphabet. */
+function shapeOf(key: string): string {
+  const known = ['sk-ant-', 'sk-or-', 'sk-proj-', 'sk-svcacct-', 'sk-admin-', 'sk-', 'AIza', 'AQ.', 'gsk_', 'xai-', 'hf_', 'pplx-', 'fw_', 'csk-', 'nvapi-', 'r8_', 'tgp_', 'key-', 'eyJ', 'ghp_', 'github_pat_', 'sbp_', 'Bearer'];
+  const pre = known.find((p) => key.startsWith(p)) || 'none';
+  const body = key.slice(pre === 'none' ? 0 : pre.length);
+  const kind = /^[0-9a-f]+$/.test(body) ? 'hex' : /^[0-9a-zA-Z]+$/.test(body) ? 'letters-digits' : /^[\w-]+$/.test(body) ? 'letters-digits-dashes' : /^[\w.-]+$/.test(body) ? 'with-dots' : 'other';
+  return `${pre}/${key.length}/${kind}`;
 }
 const DEFAULT_MODEL: Record<Provider, string> = {
   anthropic: 'claude-haiku-5-5',
@@ -36,6 +52,12 @@ const DEFAULT_MODEL: Record<Provider, string> = {
   groq: 'llama-3.3-70b-versatile',
   xai: 'grok-3-mini',
   deepseek: 'deepseek-chat',
+  cerebras: 'llama-3.3-70b',
+  nvidia: 'meta/llama-3.3-70b-instruct',
+  fireworks: 'accounts/fireworks/models/llama-v3p3-70b-instruct',
+  perplexity: 'sonar',
+  together: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
+  huggingface: 'meta-llama/Llama-3.3-70B-Instruct',
   custom: 'gpt-4o-mini',
 };
 /** Services that speak the same "chat completions" language as OpenAI. */
@@ -45,6 +67,12 @@ const BASE: Partial<Record<Provider, string>> = {
   groq: 'https://api.groq.com/openai/v1',
   xai: 'https://api.x.ai/v1',
   deepseek: 'https://api.deepseek.com/v1',
+  cerebras: 'https://api.cerebras.ai/v1',
+  nvidia: 'https://integrate.api.nvidia.com/v1',
+  fireworks: 'https://api.fireworks.ai/inference/v1',
+  perplexity: 'https://api.perplexity.ai',
+  together: 'https://api.together.xyz/v1',
+  huggingface: 'https://router.huggingface.co/v1',
 };
 /** Small, fast models are enough here. When the usual one is gone, the first of these the key can use is taken. */
 const SMALL = [/haiku/, /flash/, /-mini/, /nano/, /llama-3\.\d-70b/, /deepseek-chat/];
@@ -126,9 +154,11 @@ function parse(raw: string, said: string): { trade: string | null; title: string
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json({ error: 'Use POST' }, 405);
-  const key = (Deno.env.get('AI_API_KEY') || '').trim();
+  // (a key pasted with quotes or a "Bearer " in front still works)
+  const key = (Deno.env.get('AI_API_KEY') || '').trim().replace(/^Bearer\s+/i, '').replace(/^["']+|["']+$/g, '');
   if (!key) return json({ error: 'not_set_up' }, 503);
   const provider = providerOf(key);
+  if (!provider) return json({ error: 'unknown_key', shape: shapeOf(key) }, 503);
   const model = (Deno.env.get('AI_MODEL') || '').trim() || DEFAULT_MODEL[provider];
 
   let body: any = {};
@@ -159,6 +189,6 @@ Deno.serve(async (req) => {
     // never the key, never the person's words: only which service and what kind of failure
     const why = e instanceof Why ? e.message : 'no_answer';
     console.warn('understand failed:', provider, why);
-    return json({ error: 'unavailable', by: provider, why }, 502);
+    return json({ error: 'unavailable', by: provider, why, shape: shapeOf(key) }, 502);
   }
 });
