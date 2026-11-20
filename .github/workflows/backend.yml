@@ -32,9 +32,16 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      # Asking GitHub for the newest Supabase CLI without signing in hits a shared download limit
+      # ("rate limit exceeded"); asking with this run's own token doesn't.
+      - name: Newest Supabase CLI version
+        id: cli
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "v=$(gh api repos/supabase/cli/releases/latest --jq .tag_name 2>/dev/null | sed 's/^v//')" >> "$GITHUB_OUTPUT"
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: ${{ steps.cli.outputs.v || 'latest' }}
       - name: Start local Supabase
         run: |
           set -o pipefail
@@ -78,9 +85,16 @@ jobs:
       REF: ${{ vars.STAGING_PROJECT_REF }}
     steps:
       - uses: actions/checkout@v4
+      # Asking GitHub for the newest Supabase CLI without signing in hits a shared download limit
+      # ("rate limit exceeded"); asking with this run's own token doesn't.
+      - name: Newest Supabase CLI version
+        id: cli
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "v=$(gh api repos/supabase/cli/releases/latest --jq .tag_name 2>/dev/null | sed 's/^v//')" >> "$GITHUB_OUTPUT"
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: ${{ steps.cli.outputs.v || 'latest' }}
       - name: Apply migrations and functions
         run: |
           # CLI 3: the database password comes from SUPABASE_DB_PASSWORD; --remote targets the linked project
@@ -188,9 +202,16 @@ jobs:
       REF: ${{ vars.PROD_PROJECT_REF }}
     steps:
       - uses: actions/checkout@v4
+      # Asking GitHub for the newest Supabase CLI without signing in hits a shared download limit
+      # ("rate limit exceeded"); asking with this run's own token doesn't.
+      - name: Newest Supabase CLI version
+        id: cli
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "v=$(gh api repos/supabase/cli/releases/latest --jq .tag_name 2>/dev/null | sed 's/^v//')" >> "$GITHUB_OUTPUT"
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: ${{ steps.cli.outputs.v || 'latest' }}
       - name: Picture storage before this deploy (are photos open to everyone?)
         continue-on-error: true
         run: |
