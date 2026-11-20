@@ -25,11 +25,14 @@ patch() {
 # emails carry a code too. Copied from one project's settings to the other's: nothing is printed or stored.
 CUR=$(curl -sS "$API" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")
 if [ -n "${SMTP_FROM_REF:-}" ] && [ "$SMTP_FROM_REF" != "$REF" ] && [ -z "$(jq -r '.smtp_host // empty' <<< "$CUR")" ]; then
-  SRC=$(curl -sS "https://api.supabase.com/v1/projects/$SMTP_FROM_REF/config/auth" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")
-  pass=$(jq -r '.smtp_pass // empty' <<< "$SRC")
+  scode=$(curl -sS -o /tmp/src.json -w '%{http_code}' "https://api.supabase.com/v1/projects/$SMTP_FROM_REF/config/auth" -H "Authorization: Bearer ${SMTP_FROM_TOKEN:-$SUPABASE_ACCESS_TOKEN}")
+  SRC=$(cat /tmp/src.json); rm -f /tmp/src.json
+  pass=$(jq -r '.smtp_pass // empty' <<< "$SRC" 2>/dev/null || true)
   [ -n "$pass" ] && echo "::add-mask::$pass"
-  if [ -z "$(jq -r '.smtp_host // empty' <<< "$SRC")" ]; then
-    echo "::warning::The live server has no SMTP settings to copy"
+  if [ "$scode" != "200" ]; then
+    echo "::warning::Could not read the live server's settings (HTTP $scode: $(jq -r '.message // empty' <<< "$SRC" 2>/dev/null | head -c 200)). The test server's access token may not reach the live project."
+  elif [ -z "$(jq -r '.smtp_host // empty' <<< "$SRC")" ]; then
+    echo "::warning::The live server has no SMTP settings to copy (fields present: $(jq -r '[keys[] | select(startswith("smtp"))] | join(",")' <<< "$SRC"))"
   elif [ -z "$pass" ] || [[ "$pass" =~ ^[*•]+$ ]]; then
     echo "::warning::Supabase doesn't hand out the live server's SMTP password, so it can't be copied: set SMTP up once on the test server (Supabase → Authentication → Emails → SMTP, same Brevo details as the live server)"
   else
