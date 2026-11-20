@@ -128,6 +128,7 @@ jobs:
         env:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
           SMS_SENDER: ${{ vars.SMS_SENDER }}
+          MAIL_FROM: ${{ vars.MAIL_FROM }}
         run: bash scripts/auth-config.sh "$REF" staging
       - name: Admin panel owners (accounts listed in the ADMIN_EMAILS secret)
         env:
@@ -240,6 +241,7 @@ jobs:
         env:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
           SMS_SENDER: ${{ vars.SMS_SENDER }}
+          MAIL_FROM: ${{ vars.MAIL_FROM }}
         run: bash scripts/auth-config.sh "$REF"
       - name: Admin panel owners (accounts listed in the ADMIN_EMAILS secret)
         env:

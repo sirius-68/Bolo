@@ -399,6 +399,22 @@ if (ready) {
     if (!r.ok) throw new Error(`database query failed (HTTP ${r.status})`);
     return r.json();
   };
+  // Sign-in emails must be a 6-digit code, never a link. Supabase's own email is a link on the free plan, so
+  // our send-email function sends the code through Brevo. The address below is a test one: Brevo checks
+  // the request and drops it, so no email is really sent.
+  await step('sign-in emails carry a code (Supabase → send-email → Brevo)', async () => {
+    if (!TOKEN || !REF) return 'not checked: no access to the settings in this run';
+    const r = await fetch(`https://api.supabase.com/v1/projects/${REF}/config/auth`, { headers: { Authorization: `Bearer ${TOKEN}` } });
+    if (!r.ok) throw new Error(`sign-in settings not readable (HTTP ${r.status})`);
+    const cfg = await r.json();
+    expect(cfg.hook_send_email_enabled === true, 'the send-email function is not switched on, so emails still come from Supabase as a link (see the warnings of the deploy step)');
+    const email = `e2e-${run}-code@bolo-qa.com`;
+    const { error } = await client().auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+    await sql(`delete from auth.users where email = '${email}'`).catch(() => {});
+    if (error && /rate limit|too many|security purposes/i.test(error.message || '')) return `not sent this time: ${error.message}`;
+    if (error) throw error;
+    return `code email accepted · up to ${cfg.rate_limit_email_sent ?? '?'} emails an hour`;
+  });
   let isAdmin = false;
   await step('Ana is made an admin (test database only)', async () => {
     if (!TOKEN || !REF) throw new Error('no access to the test database settings in this run');
