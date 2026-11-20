@@ -7,7 +7,7 @@ import { toast } from '../../src/ui/overlay';
 import { postById } from '../../src/logic/core';
 import { openJob } from '../../src/sheets/work';
 
-/** Opened by a shared job link (bolo://job/<id>): shows that job on top of Home. */
+/** Opened by a shared job link (getit://job/<id>; links shared before the new name, bolo://job/<id>, still open): shows that job on top of Home. */
 export default function JobLink() {
   const { id } = useLocalSearchParams<{ id: string }>();
   useEffect(() => {

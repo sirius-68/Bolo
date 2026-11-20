@@ -1,4 +1,4 @@
-// bolo admin panel. A static page: it signs in like any bolo account and talks to the database with the
+// getit admin panel. A static page: it signs in like any getit account and talks to the database with the
 // public key. The database itself decides what an account may see: every admin_* function checks that the
 // signed-in account is in admin_users, so this file holds no secrets and grants nothing by itself.
 import { createClient } from './lib/supabase.js';
@@ -154,7 +154,7 @@ function downloadCSV(name, cols, rows) {
   };
   const text = [cols.map((c) => cell(c[0])).join(','), ...rows.map((r) => cols.map((c) => cell(c[1](r))).join(','))].join('\n');
   const url = URL.createObjectURL(new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' }));
-  const a = h('a', { href: url, download: `bolo-${name}-${new Date().toISOString().slice(0, 10)}.csv` });
+  const a = h('a', { href: url, download: `getit-${name}-${new Date().toISOString().slice(0, 10)}.csv` });
   document.body.append(a);
   a.click();
   a.remove();
@@ -166,7 +166,7 @@ const exportBtn = (onclick, label = 'Export CSV') => h('button', { class: 'btn s
 /* ------------------------------------------------------------------ data */
 if (!CFG.url || !CFG.key) {
   root.append(h('div', { class: 'login' }, h('div', { class: 'card login-card col' }, h('h2', {}, 'Not set up yet'), h('p', { class: 'muted' }, 'This copy of the panel has no database address. It is filled in when the site is published.'))));
-  throw new Error('bolo admin: missing config');
+  throw new Error('getit admin: missing config');
 }
 // The session lives in this browser tab only: closing the tab signs out.
 const sb = createClient(CFG.url, CFG.key, { auth: { storage: window.sessionStorage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
@@ -229,14 +229,14 @@ const ROLE_NOTE = {
 /* ------------------------------------------------------------------ sign in */
 function loginScreen(message) {
   const email = h('input', { class: 'input', type: 'email', autocomplete: 'username', placeholder: 'you@example.com', id: 'email' });
-  const pwd = h('input', { class: 'input', type: 'password', autocomplete: 'current-password', placeholder: 'Your bolo password', id: 'pwd' });
+  const pwd = h('input', { class: 'input', type: 'password', autocomplete: 'current-password', placeholder: 'Your getit password', id: 'pwd' });
   const err = h('p', { class: 'err' }, message || '');
   const btn = h('button', { class: 'btn y wide', type: 'submit' }, 'Sign in');
   const form = h(
     'form',
     { class: 'card login-card col' },
-    h('div', { class: 'brand' }, h('b', {}, 'b'), 'bolo', h('span', {}, 'admin')),
-    h('p', { class: 'muted small' }, 'Sign in with your own bolo account. Only accounts that the owner added as admins get in.'),
+    h('div', { class: 'brand' }, h('b', {}, 'g'), 'getit', h('span', {}, 'admin')),
+    h('p', { class: 'muted small' }, 'Sign in with your own getit account. Only accounts that the owner added as admins get in.'),
     h('div', { class: 'field' }, h('label', { for: 'email' }, 'Email'), email),
     h('div', { class: 'field' }, h('label', { for: 'pwd' }, 'Password'), pwd),
     err,
@@ -274,7 +274,7 @@ async function start() {
   }
   if (!state.me) {
     await sb.auth.signOut().catch(() => {});
-    return loginScreen('This account is not a bolo admin. Ask the owner to add you under Settings → Admins.');
+    return loginScreen('This account is not a getit admin. Ask the owner to add you under Settings → Admins.');
   }
   const wanted = location.hash.slice(1);
   if (VIEWS.some((v) => v[0] === wanted)) state.view = wanted;
@@ -313,7 +313,7 @@ function drawNav() {
   const role = state.me.role;
   put(
     side,
-    h('div', { class: 'brand' }, h('b', {}, 'b'), 'bolo', h('span', {}, 'admin'), CFG.env && CFG.env !== 'production' ? h('span', { class: 'env' }, CFG.env.toUpperCase()) : null),
+    h('div', { class: 'brand' }, h('b', {}, 'g'), 'getit', h('span', {}, 'admin'), CFG.env && CFG.env !== 'production' ? h('span', { class: 'env' }, CFG.env.toUpperCase()) : null),
     h('div', { class: 'me-card' }, avatar(state.me.name, null, 'sm'), h('div', { class: 'grow' }, h('div', { class: 'small clip strong' }, state.me.name), h('div', { class: 'tiny faint clip cap' }, role + ' account'))),
     GROUPS.map(([label, items]) => [
       label ? h('div', { class: 'nav-group' }, label) : null,
@@ -641,7 +641,7 @@ PAGES.overview = async () => {
   const q = o.queue || {};
   const first = String(state.me.name || '').split(/\s+/)[0] || 'there';
   const today = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
-  const period = h('div', { class: 'row between wrap' }, h('div', {}, h('h2', {}, 'bolo at a glance'), h('p', { class: 'muted small' }, `The last ${days} days, compared with the ${days} days before`)), tabs([[7, '7 days'], [30, '30 days'], [90, '90 days']], days, (d) => ((filters.days = d), store.set('days', d), show('overview'))));
+  const period = h('div', { class: 'row between wrap' }, h('div', {}, h('h2', {}, 'getit at a glance'), h('p', { class: 'muted small' }, `The last ${days} days, compared with the ${days} days before`)), tabs([[7, '7 days'], [30, '30 days'], [90, '90 days']], days, (d) => ((filters.days = d), store.set('days', d), show('overview'))));
 
   // coloured cards: the period's numbers, the trend, and a little line
   const S = st.error ? null : st;
@@ -723,7 +723,7 @@ PAGES.overview = async () => {
     h('section', { class: 'panel' }, h('div', { class: 'panel-head' }, h('h3', {}, 'Latest actions'), h('button', { class: 'link', onclick: () => show('activity') }, 'See all')), audit.length ? h('ol', { class: 'timeline' }, audit.slice(0, 7).map((l) => h('li', {}, h('div', { class: 'small' }, h('b', {}, l.actor), ' ', ACTIONS[l.action] || l.action), h('div', { class: 'tiny faint' }, ago(l.created_at) + (l.data?.note ? ' · ' + String(l.data.note).slice(0, 60) : ''))))) : h('p', { class: 'muted small' }, 'No actions yet.')),
     h('section', { class: 'panel' }, h('div', { class: 'panel-head' }, h('h3', {}, 'Admin team'), h('button', { class: 'link', onclick: () => show('settings') }, 'Manage')), h('div', { class: 'col tight' }, admins.slice(0, 6).map((a) => h('div', { class: 'row' }, avatar(a.name, null, 'xs'), h('div', { class: 'grow' }, h('div', { class: 'small clip' }, a.name), h('div', { class: 'tiny faint' }, 'last sign-in ' + ago(a.last_sign_in_at))), pill(a.role, a.role === 'owner' ? 'y' : ''))))),
   );
-  return [head(`Hello, ${first} 👋`, `${today} · here is what is happening on bolo`), h('div', { class: 'dash' }, h('div', { class: 'dash-main' }, period, withGap(kpis), withGap(tiles), charts), rail)];
+  return [head(`Hello, ${first} 👋`, `${today} · here is what is happening on getit`), h('div', { class: 'dash' }, h('div', { class: 'dash-main' }, period, withGap(kpis), withGap(tiles), charts), rail)];
 };
 
 PAGES.ids = async () => {
@@ -855,11 +855,11 @@ PAGES.feedback = async () => {
         { class: 'item' + (f.status === 'open' ? '' : ' done') },
         h('div', { class: 'row wrap' }, pill(TOPICS[f.topic] || f.topic, f.topic === 'safety' ? 'r' : 'o'), f.suspended ? pill('Suspended account', 'r') : null, h('span', { class: 'grow' }), h('span', { class: 'small faint' }, ago(f.created_at)), f.status === 'open' ? null : pill(f.status, 'g')),
         h('p', { class: 'pre' }, f.body),
-        kv([['From', f.name || 'No name'], ['Email', mail(f.email, 'Your message to bolo')], ['Phone', f.phone], ['App build', f.app_version], f.admin_note ? ['Team note', f.admin_note] : null]),
+        kv([['From', f.name || 'No name'], ['Email', mail(f.email, 'Your message to getit')], ['Phone', f.phone], ['App build', f.app_version], f.admin_note ? ['Team note', f.admin_note] : null]),
         h(
           'div',
           { class: 'row wrap' },
-          f.email ? h('a', { class: 'btn y', href: `mailto:${f.email}?subject=${encodeURIComponent('Your message to bolo')}` }, 'Reply by email') : null,
+          f.email ? h('a', { class: 'btn y', href: `mailto:${f.email}?subject=${encodeURIComponent('Your message to getit')}` }, 'Reply by email') : null,
           h('button', { class: 'btn', onclick: () => writeTo(f.user_id, f.name) }, 'Reply in the app'),
           f.status !== 'answered' ? h('button', { class: 'btn', onclick: set('answered', 'Mark answered') }, 'Mark answered') : null,
           f.status !== 'closed' ? h('button', { class: 'btn', onclick: set('closed', 'Close') }, 'Close') : null,
@@ -871,7 +871,7 @@ PAGES.feedback = async () => {
   }
   const exp = () => downloadCSV('feedback', [['When', (f) => f.created_at], ['Topic', (f) => TOPICS[f.topic] || f.topic], ['Status', (f) => f.status], ['Message', (f) => f.body], ['From', (f) => f.name], ['Email', (f) => f.email], ['Phone', (f) => f.phone], ['App build', (f) => f.app_version], ['Team note', (f) => f.admin_note]], rows);
   return [
-    head('Feedback', 'Messages people sent from Settings → Help → Write to bolo. Reply by email, or in the app (it arrives as a message from bolo).'),
+    head('Feedback', 'Messages people sent from Settings → Help → Write to getit. Reply by email, or in the app (it arrives as a message from getit).'),
     toolbar(tabs([['open', 'New'], ['answered', 'Answered'], ['closed', 'Closed'], ['all', 'All']], filters.feedback, (x) => ((filters.feedback = x), show('feedback'))), rows.length ? exportBtn(exp) : null),
     withGap(rows.length ? list : empty(filters.feedback === 'open' ? 'No new messages' : 'Nothing here')),
   ];
@@ -893,7 +893,7 @@ PAGES.experts = async () => {
         'div',
         { class: 'item' },
         h('div', { class: 'row' }, avatar(e.name), h('div', { class: 'grow' }, h('h3', { class: 'clip' }, e.name || 'No name'), h('div', { class: 'small muted clip' }, e.headline || d.headline || 'No headline')), pill(e.status, e.status === 'approved' ? 'g' : e.status === 'declined' ? 'r' : 'y')),
-        kv([['Email', mail(e.email, 'Your bolo expert application')], ['City', e.city], ['ID', e.verified ? 'Verified' : 'Not verified'], ['Experience', e.years ? e.years + ' years' : null], ['Skills', (e.skills || []).join(', ')], ['Updated', ago(e.updated_at)], e.note ? ['Note', e.note] : null]),
+        kv([['Email', mail(e.email, 'Your getit expert application')], ['City', e.city], ['ID', e.verified ? 'Verified' : 'Not verified'], ['Experience', e.years ? e.years + ' years' : null], ['Skills', (e.skills || []).join(', ')], ['Updated', ago(e.updated_at)], e.note ? ['Note', e.note] : null]),
         answers.length ? h('details', {}, h('summary', { class: 'small muted' }, 'Application answers'), withGap(kv(answers.map(([k, v]) => [k, typeof v === 'object' ? JSON.stringify(v) : String(v)])))) : null,
         h(
           'div',
@@ -990,11 +990,11 @@ PAGES.people = async () => {
   ];
 };
 const PEOPLE_COLS = [['Name', (p) => p.name], ['Email', (p) => p.email], ['Phone', (p) => p.phone], ['City', (p) => p.city], ['ID verified', (p) => (p.verified ? 'yes' : '')], ['Joined', (p) => p.created_at], ['Last sign-in', (p) => p.last_sign_in_at], ['Posts', (p) => p.posts], ['Reports', (p) => p.reports], ['Suspended', (p) => (p.suspended_at ? 'yes' : '')], ['Account id', (p) => p.id]];
-/** Write the same message to several accounts (each gets it from bolo; each is recorded). */
+/** Write the same message to several accounts (each gets it from getit; each is recorded). */
 function bulkMessage(list) {
   decide({
     title: `Write to ${list.length} account${list.length === 1 ? '' : 's'}`,
-    text: 'Each gets it in their Notifications, from “bolo”, with a pop-up on the phone.',
+    text: 'Each gets it in their Notifications, from “getit”, with a pop-up on the phone.',
     note: 'Your message (at least 5 characters)',
     required: true,
     ok: 'Send to all',
@@ -1010,7 +1010,7 @@ function bulkSuspend(list, on) {
   if (!todo.length) return toast(on ? 'They are all suspended already' : 'None of them is suspended', true);
   decide({
     title: `${on ? 'Suspend' : 'Restore'} ${todo.length} account${todo.length === 1 ? '' : 's'}?`,
-    text: on ? 'They leave the lists and can no longer post, comment, message, call or apply. Each is told why.' : 'They can use bolo normally again and are told so.',
+    text: on ? 'They leave the lists and can no longer post, comment, message, call or apply. Each is told why.' : 'They can use getit normally again and are told so.',
     note: on ? 'Reason shown to them' : undefined,
     required: on,
     danger: on,
@@ -1073,7 +1073,7 @@ PAGES.content = async () => {
 function suspend(id, name, after) {
   decide({
     title: `Suspend ${name || 'this account'}?`,
-    text: 'They disappear from the lists and can no longer post, comment, message, call or apply. They can still read, write to bolo and delete their account. You can restore them later.',
+    text: 'They disappear from the lists and can no longer post, comment, message, call or apply. They can still read, write to getit and delete their account. You can restore them later.',
     note: 'Reason shown to them, for example: asking for payment before the job',
     required: true,
     danger: true,
@@ -1085,11 +1085,11 @@ function suspend(id, name, after) {
     },
   });
 }
-/** Write to one account as the bolo team (to its business inbox when `business` is given). */
+/** Write to one account as the getit team (to its business inbox when `business` is given). */
 function writeTo(id, name, business) {
   decide({
     title: `Write to ${name || 'this account'}`,
-    text: business ? 'It arrives in the Notifications of this business page in the app, from “bolo”, with a pop-up on the phone.' : 'It arrives in their Notifications in the app, from “bolo”, with a pop-up on the phone. They can answer with “Reply to bolo”, which comes back under Feedback.',
+    text: business ? 'It arrives in the Notifications of this business page in the app, from “getit”, with a pop-up on the phone.' : 'It arrives in their Notifications in the app, from “getit”, with a pop-up on the phone. They can answer with “Reply to getit”, which comes back under Feedback.',
     note: 'Your message (at least 5 characters)',
     required: true,
     ok: 'Send',
@@ -1254,7 +1254,7 @@ async function person(id) {
               state.me.role === 'owner' ? h('button', { class: 'btn danger', onclick: () => closeAccount(id, p.name, () => (close(), show(state.view))) }, 'Close account') : null,
               mod
                 ? p.suspended_at
-                  ? h('button', { class: 'btn y', onclick: () => decide({ title: `Restore ${p.name || 'this account'}?`, text: 'They can use bolo normally again and are told so.', ok: 'Restore', run: async () => (await rpc('admin_suspend', { p_user: id, p_on: false, p_note: null }), toast('Restored'), load(), show(state.view)) }) }, 'Restore account')
+                  ? h('button', { class: 'btn y', onclick: () => decide({ title: `Restore ${p.name || 'this account'}?`, text: 'They can use getit normally again and are told so.', ok: 'Restore', run: async () => (await rpc('admin_suspend', { p_user: id, p_on: false, p_note: null }), toast('Restored'), load(), show(state.view)) }) }, 'Restore account')
                   : h('button', { class: 'btn danger', onclick: () => suspend(id, p.name, () => (load(), show(state.view))) }, 'Suspend account')
                 : null,
             ),
@@ -1270,9 +1270,9 @@ const AUDIENCES = [['all', 'Everyone'], ['workers', 'People who offer work (have
 PAGES.announce = async () => {
   const senior = isSenior();
   const log = (await rpc('admin_audit', { p_limit: 300 })).filter((l) => l.action === 'announce.send').slice(0, 20);
-  const text = h('textarea', { class: 'input', maxlength: '500', id: 'anText', placeholder: 'For example: New on bolo: you can now edit a job after posting it. Update the app to get it.' });
+  const text = h('textarea', { class: 'input', maxlength: '500', id: 'anText', placeholder: 'For example: New on getit: you can now edit a job after posting it. Update the app to get it.' });
   const count = h('span', { class: 'tiny faint num' }, '0 / 500');
-  const preview = h('div', { class: 'phone-note' }, h('div', { class: 'row' }, h('b', { class: 'pn-logo' }, 'b'), h('div', { class: 'grow' }, h('div', { class: 'small strong' }, 'bolo'), h('div', { class: 'tiny faint' }, 'now'))), h('p', { class: 'small pn-text' }, 'Your message appears here, as people will see it.'));
+  const preview = h('div', { class: 'phone-note' }, h('div', { class: 'row' }, h('b', { class: 'pn-logo' }, 'g'), h('div', { class: 'grow' }, h('div', { class: 'small strong' }, 'getit'), h('div', { class: 'tiny faint' }, 'now'))), h('p', { class: 'small pn-text' }, 'Your message appears here, as people will see it.'));
   text.addEventListener('input', () => ((count.textContent = `${text.value.length} / 500`), (preview.querySelector('.pn-text').textContent = text.value.trim() || 'Your message appears here, as people will see it.')));
   const who = h('select', { class: 'input', id: 'anWho' }, AUDIENCES.map(([v, l]) => h('option', { value: v }, l)));
   const city = h('input', { class: 'input', id: 'anCity', placeholder: 'Leave empty for every city' });
@@ -1293,7 +1293,7 @@ PAGES.announce = async () => {
     });
   });
   return [
-    head('Announcements', 'One message to many people at once, from “bolo”. People who switched “News” off in their notification settings do not get it.'),
+    head('Announcements', 'One message to many people at once, from “getit”. People who switched “News” off in their notification settings do not get it.'),
     senior
       ? h(
           'div',
@@ -1307,7 +1307,7 @@ PAGES.announce = async () => {
             h('p', { class: 'muted small' }, 'At most 5 announcements a day. To write to one person or one business, open them under People or Businesses and choose Message.'),
             h('div', {}, send),
           ),
-          h('section', { class: 'panel col' }, h('h3', {}, 'Preview'), preview, h('p', { class: 'tiny faint' }, 'Tapping it in the app opens the full message, with “Reply to bolo”.')),
+          h('section', { class: 'panel col' }, h('h3', {}, 'Preview'), preview, h('p', { class: 'tiny faint' }, 'Tapping it in the app opens the full message, with “Reply to getit”.')),
         )
       : empty('Owners and admins only', 'Your role can write to one account at a time (People → Message), not to everyone.'),
     withGap(h('h2', {}, 'Sent')),
@@ -1351,7 +1351,7 @@ PAGES.settings = async () => {
   });
   const on = h('input', { type: 'checkbox', id: 'mtOn' });
   on.checked = !!mt.on;
-  const mtMsg = h('textarea', { class: 'input', maxlength: '400', id: 'mtMsg', placeholder: 'For example: bolo will be offline on Sunday from 2 to 4 am for maintenance.' }, mt.message || '');
+  const mtMsg = h('textarea', { class: 'input', maxlength: '400', id: 'mtMsg', placeholder: 'For example: getit will be offline on Sunday from 2 to 4 am for maintenance.' }, mt.message || '');
   const saveMt = h('button', { class: 'btn y' }, 'Save');
   saveMt.addEventListener('click', async () => {
     if (on.checked && !mtMsg.value.trim()) return toast('Write the notice first', true);
@@ -1427,7 +1427,7 @@ PAGES.settings = async () => {
   idle.value = String(store.get('idle', 30));
   idle.addEventListener('change', () => (store.set('idle', Number(idle.value)), toast('Saved for this browser')));
 
-  const email = h('input', { class: 'input', type: 'email', placeholder: 'Email of their bolo account', 'aria-label': 'Email of the new admin' });
+  const email = h('input', { class: 'input', type: 'email', placeholder: 'Email of their getit account', 'aria-label': 'Email of the new admin' });
   const role = h('select', { class: 'input', 'aria-label': 'Role' }, [['moderator', 'Moderator'], ['support', 'Support'], ['admin', 'Admin'], ['owner', 'Owner']].map(([v, l]) => h('option', { value: v }, l)));
   const add = h('button', { class: 'btn y', type: 'submit' }, 'Add');
   const addForm = h('form', { class: 'row wrap' }, h('div', { class: 'grow' }, email), h('div', {}, role), add);
@@ -1445,11 +1445,11 @@ PAGES.settings = async () => {
   const section = (title, sub, ...kids) => withGap(h('section', { class: 'panel col' }, h('div', {}, h('h2', {}, title), sub ? h('p', { class: 'muted small' }, sub) : null), kids));
   return [
     head('Settings', 'Switches that affect everyone, the app version, the service notice, blocked words and the admin team.'),
-    section('Feature switches', senior ? 'Pause a part of bolo for everyone at once, for example during an attack, a spam wave or a broken release.' : 'Owners and admins can change these.', switches),
+    section('Feature switches', senior ? 'Pause a part of getit for everyone at once, for example during an attack, a spam wave or a broken release.' : 'Owners and admins can change these.', switches),
     words !== null
       ? section('Blocked words', 'Posts and comments that contain one of these (as a whole word, in any case) are refused, with a message asking to change them. The list is private.', chipsBox, senior ? [wordForm, h('div', {}, saveWords)] : null)
       : null,
-    section('Ask older versions to update', 'People whose app build number is lower than this see “Update bolo” when they open the app. The build number is the one in the release name, for example 172.', h('div', { class: 'field' }, h('label', { for: 'minA' }, 'Lowest Android build that is fine'), minA), h('div', { class: 'field' }, h('label', { for: 'minMsg' }, 'Message they see'), minMsg), h('div', {}, saveMin)),
+    section('Ask older versions to update', 'People whose app build number is lower than this see “Update getit” when they open the app. The build number is the one in the release name, for example 172.', h('div', { class: 'field' }, h('label', { for: 'minA' }, 'Lowest Android build that is fine'), minA), h('div', { class: 'field' }, h('label', { for: 'minMsg' }, 'Message they see'), minMsg), h('div', {}, saveMin)),
     section('Service notice', 'A short note everyone sees each time they open the app, for example before planned maintenance. Switch it off as soon as it no longer applies.', h('label', { class: 'row', for: 'mtOn' }, on, 'Show the notice'), h('div', { class: 'field' }, h('label', { for: 'mtMsg' }, 'Notice'), mtMsg), h('div', {}, saveMt)),
     section('Security', 'This panel signs you out after a while without activity, so an open laptop does not stay signed in. Closing the tab always signs you out.', h('div', { class: 'field' }, h('label', { for: 'idle' }, 'Sign out after'), idle)),
     section(
