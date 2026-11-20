@@ -5,15 +5,15 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Missing, goBack, tap } from '../../src/ui/kit';
-import { confirm } from '../../src/ui/overlay';
-import { P, fname, myPhoto, nowT, pinOf } from '../../src/logic/core';
+import { P, fname, nowT, pinOf } from '../../src/logic/core';
 import { useLive } from '../../src/logic/live';
-import { bk, cancelBooking, confirmDone, reportIssue, trOther, wArrive, wDone, wStart } from '../../src/logic/work';
-import { openProfile } from '../../src/logic/nav';
-import { openChat } from '../../src/sheets/chat';
-import { openHire, openReview } from '../../src/sheets/work';
-import { RouteMap } from '../../src/components/LiveMap';
+import { bk, confirmDone, trOther, wArrive, wDone, wStart } from '../../src/logic/work';
+import { money, whenText } from '../../src/g/data';
+import { openChat } from '../../src/g/nav';
+import { Gone } from '../../src/g/parts';
+import { RouteMap } from '../../src/g/RouteMap';
+import { openBook, openCancel, openProblem, openRate } from '../../src/g/sheets';
+import { goBack, tap } from '../../src/g/touch';
 import { hasMapbox } from '../../src/lib/mapbox';
 import { db } from '../../src/data/db';
 import { refreshBooking } from '../../src/logic/server';
@@ -66,12 +66,7 @@ export default function Track() {
   useEffect(() => {
     if (id && !bk(id)) void refreshBooking(id);
   }, [id]);
-  if (!b)
-    return (
-      <View style={{ flex: 1 }}>
-        <Missing bar="Job" title="Job not found" text="It may have been cancelled." />
-      </View>
-    );
+  if (!b) return <Gone title="This job isn’t here any more" text="It may have been cancelled." />;
   const W = b.worker === 'me';
   const oid = trOther(b);
   const o = P(oid);
@@ -119,7 +114,7 @@ export default function Track() {
   const Pay = ({ title, sub }: { title: string; sub: string }) => (
     <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', marginHorizontal: 16, marginTop: 16, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 20, backgroundColor: t.card, borderWidth: 1, borderColor: t.line }}>
       <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: t.tabOn, alignItems: 'center', justifyContent: 'center' }}>
-        <GIcon name="jobs" size={20} color={t.accent} />
+        <GIcon name="wallet" size={20} color={t.accent} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <T s={16} w={8}>
@@ -135,16 +130,16 @@ export default function Track() {
   let top: React.ReactNode = null;
   if (b.state === 'booked')
     top = W ? (
-      <Hero icon="calendar" title={`${b.title} · ${b.when}`} sub={`Tap the button when you leave, so ${f} can follow you.`} />
+      <Hero icon="calendar" title={`${b.title} · ${whenText(b.when)}`} sub={`Tap the button when you leave, so ${f} can follow you.`} />
     ) : (
-      <Hero icon="calendar" title={`Booked for ${b.when}`} sub={`${f} will let you know when leaving.`} />
+      <Hero icon="calendar" title={`Booked for ${whenText(b.when)}`} sub={`${f} will let you know when leaving.`} />
     );
   else if (b.state === 'onway')
     top = (
       <>
         {map ? (
           <View style={{ marginHorizontal: 16, marginTop: 16, borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: t.line }}>
-            <RouteMap from={workerAt || dest!} to={dest || workerAt!} live={workerAt} progress={prog} workerPic={W ? myPhoto() : P(b.worker).photo} height={200} />
+            <RouteMap from={workerAt || dest!} to={dest || workerAt!} live={workerAt} name={W ? db.user.name || 'You' : P(b.worker).name} photo={W ? db.user.avatar : P(b.worker).photo} height={200} />
             {b.eta ? (
               <View style={{ position: 'absolute', left: 12, top: 12, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 14, backgroundColor: t.card }}>
                 <T s={14} w={8}>
@@ -191,31 +186,31 @@ export default function Track() {
     top = W ? (
       <>
         <Hero red icon="check" title={`Waiting for ${f}`} sub="You marked the job as done." />
-        <Pay title={`Collect ${b.price}`} sub={`Cash or Mobile Money, from ${f}`} />
+        <Pay title={`Collect ${money(b.price)}`} sub={`Cash or Mobile Money, from ${f}`} />
       </>
     ) : (
       <>
         <Hero red icon="check" title={`${f} says the job is done`} sub="Check the work, then confirm." />
-        <Pay title={`Pay ${f} ${b.price}`} sub={`Cash or Mobile Money, straight to ${f}`} />
+        <Pay title={`Pay ${f} ${money(b.price)}`} sub={`Cash or Mobile Money, straight to ${f}`} />
         <View style={{ gap: 10, paddingTop: 14, paddingHorizontal: 16 }}>
-          <Big testID="tk-confirm" title="Yes, all good" onPress={() => confirmDone(b.id)} />
-          <Ghost testID="tk-problem" title="Not yet, something’s wrong" onPress={() => reportIssue(b.id)} />
+          <Big testID="tk-confirm" title="Yes, all good" onPress={() => (confirmDone(b.id), openRate(b.id, () => router.replace(`/thanks?b=${b.id}` as any)))} />
+          <Ghost testID="tk-problem" title="Not yet, something’s wrong" onPress={() => openProblem(b.id)} />
         </View>
       </>
     );
   else
     top = (
       <>
-        <Hero red icon="check" title="Job complete" sub={W ? `${f} confirmed. Agreed price: ${b.price}.` : `Agreed price: ${b.price}. Pay ${f} directly if you haven’t yet.`} />
+        <Hero red icon="check" title="Job complete" sub={W ? `${f} confirmed. Agreed price: ${money(b.price)}.` : `Agreed price: ${money(b.price)}. Pay ${f} directly if you haven’t yet.`} />
         <View style={{ gap: 10, paddingTop: 16, paddingHorizontal: 16 }}>
           {b.reviewed ? (
             <T s={14} c={t.muted} center>
               Thanks for your review.
             </T>
           ) : (
-            <Big testID="tk-rate" title={`Rate ${f}`} onPress={() => openReview(oid, b.id)} />
+            <Big testID="tk-rate" title={`Rate ${f}`} onPress={() => openRate(b.id, () => router.replace((W ? `/wclosed?b=${b.id}` : `/thanks?b=${b.id}`) as any))} />
           )}
-          {!W ? <Ghost title={`Book ${f} again`} onPress={() => openHire(oid)} /> : null}
+          {!W ? <Ghost title={`Book ${f} again`} onPress={() => openBook({ worker: oid, need: b.title })} /> : null}
         </View>
       </>
     );
@@ -232,23 +227,10 @@ export default function Track() {
           : null;
   const details: [string, string][] = ([
     ['Job', b.title],
-    ['When', b.when],
-    ['Price', b.price],
+    ['When', whenText(b.when)],
+    ['Price', /\d/.test(b.price) ? `${money(b.price)} · ${W ? `${f} pays you directly` : `you pay ${f} directly`}` : b.price],
     ['Where', b.area],
   ] as [string, string][]).filter((x) => !!x[1]);
-  const cancel = () =>
-    confirm({
-      title: 'Cancel this job?',
-      text: `${f} will be told right away. It’s free to cancel before they leave.`,
-      ok: 'Cancel job',
-      cancel: 'Keep it',
-      danger: true,
-      icon: 'calcheck',
-      onOk: () => {
-        cancelBooking(b.id);
-        router.back();
-      },
-    });
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top + 16, paddingBottom: (next ? 0 : ins.bottom) + 28 }}>
@@ -259,6 +241,9 @@ export default function Track() {
           </T>
           <Round testID="tk-chat" icon="chat" label={`Message ${f}`} onPress={() => openChat(oid)} />
         </View>
+        {b.log.issue && b.state === 'working' ? (
+          <Info icon="flag">{W ? `${f} reported a problem. Sort it out together, then mark the job done again.` : `You reported a problem. ${f} has been told and will come back to finish.`}</Info>
+        ) : null}
         {top}
         <View style={{ flexDirection: 'row', gap: 6, marginHorizontal: 16, marginTop: 20 }}>
           {STEPS.map(([key, label], j) => {
@@ -274,7 +259,7 @@ export default function Track() {
           })}
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginTop: 16, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 20, backgroundColor: t.card, borderWidth: 1, borderColor: t.line }}>
-          <Pressable accessibilityRole="button" accessibilityLabel={`${o.name}’s profile`} onPress={() => (tap(), openProfile(oid))} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+          <Pressable accessibilityRole="button" accessibilityLabel={`${o.name}’s profile`} onPress={() => (tap(), W ? undefined : router.push(`/profile/${oid}` as any))} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
             <Face name={o.name} photo={o.photo} size={48} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
@@ -303,9 +288,9 @@ export default function Track() {
             </View>
           ))}
         </View>
-        {!W && b.state === 'booked' ? (
+        {b.state === 'booked' || (!W && b.state === 'onway') ? (
           <View style={{ alignItems: 'center', paddingTop: 10 }}>
-            <Link testID="tk-cancel" title="Cancel job" color={t.accent} onPress={cancel} />
+            <Link testID="tk-cancel" title="Cancel job" color="danger" onPress={() => openCancel(b.id)} />
           </View>
         ) : null}
       </ScrollView>

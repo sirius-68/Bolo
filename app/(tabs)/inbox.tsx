@@ -6,10 +6,11 @@ import { db, Notif } from '../../src/data/db';
 import { useLive } from '../../src/logic/live';
 import { NOTIFS, ORDER, P, THREADS } from '../../src/logic/core';
 import { preview, readNotif } from '../../src/logic/work';
-import { goTo } from '../../src/sheets/goto';
-import { openChat, openChatMenu } from '../../src/sheets/chat';
-import { tap } from '../../src/ui/kit';
-import { Pull } from '../../src/components/common';
+import { goTo } from '../../src/g/goto';
+import { openChat } from '../../src/g/nav';
+import { Pull } from '../../src/g/parts';
+import { openChatMenu, openTeamNote } from '../../src/g/sheets';
+import { tap } from '../../src/g/touch';
 import { working } from '../../src/g/data';
 import { openSignIn } from '../../src/g/signin';
 import { TAB_SPACE } from '../../src/g/TabBar';
@@ -38,9 +39,12 @@ export default function Inbox() {
   const openNote = (n: Notif) => {
     tap();
     readNotif(n.id);
-    if (n.type === 'missed') return router.push('/calls?tab=missed' as any);
+    const who = typeof n.who === 'string' ? n.who : Array.isArray(n.who) ? n.who[0] : '';
+    // a missed call: the chat with them, where calling back is one tap
+    if (n.type === 'missed' && who) return openChat(who);
+    // from the getit team: read it in full
+    if (n.bolo || n.go?.k === 'notifs') return openTeamNote('From getit', updateText(n));
     if (n.go) return goTo(n.go);
-    router.push('/notifs' as any);
   };
   const rowStyle = (last: boolean) => ({ pressed }: { pressed: boolean }) => ({ flexDirection: 'row' as const, alignItems: 'center' as const, gap: 12, minHeight: 70, paddingVertical: 10, paddingHorizontal: 2, borderBottomWidth: last ? 0 : 1, borderBottomColor: t.line, opacity: pressed ? 0.6 : 1 });
   const dot = <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: RED }} />;

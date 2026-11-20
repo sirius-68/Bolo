@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { TabBar } from '../../src/g/TabBar';
 import { useG } from '../../src/g/theme';
 
-/** getit's three tabs. The old profile editor (me) stays reachable from the "you" sheet, without a tab of its own. */
+/** getit's three tabs: Find (or Work), Jobs, Inbox. */
 export default function TabsLayout() {
   const t = useG();
   return (
@@ -13,7 +13,6 @@ export default function TabsLayout() {
         <Tabs.Screen name="find" />
         <Tabs.Screen name="jobs" />
         <Tabs.Screen name="inbox" />
-        <Tabs.Screen name="me" />
       </Tabs>
     </View>
   );

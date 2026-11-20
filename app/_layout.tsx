@@ -10,22 +10,26 @@ import {
   PlusJakartaSans_700Bold,
   PlusJakartaSans_800ExtraBold,
 } from '@expo-google-fonts/plus-jakarta-sans';
-import { Overlays } from '../src/ui/overlay';
 import { bootGuard, clearSaved, restore, startAutosave } from '../src/logic/persist';
 import { db, ui } from '../src/data/db';
 import { on } from '../src/logic/events';
-import { showDoneAlert } from '../src/sheets/work';
 import { hasSession, pull, resumeSession, startServer, startSync } from '../src/logic/remote';
 import { initPush } from '../src/logic/push';
-import { loadAuthCaps } from '../src/components/auth';
+import { loadAuthCaps } from '../src/g/auth';
 import { locate } from '../src/logic/here';
-import { StoryHost } from '../src/components/Stories';
+import { StoryHost } from '../src/g/Stories';
 import { Linking, Platform, Pressable, Text, View } from 'react-native';
 import { resetTo, setHere } from '../src/logic/nav';
 import { report, setMonitorUser, startMonitoring } from '../src/lib/monitor';
 import { serviceNotice, updateRequired } from '../src/logic/remote';
-import { confirm } from '../src/ui/overlay';
-import { GSheetHost, GStatusBar } from '../src/g/ui';
+import { NoticeHost, confirm } from '../src/g/notice';
+import { bk } from '../src/logic/work';
+import { openJobAlert } from '../src/g/sheets';
+import { working } from '../src/g/data';
+import { postById } from '../src/logic/core';
+import { loadPost } from '../src/logic/server';
+import { router } from 'expo-router';
+import { GSheetHost, GStatusBar, gsheet } from '../src/g/ui';
 import { loadLook, useG } from '../src/g/theme';
 import { loadStarted } from '../src/g/data';
 
@@ -56,7 +60,7 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Pro
   }, [error]);
   const home = () => {
     try {
-      resetTo(db.loggedIn ? ('/find') : '/splash');
+      resetTo(db.loggedIn ? '/find' : '/intro');
     } catch {}
     void retry();
   };
@@ -148,8 +152,6 @@ export default function Root() {
         startSync();
         // Refresh position and city quietly when location is already allowed (never prompts here).
         void locate(false);
-        // Old bug: tapping Edit cleared cvDone, so leaving the editor left the CV unreachable. Restore it.
-        if (db.user.cv && !db.user.cvDone) db.user.cvDone = true;
         if (await hasSession()) {
           // first start after an update: no saved copy yet, but still signed in
           if (!db.loggedIn || !db.uid) await resumeSession();
@@ -169,8 +171,22 @@ export default function Root() {
         go();
       }
     })();
-    const a = on('doneAlert', (id: string) => showDoneAlert(id));
-    return () => a();
+    const a = on('doneAlert', (id: string) => {
+      const b = bk(id);
+      if (b && b.client === 'me') router.push(`/track/${id}` as any);
+    });
+    // a new job arrives while a worker has the app open: show it at once
+    const n = on('notif', async (row: any) => {
+      if (row?.type !== 'newjob' || !working() || gsheet.isOpen()) return;
+      const id = row?.target?.id;
+      if (!id) return;
+      if (!postById(id)) await loadPost(id).catch(() => {});
+      if (postById(id)) openJobAlert(id);
+    });
+    return () => {
+      a();
+      n();
+    };
   }, []);
 
   useEffect(() => {
@@ -192,10 +208,11 @@ export default function Root() {
       >
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
         <Stack.Screen name="call" options={{ animation: 'fade', gestureEnabled: false }} />
-        <Stack.Screen name="splash" options={{ animation: 'none' }} />
+        <Stack.Screen name="index" options={{ animation: 'none' }} />
+        <Stack.Screen name="intro" options={{ animation: 'fade' }} />
       </Stack>
-      <Overlays />
       <GSheetHost />
+      <NoticeHost />
       <StoryHost />
       <Here />
     </SafeAreaProvider>

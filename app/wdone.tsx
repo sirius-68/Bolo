@@ -4,15 +4,12 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../src/data/db';
-import { tap } from '../src/ui/kit';
-import { bump, useLive } from '../src/logic/live';
+import { useLive } from '../src/logic/live';
 import { cityLabel, mySkill } from '../src/logic/core';
-import { resetTo } from '../src/logic/nav';
-import { pickImage } from '../src/logic/media';
-import { openService } from '../src/sheets/profile';
 import { GIcon, GIconName } from '../src/g/icons';
 import { RED, useG } from '../src/g/theme';
 import { Big, Face, T } from '../src/g/ui';
+import { goHome, tap } from '../src/g/touch';
 import { areaLabel, hasArea } from '../src/g/data';
 import { Way, workLine } from '../src/g/worker';
 
@@ -35,20 +32,9 @@ export default function WDone() {
           ? `People ${near} looking for ${who} can now find your shop and call you.`
           : `People ${near} looking for ${who} can now find you and call you.`;
   const boosts: [string, GIconName, () => void, string][] = [
-    ['Set your prices', 'jobs', () => openService(), 'wdone-prices'],
-    [
-      db.user.avatar ? 'Change your photo' : 'Add your photo',
-      'camera',
-      async () => {
-        const p = await pickImage({ square: true });
-        if (p) {
-          db.user.avatar = p;
-          bump();
-        }
-      },
-      'wdone-photo',
-    ],
-    ['Check your ID for a blue tick', 'shield', () => router.push('/id-verify' as any), 'wdone-id'],
+    ['Set your prices', 'wallet', () => router.push('/wprices' as any), 'wdone-prices'],
+    ['Add photos of your work', 'camera', () => router.push('/wphotos' as any), 'wdone-photos'],
+    ['Check your ID for a blue tick', 'shield', () => router.push('/wid' as any), 'wdone-id'],
   ];
   return (
     <View style={{ flex: 1, backgroundColor: t.bg, paddingTop: ins.top + 40, paddingHorizontal: 20 }}>
@@ -94,7 +80,7 @@ export default function WDone() {
           </Pressable>
         ))}
       </ScrollView>
-      <Big testID="wdone-start" title="Start getting work" onPress={() => resetTo('/find')} style={{ marginTop: 8, marginBottom: ins.bottom + 28 }} />
+      <Big testID="wdone-start" title="Start getting work" onPress={goHome} style={{ marginTop: 8, marginBottom: ins.bottom + 28 }} />
     </View>
   );
 }

@@ -1,119 +1,177 @@
-import React from 'react';
+/* Jobs. Hiring: what is happening now (booked jobs and open requests), then what came before.
+   Working: this week's earnings, then Active, Offers you sent, and Done. */
+import React, { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, Booking } from '../../src/data/db';
 import { useLive } from '../../src/logic/live';
-import { P, fname } from '../../src/logic/core';
-import { openTrack } from '../../src/logic/nav';
+import { P, fname, postById } from '../../src/logic/core';
 import { myBookings, trOther } from '../../src/logic/work';
-import { openJob } from '../../src/sheets/work';
-import { tap } from '../../src/ui/kit';
-import { Pull } from '../../src/components/common';
-import { working } from '../../src/g/data';
-import { GIcon } from '../../src/g/icons';
+import { earnedThisWeek, money, myRequests, whenText, working } from '../../src/g/data';
+import { GIcon, GIconName } from '../../src/g/icons';
+import { Pull } from '../../src/g/parts';
 import { openSignIn } from '../../src/g/signin';
 import { TAB_SPACE } from '../../src/g/TabBar';
-import { useG } from '../../src/g/theme';
-import { Big, Face, Link, Screen, T } from '../../src/g/ui';
+import { RED, useG } from '../../src/g/theme';
+import { tap } from '../../src/g/touch';
+import { Big, Face, Link, Screen, Seg, T } from '../../src/g/ui';
 
 /** Where a job stands, in a few words, for the person looking at it. */
 function standing(b: Booking): string {
   const mine = b.worker === 'me';
   switch (b.state) {
     case 'booked':
-      return 'Booked';
+      return `Booked · ${whenText(b.when)}`;
     case 'onway':
       return mine ? 'You’re on the way' : `On the way${b.eta ? ` · ${b.eta} min` : ''}`;
     case 'working':
-      return mine ? 'You’re working' : 'Working';
+      return mine ? 'You’re working' : 'Working now';
     case 'done':
-      return mine ? 'Waiting for them to confirm' : 'Done? Confirm it';
+      return mine ? 'Waiting for them to confirm' : 'Done · please confirm';
     default:
-      return b.reviewed ? 'Done' : 'Done · rate it';
+      return [/\d/.test(b.price) ? money(b.price) : '', b.reviewed ? 'done' : 'done · rate it'].filter(Boolean).join(' · ');
   }
 }
 
-/** Jobs: what is happening now on top, finished jobs below. */
 export default function Jobs() {
   useLive();
   const t = useG();
   const ins = useSafeAreaInsets();
-  const work = working();
-  const all = db.loggedIn ? myBookings() : [];
-  const now = all.filter((b) => b.state !== 'confirmed');
-  const before = all.filter((b) => b.state === 'confirmed');
-  // requests of mine that are still open for offers
-  const asked = db.loggedIn ? db.POSTS.filter((p) => p.mine && p.kind === 'request' && p.as !== 'business' && p.status !== 'closed' && p.status !== 'booked') : [];
-  const empty = !now.length && !before.length && !asked.length;
-  const row = (b: Booking, live: boolean, last: boolean) => {
-    const other = P(trOther(b));
-    return (
-      <Pressable key={b.id} testID={`job-${b.id}`} accessibilityRole="button" onPress={() => (tap(), openTrack(b.id))} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 70, paddingVertical: 10, paddingHorizontal: 2, borderBottomWidth: last ? 0 : 1, borderBottomColor: t.line, opacity: pressed ? 0.6 : 1 })}>
-        <Face name={other?.name || '?'} photo={other?.photo} size={48} />
-        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-            <T s={15} w={8} lines={1} style={{ flexShrink: 1 }}>
-              {b.title}
-            </T>
-            <T s={12} c={t.muted} lines={1}>
-              {b.when}
-            </T>
-          </View>
-          <T s={13} c={live ? t.accent : t.muted} lines={1}>
-            {[other?.name ? fname(other.name) : '', standing(b)].filter(Boolean).join(' · ')}
-          </T>
-        </View>
-      </Pressable>
-    );
-  };
+  const signed = db.loggedIn;
+  const work = working() && signed;
+  const [tab, setTab] = useState<'active' | 'offers' | 'done'>('active');
+  const all = signed ? myBookings() : [];
+  const mine = work ? all.filter((b) => b.worker === 'me') : all.filter((b) => b.client === 'me');
+  const now = mine.filter((b) => b.state !== 'confirmed');
+  const before = mine.filter((b) => b.state === 'confirmed');
+  const asked = signed && !work ? myRequests() : [];
+  const sent = work ? Object.keys(db.myOffers).map((id) => ({ id, o: db.myOffers[id], po: postById(id) })).filter((x) => x.po) : [];
+  const week = earnedThisWeek();
+
   const head = (text: string) => (
-    <T s={13} w={7} c={t.muted} style={{ marginTop: 20, marginBottom: 2 }}>
+    <T s={13} w={7} c="muted" style={{ marginTop: 20, marginBottom: 2 }}>
       {text}
     </T>
   );
+  const line = (key: string, left: React.ReactNode, title: string, time: string, sub: string, live: boolean, onPress: () => void, unread?: boolean) => (
+    <Pressable key={key} testID={`job-${key}`} accessibilityRole="button" onPress={() => (tap(), onPress())} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 70, paddingVertical: 10, paddingHorizontal: 2, borderBottomWidth: 1, borderBottomColor: t.line, opacity: pressed ? 0.7 : 1 })}>
+      {left}
+      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+          <T s={15} w={8} lines={1} style={{ flexShrink: 1 }}>
+            {title}
+          </T>
+          <T s={12} c="muted" lines={1}>
+            {time}
+          </T>
+        </View>
+        <T s={13} c={live ? t.accent : t.muted} lines={1}>
+          {sub}
+        </T>
+      </View>
+      {unread ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: RED }} /> : null}
+    </Pressable>
+  );
+  const dot = (icon: GIconName) => (
+    <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: t.tabOn, alignItems: 'center', justifyContent: 'center' }}>
+      <GIcon name={icon} size={22} color={t.accent} />
+    </View>
+  );
+  const job = (b: Booking, live: boolean) => {
+    const other = P(trOther(b));
+    const needsMe = b.state === 'done' && b.client === 'me';
+    return line(b.id, <Face name={other?.name || '?'} photo={other?.photo} size={48} />, b.title, live ? '' : whenText(b.when), [other?.name ? (live ? other.name : fname(other.name)) : '', standing(b)].filter(Boolean).join(' · '), live, () => router.push(`/track/${b.id}` as any), needsMe);
+  };
+  const empty = (title: string, sub: string) => (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingBottom: 60, paddingTop: 40 }}>
+      <T s={20} w={8} lh={1.25} ls={0} center>
+        {title}
+      </T>
+      <T s={15} lh={1.5} c="muted" center style={{ maxWidth: 280 }}>
+        {sub}
+      </T>
+      <Big testID="jobs-empty" h={48} title={work ? 'Back to work' : 'Find a worker'} style={{ marginTop: 12 }} onPress={() => router.navigate('/find' as any)} />
+      {!signed ? <Link testID="tab-signin" title="Sign in" onPress={() => openSignIn()} /> : null}
+    </View>
+  );
+
+  let body: React.ReactNode;
+  if (work) {
+    body =
+      tab === 'active' ? (
+        <>
+          {head('Now')}
+          {now.length ? now.map((b) => job(b, true)) : line('none', <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: t.card2, alignItems: 'center', justifyContent: 'center' }}><T s={16} w={8} c="muted">·</T></View>, 'No job right now', '', 'Stay available to get jobs near you', false, () => router.navigate('/find' as any))}
+        </>
+      ) : tab === 'offers' ? (
+        sent.length ? (
+          <>
+            {head('Offers you sent')}
+            {sent.map(({ id, o, po }) => {
+              const c = P(po!.client || '');
+              const taken = po!.status === 'booked' || po!.status === 'closed' || !!po!.booked;
+              return line(id, <Face name={c?.name || '?'} photo={c?.photo} size={48} />, po!.title || 'Job', po!.time, `Your price ${money(o.price)} · ${o.state === 'acc' ? 'accepted' : taken ? 'someone else was chosen' : `waiting for ${fname(c?.name || 'the client')}`}`, o.state === 'acc', () => router.push(`/wrequest/${id}` as any));
+            })}
+          </>
+        ) : (
+          empty('No offers yet', 'When you send your price for a job, it shows here until the client answers.')
+        )
+      ) : before.length ? (
+        <>
+          {head('Done')}
+          {before.map((b) => job(b, false))}
+        </>
+      ) : (
+        empty('No finished jobs yet', 'Jobs both of you closed show here, with what you earned.')
+      );
+  } else if (!now.length && !before.length && !asked.length) body = empty('No jobs yet', 'People you call, message or book show up here, so you can find them again.');
+  else
+    body = (
+      <>
+        {now.length || asked.length ? head('Now') : null}
+        {now.map((b) => job(b, true))}
+        {asked.map((po) => {
+          const n = (po.offerList || []).length || po.offers || 0;
+          return line(po.id, dot('bell'), po.title || po.cat || 'Request', po.time, n ? `${n} ${n === 1 ? 'offer' : 'offers'} · tap to choose` : 'Asking for prices · waiting for offers', true, () => router.push((n > 1 ? `/offers/${po.id}` : `/asked/${po.id}`) as any), n > 0);
+        })}
+        {before.length ? head('Before') : null}
+        {before.map((b) => job(b, false))}
+      </>
+    );
   return (
     <Screen top={28} style={{ paddingHorizontal: 20 }}>
       <T s={34} w={8} lh={1.15} ls={-0.8}>
         Jobs
       </T>
-      <ScrollView showsVerticalScrollIndicator={false} refreshControl={db.loggedIn ? <Pull /> : undefined} contentContainerStyle={{ paddingBottom: TAB_SPACE + ins.bottom, flexGrow: 1 }}>
-        {now.length || asked.length ? head('Now') : null}
-        {now.map((b, i) => row(b, true, i === now.length - 1 && !asked.length))}
-        {asked.map((po, i) => (
-          <Pressable key={po.id} testID={`asked-${po.id}`} accessibilityRole="button" onPress={() => (tap(), openJob(po.id))} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 70, paddingVertical: 10, paddingHorizontal: 2, borderBottomWidth: i === asked.length - 1 ? 0 : 1, borderBottomColor: t.line, opacity: pressed ? 0.6 : 1 })}>
-            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: t.tabOn, alignItems: 'center', justifyContent: 'center' }}>
-              <GIcon name="bell" size={22} color={t.accent} />
-            </View>
-            <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-                <T s={15} w={8} lines={1} style={{ flexShrink: 1 }}>
-                  {po.title || po.cat || 'Request'}
-                </T>
-                <T s={12} c={t.muted} lines={1}>
-                  {po.time}
-                </T>
-              </View>
-              <T s={13} c={t.accent} lines={1}>
-                {po.offers ? `${po.offers} ${po.offers === 1 ? 'offer' : 'offers'} · tap to choose` : 'Asking for prices · waiting for offers'}
-              </T>
-            </View>
-          </Pressable>
-        ))}
-        {before.length ? head('Before') : null}
-        {before.map((b, i) => row(b, false, i === before.length - 1))}
-        {empty ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingBottom: 60 }}>
-            <T s={20} w={8} lh={1.25} ls={0} center>
-              No jobs yet
+      {work ? (
+        <>
+          <View style={{ marginTop: 16, paddingVertical: 16, paddingHorizontal: 18, borderRadius: 22, backgroundColor: RED }}>
+            <T s={13} w={7} c="#ffffff">
+              This week
             </T>
-            <T s={15} lh={1.5} c={t.muted} center style={{ maxWidth: 280 }}>
-              {work ? 'Jobs you take show here, from booked to paid.' : 'Jobs you book show here, from start to finish.'}
+            <T s={30} w={8} ls={-0.6} c="#ffffff" style={{ marginTop: 2 }}>
+              {week.total.toLocaleString('en-US')} FCFA
             </T>
-            <Big testID="jobs-empty" h={48} title={work ? 'See jobs near you' : 'Find a worker'} style={{ marginTop: 12 }} onPress={() => router.navigate('/find' as any)} />
-            {!db.loggedIn ? <Link testID="tab-signin" title="Sign in" onPress={() => openSignIn()} /> : null}
+            <T s={13} c="#ffffff" style={{ marginTop: 2 }}>
+              {week.jobs} {week.jobs === 1 ? 'job' : 'jobs'} · paid to you directly
+            </T>
           </View>
-        ) : null}
+          <View style={{ marginTop: 16 }}>
+            <Seg
+              items={[
+                ['active', 'Active'],
+                ['offers', sent.length ? `Offers · ${sent.length}` : 'Offers'],
+                ['done', 'Done'],
+              ]}
+              value={tab}
+              onChange={setTab}
+            />
+          </View>
+        </>
+      ) : null}
+      <ScrollView showsVerticalScrollIndicator={false} refreshControl={signed ? <Pull /> : undefined} contentContainerStyle={{ paddingBottom: TAB_SPACE + ins.bottom, flexGrow: 1 }}>
+        {body}
       </ScrollView>
     </Screen>
   );

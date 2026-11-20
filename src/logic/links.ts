@@ -5,5 +5,3 @@ import * as Linking from 'expo-linking';
 
 export const APP_LINK = process.env.EXPO_PUBLIC_APP_LINK || 'https://github.com/sirius-68/Bolo/releases/latest';
 export const inApp = (path: string) => Linking.createURL(path);
-/** Ending for share messages: open it in getit, or get getit first. */
-export const shareTail = (path?: string) => (path ? `Open in getit: ${inApp(path)}\n` : '') + `Get getit: ${APP_LINK}`;

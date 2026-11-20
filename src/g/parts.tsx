@@ -1,7 +1,7 @@
 /* Larger pieces that several screens share: the halo behind a big icon, pulsing rings, a details card,
    a screen's top row. Sizes follow the design canvas. */
-import React, { ReactNode, useEffect, useRef } from 'react';
-import { Animated, Easing, Pressable, StyleProp, View, ViewStyle } from 'react-native';
+import React, { ReactNode, useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, RefreshControl, StyleProp, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GIcon, GIconName, Mark } from './icons';
 import { BRAND, RED, useG } from './theme';
@@ -221,6 +221,48 @@ export function Hint({ icon = 'shield', children, style }: { icon?: GIconName; c
       <T s={13} lh={1.5} c="muted" style={{ flex: 1 }}>
         {children}
       </T>
+    </View>
+  );
+}
+
+/** Pull down to load again. */
+export function Pull(props: any) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <RefreshControl
+      {...props}
+      refreshing={busy}
+      tintColor={BRAND}
+      colors={['#ffffff']}
+      progressBackgroundColor={RED}
+      onRefresh={async () => {
+        setBusy(true);
+        try {
+          await require('../logic/server').loadAll(true);
+        } finally {
+          setBusy(false);
+        }
+      }}
+    />
+  );
+}
+/** A whole screen saying something is no longer there, with a way back. */
+export function Gone({ title, text }: { title: string; text?: string }) {
+  const t = useG();
+  const ins = useSafeAreaInsets();
+  return (
+    <View style={{ flex: 1, backgroundColor: t.bg, paddingTop: ins.top + 16 }}>
+      <Top />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 8 }}>
+        <T s={20} w={8} center>
+          {title}
+        </T>
+        {text ? (
+          <T s={15} lh={1.5} c="muted" center>
+            {text}
+          </T>
+        ) : null}
+      </View>
     </View>
   );
 }

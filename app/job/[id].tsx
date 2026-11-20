@@ -1,23 +1,20 @@
+/* A shared link to a request (getit://job/<id>): opens it the right way for whoever taps it. */
 import React, { useEffect } from 'react';
 import { View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { db } from '../../src/data/db';
-import { C } from '../../src/ui/theme';
-import { toast } from '../../src/ui/overlay';
 import { postById } from '../../src/logic/core';
-import { openJob } from '../../src/sheets/work';
+import { loadPost } from '../../src/logic/server';
+import { useG } from '../../src/g/theme';
 
-/** Opened by a shared job link (getit://job/<id>; links shared before the new name, bolo://job/<id>, still open): shows that job on top of Home. */
 export default function JobLink() {
+  const t = useG();
   const { id } = useLocalSearchParams<{ id: string }>();
   useEffect(() => {
-    if (!db.loggedIn) {
-      toast('Log in to see this job');
-      router.replace('/');
-      return;
-    }
-    router.replace('/find');
-    setTimeout(() => (postById(id) ? openJob(id) : toast('This job is no longer available')), 450);
+    (async () => {
+      if (id && !postById(id)) await loadPost(id).catch(() => {});
+      const po = id ? postById(id) : undefined;
+      router.replace((po ? (po.mine ? `/asked/${po.id}` : `/wrequest/${po.id}`) : '/find') as any);
+    })();
   }, [id]);
-  return <View style={{ flex: 1, backgroundColor: C.bg }} />;
+  return <View style={{ flex: 1, backgroundColor: t.bg }} />;
 }

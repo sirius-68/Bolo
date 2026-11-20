@@ -180,27 +180,6 @@ export function seenLabel(uid?: string): string {
   if (days < 7) return `last seen ${d.toLocaleDateString('en-GB', { weekday: 'long' })} at ${hm}`;
   return `last seen ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
 }
-/** Privacy → "Show when I'm online". Saved on its own (older servers don't have it). */
-export async function setShowSeen(on: boolean): Promise<boolean> {
-  const was = db.PREF.showSeen;
-  db.PREF.showSeen = on;
-  bump();
-  const { error } = await supabase.from('profiles').update({ show_seen: on }).eq('id', ME());
-  if (error) {
-    db.PREF.showSeen = was;
-    bump();
-    return false;
-  }
-  if (on) void loadSeen();
-  else {
-    Object.keys(seen).forEach((k) => delete seen[k]);
-    markOnline();
-    bump();
-  }
-  return true;
-}
-
-/* ---------------------------------------------------------------- delivered */
 let deliveredOff = false;
 let deliverTimer: any = null;
 /** This phone has the new messages: let their senders see two ticks. Safe to call often.

@@ -7,9 +7,11 @@ import { useLive } from '../src/logic/live';
 import { fname } from '../src/logic/core';
 import { loadReviewsOf } from '../src/logic/server';
 import { startCall } from '../src/logic/calls';
-import { openChat } from '../src/sheets/chat';
-import { tap } from '../src/ui/kit';
+import { tap } from '../src/g/touch';
 import { withAccount } from '../src/g/signin';
+import { openChat } from '../src/g/nav';
+import { openRequest } from '../src/g/sheets';
+import { canListen } from '../src/g/speech';
 import { areaLabel, findWorkers, hasArea, kmText, localWorkers, plural } from '../src/g/data';
 import { GIcon } from '../src/g/icons';
 import { BRAND, useG } from '../src/g/theme';
@@ -45,9 +47,7 @@ export default function Workers() {
   const more = list.filter((id) => id !== topId);
   const review = topId ? (db.REVIEWS[topId] || []).find((r) => r.text) : undefined;
   const close = () => (router.canGoBack() ? router.back() : router.replace('/find' as any));
-  const askPrices = () => {
-    withAccount('get prices', () => router.push(`/post-job?title=${encodeURIComponent(need)}&cat=${encodeURIComponent(trade)}` as any));
-  };
+  const askPrices = () => openRequest({ trade, need });
   const stat = (value: React.ReactNode, label: string) => (
     <View style={{ flex: 1, paddingVertical: 10, paddingHorizontal: 6, borderRadius: 16, backgroundColor: t.card2, alignItems: 'center' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>{value}</View>
@@ -126,7 +126,7 @@ export default function Workers() {
             ) : null}
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
               <Big testID="workers-call" icon="phone" title={`Call ${fname(top.name)}`} style={{ flex: 1 }} onPress={() => withAccount(`call ${fname(top.name)}`, () => void startCall(topId, 'voice'))} />
-              <Round testID="workers-chat" icon="chat" label={`Message ${fname(top.name)}`} size={56} bg={t.card2} plain onPress={() => withAccount(`message ${fname(top.name)}`, () => openChat(topId))} />
+              <Round testID="workers-chat" icon="chat" label={`Message ${fname(top.name)}`} size={56} bg={t.card2} plain onPress={() => openChat(topId)} />
             </View>
           </View>
         ) : state === 'loading' ? (
@@ -139,7 +139,7 @@ export default function Workers() {
               {state === 'failed' ? 'We couldn’t look right now' : `No ${many} on getit near you yet`}
             </T>
             <T s={14} lh={1.5} c={t.muted} style={{ marginTop: 6 }}>
-              {state === 'failed' ? 'Check your connection and try again.' : 'getit is new here. You can still ask for prices: your request stays open, and we tell you the moment someone answers.'}
+              {state === 'failed' ? 'Check your connection and try again.' : 'getit is new here. You can still ask for prices: your request stays open, and we tell you the moment someone who offers this joins.'}
             </T>
             {state === 'failed' ? <Big title="Try again" h={48} onPress={load} style={{ marginTop: 16, alignSelf: 'flex-start' }} /> : null}
           </View>
@@ -186,7 +186,7 @@ export default function Workers() {
           </>
         ) : null}
         <View style={{ alignItems: 'center', paddingTop: 12 }}>
-          <Link testID="workers-change" title="Not right? Change it" onPress={close} />
+          <Link testID="workers-change" title={canListen() ? 'Not right? Say it again' : 'Not right? Change it'} onPress={() => (canListen() ? router.replace('/listen' as any) : close())} />
         </View>
       </ScrollView>
     </Screen>

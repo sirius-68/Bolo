@@ -1,12 +1,10 @@
 /* Shared helpers and selectors over the data model. */
 import { db, ui, Person, Post, Thread, Notif, MyBiz, Mentorship, Opp } from '../data/db';
 import { lvOf, SKILLS } from '../data/catalog';
-import { logoPic } from '../ui/kit';
+import { logoPic } from './pics';
 
 /* ---------------- formatting ---------------- */
 export const k = (n: number) => (n >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '') + 'M' : n >= 1000 ? (n / 1000).toFixed(n % 1000 >= 100 ? 1 : 0) + 'k' : String(n));
-export const xaf = (n: number | string) => 'XAF ' + Number(n || 0).toLocaleString('en-US');
-/** "Today" / "Tomorrow" / "This week" as a real date, so the text is still right when it's read on another day. */
 export function dayText(key: string, time?: string) {
   const d = new Date();
   const fmt = (x: Date) => x.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -30,25 +28,10 @@ export const kmOf = (s?: string) => {
   const m = String(s || '').match(/[\d.]+/);
   return m ? +m[0] : 0;
 };
-export const budgetNum = (b?: string) => {
-  const m = String(b || '').match(/(\d[\d,.]*)\s*(k?)/i);
-  return m ? parseFloat(m[1].replace(/,/g, '')) * (m[2] ? 1000 : 1) : 0;
-};
 export const fname = (n: string) => (/^(Mr|Mrs|Ms|Dr)\.? /.test(n) ? n : n.split(' ')[0]);
 export const first = (id: string) => fname(P(id)?.name || '');
-export const greet = () => {
-  const h = new Date().getHours();
-  return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-};
 export const digits = (s: string) => s.replace(/\D/g, '');
 export const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s.trim());
-/** International numbers (+7 915…) need 8–15 digits; older local Cameroon numbers 9. */
-export const isPhone = (s: string) => {
-  const d = digits(s);
-  return (s || '').trim().startsWith('+') ? d.length >= 8 && d.length <= 15 : d.length >= 9;
-};
-
-/* ---------------- sets stored as arrays ---------------- */
 export const has = (a: (string | number)[], x: string | number) => a.includes(x);
 export function toggle<T>(a: T[], x: T): boolean {
   const i = a.indexOf(x);
@@ -90,47 +73,13 @@ export const bizInitials = (b?: MyBiz | null) =>
     .slice(0, 2)
     .toUpperCase();
 export const bizLogo = (b?: MyBiz | null) => (b && b.logo ? b.logo : logoPic(bizInitials(b), (b && b.color) || '#f6ee5c', b?.color === '#3d5af1' ? '#fff' : '#000'));
-export const bizPct = (b?: MyBiz | null) => {
-  if (!b) return 0;
-  const f = [b.name, b.sector, b.size, b.city, b.address, b.phone, b.email, b.about, b.rccm, b.niu, b.logo || b.color];
-  return Math.round((f.filter(Boolean).length / f.length) * 100);
-};
-export const isPro = () => (isW() ? db.user.pro.regular : db.user.pro.business);
-/** The person's main skill, or '' when they haven't picked one (nothing is assumed for them). */
 export const mySkill = () => db.user.skills[0] || '';
 /** A placeholder service older versions added by themselves (a skill the person never chose, no price). */
 export const madeUpService = (x: any) => !!x && x.draft && !+x.price && x.id === 's2' && !db.user.skills.includes(x.skill);
-/** Date typing help: the person types digits only and gets DD/MM/YYYY. `prev` is what was in the box before. */
-export function dateMask(v: string, prev = '') {
-  const d = (v || '').replace(/\D/g, '').slice(0, 8);
-  let out = d.slice(0, 2);
-  if (d.length > 2) out += '/' + d.slice(2, 4);
-  if (d.length > 4) out += '/' + d.slice(4);
-  // typing forward: the slash appears as soon as the day or the month is complete
-  if (v.length > prev.length && (d.length === 2 || d.length === 4)) out += '/';
-  return out;
-}
-/** DD/MM/YYYY → YYYY-MM-DD when it is a real date of birth; otherwise null. */
-export function dobIso(t: string): string | null {
-  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec((t || '').trim());
-  if (!m) return null;
-  const [dd, mm, yy] = [+m[1], +m[2], +m[3]];
-  const dt = new Date(Date.UTC(yy, mm - 1, dd));
-  if (dt.getUTCFullYear() !== yy || dt.getUTCMonth() !== mm - 1 || dt.getUTCDate() !== dd) return null;
-  const now = new Date().getFullYear();
-  if (yy < 1900 || yy > now - 10) return null;
-  return `${m[3]}-${m[2]}-${m[1]}`;
-}
-/** YYYY-MM-DD → DD/MM/YYYY (for showing a saved date in the box). */
-export const isoToDmy = (iso?: string | null) => (/^\d{4}-\d{2}-\d{2}$/.test(iso || '') ? `${iso!.slice(8, 10)}/${iso!.slice(5, 7)}/${iso!.slice(0, 4)}` : '');
-export const myName = () => db.user.name || 'You';
 export const myPhoto = () => db.user.avatar || 'img/me';
 export const myCity = () => (db.user.city || '').replace(/ CM$/, '') || 'your area';
 /** City for labels; empty when unknown. */
 export const cityLabel = () => (db.user.city || '').replace(/ CM$/, '');
-export const myHandle = () => '@' + (db.user.name ? db.user.name.toLowerCase().replace(/[^a-z]+/g, '.').replace(/^\.|\.$/g, '') : 'you');
-
-/** The signed-in person as a Person record (Regular or the active business). */
 export function me(): Person {
   const u = db.user;
   const st = require('./server').myStats();
@@ -142,22 +91,6 @@ export function me(): Person {
   base.pin = base.photo;
   return base;
 }
-/** Author card for something I posted, as the profile I posted it from. */
-export function meAs(as?: string, bizId?: string | number | null): Person {
-  if (as === 'business') {
-    const b = db.BIZ.list.find((x) => x.id === bizId);
-    if (b) return { ...me(), name: bizName(b), role: 'Business', photo: bizLogo(b), pin: bizLogo(b), client: 1, biz: 1, area: b.area || b.city || '', verified: b.verified === 'verified' ? 1 : 0 };
-  }
-  const u = db.user;
-  return { ...me(), name: u.name || 'You', role: mySkill() || 'Member', photo: myPhoto(), pin: myPhoto(), client: undefined, biz: undefined, area: myCity(), verified: 1 };
-}
-/** Other people you can hire (not clients, businesses or groups). */
-export const WORKERS = () => Object.keys(db.P).filter((id) => id !== 'me' && !db.P[id].client && !db.P[id].group && db.P[id].name !== 'Deleted account' && !require('./server').isBlocked(id));
-export const isGroup = (id: string) => !!db.P[id]?.group;
-/** Chat side: true when I'm the one hiring in this conversation. */
-export const hiringSide = (id: string): boolean => require('./work').hiringIn(id);
-
-/** An entry older versions added by themselves: "Plumbing" with nothing filled in, for someone who isn't a plumber. */
 const madeUpSkill = (e: any, skills: string[]) => !!e && e.n === 'Plumbing' && !e.custom && e.lv === 'Intermediate' && !Object.keys(e.x || {}).length && !Object.keys(e.xo || {}).length && (e.c !== 'Plumber' || !skills.includes('Plumber'));
 /** The person's skills in detail, kept in step with the skill categories on their profile.
     Only what they chose: an empty list stays empty. */
@@ -173,9 +106,6 @@ export function ensureSkillList() {
   });
   return u.skillList;
 }
-export const myLevel = () => db.user.level || lvOf(db.user.years);
-
-/* ---------------- role-dependent collections ---------------- */
 export const NOTIFS = (): Notif[] => (isW() ? db.NOTIFS_W : db.NOTIFS_C);
 export const THREADS = (): Record<string, Thread> => (isW() ? db.THREADS_W : db.THREADS_C);
 export const ORDER = (): string[] => (isW() ? db.ORDER_W : db.ORDER_C);
@@ -189,67 +119,7 @@ export function thread(id: string): Thread {
 }
 export const unreadMsgs = () => ORDER().reduce((a, id) => a + (THREADS()[id]?.unread || 0), 0);
 export const unreadNotifs = () => NOTIFS().filter((n) => !n.read).length;
-/** Unread notifications on my other profiles: on the Regular profile, one line per business page with news;
-    on a business page, the Regular profile's. (Business pages share one list, so they count together there.) */
-export function otherUnread(): { biz?: string; n: number }[] {
-  if (!isW()) {
-    const n = db.user.bizOnly ? 0 : db.NOTIFS_W.filter((x) => !x.read).length;
-    return n ? [{ n }] : [];
-  }
-  const per: Record<string, number> = {};
-  db.NOTIFS_C.forEach((x) => {
-    if (x.read) return;
-    const b = x.biz || db.BIZ.active || db.BIZ.list[0]?.id || '';
-    if (b) per[b] = (per[b] || 0) + 1;
-  });
-  return Object.entries(per).map(([biz, n]) => ({ biz, n }));
-}
-
-/* ---------------- jobs ---------------- */
-/** A post by id (also by the temporary id it had before the server saved it). */
 export const postById = (id: string) => db.POSTS.find((p) => p.id === id) || db.POSTS.find((p) => (p as any).tmp === id);
-export function postVisible(p: Post) {
-  if (p.kind !== 'request') return true;
-  if (p.mine) return isW() ? p.as !== 'business' : p.as === 'business' && p.biz === db.BIZ.active;
-  return true;
-}
-export const openJobs = () =>
-  db.POSTS.filter((p) => p.kind === 'request' && !p.mine).sort(
-    (a, b) => (+db.user.skills.includes(b.cat!) - +db.user.skills.includes(a.cat!)) || ((b.urgent ? 1 : 0) - (a.urgent ? 1 : 0)),
-  );
-export const listJobs = () => db.POSTS.filter((p) => p.kind === 'request' && !p.mine && p.client !== 'me');
-/** People you can hire: members who list at least one skill, nearest first (then best rated). */
-export const listPeople = () =>
-  WORKERS()
-    .filter((id) => (db.P[id].skills || []).length)
-    .sort((a, b) => (kmOf(db.P[a].dist) || 999) - (kmOf(db.P[b].dist) || 999) || db.P[b].rate - db.P[a].rate);
-export const myVacancies = () => db.POSTS.filter((p) => p.mine && p.as === 'business' && p.biz === db.BIZ.active);
-export const myOpps = () => db.OPPS.filter((o) => o.mine && o.biz === db.BIZ.active);
-export const myCourses = () => db.COURSES.filter((c) => c.mine && c.biz === db.BIZ.active);
-export function oppBiz(o: Opp): { name: string; logo: string; id: string | null } {
-  if (o.mine) {
-    const b = db.BIZ.list.find((x) => x.id === o.biz);
-    return { name: bizName(b), logo: bizLogo(b), id: null };
-  }
-  const s = db.BIZ_SAMPLE[o.biz];
-  return { name: s.name, logo: s.logo, id: o.biz };
-}
-export function mOwner(m: Mentorship): { name: string; photo: string; sq?: boolean; sub: string; id?: string } {
-  if (m.mine) {
-    if (m.asBiz) {
-      const b = db.BIZ.list.find((x) => x.id === m.asBiz);
-      return { name: bizName(b), photo: bizLogo(b), sq: true, sub: 'Business' };
-    }
-    return { name: db.user.name || 'You', photo: myPhoto(), sub: 'You' };
-  }
-  const bs = db.BIZ_SAMPLE[m.by!];
-  if (bs) return { name: bs.name, photo: bs.logo, sq: true, sub: 'Company', id: m.by };
-  const p = db.P[m.by!];
-  return { name: p.name, photo: p.photo, sub: `${p.role} · ${p.years} yrs`, id: m.by };
-}
-
-/* ---------------- about / profile content ---------------- */
-/** About a person: only what they wrote themselves (nothing generated). */
 export function aboutOf(id: string) {
   const r = profileRaw(id) || {};
   const list: { n?: string; c?: string }[] = r.skill_list || [];
@@ -259,8 +129,6 @@ export function aboutOf(id: string) {
 
 /* ---------------- search filters ---------------- */
 export type Filters = typeof ui.F;
-export const fCount = (F: Filters = ui.F) => (F.dist ? 1 : 0) + (F.city ? 1 : 0) + (F.rate ? 1 : 0) + (F.ver ? 1 : 0) + (F.urgent ? 1 : 0) + (F.budget ? 1 : 0) + (F.sort !== 'best' ? 1 : 0) + (F.type ? 1 : 0) + (F.posted ? 1 : 0) + (F.by ? 1 : 0) + (F.exp ? 1 : 0);
-/** "now", "12mins ago", "2h ago", "Yesterday", "3 days ago", "1w" → age in days. */
 export function ageDays(t?: string) {
   const s = (t || '').toLowerCase();
   if (!s || /now|min|h ago|^\d+h$/.test(s)) return 0;
@@ -301,44 +169,6 @@ function inCity(coord: [number, number] | undefined, text: string, F: Filters) {
   if (!F.city) return true;
   if (text.toLowerCase().includes(F.city.toLowerCase())) return true;
   return !!F.cityAt && !!coord && kmBetween(F.cityAt, coord) <= (F.dist || 30);
-}
-export function matchPerson(id: string, q: string, cat: string | null, F: Filters = ui.F) {
-  const p = P(id);
-  if (!p) return false;
-  if (q && !(p.name + ' ' + p.role + ' ' + (p.tag || '') + ' ' + p.area).toLowerCase().includes(q)) return false;
-  if (cat && p.role !== cat && !(p.skills || []).includes(cat)) return false;
-  if (!inCity(p.coord as [number, number] | undefined, p.area || '', F)) return false;
-  if (F.dist && kmTo(p.coord as [number, number] | undefined, F) > F.dist) return false;
-  if (F.rate && p.rate < F.rate) return false;
-  if (F.ver && !p.verified) return false;
-  if (F.exp && (p.years || 0) < F.exp) return false;
-  return true;
-}
-export function matchJob(po: Post, q: string, cat: string | null, F: Filters = ui.F) {
-  const c = P(po.client!);
-  if (q && !((c?.name || '') + ' ' + po.cat + ' ' + po.title + ' ' + po.area + ' ' + (po.text || '')).toLowerCase().includes(q)) return false;
-  if (cat && po.cat !== cat) return false;
-  if (!po.mine && !inCity((po.coord || c?.coord) as [number, number] | undefined, (po.area || '') + ' ' + (c?.area || ''), F)) return false;
-  if (F.dist && !po.mine && jobKm(po, F) > F.dist) return false;
-  if (F.urgent && !po.urgent) return false;
-  if (F.budget && budgetNum(po.budget) < F.budget) return false;
-  if (F.type && !(po.type || '').includes(F.type)) return false;
-  if (F.posted && postAge(po) >= F.posted) return false;
-  if (F.by === 'company' && !(po.biz || c?.biz)) return false;
-  if (F.by === 'person' && (po.biz || c?.biz)) return false;
-  return true;
-}
-export function sortJobs(L: Post[], F: Filters = ui.F) {
-  if (F.sort === 'near') return L.slice().sort((a, b) => far(jobKm(a, F), jobKm(b, F)));
-  if (F.sort === 'budget') return L.slice().sort((a, b) => budgetNum(b.budget) - budgetNum(a.budget));
-  if (F.sort === 'new') return L.slice().sort((a, b) => (b.at || 0) - (a.at || 0) || ageDays(a.time) - ageDays(b.time));
-  return L;
-}
-export function sortPeople(L: string[], F: Filters = ui.F) {
-  if (F.sort === 'near') return L.slice().sort((a, b) => far(kmTo(P(a).coord as [number, number] | undefined, F), kmTo(P(b).coord as [number, number] | undefined, F)));
-  if (F.sort === 'rate') return L.slice().sort((a, b) => P(b).rate - P(a).rate);
-  if (F.sort === 'exp') return L.slice().sort((a, b) => (P(b).years || 0) - (P(a).years || 0));
-  return L;
 }
 
 export const pinOf = (id: string) => String(1000 + ((parseInt(id.replace(/\D/g, '').slice(-4)) || 4271) % 9000));

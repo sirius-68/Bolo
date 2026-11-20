@@ -1,5 +1,5 @@
 /* The app's data model. Mutable; call bump() after changes. */
-import type { Pic } from '../ui/kit';
+import type { Pic } from '../logic/pics';
 
 /* ------------------------------ types ------------------------------ */
 export type Person = {
@@ -414,10 +414,6 @@ export function makeDb() {
     DMREQ: {} as Record<string, 'pending' | 'ok'>,
     /** server conversation id → where it shows in the app */
     CONV: {} as Record<string, { key: string; inbox: 'W' | 'C' }>,
-    /** comments per post, loaded when a post is opened */
-    CMTS: {} as Record<string, import('../logic/comments').Cmt[]>,
-    /** approved career experts (server) */
-    EXPERTS: [] as import('./experts').Expert[],
     /** chats hidden on this phone ("Delete chat"): conversation id → hidden at (ms) */
     HIDDEN: {} as Record<string, number>,
     /** when everything was last loaded from the server */

@@ -57,30 +57,6 @@ export async function signUp(contact: string, password: string, meta: { name: st
     return { needsCode: false, error: friendly(e) };
   }
 }
-export async function verifyCode(contact: string, token: string, purpose: 'signup' | 'recovery'): Promise<string | null> {
-  try {
-    const email = isEmail(contact);
-    const type = email ? (purpose === 'recovery' ? 'recovery' : 'email') : 'sms';
-    let { error } = await supabase.auth.verifyOtp({ ...(cred(contact) as any), token: token.trim(), type } as any);
-    // sign-up codes are accepted under either name, depending on the server version
-    if (error && email && purpose === 'signup') ({ error } = await supabase.auth.verifyOtp({ email: contact.trim().toLowerCase(), token: token.trim(), type: 'signup' }));
-    if (error) return friendly(error);
-    await afterAuth();
-    return null;
-  } catch (e) {
-    return friendly(e);
-  }
-}
-export async function resendCode(contact: string, purpose: 'signup' | 'recovery'): Promise<string | null> {
-  try {
-    if (purpose === 'recovery') return sendReset(contact);
-    const { error } = isEmail(contact) ? await supabase.auth.resend({ type: 'signup', email: contact.trim().toLowerCase() }) : await supabase.auth.resend({ type: 'sms', phone: toE164(contact) });
-    return error ? friendly(error) : null;
-  } catch (e) {
-    return friendly(e);
-  }
-}
-/** No password: send a 6-digit code by SMS (a phone number) or by email. An account is made when there is none yet. */
 export async function sendLoginCode(contact: string): Promise<string | null> {
   try {
     const { error } = isEmail(contact)
@@ -117,23 +93,6 @@ export async function signIn(contact: string, password: string): Promise<string 
     if (error) return friendly(error);
     await afterAuth();
     return null;
-  } catch (e) {
-    return friendly(e);
-  }
-}
-/** Sends a code to reset the password (email recovery code, or an SMS log-in code for phones). */
-export async function sendReset(contact: string): Promise<string | null> {
-  try {
-    const { error } = isEmail(contact) ? await supabase.auth.resetPasswordForEmail(contact.trim().toLowerCase()) : await supabase.auth.signInWithOtp({ phone: toE164(contact), options: { shouldCreateUser: false } });
-    return error ? friendly(error) : null;
-  } catch (e) {
-    return friendly(e);
-  }
-}
-export async function updatePassword(password: string): Promise<string | null> {
-  try {
-    const { error } = await supabase.auth.updateUser({ password });
-    return error ? friendly(error) : null;
   } catch (e) {
     return friendly(e);
   }
@@ -511,22 +470,6 @@ export function startSync() {
 }
 
 /* ---------------------------------------------------------------- your data (Settings) */
-/** Everything getit stores about this account, as a JSON file the person can save or share. */
-export async function exportMyData(): Promise<{ uri?: string; error?: string }> {
-  try {
-    const { data, error } = await supabase.rpc('export_my_data');
-    if (error) return { error: friendly(error) };
-    const f = new File(Paths.cache, `bolo-my-data-${new Date().toISOString().slice(0, 10)}.json`);
-    if (f.exists) f.delete();
-    f.create();
-    f.write(JSON.stringify(data, null, 2));
-    return { uri: f.uri };
-  } catch (e) {
-    return { error: friendly(e) };
-  }
-}
-
-/** Permanently delete this account on the server (profile, business pages, posts, files). */
 export async function deleteAccount(): Promise<string | null> {
   try {
     const { error } = await supabase.functions.invoke('delete-account', { method: 'POST' });

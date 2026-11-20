@@ -1,11 +1,12 @@
 /* Short messages that appear over the app and go away by themselves, and the "are you sure?" question.
    toast('Saved') · undoBar('Removed', putBack) · confirm({ title, text, ok, onOk }) */
 import React, { useEffect, useReducer, useRef } from 'react';
-import { Animated, Pressable, Text, View } from 'react-native';
+import { Animated, Modal, Pressable, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tap } from './touch';
 import { RED, ft, useG } from './theme';
-import { Big, Link, T, gsheet } from './ui';
+import { Big, Link, Round, T, gsheet } from './ui';
 
 type Note = { msg: string; undo?: () => void; key: number };
 let note: Note | null = null;
@@ -29,8 +30,50 @@ export function setToastOffset(px: number) {
   offset = px;
 }
 
+/* ---------------- one photo, full screen ---------------- */
+let photo: string | null = null;
+const photoSubs = new Set<() => void>();
+/** Show a photo full screen ("uri:https://…" or a plain address). */
+export function openPhoto(src: string) {
+  photo = src.replace(/^uri:/, '');
+  photoSubs.forEach((f) => f());
+}
+function PhotoHost() {
+  const [, tick] = useReducer((x: number) => x + 1, 0);
+  const ins = useSafeAreaInsets();
+  useEffect(() => {
+    photoSubs.add(tick);
+    return () => {
+      photoSubs.delete(tick);
+    };
+  }, []);
+  const close = () => {
+    photo = null;
+    tick();
+  };
+  if (!photo) return null;
+  return (
+    <Modal transparent visible statusBarTranslucent animationType="fade" onRequestClose={close}>
+      <View style={{ flex: 1, backgroundColor: '#000000' }}>
+        <Image source={{ uri: photo }} style={{ flex: 1 }} contentFit="contain" />
+        <View style={{ position: 'absolute', left: 20, top: ins.top + 16 }}>
+          <Round testID="photo-close" icon="x" label="Close" onPress={close} bg="rgba(0, 0, 0, 0.5)" color="#ffffff" />
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 /** Put once at the top of the app. */
 export function NoticeHost() {
+  return (
+    <>
+      <ToastHost />
+      <PhotoHost />
+    </>
+  );
+}
+function ToastHost() {
   const [, tick] = useReducer((x: number) => x + 1, 0);
   const t = useG();
   const ins = useSafeAreaInsets();

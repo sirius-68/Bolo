@@ -56,7 +56,7 @@ export default function WId() {
       <Top pad={0} />
       <View style={{ alignItems: 'center', marginTop: 10 }}>
         <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: t.tabOn, alignItems: 'center', justifyContent: 'center' }}>
-          <GIcon name="shield" size={40} color={t.accent} />
+          <GIcon name="idcard" size={40} color={t.accent} />
         </View>
         <T s={28} w={8} ls={-0.6} center style={{ marginTop: 16, marginBottom: 6 }}>
           Check your ID
@@ -88,7 +88,7 @@ export default function WId() {
           </View>
         ))}
       </View>
-      <Hint icon="shield" style={{ marginTop: 16 }}>
+      <Hint icon="lock" style={{ marginTop: 16 }}>
         Your ID is only used to check who you are. Clients never see it.
       </Hint>
       <View style={{ flex: 1 }} />

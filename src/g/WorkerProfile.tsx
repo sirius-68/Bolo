@@ -10,20 +10,20 @@ import { P, aboutOf, fname, has, profileRaw } from '../logic/core';
 import { loadPerson } from '../logic/server';
 import { startCall } from '../logic/calls';
 import { toggleSave } from '../logic/work';
-import { openChat } from '../sheets/chat';
-import { openHire, openMedia } from '../sheets/work';
-import { tap } from '../ui/kit';
+import { openChat } from './nav';
+import { openPhoto } from './notice';
+import { openBook } from './sheets';
+import { tap } from './touch';
 import { withAccount } from './signin';
 import { kmText } from './data';
 import { GIcon } from './icons';
 import { RED, useG } from './theme';
 import { Big, Face, Round, Screen, T } from './ui';
 
-/** "5,000 FCFA per hour" from a listed service; "Ask for a price" when none was given. */
+/** "from 5,000 FCFA" for a listed service; "Ask" when no price was given. */
 function priceOf(x: any): string {
-  if (typeof x.price === 'number' && x.price > 0) return `${x.price.toLocaleString('en-US')} FCFA${x.unit ? ' ' + x.unit : ''}`;
-  const s = String(x.price || '').trim();
-  return s ? s.replace(/^XAF\s*/i, '') + (/^XAF/i.test(s) ? ' FCFA' : '') : 'Ask for a price';
+  const n = typeof x.price === 'number' ? x.price : +String(x.price || '').replace(/[^\d]/g, '') || 0;
+  return n > 0 ? `from ${n.toLocaleString('en-US')} FCFA` : 'Ask';
 }
 
 export function WorkerProfile({ id }: { id: string }) {
@@ -138,7 +138,7 @@ export function WorkerProfile({ id }: { id: string }) {
               {h2('Photos of past work', 10)}
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {photos.map((u, i) => (
-                  <Pressable key={u + i} accessibilityRole="imagebutton" accessibilityLabel={`Photo ${i + 1} of ${f}’s work`} onPress={() => openMedia(u)} style={{ width: '31.5%', aspectRatio: 1, borderRadius: 16, overflow: 'hidden', backgroundColor: t.card2 }}>
+                  <Pressable key={u + i} accessibilityRole="imagebutton" accessibilityLabel={`Photo ${i + 1} of ${f}’s work`} onPress={() => openPhoto(u)} style={{ width: '31.5%', aspectRatio: 1, borderRadius: 16, overflow: 'hidden', backgroundColor: t.card2 }}>
                     <Image source={{ uri: u.slice(4) }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={120} />
                   </Pressable>
                 ))}
@@ -174,7 +174,7 @@ export function WorkerProfile({ id }: { id: string }) {
               No reviews yet. {f} is new on getit.
             </T>
           )}
-          <Pressable testID="profile-book" accessibilityRole="button" onPress={() => (tap(), withAccount(`book ${f}`, () => openHire(id)))} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1, borderColor: t.line, backgroundColor: t.card, opacity: pressed ? 0.8 : 1 })}>
+          <Pressable testID="profile-book" accessibilityRole="button" onPress={() => (tap(), openBook({ worker: id, need: '' }))} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1, borderColor: t.line, backgroundColor: t.card, opacity: pressed ? 0.8 : 1 })}>
             <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: t.tabOn, alignItems: 'center', justifyContent: 'center' }}>
               <GIcon name="calendar" size={20} color={t.accent} />
             </View>
@@ -192,7 +192,7 @@ export function WorkerProfile({ id }: { id: string }) {
       </ScrollView>
       <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 + ins.bottom, borderTopWidth: 1, borderTopColor: t.line, backgroundColor: t.bg }}>
         <Big testID="profile-call" icon="phone" title={`Call ${f}`} style={{ flex: 1 }} onPress={() => withAccount(`call ${f}`, () => void startCall(id, 'voice'))} />
-        <Round testID="profile-chat" icon="chat" label={`Message ${f}`} size={56} bg={t.card2} plain onPress={() => withAccount(`message ${f}`, () => openChat(id))} />
+        <Round testID="profile-chat" icon="chat" label={`Message ${f}`} size={56} bg={t.card2} plain onPress={() => openChat(id)} />
       </View>
     </Screen>
   );

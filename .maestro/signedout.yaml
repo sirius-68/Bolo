@@ -1,5 +1,5 @@
 appId: cm.bolo.app
-name: getit, signed out (opening screen, home, what do you need, workers, tabs, you, light mode)
+name: getit, looking around without an account (splash, opening, where are you, home, need, workers, tabs, you, light)
 ---
 - launchApp:
     clearState: true
@@ -18,14 +18,56 @@ name: getit, signed out (opening screen, home, what do you need, workers, tabs, 
     timeout: 10000
 - takeScreenshot: g02-worker-start
 - back
-# looking needs no account
+# looking needs no account: one question (where are you?), then home
 - tapOn:
     id: "intro-continue"
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible:
+        id: "where-type"
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: "where-type"
+          timeout: 15000
+      - takeScreenshot: g03-where
+      - tapOn:
+          id: "where-type"
+      - extendedWaitUntil:
+          visible:
+            id: "area-city"
+          timeout: 8000
+      - tapOn:
+          id: "area-city"
+      - inputText: "Buea"
+      - takeScreenshot: g04-area-sheet
+      - runFlow:
+          when:
+            visible:
+              id: "area-hit-0"
+          commands:
+            - tapOn:
+                id: "area-hit-0"
+      - runFlow:
+          when:
+            visible:
+              id: "area-use-typed"
+          commands:
+            - tapOn:
+                id: "area-use-typed"
+      - hideKeyboard
+      - tapOn:
+          id: "area-home"
+      - inputText: "Molyko"
+      - hideKeyboard
+      - tapOn:
+          id: "area-done"
 - extendedWaitUntil:
     visible:
       id: "home-big"
     timeout: 15000
-- takeScreenshot: g03-home
+- takeScreenshot: g05-home
 # the big button listens when the phone can
 - tapOn:
     id: "home-big"
@@ -35,160 +77,148 @@ name: getit, signed out (opening screen, home, what do you need, workers, tabs, 
         id: "listen-type"
     commands:
       - waitForAnimationToEnd
-      - takeScreenshot: g03b-listening
+      - takeScreenshot: g06-listening
       - tapOn:
           id: "listen-type"
 - extendedWaitUntil:
     visible:
       id: "need-input"
     timeout: 10000
-- takeScreenshot: g04-need
+- takeScreenshot: g07-need
 - tapOn:
     id: "need-Plumber"
 - extendedWaitUntil:
     visible:
       id: "workers-prices"
     timeout: 20000
-- takeScreenshot: g05-workers-plumber
-# when someone offers this trade: their profile, as a client sees it
-- runFlow:
-    when:
-      visible:
-        id: "workers-top"
-    commands:
-      - tapOn:
-          id: "workers-top"
-      - extendedWaitUntil:
-          visible:
-            id: "profile-call"
-          timeout: 10000
-      - takeScreenshot: g05b-profile
-      - scrollUntilVisible:
-          element:
-            id: "profile-book"
-          direction: DOWN
-          timeout: 8000
-      - takeScreenshot: g05c-profile-bottom
-      - tapOn:
-          id: "profile-back"
-- scrollUntilVisible:
-    element:
-      id: "workers-change"
-    direction: DOWN
-    timeout: 8000
-- takeScreenshot: g06-workers-bottom
-- tapOn:
-    id: "workers-change"
-# typed in your own words
-- extendedWaitUntil:
-    visible:
-      id: "need-input"
-    timeout: 10000
-- tapOn:
-    id: "need-input"
-- inputText: "my car will not start"
-- takeScreenshot: g07-need-typed
-- pressKey: Enter
-- extendedWaitUntil:
-    visible:
-      id: "workers-prices"
-    timeout: 20000
-- takeScreenshot: g08-workers-mechanic
-# asking for prices needs an account: the sign-in sheet slides up
+- takeScreenshot: g08-workers
+# asking for prices: the sheet, and what sending it needs
 - tapOn:
     id: "workers-prices"
 - extendedWaitUntil:
     visible:
+      id: "req-send"
+    timeout: 10000
+- takeScreenshot: g09-get-prices
+- scrollUntilVisible:
+    element:
+      id: "req-send"
+    direction: DOWN
+    timeout: 6000
+- takeScreenshot: g10-get-prices-bottom
+- tapOn:
+    id: "req-send"
+- extendedWaitUntil:
+    visible:
       id: "signin-send"
     timeout: 10000
-- takeScreenshot: g09-signin-sheet
+- takeScreenshot: g11-signin-sheet
 - back
+- runFlow:
+    when:
+      visible:
+        id: "signin-send"
+    commands:
+      - back
 - tapOn:
     id: "workers-close"
-- tapOn:
-    id: "need-close"
+- runFlow:
+    when:
+      visible:
+        id: "need-close"
+    commands:
+      - tapOn:
+          id: "need-close"
 # the other tabs, signed out
 - tapOn:
     id: "tab-jobs"
-- takeScreenshot: g10-jobs-empty
+- takeScreenshot: g12-jobs-empty
 - tapOn:
     id: "tab-inbox"
-- takeScreenshot: g11-inbox-empty
+- takeScreenshot: g13-inbox-empty
 - tapOn:
     id: "tab-find"
-# you: appearance, area, sign in
+# you: appearance, area, help, what's new
 - tapOn:
     id: "home-me"
 - extendedWaitUntil:
     visible:
       id: "me-signin"
     timeout: 8000
-- takeScreenshot: g12-you
-- tapOn: "Light"
-- takeScreenshot: g13-you-light
+- takeScreenshot: g14-you
+- tapOn:
+    id: "me-new"
+- extendedWaitUntil:
+    visible:
+      id: "story-close"
+    timeout: 8000
+- takeScreenshot: g15-whats-new
+- tapOn:
+    id: "story-close"
+- tapOn:
+    id: "home-me"
+- tapOn:
+    id: "me-help"
+- waitForAnimationToEnd
+- takeScreenshot: g16-help
 - back
-- takeScreenshot: g14-home-light
+- runFlow:
+    when:
+      visible:
+        id: "help-send"
+    commands:
+      - back
+- tapOn:
+    id: "home-me"
+- tapOn: "Light"
+- takeScreenshot: g17-you-light
+- tapOn:
+    id: "me-close"
+- takeScreenshot: g18-home-light
 - tapOn:
     id: "tab-search"
 - extendedWaitUntil:
     visible:
       id: "need-input"
     timeout: 10000
+- takeScreenshot: g19-need-light
 - tapOn:
     id: "need-Electrician"
 - extendedWaitUntil:
     visible:
       id: "workers-prices"
     timeout: 20000
-- takeScreenshot: g15-workers-light
+- takeScreenshot: g20-workers-light
+- tapOn:
+    id: "workers-prices"
+- extendedWaitUntil:
+    visible:
+      id: "req-send"
+    timeout: 10000
+- takeScreenshot: g21-get-prices-light
+- back
+- runFlow:
+    when:
+      visible:
+        id: "req-send"
+    commands:
+      - back
 - tapOn:
     id: "workers-close"
-- tapOn:
-    id: "need-close"
+- runFlow:
+    when:
+      visible:
+        id: "need-close"
+    commands:
+      - tapOn:
+          id: "need-close"
 - tapOn:
     id: "tab-inbox"
-- takeScreenshot: g16-inbox-light
+- takeScreenshot: g22-inbox-light
 - tapOn:
     id: "tab-find"
 - tapOn:
     id: "home-me"
-- extendedWaitUntil:
-    visible:
-      id: "me-signin"
-    timeout: 8000
-# light mode reaches the sign-in sheet and the password screen too
-- tapOn:
-    id: "me-signin"
-- extendedWaitUntil:
-    visible:
-      id: "signin-send"
-    timeout: 10000
-- takeScreenshot: g16b-signin-light
-- tapOn:
-    id: "signin-password"
-- extendedWaitUntil:
-    visible:
-      id: "li-submit"
-    timeout: 10000
-- takeScreenshot: g16c-login-light
-- back
-- tapOn:
-    id: "home-me"
 - tapOn: "Dark"
 - tapOn:
-    id: "me-signin"
-- extendedWaitUntil:
-    visible:
-      id: "signin-password"
-    timeout: 10000
-- tapOn:
-    id: "signin-password"
-- extendedWaitUntil:
-    visible:
-      id: "li-submit"
-    timeout: 10000
-- takeScreenshot: g17-login
-# empty form: the app explains what's missing instead of calling the server
-- tapOn:
-    id: "li-submit"
-- takeScreenshot: g18-login-empty
+    id: "me-close"

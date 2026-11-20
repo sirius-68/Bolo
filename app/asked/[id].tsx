@@ -112,7 +112,10 @@ export default function Asked() {
           </Pulse>
         )}
         <View testID="asked-status" accessibilityRole="summary" accessibilityLiveRegion="polite" style={{ flexDirection: 'row', gap: 12, alignSelf: 'stretch', padding: 16, borderRadius: 22, backgroundColor: t.card, borderWidth: 1, borderColor: t.line }}>
-          <View style={{ marginTop: 2 }}>{st.good ? <GIcon name="check" size={20} color={GOOD} sw={2.6} /> : <GIcon name="clock" size={20} color={t.accent} />}</View>
+          <View style={{ width: 22, height: 22, marginTop: 1, alignItems: 'center', justifyContent: 'center' }}>
+            {st.good ? <View style={{ position: 'absolute', width: 20, height: 20, borderRadius: 10, backgroundColor: GOOD, opacity: 0.22 }} /> : null}
+            <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: st.good ? GOOD : RED }} />
+          </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <T s={17} w={8} lh={1.3}>
               {st.title}

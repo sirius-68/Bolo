@@ -136,40 +136,8 @@ async function openFrom(n: any) {
   let go = goFrom(d.target);
   // a message from the getit team opens itself, to be read in full
   if (go?.k === 'notifs' && d.id) go = { k: 'notifs', id: d.id };
-  // first to the profile it is for (a business page of mine, or the Regular profile), then to the thing itself
-  const switched = await toProfileOf(d);
-  const { goTo } = require('../sheets/goto');
-  setTimeout(() => goTo(go || { k: 'notifs' }), switched ? 800 : 0);
-}
-
-/** A pop-up for a business page while I am on my Regular profile (or the other way round, or for another of my
-    business pages): switch there first, the way the account switcher does. Returns true when it switched. */
-async function toProfileOf(d: Payload): Promise<boolean> {
-  let biz: string | null | undefined;
-  const cid = d.target?.k === 'chat' ? String(d.target.id || '') : '';
-  if (cid && db.CONV[cid]) biz = db.CONV[cid].inbox === 'C' ? convRow(cid)?.business_id || null : null;
-  else if (d.biz !== undefined) biz = d.biz || null;
-  else if (d.id) {
-    biz = notifBusiness(d.id);
-    if (biz === undefined) {
-      const { data } = await supabase.from('notifications').select('business_id').eq('id', d.id).maybeSingle();
-      biz = data ? data.business_id || null : undefined;
-    }
-  }
-  if (biz === undefined) return false;
-  const { useBiz, setRole } = require('./account');
-  const { resetTo } = require('./nav');
-  if (biz) {
-    const mine = myBizOf(biz);
-    if (!mine || (!isW() && db.BIZ.active === mine.id)) return false;
-    useBiz(mine.id);
-    resetTo('/find');
-    return true;
-  }
-  if (isW() || db.user.bizOnly) return false;
-  if (setRole('worker') !== 'ok') return false;
-  resetTo('/find');
-  return true;
+  const { goTo } = require('../g/goto');
+  goTo(go || { k: 'notifs' });
 }
 
 function wire() {

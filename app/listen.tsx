@@ -6,7 +6,7 @@ import { understand, plural } from '../src/g/data';
 import { GIcon } from '../src/g/icons';
 import { ft, useG } from '../src/g/theme';
 import { BigButton, Link, Round, Screen, T } from '../src/g/ui';
-import { tap } from '../src/ui/kit';
+import { tap } from '../src/g/touch';
 import { SR, canListen } from '../src/g/speech';
 
 function phoneSpeaksFrench() {

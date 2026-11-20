@@ -8,9 +8,6 @@ import { MAPBOX_TOKEN } from '../lib/mapbox';
 
 let busy: Promise<LngLat | null> | null = null;
 
-export const hasCoord = () => Array.isArray(db.user.coord);
-
-/** Permission state without asking. */
 export async function locGranted() {
   try {
     return (await Location.getForegroundPermissionsAsync()).granted;

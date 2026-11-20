@@ -1,0 +1,13 @@
+appId: cm.bolo.app
+# The phone's own questions (location while on the way): allow, so the tour goes on.
+---
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"

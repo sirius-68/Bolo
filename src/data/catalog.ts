@@ -1,5 +1,4 @@
 /* Static reference data — ported from the getit prototype. */
-import { C } from '../ui/theme';
 
 /** Job categories: [name, icon]. */
 export const CATS: [string, string][] = [
@@ -28,10 +27,6 @@ export const CATS: [string, string][] = [
   ['Engineer', 'cat-eng'],
   ['Coach', 'cat-coach'],
 ];
-export const CATIMG: Record<string, string> = Object.fromEntries(CATS);
-export const catIcon = (c?: string) => (c && CATIMG[c]) || 'job';
-
-/** Services offered per category: [name, price, description, image?]. */
 export const SERVICES: Record<string, [string, string, string, string?][]> = {
   Plumber: [
     ['Faucet Repair', 'XAF 10k – 20k', 'Repair of leaky or malfunctioning faucets in kitchens, bathrooms, and utility areas.', 'img/svc-faucet'],
@@ -155,63 +150,6 @@ export function detectCat(t: string): string | null {
   return best;
 }
 
-export const OB = [
-  { t: 'Every skill has a place here.', p: 'Tailors, plumbers, electricians, hairdressers, drivers, teachers, designers, developers. Get found and booked by people near you.', art: 'toolbox' },
-  { t: 'Need something done? Sorted.', p: 'Say what you need in under a minute. People nearby send offers. Compare ratings, prices and past work, then hire and track it live.', art: 'phone' },
-  { t: 'Grow your career. Hire your team.', p: 'Jobs, internships, programs and mentors to grow, and business pages to post vacancies and hire.', art: 'career' },
-];
-
-/* -------------------- skills taxonomy -------------------- */
-export const PROF = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
-export const LANGP = ['Basic', 'Good', 'Fluent', 'Native'];
-export type ExSpec = { l: string; t: 's' | 'm' | 'ml'; lv?: string[]; o: string[] };
-export const EX: Record<string, ExSpec> = {
-  dev: { l: 'Programming languages you know', t: 'ml', lv: PROF, o: ['JavaScript', 'TypeScript', 'Python', 'Java', 'PHP', 'C#', 'C++', 'C', 'Kotlin', 'Swift', 'Dart', 'Go', 'Ruby', 'Rust', 'SQL'] },
-  web: { l: 'Frameworks & tools', t: 'm', o: ['React', 'Next.js', 'Vue', 'Angular', 'Node.js', 'Express', 'Laravel', 'Django', 'WordPress', 'Tailwind CSS', 'Bootstrap'] },
-  mobile: { l: 'Mobile frameworks', t: 'm', o: ['Flutter', 'React Native', 'Android (Kotlin/Java)', 'iOS (Swift)', 'Ionic'] },
-  data: { l: 'Tools you use', t: 'ml', lv: PROF, o: ['Excel', 'Google Sheets', 'SQL', 'Power BI', 'Tableau', 'Python (pandas)', 'R', 'SPSS'] },
-  cloud: { l: 'Platforms & tools', t: 'm', o: ['AWS', 'Google Cloud', 'Azure', 'Docker', 'Kubernetes', 'Linux', 'Git', 'CI/CD'] },
-  net: { l: 'What you can fix or set up', t: 'm', o: ['Networks & Wi-Fi', 'Computer repair', 'Phone repair', 'CCTV', 'Printers', 'Windows / Linux setup', 'Software installs'] },
-  design: { l: 'Design tools', t: 'ml', lv: PROF, o: ['Figma', 'Photoshop', 'Illustrator', 'Canva', 'CorelDRAW', 'InDesign', 'After Effects', 'Blender'] },
-  video: { l: 'Editing tools', t: 'm', o: ['Premiere Pro', 'CapCut', 'DaVinci Resolve', 'Final Cut', 'Lightroom', 'After Effects'] },
-  mkt: { l: 'Channels', t: 'm', o: ['Facebook & Instagram', 'TikTok', 'WhatsApp Business', 'Google Ads', 'SEO', 'Email marketing', 'Content writing'] },
-  sales: { l: 'Type of sales', t: 'm', o: ['Field sales', 'Telesales', 'Shop / retail', 'B2B', 'Real estate', 'Mobile money', 'Door-to-door'] },
-  cs: { l: 'Channels you handle', t: 'm', o: ['Phone', 'WhatsApp / chat', 'Email', 'Front desk / walk-in', 'Social media'] },
-  admin: { l: 'Office tools', t: 'ml', lv: PROF, o: ['Word', 'Excel', 'PowerPoint', 'Google Workspace', 'Typing', 'Filing & records'] },
-  acct: { l: 'Accounting software', t: 'ml', lv: PROF, o: ['Excel', 'Sage', 'QuickBooks', 'Odoo', 'Tally', 'Xero'] },
-  acctc: { l: 'Certifications', t: 'm', o: ['ACCA', 'CPA', 'CAT', 'OHADA (SYSCOHADA)', 'None yet'] },
-  teach: { l: 'Subjects', t: 'm', o: ['Maths', 'Physics', 'Chemistry', 'Biology', 'English', 'French', 'Computer science', 'Economics', 'Accounting', 'Geography', 'History', 'Literature', 'Music'] },
-  teachl: { l: 'Levels you teach', t: 'm', o: ['Nursery', 'Primary', 'Secondary', 'GCE O Level', 'GCE A Level', 'University', 'Adults'] },
-  lang: { l: 'Languages you work in', t: 'ml', lv: LANGP, o: ['English', 'French', 'Pidgin', 'Spanish', 'German', 'Chinese', 'Arabic', 'Duala', 'Ewondo', 'Fulfulde'] },
-  drive: { l: 'Licence categories', t: 'm', o: ['A: motorbike', 'B: car', 'C: truck', 'D: bus', 'E: trailer'] },
-  veh: { l: 'Do you have a vehicle?', t: 's', o: ['Own motorbike', 'Own car', 'Own truck', 'No vehicle'] },
-  deliv: { l: 'How you deliver', t: 's', o: ['Motorbike (okada)', 'Tricycle', 'Car', 'Bicycle', 'On foot'] },
-  cook: { l: 'Cuisines', t: 'm', o: ['Cameroonian', 'Nigerian', 'West African', 'Continental', 'Pastry & baking', 'Grills (soya, fish)', 'Chinese', 'Fast food'] },
-  health: { l: 'Areas of care', t: 'm', o: ['General care', 'Maternity', 'Children', 'Elderly care', 'First aid', 'Pharmacy', 'Lab work', 'Home visits'] },
-  lic: { l: 'Licence or registration', t: 's', o: ['Licensed / registered', 'In training', 'Not licensed'] },
-  beauty: { l: 'Services', t: 'm', o: ['Braiding', 'Barbering', 'Weaves & wigs', 'Natural hair', 'Nails', 'Make-up', 'Lashes', 'Massage'] },
-  tailor: { l: 'What you make', t: 'm', o: ['Men’s wear', 'Women’s wear', 'Traditional / kaba', 'Children', 'Uniforms', 'Alterations', 'Embroidery'] },
-  build: { l: 'Specialities', t: 'm', o: ['Masonry', 'Tiling', 'Plastering', 'Roofing', 'Painting', 'Carpentry', 'Welding', 'Steel fixing', 'POP ceilings'] },
-  elec: { l: 'Specialities', t: 'm', o: ['House wiring', 'Solar installation', 'Industrial', 'Generators', 'CCTV & alarms', 'Appliance repair', 'AC & fridges'] },
-  plumb: { l: 'Specialities', t: 'm', o: ['Leaks & repairs', 'New installations', 'Water tanks & boreholes', 'Water heaters', 'Drainage', 'Bathroom fitting'] },
-  mechv: { l: 'Vehicles you work on', t: 'm', o: ['Cars', 'Motorbikes', 'Trucks & buses', 'Generators', 'Tricycles'] },
-  mech: { l: 'Specialities', t: 'm', o: ['Engine', 'Diagnostics', 'Brakes & suspension', 'Auto electrical', 'AC', 'Body & paint', 'Tyres'] },
-  clean: { l: 'What you clean', t: 'm', o: ['Homes', 'Offices', 'Deep cleaning', 'Laundry & ironing', 'After construction', 'Carpets & sofas', 'Cars'] },
-  farm: { l: 'Type of farming', t: 'm', o: ['Crops', 'Poultry', 'Pigs & livestock', 'Fish farming', 'Agro-processing', 'Gardens & landscaping'] },
-  care: { l: 'What you do', t: 'm', o: ['Babysitting', 'Live-in nanny', 'Elderly care', 'Housekeeping', 'Cooking for the family', 'School runs'] },
-  sec: { l: 'Type of work', t: 'm', o: ['Day guard', 'Night guard', 'Events', 'CCTV monitoring', 'Bodyguard', 'Gate & access control'] },
-  write: { l: 'Type of writing', t: 'm', o: ['Copywriting', 'Articles & blogs', 'Technical writing', 'Translation', 'Proofreading', 'Scripts', 'CVs & letters'] },
-  event: { l: 'What you offer', t: 'm', o: ['Planning', 'Decoration', 'DJ', 'MC / host', 'Catering', 'Sound & lights', 'Photography'] },
-  eng: { l: 'Engineering field', t: 'm', o: ['Civil', 'Electrical', 'Mechanical', 'Telecom', 'Petroleum', 'Agricultural', 'Software'] },
-  engt: { l: 'Software you use', t: 'ml', lv: PROF, o: ['AutoCAD', 'Revit', 'ArchiCAD', 'SketchUp', 'MATLAB', 'SolidWorks'] },
-  legal: { l: 'Areas of law', t: 'm', o: ['Contracts', 'Land & property', 'Business registration', 'Family', 'Labour', 'Court representation'] },
-  logi: { l: 'What you can do', t: 'm', o: ['Forklift', 'Stock & inventory', 'Loading / offloading', 'Dispatch', 'Customs clearing', 'Cold chain'] },
-  factory: { l: 'What you can do', t: 'm', o: ['Machine operation', 'Quality control', 'Packaging', 'Assembly', 'Maintenance', 'Safety'] },
-  fit: { l: 'What you coach', t: 'm', o: ['Personal training', 'Gym', 'Football', 'Basketball', 'Dance', 'Yoga', 'Swimming'] },
-  ngo: { l: 'Areas', t: 'm', o: ['Community outreach', 'Project management', 'Monitoring & evaluation', 'Fundraising', 'Social work', 'Research'] },
-};
-
-/** Kinds of work: [area, icon, category, examples, skills[[name, extra-keys, category?]]] */
 export const AREAS: [string, string, string, string, [string, string, string?][]][] = [
   ['IT & Software', 'cat-dev', 'Developer', 'Developers, IT support, data', [['Web development', 'dev web'], ['Mobile app development', 'dev mobile'], ['Software engineering', 'dev cloud'], ['Frontend development', 'dev web'], ['Backend development', 'dev cloud'], ['Data analysis', 'data'], ['Data science / AI', 'dev data'], ['DevOps & cloud', 'cloud'], ['Cybersecurity', 'cloud net'], ['IT support & networking', 'net'], ['Computer & phone repair', 'net'], ['Software testing / QA', 'dev'], ['Database administration', 'dev']]],
   ['Design & Creative', 'cat-design', 'Designer', 'Graphics, video, photos, UI', [['Graphic design', 'design'], ['UI/UX design', 'design'], ['Logo & branding', 'design'], ['Video editing', 'video'], ['Photography', 'video'], ['Videography', 'video'], ['Animation & motion', 'design video'], ['Illustration', 'design'], ['Interior design', 'design']]],
@@ -252,7 +190,6 @@ AREAS.forEach(([a, i, c, ex, list]) => {
 export const POPULAR = ['Web development', 'Graphic design', 'Home tutoring', 'Plumbing', 'Electrical work', 'Delivery rider', 'Accounting & bookkeeping', 'Sales representative', 'House cleaning', 'Car mechanic', 'Social media management', 'Cooking / chef', 'Hairdressing', 'Car / family driver'].map(
   (n) => SKILLS.find((s) => s.n === n)!,
 );
-export const WORKSTYLE = ['Full-time', 'Part-time', 'One-off gigs', 'Remote', 'Contract', 'Internship', 'Weekends only'];
 export const EXPLV: [string, string, number, number][] = [
   ['Entry level', '0–1 yr', 0, 1],
   ['Junior', '1–3 yrs', 1, 3],
@@ -261,172 +198,8 @@ export const EXPLV: [string, string, number, number][] = [
   ['Expert', '10+ yrs', 10, 40],
 ];
 export const lvOf = (y: number) => (EXPLV.slice().reverse().find((l) => y >= l[2]) || EXPLV[0])[0];
-export const ALL_LANGS = ['English', 'French', 'Pidgin', 'Spanish', 'German', 'Portuguese', 'Italian', 'Chinese (Mandarin)', 'Arabic', 'Hausa', 'Duala', 'Bassa', 'Ewondo', 'Bulu', 'Fulfulde', 'Bakweri', 'Ghomala’ (Bamileke)', 'Medumba', 'Lamnso’', 'Kom', 'Mungaka', 'Yemba', 'Swahili', 'Yoruba', 'Igbo'];
-export const SOFT = ['Communication', 'Teamwork', 'Time management', 'Problem solving', 'Customer service', 'Reliability', 'Attention to detail', 'Leadership', 'Negotiation', 'Adaptability'];
 
-/* -------------------- profile -------------------- */
-export const ST_W: [string, string, string, string][] = [
-  ['open', 'Available for work', 'Clients nearby can find and hire you', '#7be0a7'],
-  ['busy', 'Busy, open to offers', 'You still get offers, but show lower in search', '#ffb37a'],
-  ['off', 'Not taking jobs', 'Your profile is hidden from search and the map', '#ff9b9b'],
-];
-export const ST_C: [string, string, string, string][] = [
-  ['hiring', 'Hiring now', 'People see that you’re ready to book', '#7be0a7'],
-  ['planning', 'Planning a job', 'Collect quotes now and hire later', '#ffb37a'],
-  ['off', 'Not hiring right now', 'You won’t get talent suggestions', '#b9b9c0'],
-];
-export const WHERE = ['At the client’s place', 'At my workshop', 'Both'];
-export const UNITS = ['per job', 'per hour', 'per day', 'per visit'];
-export const EDU = ['No formal education', 'Primary', 'Secondary', 'Technical / vocational', 'University'];
-export const DOCS: Record<string, [string, string, string]> = {
-  id: ['National ID card', 'idcard', 'Required to work on getit'],
-  biz: ['Business registration', 'storefront', 'Optional · shows clients you’re a registered business'],
-  drive: ['Driving licence', 'steer', 'Needed for delivery and mechanic jobs'],
-};
-export const CT: [string, string, string, string, 'tel' | 'email' | 'text'][] = [
-  ['phone', 'Phone number', 'phone', '6XX XX XX XX', 'tel'],
-  ['email', 'Email', 'mail', 'you@example.com', 'email'],
-  ['whatsapp', 'WhatsApp', 'wa', 'Same as phone, or another number', 'tel'],
-  ['telegram', 'Telegram', 'tg', '@username', 'text'],
-  ['facebook', 'Facebook', 'fb', 'facebook.com/yourpage', 'text'],
-];
 
-export const CITIES: [string, string][] = [
-  ['Buea', 'South-West'],
-  ['Limbe', 'South-West'],
-  ['Kumba', 'South-West'],
-  ['Tiko', 'South-West'],
-  ['Mutengene', 'South-West'],
-  ['Douala', 'Littoral'],
-  ['Edéa', 'Littoral'],
-  ['Nkongsamba', 'Littoral'],
-  ['Yaoundé', 'Centre'],
-  ['Mbalmayo', 'Centre'],
-  ['Bamenda', 'North-West'],
-  ['Kumbo', 'North-West'],
-  ['Bafoussam', 'West'],
-  ['Dschang', 'West'],
-  ['Foumban', 'West'],
-  ['Kribi', 'South'],
-  ['Ebolowa', 'South'],
-  ['Bertoua', 'East'],
-  ['Ngaoundéré', 'Adamawa'],
-  ['Garoua', 'North'],
-  ['Maroua', 'Far North'],
-];
-
-/* -------------------- skill tests -------------------- */
-export const QUIZ: Record<string, [string, string[], number][]> = {
-  Plumber: [
-    ['A tap keeps dripping after it’s closed. What usually fixes it?', ['Replace the washer or cartridge', 'Tighten it as hard as possible', 'Paint the pipe', 'Switch off the electricity'], 0],
-    ['What do you do first before repairing a pipe?', ['Open every tap fully', 'Shut off the water supply', 'Heat the pipe', 'Call the neighbour'], 1],
-    ['Which tape seals threaded pipe joints?', ['Electrical tape', 'Masking tape', 'PTFE (thread seal) tape', 'Duct tape'], 2],
-  ],
-  Electrician: [
-    ['Before working on a socket you should…', ['Work quickly', 'Switch off the breaker and test it’s dead', 'Wear slippers', 'Unplug the fridge'], 1],
-    ['Which wire colour is usually earth?', ['Green/yellow', 'Red', 'Blue', 'Brown'], 0],
-    ['A breaker keeps tripping. The most likely cause is…', ['A very bright bulb', 'Low water pressure', 'An overload or short circuit', 'A loose door'], 2],
-  ],
-  Cleaner: [
-    ['Which two products must never be mixed?', ['Soap and water', 'Bleach and ammonia', 'Vinegar and water', 'Baking soda and water'], 1],
-    ['What’s the best order to clean a room?', ['Top to bottom', 'Floor first, then shelves', 'Any order', 'Windows only'], 0],
-    ['What removes streaks from glass best?', ['A rough sponge', 'Cooking oil', 'Sandpaper', 'A clean microfibre cloth'], 3],
-  ],
-  Mechanic: [
-    ['The engine cranks but won’t start. What do you check first?', ['Tyre pressure', 'Fuel and spark', 'The radio fuse', 'Wiper blades'], 1],
-    ['Squealing when braking usually means…', ['Worn brake pads', 'Low coolant', 'A flat battery', 'A loose mirror'], 0],
-    ['How often is engine oil typically changed?', ['Every 500 km', 'Every 5 years', 'Every 5,000–10,000 km', 'Never'], 2],
-  ],
-  Delivery: [
-    ['The client isn’t home when you arrive. You should…', ['Leave it on the road', 'Call or message them first', 'Take it home for good', 'Give it to anyone nearby'], 1],
-    ['Fragile items should be…', ['Packed upright and secured', 'Put under heavy bags', 'Carried loose', 'Thrown in the top box'], 0],
-    ['Before you set off, check…', ['Only the price', 'Nothing', 'The address, contact and package', 'Next week’s weather'], 2],
-  ],
-  Developer: [
-    ['What does HTTP status 404 mean?', ['Server crashed', 'Page not found', 'Login required', 'Request was successful'], 1],
-    ['Which is used to store code history?', ['Git', 'Photoshop', 'Excel', 'FTP only'], 0],
-    ['A user’s password should be stored…', ['In plain text', 'In a cookie', 'As a salted hash', 'In the URL'], 2],
-  ],
-  Designer: [
-    ['Which format keeps a logo sharp at any size?', ['JPG', 'SVG (vector)', 'GIF', 'BMP'], 1],
-    ['Colour mode for printing flyers?', ['RGB', 'CMYK', 'HSL', 'Hex only'], 1],
-    ['Good contrast mainly helps with…', ['Readability & accessibility', 'File size', 'Printing speed', 'Nothing'], 0],
-  ],
-  Teacher: [
-    ['A student keeps failing a topic. Best first step?', ['Give more homework', 'Find out where they get stuck', 'Move to the next topic', 'Tell the parents only'], 1],
-    ['What does a lesson objective describe?', ['What students will be able to do', 'The classroom rules', 'The exam date', 'The textbook price'], 0],
-    ['A good way to check understanding is to…', ['Ask open questions', 'Only lecture', 'Skip practice', 'Avoid questions'], 0],
-  ],
-  Accountant: [
-    ['Assets = Liabilities + …', ['Revenue', 'Equity', 'Expenses', 'Cash'], 1],
-    ['Which system is used for accounts in Cameroon (OHADA)?', ['IFRS only', 'SYSCOHADA', 'US GAAP', 'None'], 1],
-    ['A bank reconciliation compares…', ['Sales and stock', 'Your records and the bank statement', 'Budget and forecast', 'Payroll and tax'], 1],
-  ],
-  Driver: [
-    ['What does a solid white line on the road mean?', ['Overtaking allowed', 'Do not cross', 'Parking zone', 'Pedestrians only'], 1],
-    ['Before a long trip you should check…', ['Tyres, oil, water and brakes', 'Only fuel', 'Only the radio', 'Nothing'], 0],
-    ['Safe following distance in good weather is about…', ['0.5 seconds', '2–3 seconds', '10 seconds', '1 metre'], 1],
-  ],
-  Sales: [
-    ['A customer says “it’s too expensive”. Best reply?', ['Ignore it', 'Explain the value and options', 'Argue', 'Walk away'], 1],
-    ['What’s a lead?', ['A possible customer', 'A product', 'A discount', 'A competitor'], 0],
-    ['After a sale, you should…', ['Follow up with the customer', 'Block their number', 'Forget them', 'Raise the price'], 0],
-  ],
-  General: [
-    ['A client changes the job after agreeing a price. You should…', ['Agree a new price before continuing', 'Do it for free', 'Leave without saying', 'Charge double later'], 0],
-    ['You’ll be 20 minutes late. What do you do?', ['Say nothing', 'Call or message before the start time', 'Cancel the job', 'Blame traffic later'], 1],
-    ['When the job is done you should…', ['Check the work with the client', 'Leave quickly', 'Ask for a tip first', 'Skip payment'], 0],
-  ],
-};
-
-export const COURSE_CATS: [string, string][] = [
-  ['Business', 'job'],
-  ['Finance', 'cat-acct'],
-  ['AI & data', 'sparkle'],
-  ['Development', 'cat-dev'],
-  ['Marketing', 'cat-sales'],
-  ['Design', 'cat-design'],
-  ['Trades', 'wrench'],
-  ['Languages', 'translate'],
-  ['Health', 'cat-health'],
-  ['Teaching', 'cat-teach'],
-];
-export const SALARIES: [string, string, string][] = [
-  ['Web developer', 'Developer', '150k – 450k'],
-  ['Data analyst', 'Developer', '180k – 400k'],
-  ['Graphic designer', 'Designer', '80k – 250k'],
-  ['Accountant', 'Accountant', '150k – 350k'],
-  ['Sales representative', 'Sales', '70k – 150k + commission'],
-  ['Customer service agent', 'Admin', '80k – 150k'],
-  ['Teacher (secondary)', 'Teacher', '90k – 200k'],
-  ['Registered nurse', 'Nurse', '120k – 250k'],
-  ['Driver', 'Driver', '70k – 120k'],
-  ['Electrician', 'Electrician', '80k – 200k'],
-  ['Plumber', 'Plumber', '70k – 180k'],
-  ['Mason', 'Builder', '60k – 150k'],
-  ['Cook / chef', 'Cook', '60k – 180k'],
-  ['Hairdresser', 'Hairdresser', '50k – 150k'],
-  ['Security guard', 'Security', '45k – 80k'],
-];
-export const ARTICLES: [string, string, string, string[]][] = [
-  ['How to write a CV that gets calls back', '5 min', 'CV', ['Keep it to one page if you have less than 5 years of experience. Put your strongest skill and your phone number at the top.', 'For every job, write what you achieved, not just what you did: “Fixed plumbing in 40+ homes” beats “Plumber”.', 'Add your languages and any certificates, employers in Cameroon value English–French bilingualism highly.']],
-  ['10 interview questions and how to answer them', '7 min', 'Interviews', ['“Tell me about yourself”. Answer in 60 seconds: who you are, what you do best, and why this job.', '“Why should we hire you?”, link one of your achievements to their need.', 'Always prepare one question for them, like “What does success look like in the first 3 months?”']],
-  ['Freelancing on the side: how to start', '6 min', 'Gigs', ['Start with people who already trust you: friends, former colleagues, your church or quarter.', 'Set a clear starting price and stick to it. Use getit quotes so both sides agree before the work starts.', 'Collect reviews from your first five jobs. They bring the next twenty.']],
-  ['Internship or first job? Getting your foot in the door', '4 min', 'Early career', ['Internships are a real way in: many companies hire their best interns.', 'Treat it like a job. Be on time, ask questions, and keep a list of what you learned.', 'Ask for a reference letter before you finish.']],
-  ['Negotiating your salary without fear', '5 min', 'Pay', ['Check typical pay for your role in Professions & salaries before the conversation.', 'Give a range, not a single number, and start a little above what you want.', 'If the salary is fixed, negotiate transport, training or a review date instead.']],
-];
-export const PATHS: [string, string, string[], string[], string[]][] = [
-  ['From shop or sales work into marketing', 'cat-sales', ['Learn social media and WhatsApp Business selling', 'Run ads for one small business (even for free)', 'Build a portfolio of 3 results'], ['c1'], ['o5']],
-  ['Into tech: become a web developer', 'cat-dev', ['Learn HTML, CSS and JavaScript', 'Build 3 small projects for real businesses', 'Apply for an internship or junior role'], ['c3', 'c4'], ['o4', 'o1']],
-  ['From helper to certified tradesperson', 'wrench', ['Join an apprenticeship', 'Get a recognised certificate', 'Start taking your own jobs on getit'], ['c9', 'c10'], ['o3']],
-  ['Into care work and nursing', 'cat-health', ['Take a home care course', 'Get first aid certified', 'Apply for a clinical internship'], ['c13'], ['o2']],
-];
-export const OPP_KINDS = ['Internship', 'Graduate program', 'Apprenticeship', 'Training program', 'Course'];
-
-/* -------------------- business -------------------- */
-export const SIZES = ['Just me', '2–10', '11–50', '51–200', '200+'];
-export const BZCOLORS = ['#f6ee5c', '#3d5af1', '#f47b3b', '#a9b6ff', '#7be0a7', '#ffffff'];
-export const BO_HIRE = ['Full-time staff', 'Part-time staff', 'Internships', 'Contract workers', 'One-off gigs', 'Apprentices'];
 export const STAGES: [string, string][] = [
   ['applied', 'Applied'],
   ['short', 'Shortlisted'],
@@ -434,50 +207,6 @@ export const STAGES: [string, string][] = [
   ['offer', 'Contract sent'],
   ['hired', 'Hired'],
 ];
-export const STAGE_COL: Record<string, string> = { applied: '#8d8d95', short: '#a9b6ff', interview: '#ffb37a', offer: '#f6ee5c', hired: '#7be0a7' };
 
-/* -------------------- groups -------------------- */
-export const RULES: Record<string, [string, string]> = {
-  noDM: ['No direct messages to the mentor without permission', 'lock'],
-  intro: ['Introduce yourself when you join', 'follow'],
-  respect: ['Be respectful, no spam or selling', 'shield'],
-  noLinks: ['No sharing outside links', 'x'],
-  camera: ['Cameras on during live sessions', 'video2'],
-  onTime: ['Join sessions on time', 'clock'],
-};
 
-/* -------------------- reviews -------------------- */
-export const RV_TAGS_W = ['On time', 'Great quality', 'Friendly', 'Fair price', 'Clean work', 'Good communication'];
-export const RV_TAGS_C = ['Clear instructions', 'Paid on time', 'Friendly', 'Easy to reach', 'Respectful'];
-
-/* -------------------- notifications -------------------- */
-export const NT_ICON: Record<string, [string, string]> = {
-  like: ['heart', '#ff4d6d'],
-  follow: ['follow', C.yellow],
-  quote: ['job', C.lav],
-  accept: ['check', C.ok],
-  mention: ['at', C.lav],
-  review: ['star', C.yellow],
-  reminder: ['clock', C.orange],
-  offers: ['job', C.yellow],
-  verified: ['shield', C.yellow],
-  newjob: ['job', C.yellow],
-  newoffer: ['coins', C.yellow],
-  onway: ['nav', C.lav],
-  arrived: ['wrench', C.yellow],
-  jobdone: ['flag', C.ok],
-  message: ['chat', C.lav],
-  missed: ['missed', C.err],
-  call: ['phone', C.ok],
-  comment: ['comment', C.lav],
-  enrol: ['cap', C.mint],
-  course: ['cap', C.yellow],
-  newcourse: ['sparkle', C.yellow],
-  material: ['video', C.lav],
-  live: ['video', '#e11d48'],
-  mentor: ['follow', C.pink],
-  booking: ['calcheck', C.mint],
-  rating: ['star', C.yellow],
-  pro: ['rocket', C.lav],
-};
 

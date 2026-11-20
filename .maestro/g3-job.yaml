@@ -1,0 +1,259 @@
+appId: cm.bolo.app
+name: getit, one job from request to rating (the worker sends a price, the client books, the job is done and rated)
+---
+# ---- the worker sees the request and sends a price
+- launchApp:
+    clearState: true
+- runFlow: dismiss.yaml
+- extendedWaitUntil:
+    visible:
+      id: "intro-continue"
+    timeout: 40000
+- openLink: "getit://qa?email=${WORK_EMAIL}&password=${TOUR_PASSWORD}&name=Tour%20Wanda"
+- extendedWaitUntil:
+    visible:
+      id: "home-big"
+    timeout: 60000
+- waitForAnimationToEnd
+- runFlow: dismiss.yaml
+- extendedWaitUntil:
+    visible: "Leaking kitchen sink"
+    timeout: 30000
+- takeScreenshot: j01-worker-home-with-job
+- tapOn: "Leaking kitchen sink"
+- extendedWaitUntil:
+    visible:
+      id: "wreq-price"
+    timeout: 15000
+- takeScreenshot: j02-job-request
+- tapOn:
+    id: "wreq-price"
+- extendedWaitUntil:
+    visible:
+      id: "offer-send"
+    timeout: 10000
+- tapOn:
+    id: "offer-price"
+- inputText: "6000"
+- hideKeyboard
+- takeScreenshot: j03-your-price
+- tapOn:
+    id: "offer-send"
+- extendedWaitUntil:
+    visible:
+      id: "wsent-back"
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: j04-offer-sent
+- tapOn:
+    id: "wsent-back"
+- tapOn:
+    id: "tab-jobs"
+- tapOn: "Offers.*"
+- takeScreenshot: j05-worker-offers
+# ---- the client sees the offer and books
+- launchApp:
+    clearState: true
+- runFlow: dismiss.yaml
+- extendedWaitUntil:
+    visible:
+      id: "intro-continue"
+    timeout: 40000
+- openLink: "getit://qa?email=${HIRE_EMAIL}&password=${TOUR_PASSWORD}&name=Tour%20Hira"
+- extendedWaitUntil:
+    visible:
+      id: "home-big"
+    timeout: 60000
+- waitForAnimationToEnd
+- runFlow: dismiss.yaml
+- tapOn:
+    id: "tab-jobs"
+- extendedWaitUntil:
+    visible: "Leaking kitchen sink"
+    timeout: 30000
+- takeScreenshot: j06-client-jobs
+- tapOn: "Leaking kitchen sink"
+- extendedWaitUntil:
+    visible:
+      id: "asked-status"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: j07-offer-arrived
+- tapOn: "See the offer"
+- extendedWaitUntil:
+    visible:
+      id: "offer-accept-0"
+    timeout: 15000
+- takeScreenshot: j08-offers
+- tapOn:
+    id: "offer-accept-0"
+- extendedWaitUntil:
+    visible:
+      id: "book-ok"
+    timeout: 10000
+- takeScreenshot: j09-book
+- tapOn:
+    id: "book-ok"
+- extendedWaitUntil:
+    visible:
+      id: "tk-back"
+    timeout: 30000
+- waitForAnimationToEnd
+- takeScreenshot: j10-booked
+- tapOn:
+    id: "tk-cancel"
+- waitForAnimationToEnd
+- takeScreenshot: j11-cancel-sheet
+- tapOn:
+    id: "cancel-keep"
+# ---- the worker does the job
+- launchApp:
+    clearState: true
+- runFlow: dismiss.yaml
+- extendedWaitUntil:
+    visible:
+      id: "intro-continue"
+    timeout: 40000
+- openLink: "getit://qa?email=${WORK_EMAIL}&password=${TOUR_PASSWORD}&name=Tour%20Wanda"
+- extendedWaitUntil:
+    visible:
+      id: "home-big"
+    timeout: 60000
+- waitForAnimationToEnd
+- runFlow: dismiss.yaml
+- tapOn:
+    id: "tab-inbox"
+- tapOn: "Updates.*"
+- takeScreenshot: j12-worker-updates
+- tapOn:
+    id: "tab-jobs"
+- extendedWaitUntil:
+    visible: "Leaking kitchen sink"
+    timeout: 30000
+- takeScreenshot: j13-worker-jobs
+- tapOn: "Leaking kitchen sink"
+- extendedWaitUntil:
+    visible:
+      id: "tk-start"
+    timeout: 15000
+- takeScreenshot: j14-worker-booked
+- tapOn:
+    id: "tk-start"
+- waitForAnimationToEnd
+- runFlow: allow.yaml
+- extendedWaitUntil:
+    visible:
+      id: "tk-arrive"
+    timeout: 20000
+- takeScreenshot: j15-worker-on-the-way
+- tapOn:
+    id: "tk-arrive"
+- extendedWaitUntil:
+    visible:
+      id: "tk-done"
+    timeout: 20000
+- takeScreenshot: j16-worker-working
+- tapOn:
+    id: "tk-done"
+- extendedWaitUntil:
+    visible: "Waiting for Tour"
+    timeout: 20000
+- takeScreenshot: j17-worker-waiting
+# ---- the client confirms and rates
+- launchApp:
+    clearState: true
+- runFlow: dismiss.yaml
+- extendedWaitUntil:
+    visible:
+      id: "intro-continue"
+    timeout: 40000
+- openLink: "getit://qa?email=${HIRE_EMAIL}&password=${TOUR_PASSWORD}&name=Tour%20Hira"
+- extendedWaitUntil:
+    visible:
+      id: "home-big"
+    timeout: 60000
+- waitForAnimationToEnd
+- runFlow: dismiss.yaml
+- takeScreenshot: j18-client-home-recent
+- tapOn:
+    id: "tab-jobs"
+- extendedWaitUntil:
+    visible: "Leaking kitchen sink"
+    timeout: 30000
+- tapOn: "Leaking kitchen sink"
+- extendedWaitUntil:
+    visible:
+      id: "tk-confirm"
+    timeout: 20000
+- takeScreenshot: j19-client-done
+- tapOn:
+    id: "tk-problem"
+- waitForAnimationToEnd
+- takeScreenshot: j20-problem-sheet
+- back
+- tapOn:
+    id: "tk-confirm"
+- extendedWaitUntil:
+    visible:
+      id: "rate-send"
+    timeout: 15000
+- tapOn:
+    id: "rate-5"
+- tapOn: "On time"
+- takeScreenshot: j21-rate
+- tapOn:
+    id: "rate-send"
+- extendedWaitUntil:
+    visible:
+      id: "thanks-done"
+    timeout: 20000
+- takeScreenshot: j22-thanks
+- tapOn:
+    id: "thanks-done"
+- tapOn:
+    id: "tab-jobs"
+- takeScreenshot: j23-client-jobs-after
+# ---- the worker rates the client and sees the job closed
+- launchApp:
+    clearState: true
+- runFlow: dismiss.yaml
+- extendedWaitUntil:
+    visible:
+      id: "intro-continue"
+    timeout: 40000
+- openLink: "getit://qa?email=${WORK_EMAIL}&password=${TOUR_PASSWORD}&name=Tour%20Wanda"
+- extendedWaitUntil:
+    visible:
+      id: "home-big"
+    timeout: 60000
+- waitForAnimationToEnd
+- runFlow: dismiss.yaml
+- tapOn:
+    id: "tab-jobs"
+- takeScreenshot: j24-worker-earnings
+- tapOn: "Done"
+- extendedWaitUntil:
+    visible: "Leaking kitchen sink"
+    timeout: 30000
+- tapOn: "Leaking kitchen sink"
+- extendedWaitUntil:
+    visible:
+      id: "tk-rate"
+    timeout: 15000
+- takeScreenshot: j25-worker-complete
+- tapOn:
+    id: "tk-rate"
+- extendedWaitUntil:
+    visible:
+      id: "rate-send"
+    timeout: 15000
+- tapOn:
+    id: "rate-5"
+- takeScreenshot: j26-rate-client
+- tapOn:
+    id: "rate-send"
+- extendedWaitUntil:
+    visible:
+      id: "wclosed-back"
+    timeout: 20000
+- takeScreenshot: j27-job-closed

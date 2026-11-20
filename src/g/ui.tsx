@@ -6,7 +6,7 @@ import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tap } from './touch';
-import { Weight } from '../ui/theme';
+import { Weight } from './theme';
 import { GIcon, GIconName, Mark, Word } from './icons';
 import { BRAND, RED, ft, initials, pastel, useG } from './theme';
 
@@ -294,7 +294,7 @@ export function BigButton({ label, onPress, still, dim, size = 300, testID, peri
   const press = usePressOnce(onPress);
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      {still ? (
+      {dim ? null : still ? (
         <>
           <View style={{ position: 'absolute', width: size, height: size, borderRadius: size / 2, backgroundColor: t.ringB }} />
           <View style={{ position: 'absolute', width: size * (232 / 300), height: size * (232 / 300), borderRadius: size / 2, backgroundColor: t.ringA }} />

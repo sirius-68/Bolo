@@ -4,8 +4,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, PermissionsAndroid, Platform, Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { tap } from '../src/ui/kit';
-import { toast } from '../src/ui/overlay';
+import { tap } from '../src/g/touch';
+import { toast } from '../src/g/notice';
 import { P, THREADS, fname } from '../src/logic/core';
 import { useLive } from '../src/logic/live';
 import { db } from '../src/data/db';
@@ -13,11 +13,13 @@ import { CALLS, Call, agora, answerCall, askAnswer, callAlive, callPass, callPer
 import { clearCallPopups } from '../src/logic/push';
 import { ring, stopRing } from '../src/logic/ring';
 import { GIcon, GIconName } from '../src/g/icons';
+import { openAfterCall } from '../src/g/sheets';
+import { working } from '../src/g/data';
 import { Face, T } from '../src/g/ui';
 import { BRAND, useG } from '../src/g/theme';
 
 const END = '#e5484d';
-const ANSWER = '#2fb36d';
+const ANSWER = '#1f9d55';
 
 /** Two soft rings growing out from behind the picture while a phone is ringing. */
 function Rings({ on }: { on: boolean }) {
@@ -73,6 +75,8 @@ export default function CallScreen() {
   const done = useRef(false);
   // a second screen for a call that already has one (two ways in at the same moment): it only steps aside
   const extra = useRef(false);
+  // the two people were really connected (so it is worth asking how the call went)
+  const spoke = useRef(false);
 
   const video = call?.kind === 'video';
   const other = call ? otherOf(call) : '';
@@ -97,6 +101,9 @@ export default function CallScreen() {
     if (tellServer && id) void endCall(id);
     // (when the screen was already left with Back there is nothing to close: going back again would leave the chat too)
     if (close) setTimeout(leave, 1200);
+    // someone hiring who really spoke to a worker: one tap to book what they agreed
+    const o = CALLS[id] ? otherOf(CALLS[id]) : '';
+    if (spoke.current && o && !working() && !db.BOOKINGS.some((b) => b.worker === o && b.client === 'me' && b.state !== 'confirmed')) setTimeout(() => openAfterCall(o, THREADS()[o]?.job || ''), close ? 1700 : 500);
   };
   // (getit opened straight onto the call from the lock screen has nothing behind it: go to the chats)
   const leave = () => (router.canGoBack() ? router.back() : router.replace((db.loggedIn ? '/inbox' : '/') as any));
@@ -133,6 +140,7 @@ export default function CallScreen() {
       handler.current = {
         onUserJoined: (_c: any, uid: number) => {
           setRemote(uid);
+          spoke.current = true;
           setPhase('live');
         },
         onUserOffline: () => finish('Call ended', true),
@@ -288,7 +296,7 @@ export default function CallScreen() {
       {!showRemote ? (
         <View style={{ flex: 1, alignItems: 'center', paddingTop: ins.top + 48, paddingHorizontal: 24 }}>
           <T s={14} w={7} c={t.muted} center>
-            getit call · your number stays private
+            {phase === 'incoming' ? 'Incoming getit call' : 'getit call · your number stays private'}
           </T>
           <View style={{ width: 260, height: 260, alignItems: 'center', justifyContent: 'center', marginTop: 24 }}>
             <Rings on={ringing} />
@@ -322,7 +330,7 @@ export default function CallScreen() {
         </View>
       )}
 
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: ins.bottom + 44, flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start', gap: video && phase !== 'incoming' ? 14 : 34 }}>
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: ins.bottom + 44, flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start', gap: phase === 'incoming' ? 90 : video ? 14 : 34 }}>
         {phase === 'incoming' ? (
           <>
             <Ctl testID="call-decline" icon="phone" turn big label="Decline" fill={END} onPress={() => (answerCall(id, false), finish('Declined', false))} />

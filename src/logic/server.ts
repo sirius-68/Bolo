@@ -7,8 +7,7 @@
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { db, Booking, BizSample, Course, Mentorship, Msg, MyBiz, Notif, Opp, Person, Post, Review, Thread } from '../data/db';
-import type { Expert, Service as ExService } from '../data/experts';
-import { logoPic, net } from '../ui/kit';
+import { logoPic, net } from './pics';
 import { bump } from './live';
 import { fill } from './persist';
 
@@ -199,8 +198,6 @@ export const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 /** Marker for an account that no longer exists (or never did): lists skip it, its profile says so. */
 export const GONE = 'Deleted account';
 const gone = (id: string): Person => ({ name: GONE, role: 'Member', years: 0, rate: 0, dist: '', area: '', photo: facePic('?', id), jobs: 0, reviews: '0', followers: 0, uid: id }) as Person;
-export const isGone = (id: string) => db.P[id]?.name === GONE;
-/** People to browse and hire: the newest members (nearest first in the lists). */
 async function loadPeople() {
   const { data } = need(await supabase.from('profile_cards').select(PROFILE_COLS).neq('id', ME()).eq('visible', true).order('created_at', { ascending: false }).limit(400));
   (data || []).forEach((r: any) => {
@@ -208,17 +205,6 @@ async function loadPeople() {
     PROFILE_RAW[r.id] = r;
   });
 }
-/** Find people by name or skill (beyond the ones already loaded). */
-export async function searchPeople(q: string) {
-  const term = q.replace(/[%,()]/g, ' ').trim();
-  if (term.length < 2) return;
-  const { data } = await supabase.from('profile_cards').select(PROFILE_COLS).neq('id', ME()).eq('visible', true).or(`name.ilike.%${term}%,city.ilike.%${term}%`).limit(30);
-  (data || []).forEach((r: any) => {
-    db.P[r.id] = personFrom(r);
-    PROFILE_RAW[r.id] = r;
-  });
-}
-/** Reviews people left about someone (profile page). */
 export async function loadReviewsOf(id: string) {
   const uid = R(id);
   if (!uid) return;
@@ -354,9 +340,6 @@ async function loadMine() {
   (blocks.data || []).forEach((x: any) => BLOCKED.add(x.blocked_id));
 }
 export const isBlocked = (id: string) => BLOCKED.has(R(id));
-/** The people I blocked (their ids). */
-export const blockedList = () => [...BLOCKED];
-/** My public numbers (followers, jobs done, rating) as others see them. */
 const MINE: { followers: number; following: number; jobs_done: number; hires: number; rating: number; reviews: number } = { followers: 0, following: 0, jobs_done: 0, hires: 0, rating: 0, reviews: 0 };
 export const myStats = () => MINE;
 async function loadMyStats() {
@@ -364,13 +347,6 @@ async function loadMyStats() {
   if (data) Object.assign(MINE, { ...data, rating: Number(data.rating) || 0 });
   const { data: p } = need(await supabase.from('profiles').select('verified').eq('id', ME()).maybeSingle());
   if (p) db.user.verified = !!p.verified;
-}
-/** People who follow me (app ids). */
-export async function myFollowers(): Promise<string[]> {
-  const { data } = await supabase.from('follows').select('follower_id').eq('followee_id', ME()).limit(500);
-  const ids = (data || []).map((x: any) => x.follower_id as string);
-  await ensurePeople(ids);
-  return ids.map(L);
 }
 export function setBlocked(id: string, on: boolean) {
   const u = R(id);
@@ -738,7 +714,7 @@ function applyLocation(l: any) {
 export const markReviewed = (bid: string) => REVIEWED.add(bid);
 
 /* ================================================================ notifications */
-const NOTIF_TYPE: Record<string, string> = { newoffer: 'newoffer', stage: 'accept', booked: 'accept', onway: 'onway', arrived: 'arrived', jobdone: 'jobdone', confirmed: 'accept', cancelled: 'reminder', issue: 'reminder', message: 'message', comment: 'comment', like: 'like', follow: 'follow', review: 'review', enrol: 'enrol', accept: 'accept', mentor: 'mentor', verification: 'account', expert: 'account', rating: 'rating', course: 'course' };
+const NOTIF_TYPE: Record<string, string> = { newjob: 'newjob', newoffer: 'newoffer', stage: 'accept', booked: 'accept', onway: 'onway', arrived: 'arrived', jobdone: 'jobdone', confirmed: 'accept', cancelled: 'reminder', issue: 'reminder', message: 'message', comment: 'comment', like: 'like', follow: 'follow', review: 'review', enrol: 'enrol', accept: 'accept', mentor: 'mentor', verification: 'account', expert: 'account', rating: 'rating', course: 'course' };
 export function goFrom(t: any): Notif['go'] {
   if (!t || !t.k) return undefined;
   if (t.k === 'chat') {
@@ -808,152 +784,6 @@ export async function deleteNotifRows(ids: string[]) {
   await supabase.from('notifications').delete().in('id', ids);
 }
 
-/* ================================================================ career: courses, opportunities, mentorships, experts */
-function courseFrom(r: any): Course {
-  const d = r.data || {};
-  const mine = r.owner_id === db.uid;
-  return {
-    id: r.id,
-    title: r.title,
-    prov: d.prov || { n: d.by || 'Course', logo: logoPic(initials(d.by || r.title), '#a9b6ff') },
-    cat: d.cat || 'Business',
-    lv: d.lv || 'Beginner',
-    dur: d.dur || 'Self-paced',
-    type: d.type || 'Skill',
-    fmt: d.fmt || 'Online',
-    reg: d.reg || '',
-    price: Number(d.price) || 0,
-    old: 0,
-    prof: d.prof || '',
-    skills: d.skills || [],
-    url: r.url,
-    desc: d.desc || '',
-    priceText: d.priceText || undefined,
-    views: r.views || 0,
-    mine: mine ? 1 : undefined,
-    biz: mine && r.business_id ? myBizOf(r.business_id)?.id : undefined,
-  } as Course;
-}
-async function loadCourses() {
-  const { data } = need(await supabase.from('course_listings').select('*').order('created_at', { ascending: false }).limit(500));
-  db.COURSES = (data || []).map(courseFrom).sort((a, b) => +!!b.mine - +!!a.mine);
-}
-async function loadOpps() {
-  const [oq, sq, mineApps] = await Promise.all([
-    supabase.from('opportunities').select('*').eq('status', 'open').order('created_at', { ascending: false }).limit(200).then(need),
-    supabase.from('opportunity_stats').select('*').then(need),
-    supabase.from('opportunity_applications').select('opportunity_id,user_id,status').then(need),
-  ]);
-  const joined: Record<string, number> = {};
-  (sq.data || []).forEach((s: any) => (joined[s.id] = s.joined));
-  const apps = mineApps.data || [];
-  await Promise.all([ensureBiz((oq.data || []).map((o: any) => o.business_id)), ensurePeople(apps.map((a: any) => a.user_id))]);
-  db.OPPS = (oq.data || []).map((o: any): Opp => {
-    const d = o.data || {};
-    const mine = o.owner_id === db.uid;
-    const people = apps.filter((a: any) => a.opportunity_id === o.id && a.user_id !== db.uid);
-    const st: Record<string, 'acc' | 'dec'> = {};
-    people.forEach((a: any) => a.status !== 'pending' && (st[L(a.user_id)] = a.status));
-    const myApp = apps.find((a: any) => a.opportunity_id === o.id && a.user_id === db.uid);
-    return {
-      id: o.id,
-      biz: mine ? myBizOf(o.business_id)?.id || '' : bizKey(o.business_id),
-      kind: o.kind,
-      title: o.title,
-      cat: d.cat || '',
-      dur: d.dur || '',
-      start: d.start || '',
-      mode: d.mode || '',
-      pay: d.pay || '',
-      seats: o.seats,
-      joined: joined[o.id] || 0,
-      deadline: d.deadline || '',
-      desc: d.desc || '',
-      skills: d.skills || [],
-      mine: mine ? 1 : undefined,
-      applied: myApp ? 1 : undefined,
-      people: mine ? people.map((a: any) => L(a.user_id)) : undefined,
-      st: mine ? st : myApp && myApp.status !== 'pending' ? { me: myApp.status } : undefined,
-    } as Opp;
-  });
-}
-async function loadMentorships() {
-  const [mq, sq, mem] = await Promise.all([
-    supabase.from('mentorships').select('*').order('created_at', { ascending: false }).limit(200).then(need),
-    supabase.from('mentorship_stats').select('*').then(need),
-    supabase.from('mentorship_members').select('mentorship_id,user_id,status').then(need),
-  ]);
-  const joined: Record<string, number> = {};
-  (sq.data || []).forEach((s: any) => (joined[s.id] = s.joined));
-  const members = mem.data || [];
-  await Promise.all([ensurePeople([...(mq.data || []).map((m: any) => m.owner_id), ...members.map((x: any) => x.user_id)]), ensureBiz((mq.data || []).map((m: any) => m.business_id))]);
-  db.MENTORSHIPS = (mq.data || []).map((m: any): Mentorship => {
-    const d = m.data || {};
-    const mine = m.owner_id === db.uid;
-    const ppl = members.filter((x: any) => x.mentorship_id === m.id && x.user_id !== db.uid);
-    const st: Record<string, 'acc' | 'dec' | 'pending'> = {};
-    ppl.forEach((x: any) => (st[L(x.user_id)] = x.status === 'yes' ? 'acc' : x.status === 'dec' ? 'dec' : 'pending'));
-    const me = members.find((x: any) => x.mentorship_id === m.id && x.user_id === db.uid);
-    return {
-      id: m.id,
-      by: mine ? undefined : m.business_id ? bizKey(m.business_id) : L(m.owner_id),
-      title: m.title,
-      field: d.field || '',
-      format: d.format || 'Group',
-      dur: d.dur || '',
-      price: d.price || 'Free',
-      seats: m.seats,
-      joined: joined[m.id] || 0,
-      desc: d.desc || '',
-      rules: d.rules || [],
-      mine: mine ? 1 : undefined,
-      asBiz: mine && m.business_id ? myBizOf(m.business_id)?.id || null : null,
-      people: mine ? ppl.map((x: any) => L(x.user_id)) : undefined,
-      joinedMe: me ? (me.status === 'yes' ? 'yes' : me.status === 'req' ? 'req' : null) : null,
-      st: mine ? st : undefined,
-      color: d.color,
-      cid: m.conversation_id,
-    } as Mentorship & { cid?: string };
-  });
-}
-export function expertFrom(e: any, p?: any): Expert {
-  const d = e.data || {};
-  const name = p?.name || 'getit expert';
-  const amount = Number(d.amount) || 0;
-  const fmts: string[] = d.formats || [];
-  const services: ExService[] = (d.services as ExService[]) || fmts.map((f, i) => ({ id: 's' + i, t: f, price: d.price === 'Free' ? 0 : amount, mins: /60/.test(f) ? 60 : /30/.test(f) ? 30 : undefined, fmt: /CV|written/i.test(f) ? 'Written review' : /Chat/i.test(f) ? 'Chat' : 'Video call', d: f, gets: [] }));
-  return {
-    id: e.user_id,
-    pid: L(e.user_id),
-    name,
-    pic: p?.avatar_url ? 'uri:' + p.avatar_url : facePic(name, e.user_id),
-    head: e.headline || d.headline || '',
-    bio: [d.role, d.creds?.length ? d.creds.join(', ') : ''].filter(Boolean),
-    about: p?.bio || d.sample || '',
-    specs: d.fields || [],
-    goals: d.areas || [],
-    langs: d.langs || ['English'],
-    yrs: Number(d.years) || 0,
-    sessions: 0,
-    services: services.length ? services : [{ id: 's0', t: 'Career call', price: amount, fmt: 'Video call', d: 'A call about your next career step', gets: [] }],
-    reviews: [],
-    soon: 1,
-  };
-}
-async function loadExperts() {
-  const { data } = need(await supabase.from('experts').select('*').eq('status', 'approved').limit(200));
-  const ids = (data || []).map((e: any) => e.user_id);
-  const { data: cards } = ids.length ? need(await supabase.from('profile_cards').select(PROFILE_COLS).in('id', ids)) : { data: [] as any[] };
-  (cards || []).forEach((r: any) => r.id !== db.uid && ((db.P[r.id] = personFrom(r)), (PROFILE_RAW[r.id] = r)));
-  db.EXPERTS = (data || []).map((e: any) => expertFrom(e, (cards || []).find((c: any) => c.id === e.user_id)));
-  // my own application
-  const { data: mine } = need(await supabase.from('experts').select('*').eq('user_id', ME()).maybeSingle());
-  if (mine) {
-    const d = mine.data || {};
-    db.EXPERT = { ...fill(db.EXPERT, d), status: mine.status === 'submitted' ? 'submitted' : mine.status, headline: mine.headline || d.headline || '' };
-  }
-}
-
 /* ================================================================ load everything, keep it live */
 let loading: Promise<void> | null = null;
 let loadingFor = '';
@@ -996,8 +826,7 @@ export function loadAll(force = false): Promise<void> {
     net.loading = !db.syncedAt;
     try {
       // Everything that doesn't wait for something else starts at once; the rest follows what it needs
-      // (posts need my blocks, applications read the posts, chats read the mentorship groups, notifications
-      // read the chats). The home screen needs only people and posts, so it is drawn as soon as those two
+      // (posts need my blocks, applications read the posts, notifications read the chats). The home screen needs only people and posts, so it is drawn as soon as those two
       // are in, while the rest keeps arriving.
       const t0 = Date.now();
       const mineIn = run([loadMine]);
@@ -1011,12 +840,12 @@ export function loadAll(force = false): Promise<void> {
         await run([loadApplications]);
       })();
       const talk = (async () => {
-        await Promise.all([mineIn, run([loadMentorships])]);
+        await mineIn;
         await run([loadChats]);
         await run([loadNotifs]);
         bump();
       })();
-      const rest = mineIn.then(() => run([loadCourses, loadMyStats, loadOpps, loadExperts, loadBookings]));
+      const rest = mineIn.then(() => run([loadMyStats, loadBookings]));
       await Promise.all([home, talk, rest]);
       console.log('getit: everything loaded in', Date.now() - t0, 'ms');
       if (!failed.length) db.syncedAt = loadedAt = Date.now();
@@ -1037,7 +866,6 @@ export function loadAll(force = false): Promise<void> {
 }
 export const refreshPosts = async () => (await loadPosts(), await loadApplications(), bump());
 export const refreshChats = async () => (await loadChats(), bump());
-export const refreshCareer = async () => (await Promise.all([loadCourses(), loadOpps(), loadMentorships(), loadExperts()]), bump());
 export const refreshNotifs = async () => (await loadNotifs(), bump());
 
 let channel: RealtimeChannel | null = null;
@@ -1128,6 +956,8 @@ export function startRealtime() {
       } else if (e.new) {
         if (e.new.actor_id) await ensurePeople([e.new.actor_id]);
         placeNotif(e.new);
+        // something new arrived while the app is open (a new job near a worker shows as an alert)
+        if (e.eventType === 'INSERT') require('./events').emit('notif', e.new);
       }
       bump();
     })

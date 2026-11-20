@@ -2,20 +2,22 @@
    where you are and how far you go. The last step is your number, in the sign-in sheet. */
 import React, { useReducer } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../src/data/db';
-import { tap } from '../src/ui/kit';
+import { tap } from '../src/g/touch';
 import { useLive } from '../src/logic/live';
 import { cityLabel } from '../src/logic/core';
-import { resetTo } from '../src/logic/nav';
-import { openCities } from '../src/sheets/account';
 import { countryByIso } from '../src/data/countries';
 import { GIcon, GIconName } from '../src/g/icons';
 import { RED, useG } from '../src/g/theme';
 import { Big, Link, Pill, StepBar, T } from '../src/g/ui';
 import { areaLabel, hasArea } from '../src/g/data';
 import { openSignIn } from '../src/g/signin';
+import { Top } from '../src/g/parts';
+import { openArea } from '../src/g/sheets';
+import { goBack } from '../src/g/touch';
+import { bump } from '../src/logic/live';
 import { Way, applyWorkerDraft, workerDraft } from '../src/g/worker';
 
 const WAYS: [Way, string, string, GIconName][] = [
@@ -29,21 +31,37 @@ export default function W2() {
   const t = useG();
   const ins = useSafeAreaInsets();
   const [, re] = useReducer((x: number) => x + 1, 0);
+  const { edit } = useLocalSearchParams<{ edit?: string }>();
   const d = workerDraft();
+  // changing it from the profile: start from what is saved
+  const [loaded] = React.useState(() => {
+    if (!edit) return false;
+    const a = (db.PR.area || {}) as any;
+    d.ways = Array.isArray(a.ways) ? [...a.ways] : [];
+    d.range = Number(a.radius) >= 50 ? 0 : Number(a.radius) || 5;
+    d.reach = a.reach || 'country';
+    return true;
+  });
+  void loaded;
   const has = (w: Way) => d.ways.includes(w);
   const city = cityLabel();
   const country = countryByIso(db.user.country)?.name || 'my country';
   const next = () => {
     if (!d.ways.length) return;
+    if (edit) {
+      db.PR.area = { ...db.PR.area, radius: d.range || 50, ways: d.ways, reach: d.ways.includes('online') ? d.reach : undefined } as any;
+      bump();
+      return goBack();
+    }
     const done = () => {
-      if (applyWorkerDraft()) resetTo('/wdone');
+      if (applyWorkerDraft()) router.replace('/wdone' as any);
     };
     if (db.loggedIn) done();
     else openSignIn({ work: true, then: done });
   };
   return (
     <View style={{ flex: 1, backgroundColor: t.bg, paddingTop: ins.top + 16, paddingHorizontal: 20 }}>
-      <StepBar on={2} total={3} onBack={() => (router.canGoBack() ? router.back() : router.replace('/w1' as any))} />
+      {edit ? <Top pad={0} /> : <StepBar on={2} total={3} onBack={() => (router.canGoBack() ? router.back() : router.replace('/w1' as any))} />}
       <ScrollView showsVerticalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12 }}>
         <T s={28} w={8} lh={1.15} ls={-0.6} style={{ marginTop: 26, marginBottom: 6 }}>
           How do you work?
@@ -102,7 +120,7 @@ export default function W2() {
                   {has('come') ? 'Clients get the exact spot from you, by call or chat' : 'Only your area is shown, never your address'}
                 </T>
               </View>
-              <Link testID="w2-area" title={hasArea() ? 'Change' : 'Choose'} onPress={() => openCities()} />
+              <Link testID="w2-area" title={hasArea() ? 'Change' : 'Choose'} onPress={() => openArea()} />
             </View>
           </>
         ) : null}
@@ -137,7 +155,7 @@ export default function W2() {
           </>
         ) : null}
       </ScrollView>
-      <Big testID="w2-continue" title={d.ways.length ? 'Continue' : 'Pick at least one'} disabled={!d.ways.length} onPress={next} style={{ marginTop: 12, marginBottom: ins.bottom + 28 }} />
+      <Big testID="w2-continue" title={d.ways.length ? (edit ? 'Save' : 'Continue') : 'Pick at least one'} quiet={!d.ways.length} onPress={next} style={{ marginTop: 12, marginBottom: ins.bottom + 28 }} />
     </View>
   );
 }

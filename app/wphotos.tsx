@@ -66,7 +66,7 @@ export default function WPhotos() {
         </View>
         <Card pad={0} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginTop: 18, paddingVertical: 14, paddingHorizontal: 16 }}>
           <View style={{ marginTop: 1 }}>
-            <GIcon name="camera" size={20} color={t.accent} />
+            <GIcon name="info" size={20} color={t.accent} />
           </View>
           <T s={14} lh={1.5} style={{ flex: 1 }}>
             Before-and-after photos work best. Don’t show clients’ faces or house numbers.

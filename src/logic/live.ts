@@ -32,14 +32,6 @@ export function subscribe(fn: Sub) {
 }
 
 
-/** Re-render on every model change (for overlays that aren't navigation screens). */
-export function useTick() {
-  const [, force] = useReducer((x: number) => x + 1, 0);
-  useEffect(() => subscribe(force), []);
-  return tick;
-}
-
-/** Re-render on model changes while the screen is focused. */
 export function useLive() {
   const [, force] = useReducer((x: number) => x + 1, 0);
   const focused = useRef(true);

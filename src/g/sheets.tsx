@@ -198,7 +198,7 @@ function RequestSheet({ o }: { o: RequestFor }) {
           <GIcon name="chev" size={16} color={t.accent} />
         </Pressable>
       ) : (
-        <Hint style={{ marginTop: 14 }}>
+        <Hint icon="pin" style={{ marginTop: 14 }}>
           {where === 'online' ? 'You work together by chat and calls on getit. Agree the price before any work starts.' : `Workers only see “${place}” until you book one of them. You give the exact place by chat or call.`}
         </Hint>
       )}
@@ -278,7 +278,7 @@ function BookSheet({ o }: { o: BookFor }) {
           </View>
         </>
       )}
-      <Hint icon="shield" style={{ marginTop: 14 }}>
+      <Hint icon="wallet" style={{ marginTop: 14 }}>
         You pay {f} directly when the job is done, in cash or by Mobile Money. getit takes nothing.
       </Hint>
       <Big testID="book-ok" title={`Book ${f}`} loading={busy} onPress={book} style={{ marginTop: 18 }} />
@@ -826,4 +826,119 @@ export function openMsgMenu(id: string, i: number) {
       </View>
     </View>
   ));
+}
+
+/* ====================================================================== your account */
+/** Your name, how you sign in, and the way out for good. */
+export function openAccount() {
+  gsheet.show(() => <AccountSheet />);
+}
+function AccountSheet() {
+  useLive();
+  const [name, setName] = useState(db.user.name || '');
+  const [busy, setBusy] = useState(false);
+  const save = () => {
+    const n = name.trim().replace(/\s+/g, ' ');
+    if (n.length >= 2 && n !== db.user.name) {
+      db.user.name = n;
+      bump();
+      toast('Name saved');
+    }
+    Keyboard.dismiss();
+    gsheet.close();
+  };
+  const remove = () =>
+    then(() =>
+      confirm({
+        title: 'Delete your account?',
+        text: 'Your profile, chats, jobs and reviews are removed for good. This can’t be undone.',
+        ok: 'Delete my account',
+        cancel: 'Keep my account',
+        danger: true,
+        onOk: async () => {
+          setBusy(true);
+          const { deleteAccount } = require('../logic/remote');
+          const e = await deleteAccount();
+          if (e) return toast(e);
+          await require('../logic/account').logout();
+          require('./data').forgetStarted();
+          router.replace('/intro' as any);
+        },
+      }),
+    );
+  return (
+    <View>
+      <H>Your account</H>
+      <View style={{ height: 14 }} />
+      <Label>Your name</Label>
+      <Input testID="account-name" value={name} onChangeText={setName} autoCapitalize="words" maxLength={40} />
+      {db.user.contact ? (
+        <>
+          <View style={{ height: 14 }} />
+          <Label>You sign in with</Label>
+          <T s={16} w={7}>
+            {db.user.contact}
+          </T>
+        </>
+      ) : null}
+      <Big testID="account-save" title="Save" loading={busy} quiet={name.trim().length < 2} onPress={save} style={{ marginTop: 18 }} />
+      <Link testID="account-delete" title="Delete my account" color="danger" h={48} style={{ marginTop: 6 }} onPress={remove} />
+    </View>
+  );
+}
+/** A message from the getit team, read in full. */
+export function openTeamNote(title: string, body: string) {
+  gsheet.show(() => (
+    <View>
+      <H>{title}</H>
+      <T s={15} lh={1.55} style={{ marginTop: 10 }}>
+        {body}
+      </T>
+      <Ghost title="Reply to getit" style={{ marginTop: 18 }} onPress={() => then(openHelp)} />
+    </View>
+  ));
+}
+
+/* ====================================================================== a new job, while the app is open */
+/** "New job near you": what, roughly where, when and who, with one button to see it. */
+export function openJobAlert(postId: string) {
+  const po = postById(postId);
+  if (!po || po.mine) return;
+  const c = P(po.client || '');
+  gsheet.show(() => <JobAlert id={postId} />);
+  void c;
+}
+function JobAlert({ id }: { id: string }) {
+  const t = useG();
+  const po = postById(id);
+  if (!po) return null;
+  const c = P(po.client || '');
+  const chips = [po.area, po.urgent ? 'As soon as possible' : whenText(po.when), c?.name ? `${c.name}${c.rate ? ` · ${c.rate.toFixed(1)} ★` : ''}` : ''].filter(Boolean) as string[];
+  return (
+    <View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: RED }} />
+        <T s={13} w={8} c="accent">
+          New job near you
+        </T>
+      </View>
+      <T s={26} w={8} lh={1.2} ls={-0.6} style={{ marginTop: 8 }}>
+        {po.title || po.cat}
+      </T>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+        {chips.map((x) => (
+          <View key={x} style={{ height: 34, paddingHorizontal: 12, borderRadius: 17, backgroundColor: t.card2, justifyContent: 'center' }}>
+            <T s={13} w={7}>
+              {x}
+            </T>
+          </View>
+        ))}
+      </View>
+      <T s={14} lh={1.5} c="muted" style={{ marginTop: 12 }}>
+        {po.text ? `“${po.text}” ` : ''}Other {plural(po.cat || 'worker')} nearby can see this too.
+      </T>
+      <Big testID="alert-see" title="See the job" style={{ marginTop: 16 }} onPress={() => then(() => router.push(`/wrequest/${id}` as any))} />
+      <Link testID="alert-later" title="Not now" color="text" h={48} style={{ marginTop: 6 }} onPress={() => gsheet.close()} />
+    </View>
+  );
 }

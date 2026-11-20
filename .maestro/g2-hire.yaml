@@ -1,5 +1,5 @@
 appId: cm.bolo.app
-name: getit, someone hiring (look signed out, open a worker, make an account to message, chat, call, ask for prices)
+name: getit, someone hiring (find the plumber, profile, account, chat, call, ask for prices, live status)
 ---
 - launchApp:
     clearState: true
@@ -10,6 +10,14 @@ name: getit, someone hiring (look signed out, open a worker, make an account to 
     timeout: 40000
 - tapOn:
     id: "intro-continue"
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible:
+        id: "where-skip"
+    commands:
+      - tapOn:
+          id: "where-skip"
 - extendedWaitUntil:
     visible:
       id: "home-big"
@@ -38,15 +46,11 @@ name: getit, someone hiring (look signed out, open a worker, make an account to 
       id: "signin-send"
     timeout: 10000
 - takeScreenshot: h03-signin-to-message
-- runFlow:
-    file: account.yaml
-    env:
-      NAME: "Tour Hira"
-      EMAIL: ${HIRE_EMAIL}
+- openLink: "getit://qa?email=${HIRE_EMAIL}&password=${TOUR_PASSWORD}&name=Tour%20Hira"
 - extendedWaitUntil:
     visible:
       id: "home-big"
-    timeout: 40000
+    timeout: 60000
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - takeScreenshot: h04-home-signed-in
@@ -73,11 +77,16 @@ name: getit, someone hiring (look signed out, open a worker, make an account to 
 - waitForAnimationToEnd
 - hideKeyboard
 - takeScreenshot: h06-chat
-# the options behind the plus and the three dots
+# the plus and the three dots
 - tapOn:
     id: "chat-attach"
 - waitForAnimationToEnd
 - takeScreenshot: h07-chat-attach
+- back
+- tapOn:
+    id: "chat-menu"
+- waitForAnimationToEnd
+- takeScreenshot: h08-chat-menu
 - back
 # a call through getit: it rings, then we hang up
 - runFlow:
@@ -91,15 +100,15 @@ name: getit, someone hiring (look signed out, open a worker, make an account to 
           visible:
             id: "call-end"
           timeout: 15000
-      - takeScreenshot: h08-calling
+      - takeScreenshot: h09-calling
       - tapOn:
           id: "call-end"
       - extendedWaitUntil:
           visible:
             id: "chat-input"
           timeout: 15000
-      - takeScreenshot: h09-chat-after-call
-- back
+- tapOn:
+    id: "chat-back"
 # ask several plumbers for a price
 - extendedWaitUntil:
     visible:
@@ -109,18 +118,46 @@ name: getit, someone hiring (look signed out, open a worker, make an account to 
     id: "workers-prices"
 - extendedWaitUntil:
     visible:
-      id: "pj-title"
-    timeout: 20000
-- takeScreenshot: h10-ask-prices
+      id: "req-send"
+    timeout: 10000
+- tapOn:
+    id: "req-details"
+- inputText: "Water drips under the sink"
+- hideKeyboard
+- runFlow:
+    when:
+      visible:
+        id: "req-area"
+    commands:
+      - tapOn:
+          id: "req-where-online"
 - scrollUntilVisible:
     element:
-      id: "pj-submit"
+      id: "req-send"
     direction: DOWN
+    timeout: 6000
+- takeScreenshot: h10-get-prices
 - tapOn:
-    id: "pj-submit"
+    id: "req-send"
+- extendedWaitUntil:
+    visible:
+      id: "asked-status"
+    timeout: 20000
 - waitForAnimationToEnd
-- takeScreenshot: h11-request-sent
+- takeScreenshot: h11-asking
+- tapOn:
+    id: "asked-edit"
+- waitForAnimationToEnd
+- takeScreenshot: h12-change-request
 - back
+- runFlow:
+    when:
+      visible:
+        id: "req-send"
+    commands:
+      - back
+- tapOn:
+    id: "top-close"
 - runFlow:
     when:
       visible:
@@ -137,11 +174,10 @@ name: getit, someone hiring (look signed out, open a worker, make an account to 
           id: "need-close"
 - tapOn:
     id: "tab-jobs"
-- takeScreenshot: h12-jobs
+- takeScreenshot: h13-jobs
 - tapOn:
     id: "tab-inbox"
-- takeScreenshot: h13-inbox
-# the chat again, in light
+- takeScreenshot: h14-inbox
 - tapOn:
     id: "tab-find"
 - tapOn:
@@ -150,19 +186,39 @@ name: getit, someone hiring (look signed out, open a worker, make an account to 
     visible:
       id: "me-mode"
     timeout: 8000
-- takeScreenshot: h14-you
-- tapOn: "Light"
+- takeScreenshot: h15-you
+- tapOn:
+    id: "me-account"
+- waitForAnimationToEnd
+- takeScreenshot: h16-account
 - back
+- runFlow:
+    when:
+      visible:
+        id: "account-save"
+    commands:
+      - back
+# the chat in light
+- tapOn:
+    id: "home-me"
+- tapOn: "Light"
+- tapOn:
+    id: "me-close"
 - tapOn:
     id: "tab-inbox"
-- takeScreenshot: h15-inbox-light
+- takeScreenshot: h17-inbox-light
 - tapOn: "Tour Wanda"
 - extendedWaitUntil:
     visible:
       id: "chat-input"
     timeout: 15000
-- takeScreenshot: h16-chat-light
+- takeScreenshot: h18-chat-light
 - tapOn:
-    id: "chat-menu"
-- waitForAnimationToEnd
-- takeScreenshot: h17-chat-menu-light
+    id: "chat-back"
+- tapOn:
+    id: "tab-find"
+- tapOn:
+    id: "home-me"
+- tapOn: "Dark"
+- tapOn:
+    id: "me-close"

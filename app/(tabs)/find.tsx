@@ -4,15 +4,14 @@ import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../../src/data/db';
 import { bump, useLive } from '../../src/logic/live';
-import { P, fname, openJobs } from '../../src/logic/core';
+import { P, fname } from '../../src/logic/core';
 import { myBookings, trOther } from '../../src/logic/work';
 import { startCall } from '../../src/logic/calls';
 import { loadAll } from '../../src/logic/server';
-import { openCities } from '../../src/sheets/account';
-import { openJob } from '../../src/sheets/work';
-import { toast } from '../../src/ui/overlay';
-import { tap } from '../../src/ui/kit';
-import { areaLabel, working } from '../../src/g/data';
+import { areaLabel, hasArea, jobsForMe, whenText, working } from '../../src/g/data';
+import { toast } from '../../src/g/notice';
+import { openArea } from '../../src/g/sheets';
+import { tap } from '../../src/g/touch';
 import { GIcon } from '../../src/g/icons';
 import { openMe } from '../../src/g/me';
 import { TAB_SPACE } from '../../src/g/TabBar';
@@ -41,7 +40,9 @@ export default function Find() {
   // the last person hired: one tap to call them again
   const last = !work && db.loggedIn ? myBookings().filter((b) => b.client === 'me')[0] : undefined;
   const lastP = last ? P(trOther(last)) : undefined;
-  const jobs = work ? openJobs().slice(0, 12) : [];
+  const jobs = work ? jobsForMe().slice(0, 12) : [];
+  const a = (db.PR.area || {}) as any;
+  const onlineOnly = Array.isArray(a.ways) && a.ways.length === 1 && a.ways[0] === 'online';
   return (
     <Screen style={{ paddingBottom: TAB_SPACE + ins.bottom }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 }}>
@@ -49,12 +50,12 @@ export default function Find() {
           testID="home-area"
           accessibilityRole="button"
           accessibilityLabel={`Your area: ${areaLabel()}. Change`}
-          onPress={() => (tap(), openCities())}
+          onPress={() => (tap(), openArea())}
           style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, height: 44, paddingLeft: 12, paddingRight: 14, borderRadius: 22, borderWidth: 1, borderColor: t.line, backgroundColor: t.card, maxWidth: '75%', opacity: pressed ? 0.7 : 1 })}
         >
           <GIcon name="pin" size={18} color={t.accent} />
           <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={[ft(14, 7, t.text), { flexShrink: 1 }]}>
-            {areaLabel()}
+            {hasArea() ? areaLabel() : 'Choose your area'}
           </Text>
           <GIcon name="down" size={16} color={t.text} />
         </Pressable>
@@ -66,14 +67,14 @@ export default function Find() {
           {work ? (avail ? 'You’re available' : 'You’re paused') : 'Tap to find a worker'}
         </T>
         {work ? (
-          <BigButton testID="home-big" label={avail ? 'You are available. Tap to pause' : 'You are paused. Tap to go back online'} still dim={!avail} onPress={toggleAvail} />
+          <BigButton testID="home-big" label={avail ? 'Pause: stop new jobs and calls' : 'Go back online'} still={!avail} dim={!avail} onPress={toggleAvail} />
         ) : (
-          <BigButton testID="home-big" label={canListen() ? 'Say what you need' : 'Find a worker'} onPress={() => router.push((canListen() ? '/listen' : '/need') as any)} />
+          <BigButton testID="home-big" label="Find a worker: tap and say what you need" still onPress={() => router.push((canListen() ? '/listen' : '/need') as any)} />
         )}
         {!work && canListen() ? <Link testID="home-type" icon="keyboard" title="Type instead" style={{ marginTop: 12, paddingHorizontal: 18 }} onPress={() => router.push('/need' as any)} /> : null}
         {work ? (
           <T s={14} lh={1.5} c={t.muted} center style={{ maxWidth: 270, marginTop: 14 }}>
-            {avail ? 'Clients near you can see you and call you. Tap the button to pause.' : 'Nobody can see you right now. Tap the button to go back online.'}
+            {!avail ? 'Nobody can see you right now. Tap the button to go back online.' : onlineOnly ? 'Clients can find you and message you. Tap the button to pause.' : 'Clients near you can see you and call you. Tap the button to pause.'}
           </T>
         ) : null}
       </View>
@@ -103,15 +104,15 @@ export default function Find() {
       {work ? (
         <View>
           <T s={13} w={7} c={t.muted} style={{ marginHorizontal: 20, marginBottom: 10 }}>
-            {jobs.length ? 'Jobs near you' : 'No jobs near you right now'}
+            {jobs.length ? (onlineOnly ? 'Jobs for you' : 'Jobs near you') : 'No jobs near you right now'}
           </T>
           {jobs.length ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 4, gap: 10 }}>
               {jobs.map((po) => (
-                <Pressable key={po.id} testID={`home-job-${po.id}`} accessibilityRole="button" onPress={() => (tap(), openJob(po.id))} style={({ pressed }) => ({ width: 230, padding: 14, borderRadius: 22, backgroundColor: t.card, borderWidth: 1, borderColor: t.line, opacity: pressed ? 0.8 : 1 })}>
+                <Pressable key={po.id} testID={`home-job-${po.id}`} accessibilityRole="button" onPress={() => (tap(), router.push(`/wrequest/${po.id}` as any))} style={({ pressed }) => ({ width: 230, padding: 14, borderRadius: 22, backgroundColor: t.card, borderWidth: 1, borderColor: t.line, opacity: pressed ? 0.8 : 1 })}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                     <T s={12} w={8} c={t.accent} lines={1} style={{ flexShrink: 1 }}>
-                      {po.urgent ? 'Now' : po.when || 'Flexible'}
+                      {po.urgent ? 'Now' : whenText(po.when) || 'Any time'}
                     </T>
                     <T s={12} c={t.muted} lines={1} style={{ flexShrink: 1 }}>
                       {po.area || ''}

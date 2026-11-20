@@ -37,7 +37,7 @@ export default function WorkerStart() {
   return (
     <Screen style={{ paddingHorizontal: 24, paddingBottom: 28 + ins.bottom }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Round icon="back" label="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace('/splash'))} />
+        <Round icon="back" label="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace('/intro' as any))} />
         {db.loggedIn ? <View /> : <Link testID="wland-signin" title="Sign in" onPress={() => openSignIn({ work: true, then: () => router.replace('/find' as any) })} />}
       </View>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

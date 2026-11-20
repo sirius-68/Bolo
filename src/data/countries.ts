@@ -25,10 +25,3 @@ export function deviceCountry(): Country {
 }
 
 
-/** Pretty-print a stored phone number (international numbers are kept as typed; older Cameroon numbers get +237). */
-export const showPhone = (p?: string | null) => {
-  if (!p) return '';
-  const s = p.trim();
-  if (s.startsWith('+')) return s;
-  return '+237 ' + s.replace(/^237\s?/, '');
-};

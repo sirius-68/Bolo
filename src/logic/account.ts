@@ -1,6 +1,6 @@
 /* Accounts: sign-up, roles (Regular / Business), businesses, Pro, profile data. */
 import { db, makeDb, setDb, ui, uid, MyBiz, Service } from '../data/db';
-import { toast } from '../ui/overlay';
+import { toast } from '../g/notice';
 import { bump, cancelAll } from './live';
 import { curBiz, bizName, cityLabel, isW, nowT, madeUpService, ensureSkillList, P } from './core';
 import { resumeSharing } from './work';
@@ -22,12 +22,6 @@ export function startApp(viaLogin = false) {
   toast(viaLogin ? 'Welcome back!' : 'Welcome to getit' + (db.user.name ? ', ' + db.user.name.split(' ')[0] : '') + '!');
   bump();
 }
-export function enterBusinessOnly() {
-  db.loggedIn = true;
-  ui.appStarted = true;
-  resumeSharing();
-  bump();
-}
 
 export async function logout() {
   await signOut();
@@ -40,127 +34,11 @@ export async function logout() {
   bump();
 }
 
-/** Switch between the Regular profile and a business page. Returns false when it needs a business first. */
-export function setRole(r: 'worker' | 'client', quiet = false): 'ok' | 'needBiz' | 'bizOnly' {
-  if (db.user.bizOnly && r === 'worker') return 'bizOnly';
-  if (r === 'client' && !curBiz()) {
-    if (db.BIZ.list.length) db.BIZ.active = db.BIZ.list[0].id;
-    else return 'needBiz';
-  }
-  if (db.user.role !== r) {
-    db.user.role = r;
-    if (r === 'worker') ensureSkillList();
-    ui.cat = null;
-    ui.q = '';
-    if (!quiet) toast(r === 'worker' ? 'Switched to your Regular profile' : `Switched to ${bizName(curBiz())} · Business`);
-  }
-  bump();
-  return 'ok';
-}
-export function useBiz(id: string) {
-  db.BIZ.active = id;
-  db.user.role = 'client';
-  ui.meTab = 'Company';
-  toast(`Switched to ${bizName(curBiz())} · Business`);
-  bump();
-}
 
-/* ---------------- businesses ---------------- */
-export function newBizDraft(): MyBiz {
-  return { id: uid('mb'), name: '', sector: '', size: '', city: cityLabel(), area: '', address: '', phone: '', email: '', web: '', about: '', rccm: '', niu: '', logo: null, color: '#f6ee5c', verified: 'none', draft: true, recruiters: [], team: [], contracts: [], events: [] };
-}
-export function saveBiz(b: MyBiz, opts: { submitDocs?: boolean } = {}) {
-  const pct = (() => {
-    const f = [b.name, b.sector, b.size, b.city, b.address, b.phone, b.email, b.about, b.rccm, b.niu, b.logo || b.color];
-    return Math.round((f.filter(Boolean).length / f.length) * 100);
-  })();
-  b.draft = pct < 100;
-  const i = db.BIZ.list.findIndex((x) => x.id === b.id);
-  const isNew = i < 0;
-  if (isNew) {
-    db.BIZ.list.push(b);
-    b.events.unshift({ icon: 'storefront', text: `Business page <b>${b.name || 'Your business'}</b> created`, at: nowT() });
-  } else db.BIZ.list[i] = b;
-  db.BIZ.active = b.id;
-  db.user.role = 'client';
-  if (opts.submitDocs && b.rccm && b.niu && b.verified === 'none') {
-    b.verified = 'review';
-    // getit staff check RCCM and NIU (remote.ts asks the server for review when the page syncs)
-  }
-  bump();
-  return isNew;
-}
-
-/** Business-only account created from the welcome screen. */
-export function createBusinessAccount(o: { owner: string; email: string; phone: string; biz: MyBiz }) {
-  db.user.name = o.owner;
-  db.user.contact = o.email || o.phone;
-  db.user.intents = ['biz'];
-  db.user.bizOnly = true;
-  db.user.role = 'client';
-  db.PR.ct.email = o.email;
-  db.PR.ct.phone = o.phone;
-  db.BIZ.list = [];
-  saveBiz(o.biz, { submitDocs: true });
-  enterBusinessOnly();
-  toast(`Welcome to getit, ${o.biz.name}!`);
-}
-
-
-
-/* ---------------- my profile data ---------------- */
 export function services(): Service[] {
   // only what the person added themselves: nothing is listed, and no price is shown, on their behalf
   if (!db.PR.services) db.PR.services = [];
   if (db.PR.services.some(madeUpService)) db.PR.services = db.PR.services.filter((x) => !madeUpService(x));
   return db.PR.services;
 }
-export const passedTests = () => Object.keys(db.PR.tests).filter((k) => db.PR.tests[k] === 'passed');
-export function syncContacts() {
-  const c = db.user.contact || '';
-  if (!db.PR.ct.phone && /^\+?\d[\d\s]{5,}$/.test(c)) db.PR.ct.phone = c.replace(/^\+?237\s?/, '');
-  if (!db.PR.ct.email && c.includes('@')) db.PR.ct.email = c;
-}
-/** Profile completeness items: [label, done, action-key]. */
-export function prItems(): [string, boolean, string][] {
-  syncContacts();
-  const w = isW();
-  return [
-    ['Profile photo', !!db.user.avatar, 'photo'],
-    ['Your name', !!db.user.name, 'edit'],
-    ['Phone number', !!db.PR.ct.phone, 'contacts'],
-    ...((w
-      ? [
-          ['Publish a service', services().some((s) => s.pub), 'service'],
-          ['Pass a skill test', passedTests().length > 0, 'test'],
-          ['Work experience', db.PR.exp.length > 0, 'exp'],
-          ['Intro video', !!db.PR.video, 'video'],
-        ]
-      : []) as [string, boolean, string][]),
-    ['Languages', db.PR.langs.length > 0, 'langs'],
-    ['ID document', db.PR.docs.id === 'verified', 'doc'],
-  ];
-}
-export const prPct = () => {
-  const it = prItems();
-  return Math.round((it.filter((x) => x[1]).length / it.length) * 100);
-};
 
-export function saveSkills(d: { main: any; others: any[]; level: string; years: number; langs: [string, string][] }) {
-  const all = [d.main, ...d.others].filter(Boolean);
-  db.user.skillList = all.map((e) => ({ ...e, x: JSON.parse(JSON.stringify(e.x || {})), xo: JSON.parse(JSON.stringify(e.xo || {})), c: e.c || 'Admin' }));
-  db.user.skills = [...new Set(db.user.skillList.map((e) => e.c as string))];
-  db.user.level = d.level;
-  db.user.years = d.years;
-  db.PR.langs = d.langs.map((x) => [...x] as [string, string]);
-  bump();
-}
-
-/* ---------------- following ---------------- */
-export function toggleFollow(id: string) {
-  const i = db.followed.indexOf(id);
-  if (i >= 0) db.followed.splice(i, 1);
-  else db.followed.push(id);
-  bump();
-}
-export const followingCount = () => db.followed.filter((id) => P(id)).length;

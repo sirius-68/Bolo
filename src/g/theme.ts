@@ -2,8 +2,15 @@
 import { useSyncExternalStore } from 'react';
 import { Platform, TextStyle, ViewStyle } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { FONT, Weight, paint } from '../ui/theme';
-import { bump } from '../logic/live';
+
+export type Weight = 5 | 6 | 7 | 8;
+/** One font file per weight (Android ignores fontWeight for custom fonts). */
+export const FONT: Record<Weight, string> = {
+  5: 'PlusJakartaSans_500Medium',
+  6: 'PlusJakartaSans_600SemiBold',
+  7: 'PlusJakartaSans_700Bold',
+  8: 'PlusJakartaSans_800ExtraBold',
+};
 
 /** The action red (buttons) and the brand red (the logo, the big button). White text on both. */
 export const RED = '#e02f17';
@@ -71,9 +78,7 @@ export const theme = () => (look === 'light' ? LIGHT : DARK);
 export function setLook(l: Look) {
   if (l === look) return;
   look = l;
-  paint(l);
   subs.forEach((f) => f());
-  bump(); // the screens built on the first building blocks redraw with the new colours too
   AsyncStorage.setItem(KEY, l).catch(() => {});
 }
 /** Read the saved choice once at start-up (before the first screen shows). */
@@ -82,7 +87,6 @@ export async function loadLook() {
     const v = await AsyncStorage.getItem(KEY);
     if (v === 'light' || v === 'dark') {
       look = v;
-      paint(v);
       subs.forEach((f) => f());
     }
   } catch {}

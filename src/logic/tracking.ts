@@ -4,7 +4,7 @@
 import * as Location from 'expo-location';
 import { db, Booking } from '../data/db';
 import { supabase } from '../lib/supabase';
-import { toast } from '../ui/overlay';
+import { toast } from '../g/notice';
 import { bump } from './live';
 import { haversine } from './server';
 

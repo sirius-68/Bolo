@@ -1,5 +1,5 @@
 appId: cm.bolo.app
-name: getit, a new worker (start screen, your skill, how you work, account, you're on getit, working home, you)
+name: getit, a new worker (skill, how you work, number, you're on getit, prices, ID, profile, working home)
 ---
 - launchApp:
     clearState: true
@@ -29,54 +29,103 @@ name: getit, a new worker (start screen, your skill, how you work, account, you'
 - takeScreenshot: w02-skill-typing
 - tapOn:
     id: "w1-Plumber"
-- takeScreenshot: w03-skill-picked
 - tapOn:
     id: "w1-continue"
-# step 2: how you work
+# step 2: how you work, and where
 - extendedWaitUntil:
     visible:
       id: "w2-continue"
     timeout: 10000
-- takeScreenshot: w04-how
 - tapOn:
     id: "w2-go"
-- tapOn:
-    id: "w2-online"
 - waitForAnimationToEnd
-- takeScreenshot: w05-how-picked
-- scrollUntilVisible:
-    element:
-      id: "w2-reach-anywhere"
-    direction: DOWN
-    timeout: 6000
-- takeScreenshot: w06-how-bottom
+- takeScreenshot: w03-how
+- tapOn:
+    id: "w2-area"
+- extendedWaitUntil:
+    visible:
+      id: "area-city"
+    timeout: 8000
+- tapOn:
+    id: "area-city"
+- inputText: "Buea"
+- runFlow:
+    when:
+      visible:
+        id: "area-hit-0"
+    commands:
+      - tapOn:
+          id: "area-hit-0"
+- runFlow:
+    when:
+      visible:
+        id: "area-use-typed"
+    commands:
+      - tapOn:
+          id: "area-use-typed"
+- hideKeyboard
+- tapOn:
+    id: "area-done"
+- waitForAnimationToEnd
+- takeScreenshot: w04-how-with-area
 - tapOn:
     id: "w2-continue"
-# step 3: the number (here: an account with a password, as the tour can't read a code)
+# step 3: the number (the tour makes its account through the test door, as it can't read a code)
 - extendedWaitUntil:
     visible:
       id: "signin-send"
     timeout: 10000
-- takeScreenshot: w07-number
-- runFlow:
-    file: account.yaml
-    env:
-      NAME: "Tour Wanda"
-      EMAIL: ${WORK_EMAIL}
+- takeScreenshot: w05-number
+- openLink: "getit://qa?email=${WORK_EMAIL}&password=${TOUR_PASSWORD}&name=Tour%20Wanda"
 - extendedWaitUntil:
     visible:
       id: "wdone-start"
-    timeout: 40000
+    timeout: 60000
 - waitForAnimationToEnd
-- takeScreenshot: w08-on-getit
+- takeScreenshot: w06-on-getit
+# prices
 - tapOn:
     id: "wdone-prices"
-- waitForAnimationToEnd
-- takeScreenshot: w09-prices-sheet
-- back
+- extendedWaitUntil:
+    visible:
+      id: "wprice-save"
+    timeout: 10000
+- takeScreenshot: w07-prices
+- tapOn:
+    id: "wprice-0"
+- inputText: "5000"
+- hideKeyboard
+- tapOn:
+    id: "wprice-after"
+- takeScreenshot: w08-prices-filled
+- tapOn:
+    id: "wprice-save"
+- extendedWaitUntil:
+    visible:
+      id: "wdone-start"
+    timeout: 10000
+# photos and the ID check
+- tapOn:
+    id: "wdone-photos"
+- extendedWaitUntil:
+    visible:
+      id: "wphoto-save"
+    timeout: 10000
+- takeScreenshot: w09-photos
+- tapOn:
+    id: "wphoto-save"
+- tapOn:
+    id: "wdone-id"
+- extendedWaitUntil:
+    visible:
+      id: "wid-next"
+    timeout: 10000
+- takeScreenshot: w10-id-check
+- tapOn:
+    id: "top-back"
 - tapOn:
     id: "wdone-start"
-# the working home: available, with jobs near you
+# the working home: available, then paused
 - extendedWaitUntil:
     visible:
       id: "home-big"
@@ -84,22 +133,22 @@ name: getit, a new worker (start screen, your skill, how you work, account, you'
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - assertVisible: "You’re available"
-- takeScreenshot: w10-home-available
+- takeScreenshot: w11-home-available
 - tapOn:
     id: "home-big"
 - assertVisible: "You’re paused"
-- takeScreenshot: w11-home-paused
+- takeScreenshot: w12-home-paused
 - tapOn:
     id: "home-big"
 - assertVisible: "You’re available"
 - tapOn:
     id: "tab-jobs"
-- takeScreenshot: w12-jobs
+- takeScreenshot: w13-jobs
+- tapOn: "Offers"
+- takeScreenshot: w14-jobs-offers
 - tapOn:
     id: "tab-inbox"
-- takeScreenshot: w13-inbox
-- tapOn: "Updates.*"
-- takeScreenshot: w14-updates
+- takeScreenshot: w15-inbox
 - tapOn:
     id: "tab-find"
 - tapOn:
@@ -108,20 +157,36 @@ name: getit, a new worker (start screen, your skill, how you work, account, you'
     visible:
       id: "me-mode"
     timeout: 8000
-- takeScreenshot: w15-you
-# the same screens in light
-- tapOn: "Light"
-- takeScreenshot: w16-you-light
+- takeScreenshot: w16-you
 - tapOn:
     id: "me-account"
-- waitForAnimationToEnd
-- takeScreenshot: w17-profile-editor-light
-- back
-- runFlow:
-    when:
-      visible:
-        id: "home-me"
-    commands:
-      - tapOn:
-          id: "home-me"
-      - tapOn: "Dark"
+- extendedWaitUntil:
+    visible:
+      id: "wprofile-prices"
+    timeout: 10000
+- takeScreenshot: w17-profile
+- scrollUntilVisible:
+    element:
+      id: "wprofile-urgent"
+    direction: DOWN
+    timeout: 6000
+- takeScreenshot: w18-profile-bottom
+- tapOn:
+    id: "top-back"
+# light
+- tapOn:
+    id: "home-me"
+- tapOn: "Light"
+- tapOn:
+    id: "me-close"
+- takeScreenshot: w19-home-light
+- tapOn:
+    id: "tab-jobs"
+- takeScreenshot: w20-jobs-light
+- tapOn:
+    id: "tab-find"
+- tapOn:
+    id: "home-me"
+- tapOn: "Dark"
+- tapOn:
+    id: "me-close"

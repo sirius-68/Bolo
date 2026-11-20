@@ -3,23 +3,23 @@
    a voice note, a place) keeps working as before. */
 import React, { useEffect, useState } from 'react';
 import { FlatList, Linking, Pressable, ScrollView, TextInput, View } from 'react-native';
-import { KeyAvoid, useKeyboardOpen } from '../../src/ui/keyboard';
+import { KeyAvoid, useKeyboardOpen } from '../../src/g/keyboard';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, Msg } from '../../src/data/db';
-import { Missing, Pict, goBack, tap } from '../../src/ui/kit';
-import { toast } from '../../src/ui/overlay';
-import { P, THREADS, fname, isGroup } from '../../src/logic/core';
+import { Image } from 'expo-image';
+import { P, THREADS, fname } from '../../src/logic/core';
 import { answerOffer, hiringIn, markChatRead, retryText, sendText } from '../../src/logic/work';
 import { callsAvailable, startCall } from '../../src/logic/calls';
 import { useLive } from '../../src/logic/live';
 import { setViewing } from '../../src/logic/push';
 import { iAmTyping, leftChat, loadSeen, seenLabel, stoppedTyping, typingIn } from '../../src/logic/presence';
 import { membersOf } from '../../src/logic/server';
-import { openProfile } from '../../src/logic/nav';
-import { groupOf } from '../../src/logic/career';
-import { openAttach, openChatMenu, openMsgMenu, openQuote, openRules } from '../../src/sheets/chat';
-import { openMedia, openJob } from '../../src/sheets/work';
+import { openRequestOf } from '../../src/g/nav';
+import { openPhoto, toast } from '../../src/g/notice';
+import { Gone } from '../../src/g/parts';
+import { openAttach, openChatMenu, openMsgMenu, openOffer } from '../../src/g/sheets';
+import { goBack, tap } from '../../src/g/touch';
 import { GIcon } from '../../src/g/icons';
 import { Face, Round, T } from '../../src/g/ui';
 import { GOOD, RED, Theme, ft, useG } from '../../src/g/theme';
@@ -51,11 +51,8 @@ export default function Chat() {
       if (tm) clearInterval(tm);
     };
   }, [th?.cid]);
-  useEffect(() => {
-    if (th && isGroup(id) && !th.rulesOk && (groupOf(id)?.rules || []).length) setTimeout(() => openRules(id), 350);
-  }, [id]);
-  if (!th || !p?.name) return <Missing bar="Chat" title="Chat not found" text="It may have been deleted." />;
-  const grp = isGroup(id);
+  if (!th || !p?.name) return <Gone title="This chat isn’t here any more" text="It may have been deleted." />;
+  const grp = false;
   const msgs = th.msgs;
   const rows: Row[] = msgs.map((m, i) => ({ m, i, grp: !m.d && !m.sys && !!msgs[i + 1] && msgs[i + 1].f === m.f && !msgs[i + 1].sys && !msgs[i + 1].d })).reverse();
   // "Seen" under my newest message once the other person has opened the chat (with the time, in a chat of two)
@@ -77,7 +74,7 @@ export default function Chat() {
     iAmTyping(th.cid, v);
   };
   const hiring = hiringIn(id);
-  const quick = grp ? ['Hello everyone', 'Thanks!', 'See you at the session'] : hiring ? ['When can you come?', 'What’s your price?', 'Send me a quote', 'Thanks!'] : ['I can come tomorrow', 'On my way', 'Thanks!'];
+  const quick = hiring ? ['When can you come?', 'What’s your price?', 'Send me a quote', 'Thanks!'] : ['I can come tomorrow', 'On my way', 'Thanks!'];
   const send = () => {
     const v = text.trim();
     if (!v) return;
@@ -91,7 +88,7 @@ export default function Chat() {
     const po = db.POSTS.find((x) => x.mine && (x.offerList || []).some((o) => o.by === id)) || db.POSTS.find((x) => x.client === id && db.myOffers[x.id]);
     const b = db.BOOKINGS.find((x) => (x.worker === id || x.client === id) && x.state !== 'confirmed');
     if (b) router.push(`/track/${b.id}` as any);
-    else if (po) openJob(po.id);
+    else if (po) openRequestOf(po.id);
     else toast(job || 'No active job');
   };
   const line = typer ? (!grp ? 'typing…' : typer > 1 ? `${typer} people are typing…` : `${fname(P(typers[0])?.name || 'Someone')} is typing…`) : grp ? `${(th.members || []).length + 1} members` : online ? 'Online now' : status ? status[0].toUpperCase() + status.slice(1) : p.biz ? 'Business' : p.role || '';
@@ -99,7 +96,7 @@ export default function Chat() {
     <KeyAvoid style={{ flex: 1, backgroundColor: t.bg }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: ins.top + 12, paddingBottom: 12, paddingLeft: 8, paddingRight: 12, borderBottomWidth: 1, borderBottomColor: t.line }}>
         <Round icon="back" label="Back" onPress={goBack} plain bg="transparent" testID="chat-back" />
-        <Pressable accessibilityRole="button" accessibilityLabel={grp ? 'Group info' : `${p.name}’s profile`} onPress={() => (grp ? router.push(`/group/${id}` as any) : openProfile(id))} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={grp ? 'Group info' : `${p.name}’s profile`} onPress={() => router.push(`/profile/${id}` as any)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
           <Face name={p.name} photo={p.photo} size={40} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
@@ -139,37 +136,38 @@ export default function Chat() {
           </Pressable>
         </View>
       ) : null}
-      <FlatList
-        inverted
-        data={rows}
-        keyExtractor={(r) => String(r.i)}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-        ListHeaderComponent={
-          typer ? (
-            <View testID="chat-typing" accessibilityLabel="Typing" style={{ alignSelf: 'flex-start', flexDirection: 'row', gap: 5, marginTop: 8, paddingHorizontal: 14, paddingVertical: 13, borderRadius: 20, borderBottomLeftRadius: 6, backgroundColor: t.card2 }}>
-              {[0, 1, 2].map((d) => (
-                <View key={d} style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: t.muted, opacity: 0.45 + d * 0.25 }} />
-              ))}
-            </View>
-          ) : null
-        }
-        ListEmptyComponent={
-          <View style={{ alignItems: 'center', gap: 10, paddingVertical: 30, transform: [{ scaleY: -1 }] }}>
-            <Face name={p.name} photo={p.photo} size={72} />
-            <T s={15} c={t.muted} center style={{ maxWidth: 260 }}>
-              Say hello to {fname(p.name)}. Ask about the price, or when they can come.
-            </T>
-          </View>
-        }
-        renderItem={({ item }) => <Bubble id={id} r={item} t={t} />}
-        initialNumToRender={20}
-      />
+      {rows.length ? (
+        <FlatList
+          inverted
+          data={rows}
+          keyExtractor={(r) => String(r.i)}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          ListHeaderComponent={
+            typer ? (
+              <View testID="chat-typing" accessibilityLabel="Typing" style={{ alignSelf: 'flex-start', flexDirection: 'row', gap: 5, marginTop: 8, paddingHorizontal: 14, paddingVertical: 13, borderRadius: 20, borderBottomLeftRadius: 6, backgroundColor: t.card2 }}>
+                {[0, 1, 2].map((d) => (
+                  <View key={d} style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: t.muted, opacity: 0.45 + d * 0.25 }} />
+                ))}
+              </View>
+            ) : null
+          }
+          renderItem={({ item }) => <Bubble id={id} r={item} t={t} />}
+          initialNumToRender={20}
+        />
+      ) : (
+        <View testID="chat-empty" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 24 }}>
+          <Face name={p.name} photo={p.photo} size={72} />
+          <T s={15} lh={1.5} c={t.muted} center style={{ maxWidth: 260 }}>
+            Say hello to {fname(p.name)}. Ask about the price, or when they can come.
+          </T>
+        </View>
+      )}
       {/* quick replies, then the message box */}
       <ScrollView horizontal keyboardShouldPersistTaps="always" showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingBottom: 8, alignItems: 'center' }}>
         {!grp && !hiring ? (
-          <Pressable testID="chat-quote" accessibilityRole="button" onPress={() => (tap(), openQuote(id))} style={{ height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: RED, justifyContent: 'center' }}>
+          <Pressable testID="chat-quote" accessibilityRole="button" onPress={() => (tap(), openOffer({ chat: id }))} style={{ height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: RED, justifyContent: 'center' }}>
             <T s={13} w={8} c="#ffffff">
               Send a quote
             </T>
@@ -346,8 +344,8 @@ function Bubble({ id, r, t }: { id: string; r: Row; t: Theme }) {
   else if (m.k === 'img') {
     own = true;
     body = (
-      <Pressable onPress={() => openMedia(m.src!)} accessibilityRole="imagebutton" accessibilityLabel="Open photo">
-        <Pict pic={m.src!} style={{ width: 228, height: 228, borderRadius: 20, backgroundColor: t.card2 }} />
+      <Pressable onPress={() => openPhoto(m.src!)} accessibilityRole="imagebutton" accessibilityLabel="Open photo">
+        <Image source={{ uri: String(m.src).replace(/^uri:/, '') }} style={{ width: 228, height: 228, borderRadius: 20, backgroundColor: t.card2 }} contentFit="cover" />
       </Pressable>
     );
   } else if (m.k === 'loc')
@@ -375,11 +373,6 @@ function Bubble({ id, r, t }: { id: string; r: Row; t: Theme }) {
         {m.fw ? (
           <T s={11} c={soft} style={{ marginBottom: 2 }}>
             Forwarded
-          </T>
-        ) : null}
-        {!me && m.name && isGroup(id) ? (
-          <T s={12} w={8} c={t.accent}>
-            {m.name}
           </T>
         ) : null}
         <T s={15} c={fg} style={{ flexShrink: 1 }}>

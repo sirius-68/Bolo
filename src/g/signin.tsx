@@ -2,15 +2,13 @@
    a 6-digit code, and a first name the first time. No password. */
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
 import { db } from '../data/db';
 import { COUNTRIES, Country, countryByIso, deviceCountry, flag } from '../data/countries';
-import { authCaps, loadAuthCaps } from '../components/auth';
+import { authCaps, loadAuthCaps } from './auth';
 import { startApp } from '../logic/account';
 import { bump, useLive } from '../logic/live';
 import { sendLoginCode, verifyLoginCode } from '../logic/remote';
-import { pick } from '../ui/overlay';
-import { tap } from '../ui/kit';
+import { tap } from './touch';
 import { markStarted, mode, setMode } from './data';
 import { RED, ft, useG } from './theme';
 import { Big, Input, Label, Link, T, gsheet } from './ui';
@@ -40,7 +38,8 @@ const emailOk = (v: string) => /^\S+@\S+\.\S+$/.test(v.trim());
 function SignInSheet({ o }: { o: SignInFor }) {
   useLive();
   const t = useG();
-  const [step, setStep] = useState<'contact' | 'code' | 'name'>('contact');
+  const [step, setStep] = useState<'contact' | 'code' | 'name' | 'country'>('contact');
+  const [cq, setCq] = useState('');
   // text messages only where the server can send them; an email works everywhere
   const [how, setHow] = useState<'phone' | 'email'>(authCaps.phone ? 'phone' : 'email');
   useEffect(() => {
@@ -112,16 +111,8 @@ function SignInSheet({ o }: { o: SignInFor }) {
   };
   const chooseCountry = () => {
     tap();
-    pick(
-      'Country code',
-      COUNTRIES.map((k) => ({ v: `${flag(k.iso)}  ${k.name}`, sub: '+' + k.dial })),
-      `${flag(ctry.iso)}  ${ctry.name}`,
-      (lbl) => {
-        const k = COUNTRIES.find((x) => `${flag(x.iso)}  ${x.name}` === lbl);
-        if (k) setCtry(k);
-      },
-      true,
-    );
+    setCq('');
+    setStep('country');
   };
   const error = err ? (
     <T s={13} w={7} lh={1.45} c={t.accent} style={{ marginTop: 10 }}>
@@ -129,6 +120,40 @@ function SignInSheet({ o }: { o: SignInFor }) {
     </T>
   ) : null;
 
+  if (step === 'country') {
+    const q = cq.trim().toLowerCase();
+    const list = COUNTRIES.filter((k) => !q || k.name.toLowerCase().includes(q) || k.dial.startsWith(q.replace(/^\+/, ''))).slice(0, 40);
+    return (
+      <View>
+        <T s={24} w={8} ls={-0.5}>
+          Your country
+        </T>
+        <Input testID="signin-country-search" value={cq} onChangeText={setCq} placeholder="Search" autoFocus autoCorrect={false} style={{ marginTop: 14 }} />
+        <View style={{ marginTop: 6 }}>
+          {list.map((k) => (
+            <Pressable
+              key={k.iso}
+              accessibilityRole="button"
+              onPress={() => {
+                tap();
+                setCtry(k);
+                setStep('contact');
+              }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, borderBottomWidth: 1, borderBottomColor: t.line }}
+            >
+              <Text style={ft(20, 5, t.text)}>{flag(k.iso)}</Text>
+              <T s={15} w={7} lines={1} style={{ flex: 1 }}>
+                {k.name}
+              </T>
+              <T s={15} c={t.muted}>
+                +{k.dial}
+              </T>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+    );
+  }
   if (step === 'name')
     return (
       <View>
@@ -222,17 +247,7 @@ function SignInSheet({ o }: { o: SignInFor }) {
       {error}
       <Big testID="signin-send" title="Send me a code" loading={busy} disabled={!ok} onPress={send} style={{ marginTop: 18 }} />
       {authCaps.phone ? <Link testID="signin-switch" title={how === 'phone' ? 'Use my email instead' : 'Use my phone number instead'} color={t.text} onPress={() => (setErr(''), setHow(how === 'phone' ? 'email' : 'phone'))} style={{ marginTop: 6 }} /> : null}
-      <Link
-        testID="signin-password"
-        title="I have a password"
-        color={t.muted}
-        w={6}
-        onPress={() => {
-          gsheet.close();
-          setTimeout(() => router.push('/login'), 260);
-        }}
-      />
-      <T s={12} lh={1.5} c={t.muted} center style={{ marginTop: 6 }}>
+      <T s={12} lh={1.5} c={t.muted} center style={{ marginTop: 14 }}>
         No password to remember. By continuing you accept the getit terms.
       </T>
     </View>
