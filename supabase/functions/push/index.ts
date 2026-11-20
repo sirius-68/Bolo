@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
   const { data: tokens } = await admin.from('push_tokens').select('token, app_version').eq('user_id', n.recipient_id);
   if (!tokens?.length) return json({ ok: true, skipped: 'no phones' });
 
-  let name = 'bolo';
+  let name = 'getit';
   let photo = '';
   if (n.actor_id) {
     const { data: p } = await admin.from('profiles').select('name, avatar_url').eq('id', n.actor_id).maybeSingle();
@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
     if (typeof p === 'string') pass = p;
   }
 
-  const title = n.actor_id ? name : 'bolo';
+  const title = n.actor_id ? name : 'getit';
   const text = isCall
     ? `Incoming ${kind} call`
     : n.type === 'message' || n.type === 'missed' || !n.actor_id

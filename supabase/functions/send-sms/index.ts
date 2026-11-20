@@ -1,7 +1,7 @@
 // send-sms: Supabase Auth calls this (the "Send SMS" hook) whenever a phone number needs a code:
 // sign-up with a phone number, and password reset by phone. It sends the code by SMS through Brevo.
 // Only Supabase Auth can call it: the request is signed with SEND_SMS_HOOK_SECRET.
-// Secrets (set by the deploy workflow): BREVO_API_KEY, SEND_SMS_HOOK_SECRET. Optional: SMS_SENDER (default "bolo").
+// Secrets (set by the deploy workflow): BREVO_API_KEY, SEND_SMS_HOOK_SECRET. Optional: SMS_SENDER (default "getit").
 import { Webhook } from 'https://esm.sh/standardwebhooks@1.0.0';
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -27,9 +27,9 @@ Deno.serve(async (req) => {
   if (phone.length < 8 || !/^\d{4,10}$/.test(otp)) return fail(400, 'Bad request');
 
   const body = JSON.stringify({
-    sender: (Deno.env.get('SMS_SENDER') || 'bolo').slice(0, 11),
+    sender: (Deno.env.get('SMS_SENDER') || 'getit').slice(0, 11),
     recipient: phone,
-    content: `${otp} is your bolo code. It works for 1 hour. Don't share it with anyone.`,
+    content: `${otp} is your getit code. It works for 1 hour. Don't share it with anyone.`,
     type: 'transactional',
   });
   const headers = { 'api-key': key, 'Content-Type': 'application/json', Accept: 'application/json' };
