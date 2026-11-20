@@ -195,10 +195,10 @@ function SignInSheet({ o }: { o: SignInFor }) {
   return (
     <View>
       <T s={24} w={8} lh={1.2} ls={-0.5}>
-        {o.title || (o.work ? 'Last step: your number' : 'Welcome back')}
+        {o.title || (o.work ? (how === 'phone' ? 'Last step: your number' : 'Last step: your email') : 'Welcome back')}
       </T>
       <T s={14} lh={1.5} c={t.muted} style={{ marginTop: 6, marginBottom: 18 }}>
-        {o.sub || (o.work ? 'Clients will call or message you on this number. We send you a code to check it.' : o.title ? 'Just your number, once. No password, no forms.' : how === 'phone' ? 'Enter your number and we’ll text you a code.' : 'Enter your email and we’ll send you a code.')}
+        {o.sub || (o.work ? (how === 'phone' ? 'Clients will call or message you on this number. We send you a code to check it.' : 'It keeps your profile yours. We email you a code to check it. Clients call and message you inside getit.') : o.title ? 'Just your number, once. No password, no forms.' : how === 'phone' ? 'Enter your number and we’ll text you a code.' : 'Enter your email and we’ll send you a code.')}
       </T>
       {how === 'phone' ? (
         <>
