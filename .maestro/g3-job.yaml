@@ -36,6 +36,8 @@ name: getit, one job from request to rating (the worker sends a price, the clien
     id: "offer-price"
 - inputText: "6000"
 - hideKeyboard
+# typing replaces the usual price; it doesn't add to it
+- assertVisible: "Send 6,000 FCFA"
 - takeScreenshot: j03-your-price
 - tapOn:
     id: "offer-send"

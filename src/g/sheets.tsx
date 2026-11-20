@@ -493,11 +493,17 @@ function OfferSheet({ o }: { o: { postId?: string; chat?: string } }) {
         </>
       ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, height: 64, paddingHorizontal: 18, borderRadius: 20, backgroundColor: t.card2, borderWidth: 2, borderColor: RED }}>
-        <Input testID="offer-price" accessibilityLabel="Your price in FCFA" value={price ? (+price).toLocaleString('en-US') : ''} onChangeText={(v) => setPrice(v.replace(/[^\d]/g, '').slice(0, 8))} placeholder="0" keyboardType="number-pad" autoFocus={!price} style={[ft(28, 8, t.text), { flex: 1, height: 60, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 }]} />
+        <Input testID="offer-price" accessibilityLabel="Your price in FCFA" value={price ? (+price).toLocaleString('en-US') : ''} onChangeText={(v) => setPrice(v.replace(/[^\d]/g, '').slice(0, 8))} placeholder="0" keyboardType="number-pad" autoFocus={!price} selectTextOnFocus style={[ft(28, 8, t.text), { flex: 1, height: 60, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 }]} />
         <T s={16} w={8} c="muted">
           FCFA
         </T>
       </View>
+      {/* a typo can add zeros: say the number in words when it is far above the usual */}
+      {n >= 1000000 || (amount(mine?.price) > 0 && n >= 10 * amount(mine?.price)) ? (
+        <T testID="offer-big" s={13} w={7} c="danger" style={{ marginTop: 6 }}>
+          {`That’s ${money(String(n))}. Check the number before you send it.`}
+        </T>
+      ) : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
         {chips.map((c) => (
           <Opt key={c} label={c.toLocaleString('en-US')} on={n === c} onPress={() => setPrice(String(c))} />
@@ -516,7 +522,7 @@ function OfferSheet({ o }: { o: { postId?: string; chat?: string } }) {
           <Input testID="offer-note" value={note} onChangeText={setNote} placeholder="For example: I have the parts" maxLength={200} style={ft(15, 5, t.text)} />
         </>
       ) : null}
-      <Big testID="offer-send" title="Send offer" quiet={!n} onPress={send} style={{ marginTop: 18 }} />
+      <Big testID="offer-send" title={n ? `Send ${money(String(n))}` : 'Send offer'} quiet={!n} onPress={send} style={{ marginTop: 18 }} />
     </View>
   );
 }
