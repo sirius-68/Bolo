@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../src/data/db';
 import { markStarted, setMode } from '../src/g/data';
 import { GIcon } from '../src/g/icons';
+import { openSignIn } from '../src/g/signin';
 import { useG } from '../src/g/theme';
 import { Big, Link, Lockup, Screen, T } from '../src/g/ui';
 
@@ -20,7 +21,7 @@ export default function Intro() {
   return (
     <Screen style={{ paddingHorizontal: 24, paddingBottom: 28 + ins.bottom }}>
       <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-        <Link testID="intro-signin" title="Sign in" onPress={() => router.push('/login')} />
+        <Link testID="intro-signin" title="Sign in" onPress={() => openSignIn({ then: () => router.replace('/find' as any) })} />
       </View>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 32 }}>
         <View style={{ marginBottom: 40 }}>

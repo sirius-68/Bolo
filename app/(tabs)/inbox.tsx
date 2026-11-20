@@ -11,6 +11,7 @@ import { openChat, openChatMenu } from '../../src/sheets/chat';
 import { tap } from '../../src/ui/kit';
 import { Pull } from '../../src/components/common';
 import { working } from '../../src/g/data';
+import { openSignIn } from '../../src/g/signin';
 import { TAB_SPACE } from '../../src/g/TabBar';
 import { RED, ft, useG } from '../../src/g/theme';
 import { Big, Face, Link, Screen, Seg, T } from '../../src/g/ui';
@@ -52,7 +53,7 @@ export default function Inbox() {
         {sub}
       </T>
       <Big testID="inbox-empty" h={48} title={working() ? 'See jobs near you' : 'Find a worker'} style={{ marginTop: 12 }} onPress={() => router.navigate('/find' as any)} />
-      {!signed ? <Link title="Sign in" onPress={() => router.push('/login')} /> : null}
+      {!signed ? <Link testID="tab-signin" title="Sign in" onPress={() => openSignIn()} /> : null}
     </View>
   );
   return (

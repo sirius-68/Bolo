@@ -1,7 +1,7 @@
 /* getit building blocks: text, buttons, avatars, the big button's rings, and the bottom sheet.
    Sizes and colours follow the design canvas exactly; every piece works in dark and light. */
-import React, { ReactNode, useEffect, useReducer, useRef } from 'react';
-import { ActivityIndicator, Animated, BackHandler, Easing, Modal, Pressable, ScrollView, StyleProp, Text, TextStyle, View, ViewStyle, useWindowDimensions } from 'react-native';
+import React, { ReactNode, useEffect, useReducer, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, BackHandler, Easing, Keyboard, Modal, Platform, Pressable, ScrollView, StyleProp, Text, TextInput, TextInputProps, TextStyle, View, ViewStyle, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -154,6 +154,55 @@ export function Seg<V extends string>({ items, value, onChange, h = 40 }: { item
   );
 }
 
+/* ---------------- forms ---------------- */
+/** A small label above a field. */
+export function Label({ children }: { children: ReactNode }) {
+  const t = useG();
+  return (
+    <Text maxFontSizeMultiplier={1.3} style={[ft(13, 7, t.muted), { marginBottom: 6 }]}>
+      {children}
+    </Text>
+  );
+}
+/** A one-line text box: 52 high, as in the design. `bad` draws the red edge. */
+export const Input = React.forwardRef<TextInput, TextInputProps & { bad?: boolean; h?: number }>(function Input({ bad, h = 52, style, ...rest }, ref) {
+  const t = useG();
+  return (
+    <TextInput
+      ref={ref}
+      placeholderTextColor={t.muted}
+      selectionColor={RED}
+      maxFontSizeMultiplier={1.3}
+      {...rest}
+      style={[ft(16, 6, t.text), { height: h, paddingHorizontal: 16, paddingVertical: 0, borderRadius: 16, borderWidth: bad ? 2 : 1, borderColor: bad ? RED : t.line, backgroundColor: t.card2, lineHeight: undefined }, style]}
+    />
+  );
+});
+/** A choice chip (When? Today · Tomorrow). */
+export function Chip({ label, on, onPress, testID }: { label: string; on?: boolean; onPress?: () => void; testID?: string }) {
+  const t = useG();
+  return (
+    <Pressable testID={testID} accessibilityRole="button" accessibilityState={{ selected: !!on }} onPress={() => (tap(), onPress?.())} style={({ pressed }) => ({ height: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1, borderColor: on ? RED : t.line, backgroundColor: on ? RED : t.card, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.8 : 1 })}>
+      <Text maxFontSizeMultiplier={1.2} style={ft(14, 7, on ? '#ffffff' : t.text)}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+/** The second action under a red one: outlined, 52 high. */
+export function Ghost({ title, onPress, testID, style, icon }: { title: string; onPress?: () => void; testID?: string; style?: StyleProp<ViewStyle>; icon?: GIconName }) {
+  const t = useG();
+  const press = usePressOnce(onPress);
+  return (
+    <Pressable testID={testID} accessibilityRole="button" onPress={press} style={({ pressed }) => [{ height: 52, borderRadius: 26, borderWidth: 1, borderColor: t.line, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, opacity: pressed ? 0.7 : 1 }, style]}>
+      {icon ? <GIcon name={icon} size={20} color={t.text} /> : null}
+      <Text maxFontSizeMultiplier={1.2} style={ft(15, 7, t.text)}>
+        {title}
+      </Text>
+    </Pressable>
+  );
+}
+
 /* ---------------- people ---------------- */
 /** A person's picture: their photo when they have one, otherwise their initials on a soft colour. */
 export function Face({ name, photo, size = 48 }: { name: string; photo?: string | null; size?: number }) {
@@ -272,6 +321,7 @@ export const gsheet = {
   },
   close() {
     if (!sheetState.render) return;
+    Keyboard.dismiss();
     sheetState = { render: null, key: sheetState.key };
     emit();
   },
@@ -313,6 +363,16 @@ export function GSheetHost() {
     });
     return () => h.remove();
   }, []);
+  // forms in a sheet stay above the keyboard
+  const [kb, setKb] = useState(0);
+  useEffect(() => {
+    const a = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', (e) => setKb(e?.endCoordinates?.height || 0));
+    const b = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setKb(0));
+    return () => {
+      a.remove();
+      b.remove();
+    };
+  }, []);
   const s = shown.current;
   if (!s.render) return null;
   return (
@@ -326,8 +386,8 @@ export function GSheetHost() {
           position: 'absolute',
           left: 0,
           right: 0,
-          bottom: 0,
-          maxHeight: height - ins.top - 24,
+          bottom: kb,
+          maxHeight: height - ins.top - 24 - kb,
           borderTopLeftRadius: 28,
           borderTopRightRadius: 28,
           backgroundColor: t.sheet,
@@ -340,7 +400,7 @@ export function GSheetHost() {
         }}
       >
         <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: t.line, alignSelf: 'center', marginTop: 10, marginBottom: 18 }} />
-        <ScrollView key={s.key} bounces={false} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 30 + ins.bottom }}>
+        <ScrollView key={s.key} bounces={false} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: kb ? 20 : 30 + ins.bottom }}>
           {s.render()}
         </ScrollView>
       </Animated.View>

@@ -9,7 +9,7 @@ import { loadReviewsOf } from '../src/logic/server';
 import { startCall } from '../src/logic/calls';
 import { openChat } from '../src/sheets/chat';
 import { tap } from '../src/ui/kit';
-import { needAccount } from '../src/g/account';
+import { withAccount } from '../src/g/signin';
 import { areaLabel, findWorkers, hasArea, kmText, localWorkers, plural } from '../src/g/data';
 import { GIcon } from '../src/g/icons';
 import { BRAND, useG } from '../src/g/theme';
@@ -46,8 +46,7 @@ export default function Workers() {
   const review = topId ? (db.REVIEWS[topId] || []).find((r) => r.text) : undefined;
   const close = () => (router.canGoBack() ? router.back() : router.replace('/find' as any));
   const askPrices = () => {
-    if (needAccount('ask for prices')) return;
-    router.push(`/post-job?title=${encodeURIComponent(need)}&cat=${encodeURIComponent(trade)}` as any);
+    withAccount('get prices', () => router.push(`/post-job?title=${encodeURIComponent(need)}&cat=${encodeURIComponent(trade)}` as any));
   };
   const stat = (value: React.ReactNode, label: string) => (
     <View style={{ flex: 1, paddingVertical: 10, paddingHorizontal: 6, borderRadius: 16, backgroundColor: t.card2, alignItems: 'center' }}>
@@ -126,8 +125,8 @@ export default function Workers() {
               </T>
             ) : null}
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-              <Big testID="workers-call" icon="phone" title={`Call ${fname(top.name)}`} style={{ flex: 1 }} onPress={() => !needAccount(`call ${fname(top.name)}`) && void startCall(topId, 'voice')} />
-              <Round testID="workers-chat" icon="chat" label={`Message ${fname(top.name)}`} size={56} bg={t.card2} plain onPress={() => !needAccount(`message ${fname(top.name)}`) && openChat(topId)} />
+              <Big testID="workers-call" icon="phone" title={`Call ${fname(top.name)}`} style={{ flex: 1 }} onPress={() => withAccount(`call ${fname(top.name)}`, () => void startCall(topId, 'voice'))} />
+              <Round testID="workers-chat" icon="chat" label={`Message ${fname(top.name)}`} size={56} bg={t.card2} plain onPress={() => withAccount(`message ${fname(top.name)}`, () => openChat(topId))} />
             </View>
           </View>
         ) : state === 'loading' ? (

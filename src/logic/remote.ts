@@ -80,6 +80,37 @@ export async function resendCode(contact: string, purpose: 'signup' | 'recovery'
     return friendly(e);
   }
 }
+/** No password: send a 6-digit code by SMS (a phone number) or by email. An account is made when there is none yet. */
+export async function sendLoginCode(contact: string): Promise<string | null> {
+  try {
+    const { error } = isEmail(contact)
+      ? await supabase.auth.signInWithOtp({ email: contact.trim().toLowerCase(), options: { shouldCreateUser: true } })
+      : await supabase.auth.signInWithOtp({ phone: toE164(contact), options: { shouldCreateUser: true } });
+    return error ? friendly(error) : null;
+  } catch (e) {
+    return friendly(e);
+  }
+}
+/** Check the code from sendLoginCode and sign in. */
+export async function verifyLoginCode(contact: string, token: string): Promise<string | null> {
+  try {
+    const code = token.trim();
+    if (isEmail(contact)) {
+      const email = contact.trim().toLowerCase();
+      let { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
+      // a first sign-in is a sign-up on some server versions
+      if (error) ({ error } = await supabase.auth.verifyOtp({ email, token: code, type: 'signup' }));
+      if (error) return friendly(error);
+    } else {
+      const { error } = await supabase.auth.verifyOtp({ phone: toE164(contact), token: code, type: 'sms' });
+      if (error) return friendly(error);
+    }
+    await afterAuth();
+    return null;
+  } catch (e) {
+    return friendly(e);
+  }
+}
 export async function signIn(contact: string, password: string): Promise<string | null> {
   try {
     const { error } = await supabase.auth.signInWithPassword({ ...(cred(contact) as any), password });

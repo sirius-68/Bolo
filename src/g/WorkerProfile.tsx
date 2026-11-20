@@ -13,7 +13,7 @@ import { toggleSave } from '../logic/work';
 import { openChat } from '../sheets/chat';
 import { openHire, openMedia } from '../sheets/work';
 import { tap } from '../ui/kit';
-import { needAccount } from './account';
+import { withAccount } from './signin';
 import { kmText } from './data';
 import { GIcon } from './icons';
 import { RED, useG } from './theme';
@@ -71,7 +71,7 @@ export function WorkerProfile({ id }: { id: string }) {
             accessibilityRole="button"
             accessibilityLabel={saved ? `Remove ${f} from saved` : `Save ${f}`}
             accessibilityState={{ selected: saved }}
-            onPress={() => (tap(), !needAccount(`save ${f}`) && toggleSave(id))}
+            onPress={() => (tap(), withAccount(`save ${f}`, () => toggleSave(id)))}
             style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: t.line, backgroundColor: t.card, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}
           >
             <GIcon name="heart" size={20} color={saved ? RED : t.text} fill={saved ? RED : 'none'} />
@@ -165,7 +165,7 @@ export function WorkerProfile({ id }: { id: string }) {
               No reviews yet. {f} is new on getit.
             </T>
           )}
-          <Pressable testID="profile-book" accessibilityRole="button" onPress={() => (tap(), !needAccount(`book ${f}`) && openHire(id))} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1, borderColor: t.line, backgroundColor: t.card, opacity: pressed ? 0.8 : 1 })}>
+          <Pressable testID="profile-book" accessibilityRole="button" onPress={() => (tap(), withAccount(`book ${f}`, () => openHire(id)))} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1, borderColor: t.line, backgroundColor: t.card, opacity: pressed ? 0.8 : 1 })}>
             <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: t.tabOn, alignItems: 'center', justifyContent: 'center' }}>
               <GIcon name="calendar" size={20} color={t.accent} />
             </View>
@@ -182,8 +182,8 @@ export function WorkerProfile({ id }: { id: string }) {
         </View>
       </ScrollView>
       <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 + ins.bottom, borderTopWidth: 1, borderTopColor: t.line, backgroundColor: t.bg }}>
-        <Big testID="profile-call" icon="phone" title={`Call ${f}`} style={{ flex: 1 }} onPress={() => !needAccount(`call ${f}`) && void startCall(id, 'voice')} />
-        <Round testID="profile-chat" icon="chat" label={`Message ${f}`} size={56} bg={t.card2} plain onPress={() => !needAccount(`message ${f}`) && openChat(id)} />
+        <Big testID="profile-call" icon="phone" title={`Call ${f}`} style={{ flex: 1 }} onPress={() => withAccount(`call ${f}`, () => void startCall(id, 'voice'))} />
+        <Round testID="profile-chat" icon="chat" label={`Message ${f}`} size={56} bg={t.card2} plain onPress={() => withAccount(`message ${f}`, () => openChat(id))} />
       </View>
     </Screen>
   );

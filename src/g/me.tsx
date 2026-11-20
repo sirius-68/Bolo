@@ -10,6 +10,7 @@ import { resetTo } from '../logic/nav';
 import { confirm } from '../ui/overlay';
 import { openCities, openFeedback, openNotifSettings } from '../sheets/account';
 import { areaLabel, forgetStarted, setMode, working } from './data';
+import { openSignIn } from './signin';
 import { getLook, setLook, useG } from './theme';
 import { MenuRow, Round, Seg, T, gsheet } from './ui';
 
@@ -53,7 +54,7 @@ function MeSheet() {
         {signed ? (
           <MenuRow testID="me-account" label={db.user.name || 'Your account'} value={work ? 'Your profile' : 'Account'} onPress={then(() => (work ? router.push('/me' as any) : router.push('/settings' as any)))} />
         ) : (
-          <MenuRow testID="me-signin" label="Sign in" value="Keep your chats" onPress={then(() => router.push('/login'))} />
+          <MenuRow testID="me-signin" label="Sign in" value="Keep your chats" onPress={then(() => openSignIn())} />
         )}
         {work ? <MenuRow testID="me-settings" label="Settings" value="Account" onPress={then(() => router.push('/settings' as any))} /> : null}
         <MenuRow testID="me-area" label="Your area" value={areaLabel()} onPress={then(() => openCities())} />

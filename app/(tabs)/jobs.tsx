@@ -12,6 +12,7 @@ import { tap } from '../../src/ui/kit';
 import { Pull } from '../../src/components/common';
 import { working } from '../../src/g/data';
 import { GIcon } from '../../src/g/icons';
+import { openSignIn } from '../../src/g/signin';
 import { TAB_SPACE } from '../../src/g/TabBar';
 import { useG } from '../../src/g/theme';
 import { Big, Face, Link, Screen, T } from '../../src/g/ui';
@@ -110,7 +111,7 @@ export default function Jobs() {
               {work ? 'Jobs you take show here, from booked to paid.' : 'Jobs you book show here, from start to finish.'}
             </T>
             <Big testID="jobs-empty" h={48} title={work ? 'See jobs near you' : 'Find a worker'} style={{ marginTop: 12 }} onPress={() => router.navigate('/find' as any)} />
-            {!db.loggedIn ? <Link title="Sign in" onPress={() => router.push('/login')} /> : null}
+            {!db.loggedIn ? <Link testID="tab-signin" title="Sign in" onPress={() => openSignIn()} /> : null}
           </View>
         ) : null}
       </ScrollView>
