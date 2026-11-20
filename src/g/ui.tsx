@@ -5,10 +5,14 @@ import { ActivityIndicator, Animated, BackHandler, Easing, Keyboard, Modal, Plat
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { tap } from '../ui/kit';
+import { tap } from './touch';
 import { Weight } from '../ui/theme';
 import { GIcon, GIconName, Mark, Word } from './icons';
 import { BRAND, RED, ft, initials, pastel, useG } from './theme';
+
+/** A colour by its role ("muted", "accent", "text", "danger"), or any colour as written. */
+type Tone = 'muted' | 'accent' | 'text' | 'danger' | (string & {});
+const tone = (t: ReturnType<typeof useG>, c?: Tone) => (c === 'muted' ? t.muted : c === 'accent' ? t.accent : c === 'text' ? t.text : c === 'danger' ? t.danger : c);
 
 /* ---------------- text ---------------- */
 export function T({
@@ -26,7 +30,7 @@ export function T({
 }: {
   s?: number;
   w?: Weight;
-  c?: string;
+  c?: Tone;
   lh?: number;
   ls?: number;
   center?: boolean;
@@ -38,7 +42,7 @@ export function T({
 }) {
   const t = useG();
   return (
-    <Text testID={testID} accessibilityLabel={label} numberOfLines={lines} maxFontSizeMultiplier={1.3} style={[ft(s, w, c || t.text, lh ?? (s >= 22 ? 1.15 : 1.4), ls ?? (s >= 28 ? -0.7 : s >= 22 ? -0.5 : 0)), center && { textAlign: 'center' }, style]}>
+    <Text testID={testID} accessibilityLabel={label} numberOfLines={lines} maxFontSizeMultiplier={1.3} style={[ft(s, w, tone(t, c) || t.text, lh ?? (s >= 22 ? 1.15 : 1.4), ls ?? (s >= 28 ? -0.7 : s >= 22 ? -0.5 : 0)), center && { textAlign: 'center' }, style]}>
       {children}
     </Text>
   );
@@ -79,6 +83,8 @@ export function Big({
   disabled,
   loading,
   h = 56,
+  danger,
+  quiet,
 }: {
   title: string;
   onPress?: () => void;
@@ -88,19 +94,26 @@ export function Big({
   disabled?: boolean;
   loading?: boolean;
   h?: number;
+  /** for something that can't be undone (cancel a job): the design's black-or-white button */
+  danger?: boolean;
+  /** not ready yet (nothing picked): grey, and it does nothing */
+  quiet?: boolean;
 }) {
+  const t = useG();
   const press = usePressOnce(onPress);
+  const bg = quiet ? t.card2 : danger ? t.dangerBg : RED;
+  const fg = quiet ? t.muted : danger ? t.dangerFg : '#ffffff';
   return (
     <Pressable
       testID={testID}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!disabled, busy: !!loading }}
-      disabled={disabled || loading}
+      disabled={disabled || loading || quiet}
       onPress={press}
-      style={({ pressed }) => [{ height: h, borderRadius: h / 2, backgroundColor: RED, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 22, opacity: disabled ? 0.4 : pressed ? 0.9 : 1 }, style]}
+      style={({ pressed }) => [{ height: h, borderRadius: h / 2, backgroundColor: bg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 22, opacity: disabled ? 0.4 : pressed ? 0.9 : 1 }, style]}
     >
-      {loading ? <ActivityIndicator color="#ffffff" /> : icon ? <GIcon name={icon} size={20} color="#ffffff" /> : null}
-      <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={ft(h >= 56 ? 16 : 15, 8, '#ffffff')}>
+      {loading ? <ActivityIndicator color={fg} /> : icon ? <GIcon name={icon} size={20} color={fg} /> : null}
+      <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={ft(h >= 56 ? 16 : 15, 8, fg)}>
         {title}
       </Text>
     </Pressable>
@@ -110,7 +123,7 @@ export function Big({
 export function Link({ title, onPress, icon, color, testID, w = 7, h = 44, style }: { title: string; onPress?: () => void; icon?: GIconName; color?: string; testID?: string; w?: Weight; h?: number; style?: StyleProp<ViewStyle> }) {
   const t = useG();
   const press = usePressOnce(onPress);
-  const c = color || t.accent;
+  const c = tone(t, color) || t.accent;
   return (
     <Pressable testID={testID} accessibilityRole="button" onPress={press} hitSlop={6} style={({ pressed }) => [{ height: h, paddingHorizontal: 14, borderRadius: h / 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.6 : 1 }, style]}>
       {icon ? <GIcon name={icon} size={20} color={c} /> : null}

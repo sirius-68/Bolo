@@ -152,3 +152,64 @@ export const kmText = (p: Person) => {
   const n = kmOf(p.dist);
   return n ? `${n} km` : '';
 };
+
+/* ---------------- money and dates, as people say them ---------------- */
+/** "XAF 7,500" (how the server keeps it) → "7,500 FCFA". Text that isn't a price is returned as it is. */
+export function money(s?: string | number | null): string {
+  if (s == null || s === '') return '';
+  if (typeof s === 'number') return `${s.toLocaleString('en-US')} FCFA`;
+  const m = s.match(/^\s*XAF\s*([\d,. ]+)(.*)$/i);
+  if (m) return `${m[1].trim()} FCFA${m[2] ? m[2] : ''}`;
+  return /^\d[\d,]*$/.test(s.trim()) ? `${(+s.replace(/,/g, '')).toLocaleString('en-US')} FCFA` : s;
+}
+/** The number in a price ("XAF 7,500" → 7500). */
+export const amount = (s?: string | number | null) => (typeof s === 'number' ? s : +String(s || '').replace(/[^\d]/g, '') || 0);
+const dayFmt = (x: Date) => x.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+/** A saved day ("Fri 20 Nov, 2 pm") said the way people say it today ("Today, 2 pm"). */
+export function whenText(when?: string | null): string {
+  const w = (when || '').trim();
+  if (!w) return '';
+  const now = new Date();
+  const tom = new Date(now.getTime() + 86400000);
+  if (w.startsWith(dayFmt(now))) return 'Today' + w.slice(dayFmt(now).length);
+  if (w.startsWith(dayFmt(tom))) return 'Tomorrow' + w.slice(dayFmt(tom).length);
+  return w;
+}
+/** The first letter lowered, for the middle of a sentence ("can come today, 2 pm"). */
+export const low = (s: string) => (s ? s.charAt(0).toLowerCase() + s.slice(1) : s);
+
+/* ---------------- requests (asking several workers for a price) ---------------- */
+/** When should they come? The answer also says how urgent it is, so there is nothing more to ask. */
+export const WHENS: [string, string][] = [
+  ['As soon as possible', 'Workers who take urgent jobs are asked first. Urgent jobs often cost more.'],
+  ['Today', 'The best-fitting workers nearby are asked, and each offer comes to you as it arrives.'],
+  ['Tomorrow', 'Workers answer when they can. We tell you about each offer.'],
+  ['This week', 'More workers are asked over time. Offers show here as they arrive.'],
+];
+/** Where the job happens. */
+export type Where = 'place' | 'shop' | 'online';
+export const WHERES: [Where, string][] = [
+  ['place', 'At my place'],
+  ['shop', 'At their shop'],
+  ['online', 'Online'],
+];
+/** The usual place for a trade (a tailor has a shop, a designer works online, a plumber comes to you). */
+export function whereFor(trade: string): Where {
+  if (/^(Developer|Designer|Writer|Accountant|Admin|Sales|Coach)$/.test(trade)) return 'online';
+  if (/^(Tailor|Hairdresser|Mechanic)$/.test(trade)) return 'shop';
+  return 'place';
+}
+/** My requests that are still looking for someone. */
+export const myRequests = () => db.POSTS.filter((p) => p.mine && p.kind === 'request' && p.as !== 'business' && p.status !== 'closed' && p.status !== 'booked' && !p.booked);
+/** Requests from other people that fit what I do (my trades first). */
+export const jobsForMe = () =>
+  db.POSTS.filter((p) => p.kind === 'request' && !p.mine && p.client !== 'me' && p.status !== 'closed' && p.status !== 'booked' && !p.booked && !isBlocked(p.client || '')).sort(
+    (a, b) => +db.user.skills.includes(b.cat || '') - +db.user.skills.includes(a.cat || '') || (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0) || (b.at || 0) - (a.at || 0),
+  );
+/** What I earned from jobs both sides closed, since Monday. */
+export function earnedThisWeek(): { total: number; jobs: number } {
+  const now = new Date();
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7)).getTime();
+  const mine = db.BOOKINGS.filter((b) => b.worker === 'me' && b.state === 'confirmed' && (b.stepAt || 0) >= monday);
+  return { total: mine.reduce((n, b) => n + (b.amt || amount(b.price)), 0), jobs: mine.length };
+}

@@ -167,6 +167,8 @@ export type Booking = {
   amt?: number;
   /** the chat this booking belongs to */
   cid?: string;
+  /** when its latest step was taken (ms) */
+  stepAt?: number;
   /** where the job is [lng, lat] */
   dest?: [number, number];
   /** the worker's live position while on the way [lng, lat] and when it was updated */

@@ -679,6 +679,8 @@ function bookingFrom(r: any): Booking {
     reviewed: REVIEWED.has(r.id) ? 1 : undefined,
     amt: r.amount,
     cid: r.conversation_id || undefined,
+    // when the last step was taken (for "this week" on the worker's Jobs tab)
+    stepAt: +new Date(r.log?.[r.state] || r.updated_at || r.created_at || Date.now()),
     dest: r.dest_lng != null ? [r.dest_lng, r.dest_lat] : undefined,
     live: old?.live,
     liveAt: old?.liveAt,

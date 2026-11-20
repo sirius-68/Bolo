@@ -29,6 +29,11 @@ const DARK = {
   shadow: '#000000',
   shadowOp: 0.4,
   bigShadowOp: 0.35,
+  mapBg: '#1f1d1b',
+  road: '#302d2a',
+  danger: '#ff6a52',
+  dangerBg: '#f1efe9',
+  dangerFg: '#111111',
 };
 export type Theme = typeof DARK;
 const LIGHT: Theme = {
@@ -49,6 +54,11 @@ const LIGHT: Theme = {
   shadow: '#3c2814',
   shadowOp: 0.12,
   bigShadowOp: 0.28,
+  mapBg: '#e6e2d7',
+  road: '#fbfaf7',
+  danger: '#c42a12',
+  dangerBg: '#111111',
+  dangerFg: '#f1efe9',
 };
 
 /* ---------------- dark or light: chosen in Me → Appearance, remembered on this phone ---------------- */
