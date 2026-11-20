@@ -1,0 +1,49 @@
+Anonymous analytics enabled. To opt out, set MAESTRO_CLI_NO_ANALYTICS environment variable to any value before running Maestro.
+
+Running on test
+ > Flow getit, looking around without an account (splash, opening, where are you, home, need, workers, tabs, you, light)
+Launch app "cm.bolo.app" with clear state... COMPLETED
+Run dismiss.yaml...
+  Run flow when "isn't responding" is visible...
+  Run flow when "isn't responding" is visible... SKIPPED
+  Run flow when id: story-close is visible...
+  Run flow when id: story-close is visible... SKIPPED
+Run dismiss.yaml... COMPLETED
+Assert that id: intro-continue is visible... COMPLETED
+Take screenshot g01-intro... COMPLETED
+Tap on id: intro-work... COMPLETED
+Assert that id: wland-start is visible... COMPLETED
+Take screenshot g02-worker-start... COMPLETED
+Press back... COMPLETED
+Tap on id: intro-continue... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: where-type is visible...
+  Assert that id: where-type is visible... COMPLETED
+  Take screenshot g03-where... COMPLETED
+  Tap on id: where-type... COMPLETED
+  Assert that id: area-city is visible... COMPLETED
+  Tap on id: area-city... COMPLETED
+  Input text Buea... COMPLETED
+  Take screenshot g04-area-sheet... COMPLETED
+  Run flow when id: area-hit-0 is visible...
+    Tap on id: area-hit-0... COMPLETED
+  Run flow when id: area-hit-0 is visible... COMPLETED
+  Run flow when id: area-use-typed is visible...
+  Run flow when id: area-use-typed is visible... SKIPPED
+  Hide Keyboard... COMPLETED
+  Tap on id: area-home... FAILED
+Run flow when id: where-type is visible... FAILED
+
+Element not found: Id matching regex: area-home
+
+Element with Id matching regex: area-home not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state.
+- This could be a real regression that needs to be addressed.
+
+==== Debug output (logs & screenshots) ====
+
+/home/runner/.maestro/tests/2026-11-20_021614
+exit=1
