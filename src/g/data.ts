@@ -42,6 +42,8 @@ export function areaLabel() {
   if (home && city && home.toLowerCase() !== city.toLowerCase()) return `${home}, ${city}`;
   return city || home || 'Choose your area';
 }
+/** False until a city or neighbourhood is known (from location, or chosen by hand). */
+export const hasArea = () => !!(cityLabel() || (db.PR.area?.home || '').trim());
 
 /* ---------------- what do you need? ---------------- */
 /** Everyday needs shown under "Or pick one": [what people say, the trade]. */

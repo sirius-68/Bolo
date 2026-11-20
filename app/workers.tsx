@@ -10,7 +10,7 @@ import { startCall } from '../src/logic/calls';
 import { openChat } from '../src/sheets/chat';
 import { tap } from '../src/ui/kit';
 import { needAccount } from '../src/g/account';
-import { areaLabel, findWorkers, kmText, localWorkers, plural } from '../src/g/data';
+import { areaLabel, findWorkers, hasArea, kmText, localWorkers, plural } from '../src/g/data';
 import { GIcon } from '../src/g/icons';
 import { BRAND, useG } from '../src/g/theme';
 import { Big, Face, Link, Round, Screen, T } from '../src/g/ui';
@@ -71,13 +71,13 @@ export default function Workers() {
         </View>
         <View style={{ paddingHorizontal: 20, paddingTop: 14 }}>
           <T s={13} w={8} ls={0.4} c={t.accent}>
-            {(state === 'loading' && !list.length ? `Looking for ${many}` : `${list.length} ${list.length === 1 ? trade : many} near you`).toUpperCase()}
+            {(list.length ? `${list.length} ${list.length === 1 ? trade : many} near you` : state === 'loading' ? `Looking for ${many}` : many).toUpperCase()}
           </T>
           <T s={28} w={8} lh={1.15} ls={-0.6} style={{ marginTop: 4, marginBottom: 2 }}>
             {need}
           </T>
           <T s={14} c={t.muted}>
-            {areaLabel()} · free to contact
+            {hasArea() ? `${areaLabel()} · free to contact` : 'Free to contact'}
           </T>
         </View>
 
