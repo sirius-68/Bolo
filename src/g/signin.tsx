@@ -248,7 +248,7 @@ function SignInSheet({ o }: { o: SignInFor }) {
       <Big testID="signin-send" title="Send me a code" loading={busy} disabled={!ok} onPress={send} style={{ marginTop: 18 }} />
       {authCaps.phone ? <Link testID="signin-switch" title={how === 'phone' ? 'Use my email instead' : 'Use my phone number instead'} color={t.text} onPress={() => (setErr(''), setHow(how === 'phone' ? 'email' : 'phone'))} style={{ marginTop: 6 }} /> : null}
       <T s={12} lh={1.5} c={t.muted} center style={{ marginTop: 14 }}>
-        No password to remember. By continuing you accept the getit terms.
+        No password to remember. By continuing you confirm you’re 18 or older and accept the getit terms.
       </T>
     </View>
   );

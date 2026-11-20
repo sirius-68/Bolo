@@ -2,7 +2,7 @@
    the person who booked sees where the worker is and confirms at the end; the worker moves the job along
    with one button at the bottom (leave, arrive, done). */
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, ScrollView, View } from 'react-native';
+import { Animated, Easing, Pressable, ScrollView, Share, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { P, fname, nowT, pinOf } from '../../src/logic/core';
@@ -288,8 +288,22 @@ export default function Track() {
             </View>
           ))}
         </View>
-        {b.state === 'booked' || (!W && b.state === 'onway') ? (
+        {b.state !== 'confirmed' ? (
           <View style={{ alignItems: 'center', paddingTop: 10 }}>
+            <Link
+              testID="tk-share"
+              icon="share"
+              title="Share this job with someone you trust"
+              color="text"
+              w={6}
+              onPress={() =>
+                void Share.share({ message: `My getit job: ${b.title}, ${whenText(b.when)}${b.area ? ', ' + b.area : ''}. With ${o.name}${W ? ' (client)' : ` (${o.role})`}.` }).catch(() => {})
+              }
+            />
+          </View>
+        ) : null}
+        {b.state === 'booked' || (!W && b.state === 'onway') ? (
+          <View style={{ alignItems: 'center' }}>
             <Link testID="tk-cancel" title="Cancel job" color="danger" onPress={() => openCancel(b.id)} />
           </View>
         ) : null}
