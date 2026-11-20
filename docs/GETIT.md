@@ -1,59 +1,66 @@
-# getit: rebuilding bolo to the new design
+# getit: how the app is built
 
-bolo is becoming **getit**. The backend and database stay; the app's screens are rebuilt to match the design
-canvas ("getit app design"), and the sections the design doesn't have are hidden.
+getit finds a good worker near you in seconds. Two journeys: **hiring** (say what you need, see workers,
+call, message, or ask several for a price, book, follow the job, rate) and **working** (join with your main
+skill, go available, get jobs near you, send your price, do the job, get paid directly).
 
-## How the rebuild is organised
+The look and the flows come from the design canvas ("getit app design"). The server (Supabase) is the one
+the earlier app used; everything on the phone is new.
+
+## Where things are
 
 | Path | What |
 |---|---|
-| `src/g/theme.ts` | getit's colours (dark and light), type helper, shadows. The look is chosen in the "you" sheet and remembered on the phone. |
-| `src/g/ui.tsx` | Building blocks: text, the red button, round buttons, avatars, the big button with its rings, the bottom sheet. |
-| `src/g/icons.tsx`, `src/g/logo.ts` | Line icons and the logo, as vectors (the same drawings as the canvas). |
-| `src/g/data.ts` | Hiring or working mode, turning typed words into a trade, finding workers for it. |
-| `src/g/TabBar.tsx`, `src/g/me.tsx` | The floating tab bar and the "you" sheet. |
-| `src/g/signin.tsx` | The sign-in sheet: a number or an email, then a code. Opens at the moment of contact (`withAccount`). |
-| `src/g/worker.ts` | Joining to offer a skill: the choices from the two steps, written to the profile once there is an account. |
-| `src/g/speech.ts`, `app/listen.tsx` | Saying what you need. `supabase/functions/understand` reads it with AI when the word list can't. |
-| `src/ui/*`, `src/components/*`, `src/sheets/*` | The screens and sheets from before the redesign. `src/ui/theme.ts` holds their colours under the old names, with getit's values, and follows dark and light (`paint()`), so they belong to the same app. Each is replaced by a `src/g` screen in turn. |
-| `src/logic/*`, `src/data/*` | Unchanged: the data model, the server calls, chat, calls, bookings. New screens reuse them. |
+| `app/` | One file per screen (Expo Router). `index` is the splash, `intro` the opening screen, `where` asks your area, `(tabs)` holds Find (or Work), Jobs and Inbox. |
+| `src/g/theme.ts` | Colours in dark and light, the fonts, shadows. The look is chosen in the "you" sheet. |
+| `src/g/ui.tsx`, `src/g/parts.tsx` | Building blocks: text, buttons, avatars, the big button, the bottom sheet, halos and pulsing rings, detail cards. |
+| `src/g/icons.tsx`, `src/g/logo.ts` | Line icons and the logo as vectors (the canvas's own drawings). |
+| `src/g/sheets.tsx` | The bottom sheets: get prices, book, after a call, rate, a problem, cancel, your price, your area, help, notifications, account, and the chat's menus. |
+| `src/g/signin.tsx` | Sign in with a number or an email and a code, at the moment it is needed (`withAccount`). No passwords. |
+| `src/g/data.ts`, `src/g/worker.ts` | Hiring or working mode, turning words into a trade, finding workers, money and dates as people say them, joining as a worker. |
+| `src/g/notice.tsx` | Short messages (toast), the "are you sure?" question, the full-screen photo. |
+| `src/g/Stories.tsx` | The status screen for updates ("What's new"). |
+| `src/logic/`, `src/data/` | The data layer: sign-in, syncing the profile, requests and offers, bookings, chat, calls, notifications, location. Screens never talk to the server directly. |
+| `supabase/` | Migrations, the edge functions (`understand` reads a need with AI, `push`, `send-sms`, `agora-token`, `delete-account`) and database tests. |
 
-A rebuilt screen uses only `src/g` for its look (so it works in dark and light) and `src/logic` for its data.
+Screens use only `src/g` for their look, so every one works in dark and light.
 
-## Version 1 (the two main journeys)
+## Screens (as in the canvas)
 
-Done:
-- [x] Name, icon, splash, colours; red buttons everywhere
-- [x] Opening screen (looking needs no account) and worker start screen
-- [x] Tabs: Find (or Work), Jobs, Inbox, and the search button
-- [x] Home: the big button (hiring), available or paused with jobs near you (working)
-- [x] What do you need? → workers found, from real profiles (works signed out)
-- [x] Jobs and Inbox lists, the "you" sheet with dark and light
-- [x] Feed, courses, mentors, experts, opportunities, CV and business pages hidden (their data is untouched)
+Hiring: intro → where → home (big button) → listening or typing → workers found → profile → call / chat →
+get prices (sheet) → asking, with a live status line → offers → book (sheet) → your job (booked, on the way,
+working, done) → rate (sheet) → thanks. Also: cancel (sheet) → cancelled, a problem (sheet).
 
-- [x] Sign in with a number or an email and a code, in a sheet, at the moment of contact
-- [x] Worker profile as a client sees it; chat; calls
-- [x] The job, step by step, for both sides
-- [x] Worker sign-up: main skill, how you work, your number, "You're on getit"
-- [x] Say it instead of typing; AI understanding on the server (the key is a function secret, never in the app)
-- [x] Light mode on every screen, including the older ones
-- [x] Messages from the server (SMS, notifications, emails) say getit
+Working: worker start → main skill → how you work → your number → you're on getit → prices, photos, ID
+check, your profile → home (available or paused, jobs near you) → a job request → your price (sheet) →
+offer sent → booked → the job step by step → job closed. A new job shows as an alert while the app is open.
 
-Next, in order:
-- [ ] Asking for prices with the live status line; offers; booking (today: the older post-a-job screen and sheets)
-- [ ] Rating, problems and cancelling as in the design (today: the older sheets)
-- [ ] Worker prices, photos, ID check, requests and offers as in the design
-- [ ] Server: urgency, searching in rounds, on hold, reliability (see the loopholes doc)
-- [ ] The app's hidden ID and link scheme still say `bolo` (`cm.bolo.app`, `bolo://`). Changing the ID needs a new
-      `google-services.json` from Firebase for the new ID (only the owner can create it), and makes it a
-      different app to phones: it installs next to the old one instead of updating it.
+## Decided rules the app follows (from the loopholes doc)
 
-Later (1.1): getit Pro, the agent and the assistant.
+- Looking needs no account; the number is asked only at the moment of contact.
+- Only the **area** is ever asked and shown (a neighbourhood or postcode). The exact place is sorted out by
+  chat or call after booking, in every country.
+- A request says **when** (as soon as possible, today, tomorrow, this week) and **where it happens** (my
+  place, their shop, online). Urgency comes from "when".
+- A search never ends on a timer. The status line always says what is happening and what you can do.
+- Each new request goes to the workers who fit: closest first, at most 12, never everyone.
+- Payment is direct, in cash or Mobile Money. getit takes nothing for now.
+
+## Not built yet
+
+- getit Pro: the agent (hiring) and the assistant (working). Designed in the canvas, planned for 1.1.
+- Server rules from the loopholes doc: searching in widening rounds, "still need it?" check-ins and on hold,
+  reliability scores, hidden two-way reviews, the free-try counter.
+- Working hours, other skills and languages on the worker's profile; "Continue with Google".
+- The app's hidden ID is still `cm.bolo.app`. A new ID needs a new `google-services.json` from Firebase
+  (only the owner can create it); the app then installs as a separate app.
+- The data layer still carries tables and fields the app no longer shows (business pages, courses). They are
+  not read by any screen and can be dropped from the server once nothing depends on them.
 
 ## Checking a build
 
-Three emulator tours walk the app and save a picture of each screen, in dark and light:
-`.maestro/signedout.yaml` (looking without an account), `.maestro/g1-work.yaml` (a new worker joins) and
-`.maestro/g2-hire.yaml` (someone finds that worker, makes an account, chats, calls, asks for prices).
-Start **Android** by hand on the branch to build and run them; pictures land on the `ci-logs/qa-<run>` branch.
-The tours from before the redesign are skipped (`OLD_TOURS=1` runs them).
+Start **Android** by hand on a branch: it builds the APK against the test server, publishes it to the
+`latest-build` release, then runs four emulator tours and saves a picture of every screen (dark and light)
+on the `ci-logs/qa-<run>` branch: `signedout` (looking around), `g1-work` (a worker joins), `g2-hire`
+(someone finds them, chats, calls, asks for prices) and `g3-job` (one whole job, both sides, to the rating).
+The tours make their accounts through `app/qa.tsx`, which only works in test builds.

@@ -1,45 +1,38 @@
-# getit (formerly bolo)
+# getit
 
-Find a good worker in seconds, or get work near you: an Android app. Powered by igne-industries.
+Find a good worker in seconds, or get work near you. An Android app; an iPhone version is planned for the
+same launch. Powered by igne-industries.
 
-> The app is being rebuilt to the getit design. See [docs/GETIT.md](docs/GETIT.md) for what is done and what is next. The description below is the app before the redesign; its hidden sections are still in the code history.
+- **Hiring:** tap the big button and say what you need. getit shows good workers near you. Call or message
+  one, or ask several for a price and pick an offer. Follow the job from booked to done, pay the worker
+  directly, and rate how it went.
+- **Working:** join with your main skill and how you work. Go available with one tap. Jobs that fit you come
+  to your phone; send your price, do the job, get paid directly. getit takes nothing for now.
 
-bolo has two kinds of profile on one account:
+Looking needs no account. Your number (or email) is asked only when you contact someone, with a code and no
+password. Others only ever see your area, never your address.
 
-| | Regular profile | Business page |
-|---|---|---|
-| Who | You, as a person | A company you run or recruit for |
-| Find work | Send offers on jobs, apply to vacancies, internships and programs | — |
-| Hire | Personal jobs (a plumber, a tutor, a driver) with live job tracking | Vacancies with an applicant pipeline, company contracts (verified businesses), team |
-| Career | CV builder, courses, mentors, career experts | Create internships and programs, list courses |
-| Talk | Chat with typing, delivered and seen marks; voice and video calls that ring on the lock screen | The same, as the business |
-
-A person can switch between their Regular profile and any of their business pages from the profile chip at the top of each tab. A **business-only account** (created from “Create a business account”) has no Regular profile.
-
-Everything in the app comes from real accounts on the server: there is no sample data and no demo mode. People pay each other directly; bolo takes no payments.
+How the app is organised, what is built and what is next: [docs/GETIT.md](docs/GETIT.md).
 
 ## Tech
 
 - [Expo SDK 54](https://docs.expo.dev) · React Native 0.81 (New Architecture, Hermes) · React 19
-- expo-router (file-based navigation: `app/`), a custom floating tab bar and a single bottom-sheet host
+- expo-router (file-based navigation: `app/`), a floating tab bar and one bottom-sheet host; dark and light
 - Supabase: Postgres with row-level security, realtime, storage and edge functions (`supabase/`)
 - The app keeps a copy of the account's data on the phone (`src/data/db.ts`, saved with AsyncStorage) so it opens at once and works on a weak connection; `src/logic/server.ts` loads and keeps it live
-- Calls with Agora; push through Firebase Cloud Messaging; maps with Mapbox
+- Calls with Agora; push through Firebase Cloud Messaging; maps with Mapbox; speech with the phone's own recogniser; an edge function reads a need with AI when the word list can't
 
 ```
-app/                 screens (expo-router)
-  (tabs)/            Home (map / business dashboard), Feed, Career, Me
-src/data/            the data model and reference lists (categories, countries)
-src/logic/           what the app does, without UI: server, chats, calls, jobs, career, push
-src/sheets/          bottom sheets (jobs, chat, comments, career, business, account, filters)
-src/components/      cards, nav bar, CV, reviews, shared forms
-src/ui/              colours, primitives (kit), icons, sheet/picker/toast overlays
+app/                 screens (expo-router): splash, intro, the two journeys; (tabs)/ has Find, Jobs, Inbox
+src/g/               the look and the building blocks: theme, buttons, sheets, icons, sign-in, the status screen
+src/logic/           what the app does, without UI: server, chats, calls, requests, bookings, push
+src/data/            the data model and reference lists (trades, countries)
 plugins/             build plugins: one APK per CPU type, and the native code that rings for calls
 supabase/            migrations, database tests, edge functions
 admin/               the web admin panel (published with GitHub Pages)
-scripts/             end-to-end test against staging, admin tools
-.maestro/            emulator tours for both account types, the update test and the ringing test
-docs/                how the backend is set up and deployed
+scripts/             end-to-end test against the test server, admin tools
+.maestro/            emulator tours: looking around, a worker joining, someone hiring, one whole job
+docs/                how the app and the server are set up
 ```
 
 ## Builds
@@ -54,7 +47,7 @@ GitHub Actions does the building and testing:
 
 ### Install the APK
 
-1. Open the latest release on your Android phone and download `bolo.apk` (use `bolo-universal.apk` only if the first one says “App not installed”).
+1. Open the latest release on your Android phone and download the `.apk` (use the `universal` one only if the first says “App not installed”).
 2. Open it. If Android asks, allow *Install unknown apps* for your browser.
 
 ## Run it locally
@@ -62,7 +55,7 @@ GitHub Actions does the building and testing:
 ```bash
 npm install
 npx expo prebuild --platform android
-npx expo run:android     # needs the Android SDK; Expo Go cannot run bolo (calls, maps and push are native)
+npx expo run:android     # needs the Android SDK; Expo Go cannot run getit (calls, maps and push are native)
 ```
 
 See `docs/BACKEND.md` for the server side.
