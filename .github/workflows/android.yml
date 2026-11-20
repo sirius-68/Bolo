@@ -190,13 +190,13 @@ jobs:
           repository: ${{ vars.RELEASES_REPO || 'sirius-68/bolo-download' }}
           token: ${{ secrets.RELEASES_TOKEN }}
           tag_name: latest
-          name: bolo — latest Android build
+          name: getit — latest Android build
           make_latest: true
           files: |
             phone/bolo.apk
             phone/bolo-universal.apk
           body: |
-            **Install bolo on Android**
+            **Install getit on Android** (it replaces bolo: same app, new name, your account stays)
             1. Download **bolo.apk** on your phone (most phones). Use bolo-universal.apk only if bolo.apk says "App not installed".
             2. Open it and allow "Install unknown apps" when Android asks.
 
@@ -206,7 +206,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
-          name: bolo 1.0 (build ${{ github.run_number }})
+          name: getit 1.0 (build ${{ github.run_number }})
           files: rel/*.apk
           body: |
             **Install on Android:** open this page in Chrome on your phone (signed in to GitHub), tap **bolo-${{ github.run_number }}-phone.apk** under Assets, then **Open → Install**.
