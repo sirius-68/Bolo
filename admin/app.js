@@ -56,6 +56,8 @@ const ICONS = {
   feedback: [['path', { d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' }]],
   experts: [['circle', { cx: 12, cy: 8, r: 6 }], ['path', { d: 'M15.5 12.9 17 22l-5-3-5 3 1.5-9.1' }]],
   people: [['path', { d: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' }], ['circle', { cx: 9, cy: 7, r: 4 }], ['path', { d: 'M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' }]],
+  requests: [['path', { d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' }], ['path', { d: 'M8 9h8M8 13h5' }]],
+  jobs: [['rect', { x: 2, y: 7, width: 20, height: 14, rx: 2 }], ['path', { d: 'M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16' }]],
   content: [['path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }], ['path', { d: 'M14 2v6h6M16 13H8M16 17H8M10 9H8' }]],
   announce: [['path', { d: 'm3 11 18-5v12L3 14v-3z' }], ['path', { d: 'M11.6 16.8a3 3 0 1 1-5.8-1.6' }]],
   settings: [['path', { d: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6' }]],
@@ -206,24 +208,23 @@ const state = { me: null, view: 'overview', overview: null };
 /** The sections, in groups. [id, label, queue key] */
 const GROUPS = [
   ['', [['overview', 'Dashboard']]],
-  ['Review', [['ids', 'ID checks', 'id_checks'], ['businesses', 'Businesses', 'business_checks'], ['reports', 'Reports', 'reports'], ['feedback', 'Feedback', 'feedback'], ['experts', 'Experts', 'experts']]],
-  ['Manage', [['people', 'People'], ['content', 'Content'], ['announce', 'Announcements']]],
+  ['Review', [['ids', 'ID checks', 'id_checks'], ['reports', 'Reports', 'reports'], ['feedback', 'Feedback', 'feedback']]],
+  ['Marketplace', [['requests', 'Requests'], ['jobs', 'Jobs'], ['people', 'People']]],
+  ['Manage', [['announce', 'Announcements']]],
   ['System', [['settings', 'Settings'], ['activity', 'Activity']]],
 ];
 const VIEWS = GROUPS.flatMap((g) => g[1]);
 const QUEUE = [
   ['ids', 'ID checks waiting', 'id_checks', 'ids'],
-  ['businesses', 'Businesses to verify', 'business_checks', 'businesses'],
   ['reports', 'Open reports', 'reports', 'reports'],
   ['feedback', 'Unread feedback', 'feedback', 'feedback'],
-  ['experts', 'Expert applications', 'experts', 'experts'],
 ];
 /* What each role may do (the server decides; this only keeps buttons that would be refused out of the way). */
 const canModerate = () => ['owner', 'admin', 'moderator'].includes(state.me.role);
 const isSenior = () => ['owner', 'admin'].includes(state.me.role);
 const ROLE_NOTE = {
   support: 'Your role is Support: you can read everything, answer feedback and message people. Removing, suspending and reviewing are for moderators.',
-  moderator: 'Your role is Moderator: you can review, remove and suspend. Announcements, Pro and the switches are for admins; the admin team for owners.',
+  moderator: 'Your role is Moderator: you can review, remove and suspend. Announcements and the switches are for admins; the admin team for owners.',
 };
 
 /* ------------------------------------------------------------------ sign in */
@@ -362,10 +363,10 @@ function popover(anchor, build) {
   }
 }
 
-/* ------------------------------------------------------------------ search everything (people, businesses, posts and jobs) */
+/* ------------------------------------------------------------------ search everything (people, requests and jobs) */
 let searchSeq = 0;
 function searchBox() {
-  const input = h('input', { class: 'search-input', type: 'search', placeholder: 'Search people, businesses, posts…', 'aria-label': 'Search everything', id: 'globalSearch', autocomplete: 'off' });
+  const input = h('input', { class: 'search-input', type: 'search', placeholder: 'Search people, requests, jobs…', 'aria-label': 'Search everything', id: 'globalSearch', autocomplete: 'off' });
   const box = h('div', { class: 'search' }, icon('search', 18), input, h('kbd', { class: 'search-kbd' }, 'Ctrl K'));
   const results = h('div', { class: 'search-pop', role: 'listbox' });
   let t;
@@ -395,17 +396,17 @@ function searchBox() {
     box.append(results);
     const [people, biz, posts] = await Promise.all([
       rpc('admin_people', { p_query: q, p_filter: 'all', p_limit: 5, p_offset: 0 }).catch(() => []),
-      rpc('admin_businesses', { p_status: 'all', p_query: q }).catch(() => []),
-      rpc('admin_latest_content', { p_kind: 'posts', p_query: q, p_limit: 4 }).catch(() => []),
+      rpc('admin_jobs', { p_state: 'all', p_query: q, p_limit: 4 }).catch(() => []),
+      rpc('admin_requests', { p_status: 'all', p_query: q, p_limit: 4 }).catch(() => []),
     ]);
     if (seq !== searchSeq) return;
     const sec = (title, list) => (list.length ? [h('div', { class: 'pop-head' }, title), list] : null);
     const go = (fn) => () => (close(), (input.value = ''), fn());
     const rowsP = (Array.isArray(people) ? people : people.rows || []).slice(0, 5).map((p) => h('button', { class: 'pop-item', role: 'option', onclick: go(() => person(p.id)) }, avatar(p.name, null, 'xs'), h('span', { class: 'grow clip' }, p.name || 'No name', h('span', { class: 'faint' }, p.city ? ' · ' + p.city : '')), h('span', { class: 'tiny faint clip' }, p.email || '')));
-    const rowsB = (biz || []).slice(0, 4).map((b) => h('button', { class: 'pop-item', role: 'option', onclick: go(() => ((filters.bq = b.name), (filters.businesses = 'all'), show('businesses'))) }, avatar(b.name, b.logo_url, 'xs'), h('span', { class: 'grow clip' }, b.name, h('span', { class: 'faint' }, b.city ? ' · ' + b.city : '')), b.verified === 'verified' ? pill('Verified', 'g') : null));
-    const rowsC = (posts || []).slice(0, 4).map((c) => h('button', { class: 'pop-item', role: 'option', onclick: go(() => ((filters.cq = q), (filters.content = 'posts'), show('content'))) }, h('span', { class: 'pop-ic' }, icon('content', 15)), h('span', { class: 'grow clip' }, (c.body || '').slice(0, 80)), h('span', { class: 'tiny faint' }, c.author || '')));
+    const rowsB = (biz || []).slice(0, 4).map((b) => h('button', { class: 'pop-item', role: 'option', onclick: go(() => ((filters.jq = q), (filters.jobs = 'all'), show('jobs'))) }, h('span', { class: 'pop-ic' }, icon('jobs', 16)), h('span', { class: 'grow clip' }, h('b', {}, b.title || 'Job'), h('span', { class: 'tiny faint' }, ' · ' + [b.worker, b.client].filter(Boolean).join(' for '))), pill(JOB_STATE[b.state]?.[0] || b.state)));
+    const rowsC = (posts || []).slice(0, 4).map((c) => h('button', { class: 'pop-item', role: 'option', onclick: go(() => ((filters.rq = q), (filters.requests = 'all'), show('requests'))) }, h('span', { class: 'pop-ic' }, icon('requests', 16)), h('span', { class: 'grow clip' }, h('b', {}, c.title || 'Request'), h('span', { class: 'tiny faint' }, ' · ' + [c.trade, c.author].filter(Boolean).join(' · ')))));
     const any = rowsP.length || rowsB.length || rowsC.length;
-    put(results, any ? [sec('People', rowsP), sec('Businesses', rowsB), sec('Posts', rowsC), h('button', { class: 'pop-more', onclick: go(() => ((filters.q = q), show('people'))) }, `See all people matching “${q}”`)] : h('div', { class: 'pop-empty muted small' }, `Nothing matches “${q}”.`));
+    put(results, any ? [sec('People', rowsP), sec('Requests', rowsC), sec('Jobs', rowsB), h('button', { class: 'pop-more', onclick: go(() => ((filters.q = q), show('people'))) }, `See all people matching “${q}”`)] : h('div', { class: 'pop-empty muted small' }, `Nothing matches “${q}”.`));
   }
   return box;
 }
@@ -627,7 +628,7 @@ function trend(now, prev) {
 
 /* ------------------------------------------------------------------ pages */
 const PAGES = {};
-const filters = { ids: 'pending', businesses: 'review', reports: 'open', feedback: 'open', experts: 'pending', people: 'all', q: '', bq: '', content: 'posts', cq: '', days: store.get('days', 30), page: 0, sort: ['created_at', -1], act: 'all', actWho: '', actQ: '' };
+const filters = { requests: 'open', rq: '', jobs: 'live', jq: '', ids: 'pending', businesses: 'review', reports: 'open', feedback: 'open', experts: 'pending', people: 'all', q: '', bq: '', content: 'posts', cq: '', days: store.get('days', 30), page: 0, sort: ['created_at', -1], act: 'all', actWho: '', actQ: '' };
 
 PAGES.overview = async () => {
   const days = filters.days;
@@ -652,12 +653,12 @@ PAGES.overview = async () => {
     'div',
     { class: 'kpis' },
     card('yellow', 'userplus', 'New accounts', 'signups', `${num(o.people)} people in all`),
-    card('lav', 'zap', 'Active people', 'active', 'posted, wrote, offered or booked'),
-    card('mint', 'briefcase', 'Jobs posted', 'jobs', `${num(o.jobs_open)} open right now`),
-    card('peach', 'calendar', 'Bookings', 'bookings', `${num(o.bookings_done)} confirmed done in all`),
+    card('lav', 'zap', 'Active people', 'active', 'asked, wrote, sent a price or booked'),
+    card('mint', 'requests', 'Requests for a worker', 'jobs', `${num(o.jobs_open)} open right now`),
+    card('peach', 'calendar', 'Workers booked', 'bookings', `${num(o.bookings_done)} jobs confirmed done in all`),
   );
   const tile = (label, n, sub) => h('div', { class: 'tile' }, h('span', { class: 'muted tiny' }, label), h('b', { class: 'num' }, num(n)), sub ? h('span', { class: 'tiny faint' }, sub) : null);
-  const tiles = h('div', { class: 'tiles' }, tile('Businesses', o.businesses), tile('Posts in all', o.posts), tile('Messages', S ? S.now.messages : o.messages_7d, S ? `last ${days} days` : 'last 7 days'), tile('Calls', S ? S.now.calls : o.calls_7d, S ? `last ${days} days` : 'last 7 days'), tile('Reports', S ? S.now.reports : q.reports, S ? `last ${days} days` : 'open'), tile('Suspended', o.suspended));
+  const tiles = h('div', { class: 'tiles' }, tile('Workers', o.workers, o.workers != null ? `${num(o.workers_open)} available now` : null), tile('Prices sent', S ? S.now.offers : null, `last ${days} days`), tile('Jobs done', S ? S.now.done : o.bookings_done, S ? `${num(S.now.paid)} FCFA paid to workers` : 'in all'), tile('Messages', S ? S.now.messages : o.messages_7d, S ? `last ${days} days` : 'last 7 days'), tile('Calls', S ? S.now.calls : o.calls_7d, S ? `last ${days} days` : 'last 7 days'), tile('Reports', S ? S.now.reports : q.reports, S ? `last ${days} days` : 'open'));
 
   let charts = null;
   if (S) {
@@ -669,7 +670,7 @@ PAGES.overview = async () => {
     }));
     const t = S.types;
     const f = S.funnel;
-    const steps = [['Signed up', f.signed_up], ['Filled in their profile', f.profile], ['Verified their ID', f.verified], ['Posted, wrote or offered', f.acted], ['Got or made a booking', f.booked]];
+    const steps = [['Signed up', f.signed_up], ['Chose a town and a skill', f.profile], ['Verified their ID', f.verified], ['Asked, wrote or sent a price', f.acted], ['Booked or got booked', f.booked]];
     const top = Math.max(1, f.signed_up);
     const funnel = h('div', { class: 'funnel' }, steps.map(([l, n], i) => {
       const bar = h('div', { class: 'fbar' });
@@ -685,19 +686,34 @@ PAGES.overview = async () => {
         }))
       : empty('No cities yet');
     const bs = S.bookings_by_state || {};
+    // which skills people ask for, whether those requests got a price and a booking, and how many workers offer the skill
+    const TR = S.trades || [];
+    const trades = TR.length
+      ? h('div', { class: 'scroll-x' }, h('table', { class: 'table' }, h('thead', {}, h('tr', {}, ['Skill', 'Requests', 'Got a price', 'Booked', 'Workers'].map((c) => h('th', { scope: 'col' }, c)))), h('tbody', {}, TR.map((r) => h('tr', {}, h('td', {}, h('b', {}, r.trade)), h('td', { class: 'num' }, num(r.asked)), h('td', { class: 'num' }, num(r.answered), h('span', { class: 'faint tiny' }, ' · ' + Math.round((r.answered / Math.max(1, r.asked)) * 100) + '%')), h('td', { class: 'num' }, num(r.booked)), h('td', { class: 'num' }, r.workers ? num(r.workers) : pill('none yet', 'r')))))))
+      : empty('No requests in this period');
+    const M = S.match || {};
+    const pct = (n) => (M.requests ? Math.round((n / M.requests) * 100) + '%' : '–');
+    const wait = M.first_offer_min == null ? '–' : M.first_offer_min < 60 ? `${M.first_offer_min} min` : `${Math.round(M.first_offer_min / 6) / 10} h`;
+    const answered = h('div', { class: 'col tight' }, [['Requests sent', num(M.requests)], ['Got at least one price', `${num(M.answered)} · ${pct(M.answered)}`], ['Ended in a booking', `${num(M.booked)} · ${pct(M.booked)}`], ['Usual wait for the first price', wait]].map(([l, v]) => h('div', { class: 'row between small' }, h('span', { class: 'muted' }, l), h('b', { class: 'num' }, v))));
     const STATES = [['booked', 'Booked', COLORS.lav], ['onway', 'On the way', COLORS.blue], ['working', 'Working', COLORS.peach], ['done', 'Done, to confirm', COLORS.yellow], ['confirmed', 'Confirmed', COLORS.mint], ['cancelled', 'Cancelled', COLORS.pink]];
     charts = [
       h(
         'div',
         { class: 'grid-2-1 gap' },
         h('section', { class: 'panel' }, h('div', { class: 'panel-head' }, h('div', {}, h('h3', {}, 'Growth and activity'), h('p', { class: 'tiny faint' }, 'Per day')), legend([['New accounts', COLORS.yellow], ['Active people', COLORS.lav]])), lineChart({ labels, series: [{ name: 'New accounts', color: COLORS.yellow, values: series('signups') }, { name: 'Active people', color: COLORS.lav, values: series('active') }], label: 'New accounts and active people per day' })),
-        h('section', { class: 'panel' }, h('div', { class: 'panel-head' }, h('h3', {}, 'Accounts')), donut({ items: [{ label: 'Offer work', value: t.workers, color: COLORS.yellow }, { label: 'Hire', value: t.hirers, color: COLORS.lav }, { label: 'Business accounts', value: t.business_accounts, color: COLORS.mint }], center: 'people', label: 'Kinds of accounts' }), h('p', { class: 'tiny faint' }, `${num(t.businesses)} business pages, including those of Regular accounts`)),
+        h('section', { class: 'panel' }, h('div', { class: 'panel-head' }, h('h3', {}, 'Accounts')), donut({ items: [{ label: 'Workers', value: t.workers, color: COLORS.yellow }, { label: 'Hiring', value: t.hirers, color: COLORS.lav }], center: 'people', label: 'Kinds of accounts' }), h('p', { class: 'tiny faint' }, `${num(o.workers_open ?? 0)} of ${num(t.workers)} workers are available right now`)),
       ),
       h(
         'div',
         { class: 'grid-2-1 gap' },
-        h('section', { class: 'panel' }, h('div', { class: 'panel-head' }, h('div', {}, h('h3', {}, 'Marketplace'), h('p', { class: 'tiny faint' }, 'Jobs, posts and bookings per day')), legend([['Jobs', COLORS.mint], ['Posts', COLORS.lav], ['Bookings', COLORS.peach]])), barChart({ labels, series: [{ name: 'Jobs', color: COLORS.mint, values: series('jobs') }, { name: 'Posts', color: COLORS.lav, values: series('posts') }, { name: 'Bookings', color: COLORS.peach, values: series('bookings') }], label: 'Jobs, posts and bookings per day' })),
+        h('section', { class: 'panel' }, h('div', { class: 'panel-head' }, h('div', {}, h('h3', {}, 'Requests, prices and bookings'), h('p', { class: 'tiny faint' }, 'Per day')), legend([['Requests', COLORS.mint], ['Prices sent', COLORS.lav], ['Bookings', COLORS.peach]])), barChart({ labels, series: [{ name: 'Requests', color: COLORS.mint, values: series('jobs') }, { name: 'Prices sent', color: COLORS.lav, values: series('offers') }, { name: 'Bookings', color: COLORS.peach, values: series('bookings') }], label: 'Requests, prices sent and bookings per day' })),
         h('section', { class: 'panel' }, h('div', { class: 'panel-head' }, h('div', {}, h('h3', {}, 'New accounts: how far they got'), h('p', { class: 'tiny faint' }, `Accounts made in the last ${days} days`))), funnel),
+      ),
+      h(
+        'div',
+        { class: 'grid-2-1 gap' },
+        h('section', { class: 'panel' }, h('div', { class: 'panel-head' }, h('div', {}, h('h3', {}, 'What people ask for'), h('p', { class: 'tiny faint' }, `Requests in the last ${days} days, next to how many workers offer that skill`)), o.unanswered ? h('button', { class: 'link', onclick: () => ((filters.requests = 'unanswered'), show('requests')) }, `${num(o.unanswered)} waiting with no price`) : null), trades),
+        h('section', { class: 'panel' }, h('div', { class: 'panel-head' }, h('div', {}, h('h3', {}, 'Do requests get answered?'), h('p', { class: 'tiny faint' }, `Requests sent in the last ${days} days`))), answered),
       ),
       h(
         'div',
@@ -716,10 +732,11 @@ PAGES.overview = async () => {
 
   // the right-hand column: what needs you, the latest actions, the team
   const needs = QUEUE.filter((x) => q[x[2]] > 0);
+  const stuck = Number(o.unanswered || 0);
   const rail = h(
     'aside',
     { class: 'rail' },
-    h('section', { class: 'panel' }, h('div', { class: 'panel-head' }, h('h3', {}, 'Needs you'), needs.length ? pill(String(needs.reduce((a, x) => a + q[x[2]], 0)), 'y') : null), needs.length ? h('div', { class: 'col tight' }, needs.map(([view, label, key, ic]) => h('button', { class: 'rail-item', onclick: () => show(view) }, h('span', { class: 'rail-ic' }, icon(ic, 16)), h('span', { class: 'grow' }, label), h('b', { class: 'num' }, q[key]), icon('chevright', 16)))) : h('p', { class: 'muted small' }, 'Nothing is waiting. ✓')),
+    h('section', { class: 'panel' }, h('div', { class: 'panel-head' }, h('h3', {}, 'Needs you'), needs.length ? pill(String(needs.reduce((a, x) => a + q[x[2]], 0)), 'y') : null), needs.length || stuck ? h('div', { class: 'col tight' }, needs.map(([view, label, key, ic]) => h('button', { class: 'rail-item', onclick: () => show(view) }, h('span', { class: 'rail-ic' }, icon(ic, 16)), h('span', { class: 'grow' }, label), h('b', { class: 'num' }, q[key]), icon('chevright', 16))), stuck ? h('button', { class: 'rail-item', onclick: () => ((filters.requests = 'unanswered'), show('requests')) }, h('span', { class: 'rail-ic' }, icon('requests', 16)), h('span', { class: 'grow' }, 'Requests with no price yet'), h('b', { class: 'num' }, stuck), icon('chevright', 16)) : null) : h('p', { class: 'muted small' }, 'Nothing is waiting. ✓')),
     h('section', { class: 'panel' }, h('div', { class: 'panel-head' }, h('h3', {}, 'Latest actions'), h('button', { class: 'link', onclick: () => show('activity') }, 'See all')), audit.length ? h('ol', { class: 'timeline' }, audit.slice(0, 7).map((l) => h('li', {}, h('div', { class: 'small' }, h('b', {}, l.actor), ' ', ACTIONS[l.action] || l.action), h('div', { class: 'tiny faint' }, ago(l.created_at) + (l.data?.note ? ' · ' + String(l.data.note).slice(0, 60) : ''))))) : h('p', { class: 'muted small' }, 'No actions yet.')),
     h('section', { class: 'panel' }, h('div', { class: 'panel-head' }, h('h3', {}, 'Admin team'), h('button', { class: 'link', onclick: () => show('settings') }, 'Manage')), h('div', { class: 'col tight' }, admins.slice(0, 6).map((a) => h('div', { class: 'row' }, avatar(a.name, null, 'xs'), h('div', { class: 'grow' }, h('div', { class: 'small clip' }, a.name), h('div', { class: 'tiny faint' }, 'last sign-in ' + ago(a.last_sign_in_at))), pill(a.role, a.role === 'owner' ? 'y' : ''))))),
   );
@@ -737,7 +754,7 @@ PAGES.ids = async () => {
     const item = h(
       'div',
       { class: 'item' },
-      h('div', { class: 'row' }, avatar(v.name, v.avatar_url), h('div', { class: 'grow' }, h('h3', { class: 'clip' }, v.name || 'No name'), h('div', { class: 'small muted clip' }, [v.kind === 'id' ? 'Identity' : v.kind === 'business' ? 'Business documents · ' + (v.business || '') : 'Expert documents', ' · sent ', ago(v.created_at)])), v.status === 'pending' ? pill('Waiting', 'y') : pill(v.status, v.status === 'approved' ? 'g' : 'r')),
+      h('div', { class: 'row' }, avatar(v.name, v.avatar_url), h('div', { class: 'grow' }, h('h3', { class: 'clip' }, v.name || 'No name'), h('div', { class: 'small muted clip' }, [v.kind === 'id' ? 'Identity' : 'Documents', ' · sent ', ago(v.created_at)])), v.status === 'pending' ? pill('Waiting', 'y') : pill(v.status, v.status === 'approved' ? 'g' : 'r')),
       docs,
       kv([['Email', mail(v.email)], ['Phone', v.phone], ['City', v.city], ['Joined', ago(v.joined_at)], v.note ? ['Note', v.note] : null]),
       v.status === 'pending' && canModerate()
@@ -759,46 +776,6 @@ PAGES.ids = async () => {
   ];
 };
 
-PAGES.businesses = async () => {
-  // the search is only sent when something is typed, so the page also works before the database update
-  const rows = await rpc('admin_businesses', filters.bq ? { p_status: filters.businesses, p_query: filters.bq } : { p_status: filters.businesses });
-  const list = h('div', { class: 'list' });
-  for (const b of rows) {
-    const st = [b.verified === 'verified' ? pill('Verified', 'g') : b.verified === 'review' ? pill('Waiting', 'y') : pill('Not verified'), b.suspended_at ? pill('Suspended', 'r') : null];
-    const mod = canModerate();
-    list.append(
-      h(
-        'div',
-        { class: 'item' },
-        h('div', { class: 'row' }, avatar(b.name, b.logo_url), h('div', { class: 'grow' }, h('h3', { class: 'clip' }, b.name || 'No name'), h('div', { class: 'small muted clip' }, [b.sector, b.city].filter(Boolean).join(' · '))), st),
-        b.suspended_at ? h('div', { class: 'quote small' }, 'Suspended ' + ago(b.suspended_at) + (b.suspended_note ? ': ' + b.suspended_note : '')) : null,
-        kv([['Vacancies and posts', b.posts], ['RCCM', b.rccm], ['NIU', b.niu], ['Address', [b.address, b.area, b.city].filter(Boolean).join(', ')], ['Phone', b.phone], ['Email', b.email ? mail(b.email) : null], ['Website', b.web], ['About', b.about], ['Owner', [b.owner, b.owner_verified ? ' (ID verified)' : ' (ID not verified)']], ['Owner email', mail(b.owner_email)], ['Created', ago(b.created_at)]]),
-        h(
-          'div',
-          { class: 'row wrap' },
-          mod && b.verified !== 'verified' ? h('button', { class: 'btn y', onclick: () => decide({ title: `Verify ${b.name}?`, text: 'Check the RCCM and NIU against the official registry first. The business gets the verified badge.', ok: 'Verify', run: async () => (await rpc('admin_review_business', { p_business: b.id, p_approve: true, p_note: null }), toast('Verified'), show('businesses')) }) }, icon('check', 16), 'Verify') : null,
-          mod && b.verified !== 'none' ? h('button', { class: 'btn danger', onclick: () => decide({ title: b.verified === 'verified' ? `Remove ${b.name}’s badge?` : `Reject ${b.name}?`, text: 'The owner is told why.', note: 'Reason, for example: the RCCM number does not match the name', required: true, danger: true, ok: b.verified === 'verified' ? 'Remove badge' : 'Reject', run: async (n) => (await rpc('admin_review_business', { p_business: b.id, p_approve: false, p_note: n }), toast('Done'), show('businesses')) }) }, b.verified === 'verified' ? 'Remove badge' : 'Reject') : null,
-          mod && b.verified === 'none' ? h('button', { class: 'btn', onclick: () => askVerify({ business: b.id, name: b.name, after: () => show('businesses') }) }, 'Ask to verify') : null,
-          h('button', { class: 'btn', onclick: () => writeTo(b.owner_id, b.name, b.id) }, 'Message'),
-          mod
-            ? b.suspended_at
-              ? h('button', { class: 'btn y', onclick: () => decide({ title: `Restore ${b.name}?`, text: 'Its vacancies show again and it can publish. The owner is told.', ok: 'Restore', run: async () => (await rpc('admin_suspend_business', { p_business: b.id, p_on: false, p_note: null }), toast('Restored'), show('businesses')) }) }, 'Restore page')
-              : h('button', { class: 'btn danger', onclick: () => decide({ title: `Suspend ${b.name}?`, text: 'Its vacancies and posts leave the lists and it can publish nothing new. The owner’s personal account keeps working. The owner is told why.', note: 'Reason shown to the owner, for example: vacancies that ask for money', required: true, danger: true, ok: 'Suspend page', run: async (n) => (await rpc('admin_suspend_business', { p_business: b.id, p_on: true, p_note: n }), toast('Suspended'), show('businesses')) }) }, 'Suspend page')
-            : null,
-          h('button', { class: 'btn', onclick: () => person(b.owner_id) }, 'See owner'),
-        ),
-      ),
-    );
-  }
-  const exp = () => downloadCSV('businesses', [['Name', (b) => b.name], ['Sector', (b) => b.sector], ['City', (b) => b.city], ['Verified', (b) => b.verified], ['Suspended', (b) => (b.suspended_at ? 'yes' : '')], ['RCCM', (b) => b.rccm], ['NIU', (b) => b.niu], ['Phone', (b) => b.phone], ['Email', (b) => b.email], ['Owner', (b) => b.owner], ['Owner email', (b) => b.owner_email], ['Posts', (b) => b.posts], ['Created', (b) => b.created_at]], rows);
-  return [
-    head('Businesses', 'A business asks to be verified after adding its RCCM and NIU. You can also ask one to verify, write to it, or suspend its page.'),
-    toolbar(searchForm(filters.bq, 'Business name, city, owner or owner email', 'Search businesses', (v) => ((filters.bq = v), (filters.businesses = v ? 'all' : filters.businesses), show('businesses'))), rows.length ? exportBtn(exp) : null),
-    withGap(tabs([['review', 'Waiting'], ['verified', 'Verified'], ['none', 'Not verified'], ['suspended', 'Suspended'], ['all', 'All']], filters.businesses, (x) => ((filters.businesses = x), show('businesses')))),
-    withGap(rows.length ? list : empty(filters.businesses === 'review' && !filters.bq ? 'No business is waiting' : 'Nothing here')),
-  ];
-};
-
 const REASONS = { spam: 'Spam', scam: 'Scam or fraud', harassment: 'Harassment', inappropriate: 'Inappropriate', fake: 'Fake', wrong_link: 'Wrong link', other: 'Other' };
 PAGES.reports = async () => {
   const rows = await rpc('admin_reports', { p_status: filters.reports });
@@ -806,13 +783,14 @@ PAGES.reports = async () => {
   for (const r of rows) {
     const t = r.target;
     const open = r.status === 'open' || r.status === 'reviewing';
-    const removable = t && ['post', 'job', 'comment', 'course'].includes(r.target_type);
+    const removable = t && ['post', 'job'].includes(r.target_type);
+    const WHAT = { post: 'Request', job: 'Request', profile: 'Account', message: 'Message', comment: 'Comment' };
     const close = (status, label) => async () => (await rpc('admin_resolve_report', { p_id: r.id, p_status: status, p_note: null }), toast(label), show('reports'));
     list.append(
       h(
         'div',
         { class: 'item' + (open ? '' : ' done') },
-        h('div', { class: 'row wrap' }, pill(REASONS[r.reason] || r.reason, 'o'), pill(r.target_type), r.times > 1 ? pill(`Reported ${r.times} times`, 'r') : null, h('span', { class: 'grow' }), h('span', { class: 'small faint' }, ago(r.created_at)), open ? null : pill(r.status, r.status === 'actioned' ? 'g' : '')),
+        h('div', { class: 'row wrap' }, pill(REASONS[r.reason] || r.reason, 'o'), pill(WHAT[r.target_type] || r.target_type), r.times > 1 ? pill(`Reported ${r.times} times`, 'r') : null, h('span', { class: 'grow' }), h('span', { class: 'small faint' }, ago(r.created_at)), open ? null : pill(r.status, r.status === 'actioned' ? 'g' : '')),
         t
           ? h('div', { class: 'quote col' }, h('div', { class: 'row' }, h('b', { class: 'grow clip' }, t.title || ''), t.suspended ? pill('Suspended', 'r') : null), t.text ? h('p', { class: 'pre small' }, t.text) : null, h('p', { class: 'tiny faint' }, 'By ' + (t.owner || 'unknown')))
           : h('div', { class: 'quote faint small' }, 'What was reported is no longer there (deleted).'),
@@ -821,7 +799,7 @@ PAGES.reports = async () => {
           ? h(
               'div',
               { class: 'row wrap' },
-              removable ? h('button', { class: 'btn danger', onclick: () => decide({ title: 'Remove this ' + (r.target_type === 'comment' ? 'comment' : r.target_type === 'course' ? 'listing' : 'post') + '?', text: 'It is deleted for everyone and its author is told why. This cannot be undone.', note: 'Reason shown to the author', required: true, danger: true, ok: 'Remove', run: async (n) => (await rpc('admin_remove_content', { p_type: r.target_type, p_id: r.target_id, p_note: n }), toast('Removed'), show('reports')) }) }, 'Remove it') : null,
+              removable ? h('button', { class: 'btn danger', onclick: () => decide({ title: 'Remove this request?', text: 'It is deleted for everyone and its author is told why. This cannot be undone.', note: 'Reason shown to the author', required: true, danger: true, ok: 'Remove', run: async (n) => (await rpc('admin_remove_content', { p_type: r.target_type, p_id: r.target_id, p_note: n }), toast('Removed'), show('reports')) }) }, 'Remove it') : null,
               t?.owner_id && !t.suspended ? h('button', { class: 'btn danger', onclick: () => suspend(t.owner_id, t.owner, () => show('reports')) }, 'Suspend ' + (t.owner || 'account')) : null,
               h('button', { class: 'btn', onclick: () => decide({ title: 'Mark as handled?', text: 'Use this when you acted on it (warned, removed, suspended).', ok: 'Handled', run: close('actioned', 'Marked handled') }) }, 'Handled'),
               h('button', { class: 'btn', onclick: () => decide({ title: 'Dismiss this report?', text: 'Use this when nothing is wrong with what was reported.', ok: 'Dismiss', run: close('dismissed', 'Dismissed') }) }, 'Nothing wrong'),
@@ -871,45 +849,9 @@ PAGES.feedback = async () => {
   }
   const exp = () => downloadCSV('feedback', [['When', (f) => f.created_at], ['Topic', (f) => TOPICS[f.topic] || f.topic], ['Status', (f) => f.status], ['Message', (f) => f.body], ['From', (f) => f.name], ['Email', (f) => f.email], ['Phone', (f) => f.phone], ['App build', (f) => f.app_version], ['Team note', (f) => f.admin_note]], rows);
   return [
-    head('Feedback', 'Messages people sent from Settings → Help → Write to getit. Reply by email, or in the app (it arrives as a message from getit).'),
+    head('Feedback', 'Messages people sent from You → Help and feedback. Reply by email, or in the app (it arrives as a message from getit).'),
     toolbar(tabs([['open', 'New'], ['answered', 'Answered'], ['closed', 'Closed'], ['all', 'All']], filters.feedback, (x) => ((filters.feedback = x), show('feedback'))), rows.length ? exportBtn(exp) : null),
     withGap(rows.length ? list : empty(filters.feedback === 'open' ? 'No new messages' : 'Nothing here')),
-  ];
-};
-
-const EX_NEXT = { submitted: ['review', 'Start review'], review: ['interview', 'Invite to interview'], interview: ['approved', 'Approve'] };
-PAGES.experts = async () => {
-  const rows = await rpc('admin_experts', { p_status: filters.experts });
-  const list = h('div', { class: 'list' });
-  for (const e of rows) {
-    const d = e.data || {};
-    const move = (status, title, opts = {}) => () =>
-      decide({ title, text: opts.text || 'They get a notification.', note: opts.note, required: opts.required, danger: opts.danger, ok: opts.ok || 'Confirm', run: async (n) => (await rpc('admin_review_expert', { p_user: e.user_id, p_status: status, p_note: n }), toast('Saved'), show('experts')) });
-    const next = EX_NEXT[e.status];
-    const answers = Object.entries(d).filter(([k, v]) => v != null && v !== '' && !['headline', 'step'].includes(k) && (typeof v !== 'object' || (Array.isArray(v) ? v.length : Object.keys(v).length)));
-    const mod = canModerate();
-    list.append(
-      h(
-        'div',
-        { class: 'item' },
-        h('div', { class: 'row' }, avatar(e.name), h('div', { class: 'grow' }, h('h3', { class: 'clip' }, e.name || 'No name'), h('div', { class: 'small muted clip' }, e.headline || d.headline || 'No headline')), pill(e.status, e.status === 'approved' ? 'g' : e.status === 'declined' ? 'r' : 'y')),
-        kv([['Email', mail(e.email, 'Your getit expert application')], ['City', e.city], ['ID', e.verified ? 'Verified' : 'Not verified'], ['Experience', e.years ? e.years + ' years' : null], ['Skills', (e.skills || []).join(', ')], ['Updated', ago(e.updated_at)], e.note ? ['Note', e.note] : null]),
-        answers.length ? h('details', {}, h('summary', { class: 'small muted' }, 'Application answers'), withGap(kv(answers.map(([k, v]) => [k, typeof v === 'object' ? JSON.stringify(v) : String(v)])))) : null,
-        h(
-          'div',
-          { class: 'row wrap' },
-          mod && next ? h('button', { class: 'btn y', onclick: move(next[0], next[1] + ' · ' + (e.name || ''), { ok: next[1] }) }, next[1]) : null,
-          mod && e.status !== 'declined' && e.status !== 'approved' ? h('button', { class: 'btn danger', onclick: move('declined', 'Decline ' + (e.name || '') + '?', { note: 'Reason shown to the applicant', required: true, danger: true, ok: 'Decline' }) }, 'Decline') : null,
-          mod && e.status === 'approved' ? h('button', { class: 'btn danger', onclick: move('declined', 'Remove ' + (e.name || '') + ' as an expert?', { note: 'Reason shown to them', required: true, danger: true, ok: 'Remove' }) }, 'Remove as expert') : null,
-          h('button', { class: 'btn', onclick: () => person(e.user_id) }, 'See account'),
-        ),
-      ),
-    );
-  }
-  return [
-    head('Experts', 'Applications to become a Career Expert: review, interview, then approve.'),
-    toolbar(tabs([['pending', 'In progress'], ['approved', 'Approved'], ['declined', 'Declined'], ['all', 'All']], filters.experts, (x) => ((filters.experts = x), show('experts')))),
-    withGap(rows.length ? list : empty(filters.experts === 'pending' ? 'No applications in progress' : 'Nothing here')),
   ];
 };
 
@@ -921,7 +863,7 @@ PAGES.people = async () => {
   const more = all.length > PAGE;
   const rows = all.slice(0, PAGE);
   const [key, dir] = filters.sort;
-  const val = (p) => (key === 'name' ? String(p.name || '').toLowerCase() : key === 'posts' || key === 'reports' ? Number(p[key] || 0) : p[key] ? new Date(p[key]).getTime() : 0);
+  const val = (p) => (key === 'name' ? String(p.name || '').toLowerCase() : key === 'jobs_done' || key === 'reports' ? Number(p[key] || 0) : p[key] ? new Date(p[key]).getTime() : 0);
   rows.sort((a, b) => (val(a) > val(b) ? dir : val(a) < val(b) ? -dir : 0));
   const picked = new Set();
   const bulk = h('div', { class: 'bulk', hidden: true });
@@ -950,7 +892,7 @@ PAGES.people = async () => {
   const table = h(
     'table',
     { class: 'table' },
-    h('thead', {}, h('tr', {}, h('th', { class: 'chk' }, allBox), th('Name', 'name'), th('Contact'), th('City'), th('Joined', 'created_at'), th('Last seen', 'last_sign_in_at'), th('Posts', 'posts'), th('Status'))),
+    h('thead', {}, h('tr', {}, h('th', { class: 'chk' }, allBox), th('Name', 'name'), th('Contact'), th('City'), th('Skill'), th('Joined', 'created_at'), th('Last seen', 'last_sign_in_at'), th('Jobs done', 'jobs_done'), th('Status'))),
     h(
       'tbody',
       {},
@@ -965,9 +907,10 @@ PAGES.people = async () => {
           h('td', {}, h('div', { class: 'row' }, avatar(p.name, null, 'xs'), h('b', { class: 'clip' }, p.name || 'No name'), p.verified ? pill('ID ✓', 'g') : null)),
           h('td', { class: 'small' }, p.email || p.phone || '—', p.confirmed ? null : h('span', { class: 'faint' }, ' (not confirmed)')),
           h('td', { class: 'small' }, p.city || '—'),
+          h('td', { class: 'small' }, (p.skills || []).length ? h('div', { class: 'row' }, h('span', { class: 'clip' }, p.skills.slice(0, 2).join(', ')), p.work_status === 'off' ? pill('Paused') : null) : h('span', { class: 'faint' }, 'Hiring')),
           h('td', { class: 'small num' }, ago(p.created_at)),
           h('td', { class: 'small num' }, ago(p.last_sign_in_at)),
-          h('td', { class: 'num' }, p.posts),
+          h('td', { class: 'num' }, (p.skills || []).length ? [num(p.jobs_done), p.rating ? h('span', { class: 'faint tiny' }, ' · ★ ' + Number(p.rating).toFixed(1)) : null] : h('span', { class: 'faint tiny' }, num(p.posts) + ' asked')),
           h('td', {}, h('div', { class: 'row' }, p.suspended_at ? pill('Suspended', 'r') : p.deleted_at ? pill('Deleted') : pill('Active', 'g'), p.reports > 0 ? pill(p.reports + ' report' + (p.reports > 1 ? 's' : ''), 'o') : null)),
         );
       }),
@@ -982,14 +925,14 @@ PAGES.people = async () => {
     h('button', { class: 'btn sm', disabled: !more, onclick: () => (filters.page++, show('people')) }, 'Next', icon('chevright', 16)),
   );
   return [
-    head('People', 'Search, sort and select accounts. Open one to see everything about it.'),
-    toolbar(searchForm(filters.q, 'Name, email, phone or city', 'Search people', (v) => ((filters.q = v), (filters.page = 0), show('people'))), rows.length ? exportBtn(() => downloadCSV('people', PEOPLE_COLS, rows)) : null),
-    withGap(tabs([['all', 'Everyone'], ['reported', 'Reported'], ['suspended', 'Suspended'], ['verified', 'ID verified'], ['deleted', 'Deleted']], filters.people, (x) => ((filters.people = x), (filters.page = 0), show('people')))),
+    head('People', 'Workers and the people who hire them. Search by name, contact, city or skill; open an account to see everything about it.'),
+    toolbar(searchForm(filters.q, 'Name, email, phone, city or skill', 'Search people', (v) => ((filters.q = v), (filters.page = 0), show('people'))), rows.length ? exportBtn(() => downloadCSV('people', PEOPLE_COLS, rows)) : null),
+    withGap(tabs([['all', 'Everyone'], ['workers', 'Workers'], ['available', 'Available now'], ['hirers', 'Hiring'], ['reported', 'Reported'], ['suspended', 'Suspended'], ['verified', 'ID verified'], ['deleted', 'Deleted']], filters.people, (x) => ((filters.people = x), (filters.page = 0), show('people')))),
     withGap(bulk),
     withGap(rows.length ? h('div', { class: 'panel flush' }, h('div', { class: 'scroll-x' }, table), pager) : empty('Nobody matches', 'Try another name, email or city.')),
   ];
 };
-const PEOPLE_COLS = [['Name', (p) => p.name], ['Email', (p) => p.email], ['Phone', (p) => p.phone], ['City', (p) => p.city], ['ID verified', (p) => (p.verified ? 'yes' : '')], ['Joined', (p) => p.created_at], ['Last sign-in', (p) => p.last_sign_in_at], ['Posts', (p) => p.posts], ['Reports', (p) => p.reports], ['Suspended', (p) => (p.suspended_at ? 'yes' : '')], ['Account id', (p) => p.id]];
+const PEOPLE_COLS = [['Name', (p) => p.name], ['Email', (p) => p.email], ['Phone', (p) => p.phone], ['City', (p) => p.city], ['ID verified', (p) => (p.verified ? 'yes' : '')], ['Joined', (p) => p.created_at], ['Last sign-in', (p) => p.last_sign_in_at], ['Skills', (p) => (p.skills || []).join(', ')], ['Available', (p) => ((p.skills || []).length ? (p.work_status === 'off' ? 'paused' : 'yes') : '')], ['Jobs done', (p) => p.jobs_done], ['Rating', (p) => p.rating], ['Requests sent', (p) => p.posts], ['Prices sent', (p) => p.offers], ['Reports', (p) => p.reports], ['Suspended', (p) => (p.suspended_at ? 'yes' : '')], ['Account id', (p) => p.id]];
 /** Write the same message to several accounts (each gets it from getit; each is recorded). */
 function bulkMessage(list) {
   decide({
@@ -1010,7 +953,7 @@ function bulkSuspend(list, on) {
   if (!todo.length) return toast(on ? 'They are all suspended already' : 'None of them is suspended', true);
   decide({
     title: `${on ? 'Suspend' : 'Restore'} ${todo.length} account${todo.length === 1 ? '' : 's'}?`,
-    text: on ? 'They leave the lists and can no longer post, comment, message, call or apply. Each is told why.' : 'They can use getit normally again and are told so.',
+    text: on ? 'They leave the lists and can no longer ask for a worker, send prices, message or call. Each is told why.' : 'They can use getit normally again and are told so.',
     note: on ? 'Reason shown to them' : undefined,
     required: on,
     danger: on,
@@ -1024,96 +967,136 @@ function bulkSuspend(list, on) {
   });
 }
 
-/** The newest posts, jobs and comments of everyone, each with its author and a way to remove it. */
-PAGES.content = async () => {
+/* Requests: someone asked for a worker. Each shows who was told, how many prices came back, and what happened. */
+const PLACE = { place: 'At their place', shop: 'At the worker’s shop', online: 'Online' };
+const JOB_STATE = { booked: ['Booked', 'b'], onway: ['On the way', 'b'], working: ['Working', 'o'], done: ['Done, to confirm', 'y'], confirmed: ['Confirmed', 'g'], cancelled: ['Cancelled', 'r'] };
+const waited = (from, to) => {
+  const m = Math.max(0, Math.round((new Date(to || Date.now()) - new Date(from)) / 60000));
+  return m < 60 ? `${m} min` : m < 2880 ? `${Math.round(m / 6) / 10} h` : `${Math.round(m / 1440)} days`;
+};
+PAGES.requests = async () => {
   let rows;
   try {
-    rows = await rpc('admin_latest_content', { p_kind: filters.content, p_query: filters.cq || null, p_limit: 80 });
+    rows = await rpc('admin_requests', { p_status: filters.requests, p_query: filters.rq || null, p_limit: 80 });
   } catch (e) {
-    // a server that doesn't have this page yet
-    if (/admin_latest_content|schema cache|does not exist|does not have this/i.test(e.message)) return [head('Content', 'The newest posts, jobs and comments.'), empty('Not available yet', 'This page needs the latest server update.')];
+    if (/admin_requests|schema cache|does not exist/i.test(e.message)) return [head('Requests', 'What people asked for.'), empty('Not available yet', 'This page needs the latest server update.')];
     throw e;
   }
-  const list = rows.map((r) =>
-    h(
+  const list = rows.map((r) => {
+    const offersBox = h('div', {});
+    const showOffers = async (btn) => {
+      btn.disabled = true;
+      try {
+        const of = await rpc('admin_request_offers', { p_post: r.id });
+        put(offersBox, h('div', { class: 'col tight' }, of.map((x) => h('div', { class: 'quote row wrap small' }, h('b', {}, x.worker || 'Deleted account'), h('span', { class: 'num' }, (Number(String(x.price).replace(/[^\d]/g, '')) || 0).toLocaleString() + ' FCFA'), x.when_text ? h('span', { class: 'muted' }, x.when_text) : null, x.note ? h('span', { class: 'grow muted clip' }, '“' + x.note + '”') : h('span', { class: 'grow' }), h('span', { class: 'tiny faint' }, ago(x.created_at)), h('button', { class: 'btn sm', onclick: () => person(x.worker_id) }, 'See worker')))));
+      } catch (e) {
+        say(e);
+        btn.disabled = false;
+      }
+    };
+    const offers = Number(r.offers || 0);
+    const quiet = r.status === 'open' && !offers && Date.now() - new Date(r.created_at) > 30 * 60000;
+    return h(
       'div',
       { class: 'item' },
       h(
         'div',
         { class: 'row wrap' },
-        pill(KIND_LABEL[r.type] || r.type),
-        h('b', { class: 'grow clip' }, r.title || ''),
+        r.trade ? pill(r.trade, 'b') : null,
+        h('b', { class: 'grow clip' }, r.title || 'Request'),
+        r.urgent ? pill('As soon as possible', 'o') : null,
+        r.booking ? pill(JOB_STATE[r.booking]?.[0] || r.booking, JOB_STATE[r.booking]?.[1]) : r.status === 'closed' ? pill('Closed') : quiet ? pill('No price yet', 'r') : pill('Open', 'g'),
         r.reports > 0 ? pill(r.reports + ' report' + (r.reports > 1 ? 's' : ''), 'o') : null,
-        r.status && r.status !== 'open' ? pill(r.status) : null,
         h('span', { class: 'tiny faint num' }, ago(r.created_at)),
       ),
       r.body ? h('p', { class: 'pre small' }, r.body) : null,
-      h('p', { class: 'tiny faint' }, ['By ' + (r.author || 'a deleted account'), r.business ? 'as ' + r.business : null, r.photos ? r.photos + ' photo' + (r.photos > 1 ? 's' : '') : null].filter(Boolean).join(' · ')),
+      kv([
+        ['Asked by', r.author || 'Deleted account'],
+        ['Where', [PLACE[r.place] || null, r.area].filter(Boolean).join(' · ')],
+        ['When', r.when],
+        ['Workers told', r.told > 0 ? num(r.told) : h('span', { class: 'err' }, 'Nobody: no available worker offers this nearby')],
+        ['Prices sent', offers ? `${num(offers)} · first after ${waited(r.created_at, r.first_offer_at)}` : r.status === 'open' ? `None yet · waiting ${waited(r.created_at)}` : 'None'],
+        r.photos ? ['Photos', r.photos] : null,
+      ]),
+      offersBox,
       h(
         'div',
         { class: 'row wrap' },
-        r.author_id ? h('button', { class: 'btn sm', onclick: () => person(r.author_id) }, 'See account') : null,
+        offers ? h('button', { class: 'btn sm', onclick: (e) => showOffers(e.currentTarget) }, `See the ${offers} price${offers > 1 ? 's' : ''}`) : null,
+        r.author_id ? h('button', { class: 'btn sm', onclick: () => person(r.author_id) }, 'See who asked') : null,
+        r.author_id ? h('button', { class: 'btn sm', onclick: () => writeTo(r.author_id, r.author) }, 'Message') : null,
+        r.trade ? h('button', { class: 'btn sm', onclick: () => ((filters.q = r.trade), (filters.people = 'workers'), (filters.page = 0), show('people')) }, 'Workers with this skill') : null,
         canModerate()
-          ? h('button', { class: 'btn sm danger', onclick: () => decide({ title: `Remove this ${(KIND_LABEL[r.type] || 'item').toLowerCase()}?`, text: 'It is deleted for everyone and its author is told why. This cannot be undone.', note: 'Reason shown to the author', required: true, danger: true, ok: 'Remove', run: async (n) => (await rpc('admin_remove_content', { p_type: r.type, p_id: String(r.id), p_note: n }), toast('Removed'), show('content')) }) }, 'Remove')
+          ? h('button', { class: 'btn sm danger', onclick: () => decide({ title: 'Remove this request?', text: 'It is deleted for everyone and the person who asked is told why. This cannot be undone.', note: 'Reason shown to them', required: true, danger: true, ok: 'Remove', run: async (n) => (await rpc('admin_remove_content', { p_type: 'job', p_id: r.id, p_note: n }), toast('Removed'), show('requests')) }) }, 'Remove')
           : null,
       ),
-    ),
-  );
-  const exp = () => downloadCSV('content-' + filters.content, [['When', (r) => r.created_at], ['Kind', (r) => KIND_LABEL[r.type] || r.type], ['Title', (r) => r.title], ['Text', (r) => r.body], ['Author', (r) => r.author], ['Business', (r) => r.business], ['Status', (r) => r.status], ['Reports', (r) => r.reports], ['Id', (r) => r.id]], rows);
+    );
+  });
+  const exp = () => downloadCSV('requests-' + filters.requests, [['When', (r) => r.created_at], ['Skill', (r) => r.trade], ['Title', (r) => r.title], ['Details', (r) => r.body], ['Asked by', (r) => r.author], ['Area', (r) => r.area], ['Where', (r) => PLACE[r.place] || r.place], ['Urgent', (r) => (r.urgent ? 'yes' : '')], ['Workers told', (r) => r.told], ['Prices', (r) => r.offers], ['First price at', (r) => r.first_offer_at], ['Status', (r) => r.booking || r.status]], rows);
   return [
-    head('Content', 'The newest posts, jobs and comments from everyone. Remove what breaks the rules; the author is told why.'),
-    toolbar(searchForm(filters.cq, 'A word in the text', 'Search content', (v) => ((filters.cq = v), show('content'))), rows.length ? exportBtn(exp) : null),
-    withGap(tabs([['posts', 'Posts'], ['jobs', 'Jobs and vacancies'], ['comments', 'Comments']], filters.content, (x) => ((filters.content = x), show('content')))),
+    head('Requests', 'What people asked for. “No price yet” means the request has waited 30 minutes or more and no worker has answered: a sign that getit needs more workers for that skill or area.'),
+    toolbar(searchForm(filters.rq, 'A word, a skill, an area or a name', 'Search requests', (v) => ((filters.rq = v), show('requests'))), rows.length ? exportBtn(exp) : null),
+    withGap(tabs([['open', 'Open'], ['unanswered', 'No price yet'], ['booked', 'Booked'], ['closed', 'Closed'], ['all', 'All']], filters.requests, (x) => ((filters.requests = x), show('requests')))),
     ROLE_NOTE[state.me.role] && !canModerate() ? withGap(h('p', { class: 'small faint' }, ROLE_NOTE[state.me.role])) : null,
-    withGap(rows.length ? h('div', { class: 'list' }, list) : empty('Nothing here', filters.cq ? 'No ' + filters.content + ' contain “' + filters.cq + '”.' : 'Nothing has been posted yet.')),
+    withGap(rows.length ? h('div', { class: 'list' }, list) : empty(filters.requests === 'unanswered' ? 'Every open request has a price' : 'Nothing here', filters.rq ? 'No request matches “' + filters.rq + '”.' : filters.requests === 'unanswered' ? 'No request has waited 30 minutes without an answer.' : '')),
     rows.length === 80 ? withGap(h('p', { class: 'small faint' }, 'Showing the 80 newest. Search to narrow it down.')) : null,
   ];
 };
 
-function suspend(id, name, after) {
-  decide({
-    title: `Suspend ${name || 'this account'}?`,
-    text: 'They disappear from the lists and can no longer post, comment, message, call or apply. They can still read, write to getit and delete their account. You can restore them later.',
-    note: 'Reason shown to them, for example: asking for payment before the job',
-    required: true,
-    danger: true,
-    ok: 'Suspend',
-    run: async (n) => {
-      await rpc('admin_suspend', { p_user: id, p_on: true, p_note: n });
-      toast('Suspended');
-      after?.();
-    },
+/* Jobs: a worker was booked. Both people, the price, and the stage the job is at. */
+const STEPS = [['booked', 'Booked'], ['onway', 'On the way'], ['working', 'Working'], ['done', 'Done'], ['confirmed', 'Confirmed']];
+PAGES.jobs = async () => {
+  let rows;
+  try {
+    rows = await rpc('admin_jobs', { p_state: filters.jobs, p_query: filters.jq || null, p_limit: 80 });
+  } catch (e) {
+    if (/admin_jobs|schema cache|does not exist/i.test(e.message)) return [head('Jobs', 'Workers who were booked.'), empty('Not available yet', 'This page needs the latest server update.')];
+    throw e;
+  }
+  const price = (b) => (b.amount ? Number(b.amount).toLocaleString() + ' FCFA' : b.price || '—');
+  const list = rows.map((b) => {
+    const at = STEPS.findIndex((x) => x[0] === b.state);
+    const st = JOB_STATE[b.state] || [b.state, ''];
+    // a job that sits at one stage for a long time may need a nudge
+    const hours = (Date.now() - new Date(b.updated_at)) / 3600000;
+    const slow = (b.state === 'done' && hours > 24) || (['onway', 'working'].includes(b.state) && hours > 12);
+    return h(
+      'div',
+      { class: 'item' + (b.state === 'cancelled' ? ' done' : '') },
+      h('div', { class: 'row wrap' }, h('b', { class: 'grow clip' }, b.title || 'Job'), h('span', { class: 'num strong' }, price(b)), pill(st[0], st[1]), slow ? pill(`No change for ${waited(b.updated_at)}`, 'r') : null, h('span', { class: 'tiny faint num' }, ago(b.updated_at))),
+      b.state === 'cancelled' ? null : h('div', { class: 'row wrap tiny' }, STEPS.map(([k, l], i) => h('span', { class: i <= at ? 'strong' : 'faint' }, (i <= at ? '● ' : '○ ') + l))),
+      kv([
+        ['Worker', b.worker || 'Deleted account'],
+        ['Client', b.client || 'Deleted account'],
+        ['When', b.when_text],
+        ['Area', b.area],
+        ['Booked', fmtDate(b.created_at)],
+        b.state === 'cancelled' ? ['Cancelled by', b.cancelled_by === 'worker' ? 'the worker' : b.cancelled_by === 'client' ? 'the client' : '—'] : null,
+        (b.reviews || []).length ? ['Ratings', (b.reviews || []).map((r) => `${r.by === 'client' ? 'Client' : 'Worker'} gave ${'★'.repeat(r.stars)}${r.body ? ' “' + r.body + '”' : ''}`).join(' · ')] : null,
+      ]),
+      h(
+        'div',
+        { class: 'row wrap' },
+        h('button', { class: 'btn sm', onclick: () => person(b.worker_id) }, 'See worker'),
+        h('button', { class: 'btn sm', onclick: () => person(b.client_id) }, 'See client'),
+        h('button', { class: 'btn sm', onclick: () => writeTo(b.worker_id, b.worker) }, 'Message worker'),
+        h('button', { class: 'btn sm', onclick: () => writeTo(b.client_id, b.client) }, 'Message client'),
+      ),
+    );
   });
-}
-/** Write to one account as the getit team (to its business inbox when `business` is given). */
-function writeTo(id, name, business) {
-  decide({
-    title: `Write to ${name || 'this account'}`,
-    text: business ? 'It arrives in the Notifications of this business page in the app, from “getit”, with a pop-up on the phone.' : 'It arrives in their Notifications in the app, from “getit”, with a pop-up on the phone. They can answer with “Reply to getit”, which comes back under Feedback.',
-    note: 'Your message (at least 5 characters)',
-    required: true,
-    ok: 'Send',
-    run: async (n) => {
-      await rpc('admin_message', business ? { p_user: id, p_text: n, p_business: business } : { p_user: id, p_text: n });
-      toast('Sent');
-    },
-  });
-}
-/** Ask a person (their ID) or a business (RCCM and NIU) to verify. */
-function askVerify({ user, business, name, after }) {
-  decide({
-    title: `Ask ${name || 'them'} to verify?`,
-    text: business ? 'The owner gets a notice in the business inbox that opens the page where the RCCM and NIU are added.' : 'They get a notice that opens the ID check (their ID and a selfie).',
-    note: 'Add a line if you want, for example: needed before your first job (optional)',
-    ok: 'Send request',
-    run: async (n) => {
-      await rpc('admin_request_verification', business ? { p_user: null, p_business: business, p_note: n } : { p_user: user, p_business: null, p_note: n });
-      toast('Request sent');
-      after?.();
-    },
-  });
-}
-const KIND_LABEL = { post: 'Post', job: 'Job', comment: 'Comment', course: 'Course listing', opp: 'Internship or program', mentor: 'Mentorship' };
+  const exp = () => downloadCSV('jobs-' + filters.jobs, [['Booked', (b) => b.created_at], ['Last change', (b) => b.updated_at], ['Job', (b) => b.title], ['Worker', (b) => b.worker], ['Client', (b) => b.client], ['Price (FCFA)', (b) => b.amount], ['Stage', (b) => (JOB_STATE[b.state] || [b.state])[0]], ['Area', (b) => b.area], ['Cancelled by', (b) => b.cancelled_by]], rows);
+  const total = rows.filter((b) => b.state === 'confirmed').reduce((a, b) => a + Number(b.amount || 0), 0);
+  return [
+    head('Jobs', 'Workers who were booked, newest change first. Clients pay workers directly; getit takes nothing. Chats and calls are private and are not shown here.'),
+    toolbar(searchForm(filters.jq, 'A job, a name or an area', 'Search jobs', (v) => ((filters.jq = v), show('jobs'))), rows.length ? exportBtn(exp) : null),
+    withGap(tabs([['live', 'In progress'], ['done', 'Done'], ['cancelled', 'Cancelled'], ['all', 'All']], filters.jobs, (x) => ((filters.jobs = x), show('jobs')))),
+    filters.jobs === 'done' && rows.length ? withGap(h('p', { class: 'small muted' }, `${rows.length} job${rows.length > 1 ? 's' : ''} shown · ${total.toLocaleString()} FCFA paid to workers`)) : null,
+    withGap(rows.length ? h('div', { class: 'list' }, list) : empty(filters.jobs === 'live' ? 'No job in progress right now' : 'Nothing here', filters.jq ? 'No job matches “' + filters.jq + '”.' : '')),
+    rows.length === 80 ? withGap(h('p', { class: 'small faint' }, 'Showing the 80 newest. Search to narrow it down.')) : null,
+  ];
+};
+
+const KIND_LABEL = { post: 'Request', job: 'Request', comment: 'Comment' };
 /** Everything one account posted, each with a way to remove it. */
 async function contentOf(id, name) {
   const body = h('div', { class: 'col' }, spinner());
@@ -1122,15 +1105,11 @@ async function contentOf(id, name) {
     try {
       const d = await rpc('admin_content', { p_user: id });
       const rows = [
-        ...d.posts.map((x) => ({ type: x.type, id: x.id, title: x.title || x.kind, text: x.body, at: x.created_at, extra: [x.business, x.status].filter(Boolean).join(' · ') })),
-        ...d.comments.map((x) => ({ type: 'comment', id: x.id, title: 'Comment', text: x.body, at: x.created_at })),
-        ...d.courses.map((x) => ({ type: 'course', id: x.id, title: x.title, text: x.url, at: x.created_at })),
-        ...d.opps.map((x) => ({ type: 'opp', id: x.id, title: x.title, text: x.kind + ' · ' + x.status, at: x.created_at })),
-        ...d.mentorships.map((x) => ({ type: 'mentor', id: x.id, title: x.title, text: '', at: x.created_at })),
+        ...d.posts.filter((x) => x.kind === 'request' || x.type === 'job').map((x) => ({ type: 'job', id: x.id, title: x.title || x.kind, text: x.body, at: x.created_at, extra: [x.business, x.status].filter(Boolean).join(' · ') })),
       ].sort((a, b) => new Date(b.at) - new Date(a.at));
       put(
         body,
-        h('div', { class: 'row' }, h('h2', { class: 'grow clip' }, `What ${name || 'this account'} posted`), h('button', { class: 'btn sm', onclick: () => close() }, 'Close')),
+        h('div', { class: 'row' }, h('h2', { class: 'grow clip' }, `What ${name || 'this account'} asked for`), h('button', { class: 'btn sm', onclick: () => close() }, 'Close')),
         rows.length
           ? rows.map((r) =>
               h(
@@ -1142,7 +1121,7 @@ async function contentOf(id, name) {
                 canModerate() ? h('div', {}, h('button', { class: 'btn sm danger', onclick: () => decide({ title: `Remove this ${(KIND_LABEL[r.type] || 'item').toLowerCase()}?`, text: 'It is deleted for everyone and its author is told why. This cannot be undone.', note: 'Reason shown to the author', required: true, danger: true, ok: 'Remove', run: async (n) => (await rpc('admin_remove_content', { p_type: r.type, p_id: String(r.id), p_note: n }), toast('Removed'), load()) }) }, 'Remove')) : null,
               ),
             )
-          : empty('Nothing posted', 'No posts, jobs, comments or listings from this account.'),
+          : empty('No requests', 'This account has not asked for a worker.'),
       );
     } catch (e) {
       body.replaceChildren(empty('Couldn’t load this', e.message), h('button', { class: 'btn', onclick: () => close() }, 'Close'));
@@ -1183,7 +1162,7 @@ function closeAccount(id, name, after) {
     });
     return [
       h('h2', {}, `Close ${name || 'this account'} for good?`),
-      h('p', { class: 'muted' }, 'The account, its profile, posts, messages, files and business pages are deleted. This cannot be undone. To stop someone for a while, suspend them instead.'),
+      h('p', { class: 'muted' }, 'The account, its profile, requests, messages and files are deleted. This cannot be undone. To stop someone for a while, suspend them instead.'),
       h('p', {}, h('b', {}, name || 'No name')),
       typed,
       why,
@@ -1206,31 +1185,36 @@ async function person(id) {
       const mod = canModerate();
       put(
         body,
-        h('div', { class: 'row' }, avatar(p.name, p.avatar_url), h('div', { class: 'grow' }, h('h2', { class: 'clip' }, p.name || 'No name'), h('div', { class: 'small muted' }, [p.city, (p.skills || []).slice(0, 3).join(', ')].filter(Boolean).join(' · ') || 'No skills listed')), h('button', { class: 'btn sm', onclick: () => close() }, 'Close')),
+        h('div', { class: 'row' }, avatar(p.name, p.avatar_url), h('div', { class: 'grow' }, h('h2', { class: 'clip' }, p.name || 'No name'), h('div', { class: 'small muted' }, [(p.skills || []).length ? (p.skills || []).slice(0, 3).join(', ') : 'Hiring', p.city].filter(Boolean).join(' · '))), h('button', { class: 'btn sm', onclick: () => close() }, 'Close')),
         h('div', { class: 'row wrap' }, p.verified ? pill('ID verified', 'g') : pill('ID not verified'), d.confirmed ? pill('Contact confirmed', 'g') : pill('Contact not confirmed', 'o'), p.suspended_at ? pill('Suspended', 'r') : null, p.deleted_at ? pill('Deleted') : null, p.visible === false ? pill('Hidden from search') : null, p.biz_only ? pill('Business account') : null),
         p.suspended_at ? h('div', { class: 'quote small' }, 'Suspended ' + ago(p.suspended_at) + (p.suspended_note ? ': ' + p.suspended_note : '')) : null,
         kv([['Email', mail(d.email)], ['Phone', d.phone], ['Joined', fmtDate(p.created_at)], ['Last sign-in', fmtDate(d.last_sign_in_at)], ['About', p.bio], ['Account id', h('span', { class: 'tiny faint' }, p.id)]]),
-        h('div', { class: 'tiles small-tiles' }, [['Posts', c.posts], ['Offers sent', c.offers], ['Bookings', c.bookings], ['Messages sent', c.messages], ['Reviews', c.reviews], ['Blocked by', c.blocked_by]].map(([l, n]) => h('div', { class: 'tile' }, h('span', { class: 'muted tiny' }, l), h('b', { class: 'num' }, n)))),
-        h('div', { class: 'row wrap' }, p.pro_regular ? pill('Pro', 'y') : pill('No Pro'), p.pro_business ? pill('Business Pro', 'y') : null),
-        d.businesses.length
+        h('div', { class: 'tiles small-tiles' }, [['Requests sent', c.posts], ['Prices sent', c.offers], ['Jobs', c.bookings], ['Jobs they cancelled', c.cancelled ?? '–'], ['Messages sent', c.messages], ['Blocked by', c.blocked_by]].map(([l, n]) => h('div', { class: 'tile' }, h('span', { class: 'muted tiny' }, l), h('b', { class: 'num' }, n)))),
+        // the work side of the account: what they offer, how, and how it has gone
+        (p.skills || []).length
           ? h(
               'div',
               { class: 'col' },
-              h('h3', {}, 'Business pages'),
-              d.businesses.map((b) =>
-                h(
-                  'div',
-                  { class: 'row small wrap' },
-                  h('span', { class: 'grow clip' }, b.name),
-                  pill(b.verified === 'verified' ? 'Verified' : b.verified === 'review' ? 'Waiting' : 'Not verified', b.verified === 'verified' ? 'g' : ''),
-                  h('button', { class: 'btn sm', onclick: () => writeTo(id, b.name, b.id) }, 'Message'),
-                  mod && b.verified === 'none' ? h('button', { class: 'btn sm', onclick: () => askVerify({ business: b.id, name: b.name, after: load }) }, 'Ask to verify') : null,
-                ),
-              ),
+              h('h3', {}, 'As a worker'),
+              kv([
+                ['Skills', (p.skills || []).join(', ')],
+                ['Available', p.work_status === 'off' ? 'Paused (not shown to clients)' : p.visible === false ? 'Hidden' : 'Yes, clients can find them'],
+                ['How they work', (Array.isArray(p.area?.ways) ? p.area.ways : []).map((w) => ({ go: 'Goes to clients', come: 'Clients come to their shop', online: 'Works online' })[w] || w).join(' · ')],
+                ['Area', [p.area?.home, p.city].filter(Boolean).join(', ') + (Number(p.area?.radius) ? (Number(p.area.radius) >= 50 ? ' · all of the city' : ` · up to ${p.area.radius} km`) : '')],
+                ['Prices', (Array.isArray(p.services) ? p.services : []).filter((x) => x && x.name).slice(0, 6).map((x) => x.name + (Number(x.price) ? ' ' + Number(x.price).toLocaleString() + ' FCFA' : '')).join(' · ')],
+                ['Jobs done', d.stats ? num(d.stats.jobs_done) : null],
+                ['Rating', d.stats?.rating ? `★ ${Number(d.stats.rating).toFixed(1)} from ${d.stats.reviews} review${d.stats.reviews === 1 ? '' : 's'}` : 'No ratings yet'],
+              ]),
             )
           : null,
+        (d.jobs || []).length
+          ? h('div', { class: 'col' }, h('h3', {}, 'Latest jobs'), d.jobs.map((x) => h('div', { class: 'row small wrap' }, pill((JOB_STATE[x.state] || [x.state])[0], (JOB_STATE[x.state] || [])[1]), h('span', { class: 'grow clip' }, h('b', {}, x.title || 'Job'), ' · ' + (x.side === 'worker' ? 'worked for ' : 'hired ') + (x.other || 'a deleted account')), x.price ? h('span', { class: 'num' }, (Number(String(x.price).replace(/[^\d]/g, '')) || 0).toLocaleString() + ' FCFA') : null, h('span', { class: 'tiny faint' }, ago(x.updated_at)))))
+          : null,
+        (d.reviews || []).length
+          ? h('div', { class: 'col' }, h('h3', {}, 'What people said about them'), d.reviews.map((x) => h('div', { class: 'quote small' }, h('div', { class: 'row' }, h('b', {}, '★'.repeat(x.stars)), h('span', { class: 'grow muted' }, 'from ' + (x.from || 'a deleted account')), h('span', { class: 'tiny faint' }, ago(x.created_at))), x.body ? h('p', { class: 'pre' }, x.body) : null, (x.tags || []).length ? h('p', { class: 'tiny faint' }, x.tags.join(' · ')) : null)))
+          : null,
         d.reports.length ? h('div', { class: 'col' }, h('h3', {}, 'Reports about them'), d.reports.map((r) => h('div', { class: 'row small wrap' }, pill(REASONS[r.reason] || r.reason, 'o'), h('span', { class: 'grow' }, r.details || r.target_type), h('span', { class: 'faint' }, ago(r.created_at)), pill(r.status)))) : null,
-        d.posts.length ? h('div', { class: 'col' }, h('h3', {}, 'Latest posts'), d.posts.map((x) => h('div', { class: 'quote small' }, h('b', {}, x.title || x.kind), x.body ? h('p', { class: 'pre' }, x.body) : null, h('p', { class: 'tiny faint' }, ago(x.created_at) + ' · ' + x.status)))) : null,
+        d.posts.length ? h('div', { class: 'col' }, h('h3', {}, 'Latest requests'), d.posts.map((x) => h('div', { class: 'quote small' }, h('b', {}, x.title || 'Request'), x.body ? h('p', { class: 'pre' }, x.body) : null, h('p', { class: 'tiny faint' }, ago(x.created_at) + ' · ' + x.status)))) : null,
         d.history.length ? h('div', { class: 'col' }, h('h3', {}, 'Admin history'), d.history.map((x) => h('div', { class: 'row small' }, h('span', { class: 'grow' }, (ACTIONS[x.action] || x.action) + (x.data?.note ? ': ' + x.data.note : '')), h('span', { class: 'faint' }, ago(x.created_at))))) : null,
         p.deleted_at
           ? null
@@ -1238,7 +1222,7 @@ async function person(id) {
               'div',
               { class: 'row wrap' },
               h('button', { class: 'btn y', onclick: () => writeTo(id, p.name) }, 'Message'),
-              h('button', { class: 'btn', onclick: () => contentOf(id, p.name) }, 'What they posted'),
+              h('button', { class: 'btn', onclick: () => contentOf(id, p.name) }, 'What they asked for'),
               mod
                 ? p.verified
                   ? h('button', { class: 'btn', onclick: () => decide({ title: `Remove ${p.name || 'this account'}’s ID badge?`, text: 'They are told and can verify again.', note: 'Reason shown to them', required: true, danger: true, ok: 'Remove badge', run: async (n) => (await rpc('admin_set_verified', { p_user: id, p_on: false, p_note: n }), toast('Badge removed'), load()) }) }, 'Remove ID badge')
@@ -1246,10 +1230,6 @@ async function person(id) {
                       h('button', { class: 'btn', onclick: () => askVerify({ user: id, name: p.name, after: load }) }, 'Ask to verify ID'),
                       h('button', { class: 'btn', onclick: () => decide({ title: `Give ${p.name || 'this account'} the ID badge?`, text: 'Only when you checked their identity another way. They get the verified badge and a notice.', note: 'How you checked (kept in Activity)', required: true, ok: 'Give badge', run: async (n) => (await rpc('admin_set_verified', { p_user: id, p_on: true, p_note: n }), toast('Badge given'), load()) }) }, 'Give ID badge'),
                     ]
-                : null,
-              isSenior() ? h('button', { class: 'btn', onclick: () => decide({ title: (p.pro_regular ? 'Remove Pro from ' : 'Give Pro to ') + (p.name || 'this account') + '?', text: 'Until payments are live, Pro is given by hand.', ok: p.pro_regular ? 'Remove Pro' : 'Give Pro', run: async () => (await rpc('admin_set_pro', { p_user: id, p_regular: !p.pro_regular, p_business: !!p.pro_business }), toast('Saved'), load()) }) }, p.pro_regular ? 'Remove Pro' : 'Give Pro') : null,
-              isSenior() && (d.businesses.length || p.pro_business)
-                ? h('button', { class: 'btn', onclick: () => decide({ title: (p.pro_business ? 'Remove Business Pro from ' : 'Give Business Pro to ') + (p.name || 'this account') + '?', ok: p.pro_business ? 'Remove Business Pro' : 'Give Business Pro', run: async () => (await rpc('admin_set_pro', { p_user: id, p_regular: !!p.pro_regular, p_business: !p.pro_business }), toast('Saved'), load()) }) }, p.pro_business ? 'Remove Business Pro' : 'Give Business Pro')
                 : null,
               state.me.role === 'owner' ? h('button', { class: 'btn danger', onclick: () => closeAccount(id, p.name, () => (close(), show(state.view))) }, 'Close account') : null,
               mod
@@ -1266,11 +1246,11 @@ async function person(id) {
   await load();
 }
 
-const AUDIENCES = [['all', 'Everyone'], ['workers', 'People who offer work (have skills)'], ['hirers', 'People who hire (no skills listed)'], ['businesses', 'Business pages (to the business inbox)'], ['verified', 'ID-verified people'], ['unverified', 'People who have not verified their ID']];
+const AUDIENCES = [['all', 'Everyone'], ['workers', 'Workers (people who offer a skill)'], ['hirers', 'People who hire (no skill listed)'], ['verified', 'ID-verified people'], ['unverified', 'People who have not verified their ID']];
 PAGES.announce = async () => {
   const senior = isSenior();
   const log = (await rpc('admin_audit', { p_limit: 300 })).filter((l) => l.action === 'announce.send').slice(0, 20);
-  const text = h('textarea', { class: 'input', maxlength: '500', id: 'anText', placeholder: 'For example: New on getit: you can now edit a job after posting it. Update the app to get it.' });
+  const text = h('textarea', { class: 'input', maxlength: '500', id: 'anText', placeholder: 'For example: New on getit: say what you need out loud and get prices from workers near you. Update the app to get it.' });
   const count = h('span', { class: 'tiny faint num' }, '0 / 500');
   const preview = h('div', { class: 'phone-note' }, h('div', { class: 'row' }, h('b', { class: 'pn-logo' }, 'g'), h('div', { class: 'grow' }, h('div', { class: 'small strong' }, 'getit'), h('div', { class: 'tiny faint' }, 'now'))), h('p', { class: 'small pn-text' }, 'Your message appears here, as people will see it.'));
   text.addEventListener('input', () => ((count.textContent = `${text.value.length} / 500`), (preview.querySelector('.pn-text').textContent = text.value.trim() || 'Your message appears here, as people will see it.')));
@@ -1304,7 +1284,7 @@ PAGES.announce = async () => {
             h('div', { class: 'field' }, h('label', { for: 'anText' }, 'Message'), text, count),
             h('div', { class: 'field' }, h('label', { for: 'anWho' }, 'Who gets it'), who),
             h('div', { class: 'field' }, h('label', { for: 'anCity' }, 'Only in this city (optional)'), city),
-            h('p', { class: 'muted small' }, 'At most 5 announcements a day. To write to one person or one business, open them under People or Businesses and choose Message.'),
+            h('p', { class: 'muted small' }, 'At most 5 announcements a day. To write to one person, open them under People and choose Message.'),
             h('div', {}, send),
           ),
           h('section', { class: 'panel col' }, h('h3', {}, 'Preview'), preview, h('p', { class: 'tiny faint' }, 'Tapping it in the app opens the full message, with “Reply to getit”.')),
@@ -1367,7 +1347,7 @@ PAGES.settings = async () => {
   const SWITCHES = [
     ['signups', 'New sign-ups', 'New people can create accounts. Switch off during an attack or a launch problem; people who already have an account are not affected.'],
     ['calls', 'Voice and video calls', 'Calls between people. Switch off if calls misbehave; chats keep working.'],
-    ['posting', 'New posts, jobs and comments', 'Switch off to stop a wave of spam. Everything already posted stays; admins can still post.'],
+    ['posting', 'New requests', 'People can ask for a worker. Switch off to stop a wave of spam; requests already sent stay, and chats and jobs in progress keep working.'],
   ];
   const switches = SWITCHES.map(([k, label, text]) =>
     h(
@@ -1447,14 +1427,14 @@ PAGES.settings = async () => {
     head('Settings', 'Switches that affect everyone, the app version, the service notice, blocked words and the admin team.'),
     section('Feature switches', senior ? 'Pause a part of getit for everyone at once, for example during an attack, a spam wave or a broken release.' : 'Owners and admins can change these.', switches),
     words !== null
-      ? section('Blocked words', 'Posts and comments that contain one of these (as a whole word, in any case) are refused, with a message asking to change them. The list is private.', chipsBox, senior ? [wordForm, h('div', {}, saveWords)] : null)
+      ? section('Blocked words', 'Requests that contain one of these (as a whole word, in any case) are refused, with a message asking to change them. The list is private.', chipsBox, senior ? [wordForm, h('div', {}, saveWords)] : null)
       : null,
     section('Ask older versions to update', 'People whose app build number is lower than this see “Update getit” when they open the app. The build number is the one in the release name, for example 172.', h('div', { class: 'field' }, h('label', { for: 'minA' }, 'Lowest Android build that is fine'), minA), h('div', { class: 'field' }, h('label', { for: 'minMsg' }, 'Message they see'), minMsg), h('div', {}, saveMin)),
     section('Service notice', 'A short note everyone sees each time they open the app, for example before planned maintenance. Switch it off as soon as it no longer applies.', h('label', { class: 'row', for: 'mtOn' }, on, 'Show the notice'), h('div', { class: 'field' }, h('label', { for: 'mtMsg' }, 'Notice'), mtMsg), h('div', {}, saveMt)),
     section('Security', 'This panel signs you out after a while without activity, so an open laptop does not stay signed in. Closing the tab always signs you out.', h('div', { class: 'field' }, h('label', { for: 'idle' }, 'Sign out after'), idle)),
     section(
       'Admins',
-      'Support reads everything, answers feedback and messages people. Moderators also review, remove and suspend. Admins also send announcements, give Pro and use the switches. Owners also manage the admin team and close accounts.',
+      'Support reads everything, answers feedback and messages people. Moderators also review, remove and suspend. Admins also send announcements and use the switches. Owners also manage the admin team and close accounts.',
       admins.map((a) =>
         h(
           'div',

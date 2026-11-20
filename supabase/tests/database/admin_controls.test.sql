@@ -27,7 +27,7 @@ select is(jsonb_array_length(public.admin_stats(30) -> 'series'), 30, 'one line 
 select is(jsonb_array_length(public.admin_stats(1) -> 'series'), 7, 'at least a week');
 select is((public.admin_stats(30) -> 'now' ->> 'signups')::int, 4, 'new accounts in the period');
 select is((public.admin_stats(30) -> 'now' ->> 'jobs')::int, 1, 'jobs posted in the period');
-select is((public.admin_stats(30) -> 'now' ->> 'posts')::int, 1, 'posts that are not jobs');
+select is((public.admin_stats(30) -> 'now' ->> 'posts')::int, 0, 'old bolo posts are no longer counted (getit has requests only)');
 select is((public.admin_stats(30) -> 'now' ->> 'active')::int, 1, 'people who did something');
 select is((public.admin_stats(30) -> 'series' -> -1 ->> 'jobs')::int, 1, 'today''s line counts today''s job');
 select is((public.admin_stats(30) -> 'prev' ->> 'signups')::int, 0, 'the period before, for trends');
