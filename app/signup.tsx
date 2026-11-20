@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { router } from 'expo-router';
-import { Btn, Check, Field, Input, Page, Steps, Sub, TextLink, Title, TopBar, Txt } from '../src/ui/kit';
+import { Btn, Check, Field, Input, Page, Sub, TextLink, Title, TopBar, Txt } from '../src/ui/kit';
 import { C } from '../src/ui/theme';
 import { db } from '../src/data/db';
 import { ContactField, firstMode, Mode, Strength, contactOk, contactValue, signup } from '../src/components/auth';
 import { wantsWork } from '../src/logic/account';
 import { signUp } from '../src/logic/remote';
+import { hasWorkerDraft } from '../src/g/worker';
 
 export default function Signup() {
   const [mode, setMode] = useState<Mode>(firstMode());
@@ -39,9 +40,8 @@ export default function Signup() {
   return (
     <Page keyboard>
       <TopBar title="Create account" />
-      <Steps total={wantsWork() ? 7 : 3} on={1} />
-      <Title sm>Let’s get you started</Title>
-      <Sub>{wantsWork() ? 'Get hired by people and businesses around you.' : 'Find and hire people around you.'}</Sub>
+      <Title sm>Create your account</Title>
+      <Sub>{hasWorkerDraft() || wantsWork() ? 'So clients can reach you, and you can sign in on any phone.' : 'So workers know who is calling, and you can sign in on any phone.'}</Sub>
       <View style={{ gap: 16, marginTop: 28 }}>
         <Field label="Full name" error={bad.name && 'Enter your full name'}>
           <Input testID="su-name" value={name} onChangeText={setName} icon="user" placeholder="e.g. Edward Isle" invalid={bad.name} autoCapitalize="words" />

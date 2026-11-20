@@ -1,17 +1,51 @@
+/* A call, in the getit design: who it is, what it is about, and three round buttons.
+   Calls go through getit (Agora), so neither side sees the other's number. */
 import React, { useEffect, useRef, useState } from 'react';
-import { PermissionsAndroid, Platform, Pressable, View } from 'react-native';
+import { Animated, Easing, PermissionsAndroid, Platform, Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Avatar, Txt } from '../src/ui/kit';
-import { Icon } from '../src/ui/Icon';
-import { C, S } from '../src/ui/theme';
+import { tap } from '../src/ui/kit';
 import { toast } from '../src/ui/overlay';
-import { P, fname } from '../src/logic/core';
+import { P, THREADS, fname } from '../src/logic/core';
 import { useLive } from '../src/logic/live';
 import { db } from '../src/data/db';
 import { CALLS, Call, agora, answerCall, askAnswer, callAlive, callPass, callPermissions, endCall, enterCallScreen, leaveCallScreen, loadCall, onCall, otherOf, setActiveCall, takeAnswer } from '../src/logic/calls';
 import { clearCallPopups } from '../src/logic/push';
 import { ring, stopRing } from '../src/logic/ring';
+import { GIcon, GIconName } from '../src/g/icons';
+import { Face, T } from '../src/g/ui';
+import { BRAND, useG } from '../src/g/theme';
+
+const END = '#e5484d';
+const ANSWER = '#2fb36d';
+
+/** Two soft rings growing out from behind the picture while a phone is ringing. */
+function Rings({ on }: { on: boolean }) {
+  const a = useRef(new Animated.Value(0)).current;
+  const b = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!on) return;
+    const run = (v: Animated.Value, delay: number) => Animated.loop(Animated.sequence([Animated.delay(delay), Animated.timing(v, { toValue: 1, duration: 2200, easing: Easing.out(Easing.quad), useNativeDriver: true })]));
+    const x = run(a, 0);
+    const y = run(b, 1100);
+    x.start();
+    y.start();
+    return () => {
+      x.stop();
+      y.stop();
+      a.setValue(0);
+      b.setValue(0);
+    };
+  }, [on, a, b]);
+  if (!on) return null;
+  return (
+    <>
+      {[a, b].map((v, i) => (
+        <Animated.View key={i} pointerEvents="none" style={{ position: 'absolute', width: 120, height: 120, borderRadius: 60, backgroundColor: BRAND, opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0] }), transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 2.17] }) }] }} />
+      ))}
+    </>
+  );
+}
 
 type Phase = 'loading' | 'incoming' | 'calling' | 'connecting' | 'live' | 'ended';
 const RING_LIMIT = 45_000;
@@ -22,6 +56,7 @@ export default function CallScreen() {
   // answer=1: Accept was tapped on the phone's own ringing screen (getit was closed), so this screen answers by itself
   const { id, incoming, answer } = useLocalSearchParams<{ id: string; incoming?: string; answer?: string }>();
   const ins = useSafeAreaInsets();
+  const t = useG();
   const [call, setCall] = useState<Call | null>(CALLS[id] || null);
   const [phase, setPhase] = useState<Phase>('loading');
   const [endText, setEndText] = useState('Call ended');
@@ -186,95 +221,117 @@ export default function CallScreen() {
   // nobody answers: give up after 45 seconds
   useEffect(() => {
     if (phase !== 'calling' && phase !== 'incoming') return;
-    const t = setTimeout(() => finish(phase === 'calling' ? 'No answer' : 'Missed call', true), RING_LIMIT);
-    return () => clearTimeout(t);
+    const x = setTimeout(() => finish(phase === 'calling' ? 'No answer' : 'Missed call', true), RING_LIMIT);
+    return () => clearTimeout(x);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
   // call timer
   useEffect(() => {
     if (phase !== 'live') return;
-    const t = setInterval(() => setSecs((s) => s + 1), 1000);
-    return () => clearInterval(t);
+    const x = setInterval(() => setSecs((s) => s + 1), 1000);
+    return () => clearInterval(x);
   }, [phase]);
   // tell the server this call is still going (see callAlive)
   useEffect(() => {
     if (phase !== 'live' && phase !== 'connecting') return;
     callAlive(id);
-    const t = setInterval(() => callAlive(id), 15000);
-    return () => clearInterval(t);
+    const x = setInterval(() => callAlive(id), 15000);
+    return () => clearInterval(x);
   }, [phase, id]);
 
   const status =
-    phase === 'incoming' ? `Incoming ${video ? 'video' : 'voice'} call` : phase === 'calling' ? 'Calling…' : phase === 'connecting' ? 'Connecting…' : phase === 'live' ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}` : phase === 'ended' ? endText : '';
+    phase === 'incoming' ? (video ? 'Video call for you' : 'Calling you') : phase === 'calling' ? 'Ringing…' : phase === 'connecting' ? 'Connecting…' : phase === 'live' ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}` : phase === 'ended' ? endText : '';
   const Surface = agora?.RtcSurfaceView;
   const showRemote = video && phase === 'live' && remote != null && Surface;
   const showLocal = video && (phase === 'connecting' || phase === 'live') && !camOff && Surface;
 
-  const Ctl = ({ icon, label, on, onPress, red }: { icon: string; label: string; on?: boolean; onPress: () => void; red?: boolean }) => (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={{ alignItems: 'center', gap: 6 }}>
-      <View style={{ width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: red ? C.err : on ? '#fff' : 'rgba(255,255,255,.14)' }}>
-        <Icon name={icon} size={26} color={red ? '#fff' : on ? '#000' : '#fff'} />
+  // over a live video picture the buttons are always the dark set, so they stay readable on any picture
+  const over = !!showRemote;
+  const ink = over ? '#ffffff' : t.text;
+  const soft = over ? 'rgba(255, 255, 255, 0.8)' : t.muted;
+  const topic = other ? THREADS()[other]?.job : '';
+  const ringing = phase === 'calling' || phase === 'incoming';
+
+  const Ctl = ({ icon, label, on, onPress, fill, big, turn, testID }: { icon: GIconName; label: string; on?: boolean; onPress: () => void; fill?: string; big?: boolean; turn?: boolean; testID?: string }) => {
+    const size = big ? 72 : 64;
+    return (
+      <View style={{ alignItems: 'center', gap: 8, width: 76 }}>
+        <Pressable
+          testID={testID}
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          accessibilityState={on == null ? undefined : { selected: on }}
+          onPress={() => (tap(), onPress())}
+          style={({ pressed }) => ({ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', borderWidth: fill || on ? 0 : 1, borderColor: over ? 'rgba(255, 255, 255, 0.3)' : t.line, backgroundColor: fill || (on ? ink : over ? 'rgba(0, 0, 0, 0.45)' : t.card), opacity: pressed ? 0.8 : 1 })}
+        >
+          <View style={turn ? { transform: [{ rotate: '135deg' }] } : undefined}>
+            <GIcon name={icon} size={big ? 28 : 24} color={fill ? '#ffffff' : on ? (over ? '#111111' : t.bg) : ink} />
+          </View>
+        </Pressable>
+        <T s={12} c={soft} center lines={1}>
+          {label}
+        </T>
       </View>
-      <Txt s={12} c="rgba(255,255,255,.8)">
-        {label}
-      </Txt>
-    </Pressable>
-  );
+    );
+  };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#05050a' }}>
+    <View style={{ flex: 1, backgroundColor: over ? '#000000' : t.bg }}>
       {showRemote ? <Surface style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} canvas={{ uid: remote }} /> : null}
       {showLocal ? (
-        <View style={{ position: 'absolute', right: 16, top: ins.top + 16, width: 110, height: 160, borderRadius: 18, overflow: 'hidden', borderWidth: 2, borderColor: 'rgba(255,255,255,.3)', zIndex: 2 }}>
+        <View style={{ position: 'absolute', right: 16, top: ins.top + 16, width: 110, height: 160, borderRadius: 20, overflow: 'hidden', borderWidth: 2, borderColor: over ? 'rgba(255, 255, 255, 0.3)' : t.line, zIndex: 2 }}>
           <Surface style={{ flex: 1 }} canvas={{ uid: 0 }} zOrderMediaOverlay />
         </View>
       ) : null}
 
       {!showRemote ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, paddingTop: ins.top }}>
-          {p ? <Avatar pic={p.photo} size={128} ring={phase === 'incoming' ? C.yellow : undefined} /> : null}
-          <Txt s={26} w={8} center>
+        <View style={{ flex: 1, alignItems: 'center', paddingTop: ins.top + 48, paddingHorizontal: 24 }}>
+          <T s={14} w={7} c={t.muted} center>
+            getit call · your number stays private
+          </T>
+          <View style={{ width: 260, height: 260, alignItems: 'center', justifyContent: 'center', marginTop: 24 }}>
+            <Rings on={ringing} />
+            {p ? <Face name={p.name} photo={p.photo} size={120} /> : null}
+          </View>
+          <T s={28} w={8} center lines={2} style={{ marginTop: 14 }}>
             {p?.name || ''}
-          </Txt>
-          <Txt testID="call-status" s={15} c={phase === 'live' ? C.mint : 'rgba(255,255,255,.7)'} center>
+          </T>
+          <T testID="call-status" s={15} c={t.muted} center style={{ marginTop: 4 }}>
             {status}
-          </Txt>
+          </T>
+          {topic ? (
+            <View style={{ alignSelf: 'stretch', marginTop: 26, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 20, backgroundColor: t.card, borderWidth: 1, borderColor: t.line }}>
+              <T s={12} w={7} c={t.muted}>
+                About
+              </T>
+              <T s={16} w={7} lines={2} style={{ marginTop: 4 }}>
+                {topic}
+              </T>
+            </View>
+          ) : null}
         </View>
       ) : (
-        <View style={{ position: 'absolute', top: ins.top + 16, left: 16, padding: 10, borderRadius: 14, backgroundColor: 'rgba(0,0,0,.45)' }}>
-          <Txt s={15} w={8}>
+        <View style={{ position: 'absolute', top: ins.top + 16, left: 16, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 16, backgroundColor: 'rgba(0, 0, 0, 0.45)' }}>
+          <T s={15} w={8} c="#ffffff">
             {p?.name ? fname(p.name) : ''}
-          </Txt>
-          <Txt s={13} c={C.mint}>
+          </T>
+          <T testID="call-status" s={13} c="rgba(255, 255, 255, 0.85)">
             {status}
-          </Txt>
+          </T>
         </View>
       )}
 
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: ins.bottom + 28, paddingHorizontal: 24 }}>
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: ins.bottom + 44, flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start', gap: video && phase !== 'incoming' ? 14 : 34 }}>
         {phase === 'incoming' ? (
-          <View style={[S.rowB, { paddingHorizontal: 30 }]}>
-            <Ctl icon="hangup" label="Decline" red onPress={() => (answerCall(id, false), finish('Declined', false))} />
-            <Pressable
-              testID="call-accept"
-              accessibilityRole="button"
-              accessibilityLabel="Accept"
-              onPress={accept}
-              style={{ alignItems: 'center', gap: 6 }}
-            >
-              <View style={{ width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: C.ok }}>
-                <Icon name={video ? 'video' : 'phone'} size={26} color="#fff" />
-              </View>
-              <Txt s={12} c="rgba(255,255,255,.8)">
-                Accept
-              </Txt>
-            </Pressable>
-          </View>
-        ) : phase === 'ended' ? null : (
-          <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+          <>
+            <Ctl testID="call-decline" icon="phone" turn big label="Decline" fill={END} onPress={() => (answerCall(id, false), finish('Declined', false))} />
+            <Ctl testID="call-accept" icon={video ? 'video' : 'phone'} big label="Answer" fill={ANSWER} onPress={accept} />
+          </>
+        ) : phase === 'ended' ? null : video ? (
+          <>
             <Ctl
-              icon={muted ? 'micoff' : 'mic'}
+              icon={muted ? 'mute' : 'mic'}
               label={muted ? 'Unmute' : 'Mute'}
               on={muted}
               onPress={() => {
@@ -282,30 +339,40 @@ export default function CallScreen() {
                 setMuted(!muted);
               }}
             />
-            {video ? (
-              <Ctl
-                icon={camOff ? 'video2' : 'video'}
-                label={camOff ? 'Camera on' : 'Camera off'}
-                on={camOff}
-                onPress={() => {
-                  eng.current?.enableLocalVideo(camOff);
-                  setCamOff(!camOff);
-                }}
-              />
-            ) : (
-              <Ctl
-                icon="speaker"
-                label="Speaker"
-                on={speaker}
-                onPress={() => {
-                  eng.current?.setEnableSpeakerphone(!speaker);
-                  setSpeaker(!speaker);
-                }}
-              />
-            )}
-            {video ? <Ctl icon="cam" label="Flip" onPress={() => eng.current?.switchCamera()} /> : null}
-            <Ctl icon="hangup" label="End" red onPress={() => finish('Call ended', true)} />
-          </View>
+            <Ctl
+              icon="video"
+              label={camOff ? 'Camera on' : 'Camera off'}
+              on={camOff}
+              onPress={() => {
+                eng.current?.enableLocalVideo(camOff);
+                setCamOff(!camOff);
+              }}
+            />
+            <Ctl testID="call-end" icon="phone" turn big label="End" fill={END} onPress={() => finish('Call ended', true)} />
+            <Ctl icon="flip" label="Flip" onPress={() => eng.current?.switchCamera()} />
+          </>
+        ) : (
+          <>
+            <Ctl
+              icon="speaker"
+              label="Speaker"
+              on={speaker}
+              onPress={() => {
+                eng.current?.setEnableSpeakerphone(!speaker);
+                setSpeaker(!speaker);
+              }}
+            />
+            <Ctl testID="call-end" icon="phone" turn big label="End" fill={END} onPress={() => finish('Call ended', true)} />
+            <Ctl
+              icon={muted ? 'mute' : 'mic'}
+              label={muted ? 'Unmute' : 'Mute'}
+              on={muted}
+              onPress={() => {
+                eng.current?.muteLocalAudioStream(!muted);
+                setMuted(!muted);
+              }}
+            />
+          </>
         )}
       </View>
     </View>

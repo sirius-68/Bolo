@@ -1,5 +1,5 @@
 appId: cm.bolo.app
-name: getit, someone hiring (look signed out, open a worker, sign up to message, ask for prices)
+name: getit, someone hiring (look signed out, open a worker, make an account to message, chat, call, ask for prices)
 ---
 - launchApp:
     clearState: true
@@ -14,8 +14,7 @@ name: getit, someone hiring (look signed out, open a worker, sign up to message,
     visible:
       id: "home-big"
     timeout: 15000
-- tapOn:
-    id: "home-big"
+- runFlow: toneed.yaml
 - tapOn:
     id: "need-Plumber"
 # the worker from the tour before offers plumbing
@@ -36,53 +35,23 @@ name: getit, someone hiring (look signed out, open a worker, sign up to message,
     id: "profile-chat"
 - extendedWaitUntil:
     visible:
-      id: "su-submit"
+      id: "signin-send"
     timeout: 10000
-- tapOn:
-    id: "su-name"
-- inputText: "Tour Hira"
-- hideKeyboard
-- tapOn:
-    id: "su-contact"
-- inputText: ${HIRE_EMAIL}
-- hideKeyboard
-- tapOn:
-    id: "su-pwd"
-- inputText: ${TOUR_PASSWORD}
-- hideKeyboard
-- tapOn:
-    id: "su-terms"
-- tapOn:
-    id: "su-submit"
-- extendedWaitUntil:
-    visible:
-      id: "setup-continue"
-    timeout: 40000
-- tapOn:
-    id: "setup-continue"
-- extendedWaitUntil:
-    visible:
-      id: "not-now"
-    timeout: 15000
-- tapOn:
-    id: "not-now"
-- extendedWaitUntil:
-    visible:
-      id: "start-exploring"
-    timeout: 15000
-- takeScreenshot: h03-done
-- tapOn:
-    id: "start-exploring"
+- takeScreenshot: h03-signin-to-message
+- runFlow:
+    file: account.yaml
+    env:
+      NAME: "Tour Hira"
+      EMAIL: ${HIRE_EMAIL}
 - extendedWaitUntil:
     visible:
       id: "home-big"
-    timeout: 20000
+    timeout: 40000
 - waitForAnimationToEnd
 - runFlow: dismiss.yaml
 - takeScreenshot: h04-home-signed-in
 # find the plumber again and write to them
-- tapOn:
-    id: "home-big"
+- runFlow: toneed.yaml
 - tapOn:
     id: "need-Plumber"
 - extendedWaitUntil:
@@ -95,6 +64,7 @@ name: getit, someone hiring (look signed out, open a worker, sign up to message,
     visible:
       id: "chat-input"
     timeout: 15000
+- takeScreenshot: h05-chat-empty
 - tapOn:
     id: "chat-input"
 - inputText: "Hello, my kitchen sink is leaking"
@@ -102,7 +72,33 @@ name: getit, someone hiring (look signed out, open a worker, sign up to message,
     id: "chat-send"
 - waitForAnimationToEnd
 - hideKeyboard
-- takeScreenshot: h05-chat
+- takeScreenshot: h06-chat
+# the options behind the plus and the three dots
+- tapOn:
+    id: "chat-attach"
+- waitForAnimationToEnd
+- takeScreenshot: h07-chat-attach
+- back
+# a call through getit: it rings, then we hang up
+- runFlow:
+    when:
+      visible:
+        id: "chat-call"
+    commands:
+      - tapOn:
+          id: "chat-call"
+      - extendedWaitUntil:
+          visible:
+            id: "call-end"
+          timeout: 15000
+      - takeScreenshot: h08-calling
+      - tapOn:
+          id: "call-end"
+      - extendedWaitUntil:
+          visible:
+            id: "chat-input"
+          timeout: 15000
+      - takeScreenshot: h09-chat-after-call
 - back
 # ask several plumbers for a price
 - extendedWaitUntil:
@@ -115,7 +111,7 @@ name: getit, someone hiring (look signed out, open a worker, sign up to message,
     visible:
       id: "pj-title"
     timeout: 20000
-- takeScreenshot: h06-ask-prices
+- takeScreenshot: h10-ask-prices
 - scrollUntilVisible:
     element:
       id: "pj-submit"
@@ -123,7 +119,7 @@ name: getit, someone hiring (look signed out, open a worker, sign up to message,
 - tapOn:
     id: "pj-submit"
 - waitForAnimationToEnd
-- takeScreenshot: h07-request-sent
+- takeScreenshot: h11-request-sent
 - back
 - runFlow:
     when:
@@ -141,10 +137,11 @@ name: getit, someone hiring (look signed out, open a worker, sign up to message,
           id: "need-close"
 - tapOn:
     id: "tab-jobs"
-- takeScreenshot: h08-jobs
+- takeScreenshot: h12-jobs
 - tapOn:
     id: "tab-inbox"
-- takeScreenshot: h09-inbox
+- takeScreenshot: h13-inbox
+# the chat again, in light
 - tapOn:
     id: "tab-find"
 - tapOn:
@@ -153,4 +150,19 @@ name: getit, someone hiring (look signed out, open a worker, sign up to message,
     visible:
       id: "me-mode"
     timeout: 8000
-- takeScreenshot: h10-you
+- takeScreenshot: h14-you
+- tapOn: "Light"
+- back
+- tapOn:
+    id: "tab-inbox"
+- takeScreenshot: h15-inbox-light
+- tapOn: "Tour Wanda"
+- extendedWaitUntil:
+    visible:
+      id: "chat-input"
+    timeout: 15000
+- takeScreenshot: h16-chat-light
+- tapOn:
+    id: "chat-menu"
+- waitForAnimationToEnd
+- takeScreenshot: h17-chat-menu-light

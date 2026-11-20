@@ -1,0 +1,17 @@
+appId: cm.bolo.app
+# From the home screen to "What do you need?". The big button listens when the phone can; the tour types.
+---
+- tapOn:
+    id: "home-big"
+- runFlow:
+    when:
+      visible:
+        id: "listen-type"
+    commands:
+      - waitForAnimationToEnd
+      - tapOn:
+          id: "listen-type"
+- extendedWaitUntil:
+    visible:
+      id: "need-input"
+    timeout: 10000

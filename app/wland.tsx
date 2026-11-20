@@ -9,6 +9,7 @@ import { markStarted, setMode } from '../src/g/data';
 import { GIcon } from '../src/g/icons';
 import { useG } from '../src/g/theme';
 import { Big, Link, Lockup, Round, Screen, T } from '../src/g/ui';
+import { openSignIn } from '../src/g/signin';
 
 const POINTS: [string, string][] = [
   ['Free to join', 'getit takes nothing from what you earn.'],
@@ -21,24 +22,23 @@ export default function WorkerStart() {
   const t = useG();
   const ins = useSafeAreaInsets();
   const start = () => {
-    db.user.intents = ['find'];
-    if (db.loggedIn) {
-      // already have an account: switch to working, and pick a skill first if there is none yet
+    if (db.loggedIn && db.user.skills.length) {
+      // already offers a skill: just switch to working
+      if (!db.user.intents.includes('find')) db.user.intents = ['find', ...db.user.intents];
       setMode('work');
       markStarted();
       ensureSkillList();
       bump();
-      router.replace('/find' as any);
-      if (!db.user.skills.length) setTimeout(() => router.push('/skills?mode=edit' as any), 300);
-      return;
+      return router.replace('/find' as any);
     }
-    router.push('/signup');
+    // two short steps (your skill, how you work), then your number
+    router.push('/w1' as any);
   };
   return (
     <Screen style={{ paddingHorizontal: 24, paddingBottom: 28 + ins.bottom }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Round icon="back" label="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace('/splash'))} />
-        {db.loggedIn ? <View /> : <Link title="Sign in" onPress={() => router.push('/login')} />}
+        {db.loggedIn ? <View /> : <Link testID="wland-signin" title="Sign in" onPress={() => openSignIn({ work: true, then: () => router.replace('/find' as any) })} />}
       </View>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <Lockup mark={80} word={64} gap={14} />

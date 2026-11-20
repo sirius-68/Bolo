@@ -8,6 +8,8 @@ import { db } from '../src/data/db';
 import { ContactField, firstMode, Mode, contactOk, contactValue, signup } from '../src/components/auth';
 import { startApp } from '../src/logic/account';
 import { resetTo } from '../src/logic/nav';
+import { markStarted } from '../src/g/data';
+import { applyWorkerDraft, hasWorkerDraft } from '../src/g/worker';
 import { resendCode, signIn } from '../src/logic/remote';
 
 export default function Login() {
@@ -20,6 +22,9 @@ export default function Login() {
   const bad = { contact: tried && !contactOk(mode, contact), pwd: tried && pwd.length < 4 };
   const enter = () => {
     startApp(true);
+    markStarted();
+    // came here from the steps for offering a skill: finish that now
+    if (hasWorkerDraft() && applyWorkerDraft()) return resetTo('/wdone');
     resetTo('/find');
   };
   const submit = async () => {

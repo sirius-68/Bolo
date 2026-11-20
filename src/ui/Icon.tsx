@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import Svg, { Path } from 'react-native-svg';
 import { GEM, ICONS, IconName } from './icons';
-import { C } from './theme';
+import { C, useLook } from './theme';
 
 /** Friendly names used in screens → names in the bundled set. */
 const ALIAS: Record<string, string> = { camera: 'cam', tools: 'wrench', copy: 'file', call: 'phone', career: 'job', me: 'user', reels: 'play', up: 'down' };
@@ -9,7 +9,9 @@ const ALIAS: Record<string, string> = { camera: 'cam', tools: 'wrench', copy: 'f
 type Props = { name: IconName | string; size?: number; color?: string; style?: any };
 
 /** Phosphor icon from the bundled set. */
-export const Icon = memo(function Icon({ name, size = 24, color = C.text, style }: Props) {
+export const Icon = memo(function Icon({ name, size = 24, color, style }: Props) {
+  useLook();
+  color = color ?? C.text;
   if (name === 'gem') {
     return (
       <Svg width={size} height={size} viewBox="0 0 24 24" style={style}>

@@ -354,9 +354,9 @@ function ToastHost({ inModal }: { inModal?: boolean }) {
     >
       <View
         accessibilityLiveRegion="polite"
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 14, maxWidth: 420, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 16, backgroundColor: '#fff' }}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 14, maxWidth: 420, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 16, backgroundColor: C.text }}
       >
-        <Text style={tx(13, 7, '#000', { flexShrink: 1 })}>{shown.msg}</Text>
+        <Text style={tx(13, 7, C.bg, { flexShrink: 1 })}>{shown.msg}</Text>
         {shown.undo ? (
           <Pressable
             hitSlop={10}

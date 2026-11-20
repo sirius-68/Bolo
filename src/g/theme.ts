@@ -2,7 +2,8 @@
 import { useSyncExternalStore } from 'react';
 import { Platform, TextStyle, ViewStyle } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { FONT, Weight } from '../ui/theme';
+import { FONT, Weight, paint } from '../ui/theme';
+import { bump } from '../logic/live';
 
 /** The action red (buttons) and the brand red (the logo, the big button). White text on both. */
 export const RED = '#e02f17';
@@ -60,7 +61,9 @@ export const theme = () => (look === 'light' ? LIGHT : DARK);
 export function setLook(l: Look) {
   if (l === look) return;
   look = l;
+  paint(l);
   subs.forEach((f) => f());
+  bump(); // the screens built on the first building blocks redraw with the new colours too
   AsyncStorage.setItem(KEY, l).catch(() => {});
 }
 /** Read the saved choice once at start-up (before the first screen shows). */
@@ -69,6 +72,7 @@ export async function loadLook() {
     const v = await AsyncStorage.getItem(KEY);
     if (v === 'light' || v === 'dark') {
       look = v;
+      paint(v);
       subs.forEach((f) => f());
     }
   } catch {}

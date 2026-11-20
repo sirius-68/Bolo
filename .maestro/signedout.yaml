@@ -26,8 +26,18 @@ name: getit, signed out (opening screen, home, what do you need, workers, tabs, 
       id: "home-big"
     timeout: 15000
 - takeScreenshot: g03-home
+# the big button listens when the phone can
 - tapOn:
     id: "home-big"
+- runFlow:
+    when:
+      visible:
+        id: "listen-type"
+    commands:
+      - waitForAnimationToEnd
+      - takeScreenshot: g03b-listening
+      - tapOn:
+          id: "listen-type"
 - extendedWaitUntil:
     visible:
       id: "need-input"
@@ -84,14 +94,14 @@ name: getit, signed out (opening screen, home, what do you need, workers, tabs, 
       id: "workers-prices"
     timeout: 20000
 - takeScreenshot: g08-workers-mechanic
-# asking for prices needs an account: the app says so and opens sign-up
+# asking for prices needs an account: the sign-in sheet slides up
 - tapOn:
     id: "workers-prices"
 - extendedWaitUntil:
     visible:
-      id: "su-submit"
+      id: "signin-send"
     timeout: 10000
-- takeScreenshot: g09-signup
+- takeScreenshot: g09-signin-sheet
 - back
 - tapOn:
     id: "workers-close"
@@ -142,9 +152,37 @@ name: getit, signed out (opening screen, home, what do you need, workers, tabs, 
     id: "tab-find"
 - tapOn:
     id: "home-me"
+- extendedWaitUntil:
+    visible:
+      id: "me-signin"
+    timeout: 8000
+# light mode reaches the sign-in sheet and the password screen too
+- tapOn:
+    id: "me-signin"
+- extendedWaitUntil:
+    visible:
+      id: "signin-send"
+    timeout: 10000
+- takeScreenshot: g16b-signin-light
+- tapOn:
+    id: "signin-password"
+- extendedWaitUntil:
+    visible:
+      id: "li-submit"
+    timeout: 10000
+- takeScreenshot: g16c-login-light
+- back
+- tapOn:
+    id: "home-me"
 - tapOn: "Dark"
 - tapOn:
     id: "me-signin"
+- extendedWaitUntil:
+    visible:
+      id: "signin-password"
+    timeout: 10000
+- tapOn:
+    id: "signin-password"
 - extendedWaitUntil:
     visible:
       id: "li-submit"

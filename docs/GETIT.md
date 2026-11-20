@@ -12,7 +12,10 @@ canvas ("getit app design"), and the sections the design doesn't have are hidden
 | `src/g/icons.tsx`, `src/g/logo.ts` | Line icons and the logo, as vectors (the same drawings as the canvas). |
 | `src/g/data.ts` | Hiring or working mode, turning typed words into a trade, finding workers for it. |
 | `src/g/TabBar.tsx`, `src/g/me.tsx` | The floating tab bar and the "you" sheet. |
-| `src/ui/*`, `src/components/*`, `src/sheets/*` | The screens from before the redesign. `src/ui/theme.ts` now carries getit's dark colours, so they already look like the same app; each is replaced by a `src/g` screen in turn. |
+| `src/g/signin.tsx` | The sign-in sheet: a number or an email, then a code. Opens at the moment of contact (`withAccount`). |
+| `src/g/worker.ts` | Joining to offer a skill: the choices from the two steps, written to the profile once there is an account. |
+| `src/g/speech.ts`, `app/listen.tsx` | Saying what you need. `supabase/functions/understand` reads it with AI when the word list can't. |
+| `src/ui/*`, `src/components/*`, `src/sheets/*` | The screens and sheets from before the redesign. `src/ui/theme.ts` holds their colours under the old names, with getit's values, and follows dark and light (`paint()`), so they belong to the same app. Each is replaced by a `src/g` screen in turn. |
 | `src/logic/*`, `src/data/*` | Unchanged: the data model, the server calls, chat, calls, bookings. New screens reuse them. |
 
 A rebuilt screen uses only `src/g` for its look (so it works in dark and light) and `src/logic` for its data.
@@ -28,22 +31,29 @@ Done:
 - [x] Jobs and Inbox lists, the "you" sheet with dark and light
 - [x] Feed, courses, mentors, experts, opportunities, CV and business pages hidden (their data is untouched)
 
+- [x] Sign in with a number or an email and a code, in a sheet, at the moment of contact
+- [x] Worker profile as a client sees it; chat; calls
+- [x] The job, step by step, for both sides
+- [x] Worker sign-up: main skill, how you work, your number, "You're on getit"
+- [x] Say it instead of typing; AI understanding on the server (the key is a function secret, never in the app)
+- [x] Light mode on every screen, including the older ones
+- [x] Messages from the server (SMS, notifications, emails) say getit
+
 Next, in order:
-- [ ] Sign in with a phone number and a code, in a sheet, at the moment of contact (today: the old sign-up screens)
-- [ ] Worker profile as a client sees it; calling; chat
-- [ ] Asking for prices with the live status line; offers; booking
-- [ ] The job, step by step (client and worker); rating; problems; cancelling
-- [ ] Worker sign-up (main skill, how you work), prices, photos, ID check, requests and offers
-- [ ] Say it instead of typing (needs a speech add-on in the app)
-- [ ] Server: urgency, where it happens, searching in rounds, on hold, reliability (see the loopholes doc)
-- [ ] The app's hidden ID and link scheme still say `bolo` (`cm.bolo.app`, `bolo://`): changing them needs a new
-      push-notification file from Firebase, so it waits for that. Messages sent by the server (SMS, pop-ups) still
-      say bolo too.
+- [ ] Asking for prices with the live status line; offers; booking (today: the older post-a-job screen and sheets)
+- [ ] Rating, problems and cancelling as in the design (today: the older sheets)
+- [ ] Worker prices, photos, ID check, requests and offers as in the design
+- [ ] Server: urgency, searching in rounds, on hold, reliability (see the loopholes doc)
+- [ ] The app's hidden ID and link scheme still say `bolo` (`cm.bolo.app`, `bolo://`). Changing the ID needs a new
+      `google-services.json` from Firebase for the new ID (only the owner can create it), and makes it a
+      different app to phones: it installs next to the old one instead of updating it.
 
 Later (1.1): getit Pro, the agent and the assistant.
 
 ## Checking a build
 
-The emulator tour (`.maestro/signedout.yaml`) walks the new screens signed out and saves a picture of each, in
-dark and light. Start **Android** by hand on the branch to build and run it; pictures land on the
-`ci-logs/qa-<run>` branch. The older tours are skipped until their flows are rebuilt (`OLD_TOURS=1` runs them).
+Three emulator tours walk the app and save a picture of each screen, in dark and light:
+`.maestro/signedout.yaml` (looking without an account), `.maestro/g1-work.yaml` (a new worker joins) and
+`.maestro/g2-hire.yaml` (someone finds that worker, makes an account, chats, calls, asks for prices).
+Start **Android** by hand on the branch to build and run them; pictures land on the `ci-logs/qa-<run>` branch.
+The tours from before the redesign are skipped (`OLD_TOURS=1` runs them).

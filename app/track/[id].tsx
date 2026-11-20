@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+/* A booked job, step by step, in the getit design. The same screen serves both sides:
+   the person who booked sees where the worker is and confirms at the end; the worker moves the job along
+   with one button at the bottom (leave, arrive, done). */
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, ScrollView, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path } from 'react-native-svg';
-import { Avatar, Btn, IconBtn, Note, Pict, Rate, Txt, Verified, goBack, Missing } from '../../src/ui/kit';
-import { Icon } from '../../src/ui/Icon';
+import { Missing, goBack, tap } from '../../src/ui/kit';
 import { confirm } from '../../src/ui/overlay';
-import { C, S } from '../../src/ui/theme';
 import { P, fname, myPhoto, nowT, pinOf } from '../../src/logic/core';
 import { useLive } from '../../src/logic/live';
-import { bk, cancelBooking, confirmDone, pctOf, reportIssue, trOther, wArrive, wDone, wStart } from '../../src/logic/work';
+import { bk, cancelBooking, confirmDone, reportIssue, trOther, wArrive, wDone, wStart } from '../../src/logic/work';
 import { openProfile } from '../../src/logic/nav';
 import { openChat } from '../../src/sheets/chat';
 import { openHire, openReview } from '../../src/sheets/work';
@@ -18,51 +18,38 @@ import { hasMapbox } from '../../src/lib/mapbox';
 import { db } from '../../src/data/db';
 import { refreshBooking } from '../../src/logic/server';
 import { callsAvailable, startCall } from '../../src/logic/calls';
+import { GIcon, GIconName } from '../../src/g/icons';
+import { Big, Face, Ghost, Link, Round, T } from '../../src/g/ui';
+import { BRAND, RED, useG } from '../../src/g/theme';
 
-const STEPS: [string, string, string][] = [
-  ['booked', 'Booked', 'calcheck'],
-  ['onway', 'On the way', 'nav'],
-  ['working', 'Working', 'wrench'],
-  ['done', 'Done', 'flag'],
-  ['confirmed', 'Confirmed', 'checkc'],
+const STEPS: [string, string][] = [
+  ['booked', 'Booked'],
+  ['onway', 'On the way'],
+  ['working', 'Working'],
+  ['done', 'Done'],
 ];
-/** Route as a polyline in a 390×330 box (start → home). */
-const ROUTE: [number, number][] = [
-  [58, 270],
-  [90, 262],
-  [118, 236],
-  [140, 200],
-  [170, 182],
-  [212, 178],
-  [250, 160],
-  [268, 130],
-  [290, 104],
-  [330, 86],
-];
-function along(t: number): [number, number] {
-  const seg: number[] = [];
-  let tot = 0;
-  for (let i = 1; i < ROUTE.length; i++) {
-    const d = Math.hypot(ROUTE[i][0] - ROUTE[i - 1][0], ROUTE[i][1] - ROUTE[i - 1][1]);
-    seg.push(d);
-    tot += d;
-  }
-  let want = Math.max(0, Math.min(1, t)) * tot;
-  for (let i = 0; i < seg.length; i++) {
-    if (want <= seg[i]) {
-      const k = want / seg[i];
-      return [ROUTE[i][0] + (ROUTE[i + 1][0] - ROUTE[i][0]) * k, ROUTE[i][1] + (ROUTE[i + 1][1] - ROUTE[i][1]) * k];
-    }
-    want -= seg[i];
-  }
-  return ROUTE[ROUTE.length - 1];
+
+/** One soft ring growing out from behind the picture while the work is going on. */
+function Pulse({ children }: { children: React.ReactNode }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const run = Animated.loop(Animated.timing(v, { toValue: 1, duration: 2400, easing: Easing.out(Easing.quad), useNativeDriver: true }));
+    run.start();
+    return () => run.stop();
+  }, [v]);
+  return (
+    <View style={{ width: 170, height: 170, alignItems: 'center', justifyContent: 'center' }}>
+      <Animated.View pointerEvents="none" style={{ position: 'absolute', width: 96, height: 96, borderRadius: 48, backgroundColor: BRAND, opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0] }), transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.77] }) }] }} />
+      {children}
+    </View>
+  );
 }
 
 export default function Track() {
   useLive();
+  const t = useG();
   const { id } = useLocalSearchParams<{ id: string }>();
   const ins = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
   const b = bk(id);
   // one step at a time: the button shows it's working, and a second tap can't send the step twice
   const [busy, setBusy] = useState(false);
@@ -82,237 +69,251 @@ export default function Track() {
   if (!b)
     return (
       <View style={{ flex: 1 }}>
-        <Missing bar="Booking" title="Booking not found" text="It may have been cancelled." />
+        <Missing bar="Job" title="Job not found" text="It may have been cancelled." />
       </View>
     );
   const W = b.worker === 'me';
   const oid = trOther(b);
   const o = P(oid);
   const f = fname(o.name);
-  const idx = STEPS.findIndex((s) => s[0] === b.state);
+  const idx = b.state === 'confirmed' ? STEPS.length : STEPS.findIndex((s) => s[0] === b.state);
   const prog = b.state === 'booked' ? 0 : b.state === 'onway' ? Math.max(0.06, b.eta0 ? 1 - b.eta / b.eta0 : 0.1) : 1;
-  // real positions: where the job is, and where the worker is now (live while on the way)
-  // the real place only: where the job is (shared when it was booked), or the client's own position on their phone
+  // real places only: where the job is (shared when it was booked), or the client's own position on their phone
   const dest: [number, number] | null = b.dest || (W ? null : db.user.coord || null);
-  const workerAt = b.state === 'onway' ? b.live || (W ? db.user.coord : P(b.worker).coord) || null : b.state === 'booked' ? (W ? db.user.coord : P(b.worker).coord) || null : dest;
+  const workerAt = b.state === 'onway' ? b.live || (W ? db.user.coord : P(b.worker).coord) || null : null;
   const fresh = b.liveAt ? Math.round((Date.now() - b.liveAt) / 1000) : null;
-  const etaTxt = b.eta ? `${b.eta} min away` : b.live ? 'On the way' : 'Waiting for location';
-  const k = width / 390;
-  const H = 330 * k;
-  const [px, py] = along(prog);
-  const ST: Record<string, [string, string]> = W
-    ? {
-        booked: [`Job with ${f}`, `${b.when} · Tap Start trip when you leave so ${f} can follow you.`],
-        onway: [`Heading to ${f}`, `${b.eta ? b.eta + ' min · ' : ''}${b.area || 'Your location is shared with ' + f}`],
-        working: ['Job in progress', `Started at ${b.log.working || nowT()}. Tap Mark as done when you finish.`],
-        done: [`Waiting for ${f}`, `${f} is checking the work and will confirm.`],
-        confirmed: ['Job complete', `${f} confirmed the job. Agreed price: ${b.price}.`],
-      }
-    : {
-        booked: [`${f} starts ${b.when}`, 'We’ll let you know when they’re on the way.'],
-        onway: [`${f} is on the way`, b.eta ? `Arriving in about ${b.eta} min${fresh != null && fresh > 90 ? ' · last seen ' + Math.round(fresh / 60) + ' min ago' : ''}` : b.live ? 'Following their location live' : 'Their location appears here once they share it'],
-        working: [`${f} is working`, `Started at ${b.log.working || nowT()}`],
-        done: [`${f} says the job is done`, 'Check the work, then confirm.'],
-        confirmed: ['Job complete', `Agreed price: ${b.price}. Pay ${f} directly if you haven’t yet.`],
-      };
-  const [h, s] = ST[b.state];
-  const eta: Record<string, [string, string]> = { booked: ['calcheck', b.when], onway: ['timer', etaTxt], working: ['wrench', 'Working now'], done: ['flag', 'Job done'], confirmed: ['checkc', 'Confirmed'] };
-  let act: React.ReactNode = null;
-  if (W)
-    act = {
-      booked: <Btn variant="yellow" icon="nav" title="Start trip" loading={busy} onPress={() => run(() => wStart(b.id))} testID="tk-start" />,
-      onway: <Btn variant="yellow" icon="flag" title="I’ve arrived, start job" loading={busy} onPress={() => run(() => wArrive(b.id))} />,
-      working: <Btn variant="yellow" icon="checkc" title="Mark job as done" loading={busy} onPress={() => run(() => wDone(b.id))} />,
-      done: <Btn disabled icon="timer" title={`Waiting for ${f} to confirm…`} />,
-      confirmed: (
-        <>
-          <Note icon="checkc" color={C.mint}>
-            {f} confirmed the job is done
-          </Note>
-          {!b.reviewed ? <Btn variant="yellow" icon="star" title={`Rate ${f}`} onPress={() => openReview(oid, b.id)} /> : null}
-        </>
-      ),
-    }[b.state];
-  else
-    act = {
-      booked: (
-        <>
-          <Note icon="calcheck">You can cancel for free until they’re on the way.</Note>
-          <Btn
-            variant="ghost"
-            title="Cancel booking"
-            onPress={() =>
-              confirm({
-                title: 'Cancel this booking?',
-                text: `${f} will be told right away. It’s free to cancel before they leave.`,
-                ok: 'Cancel booking',
-                cancel: 'Keep it',
-                danger: true,
-                icon: 'calcheck',
-                onOk: () => {
-                  cancelBooking(b.id);
-                  router.back();
-                },
-              })
-            }
-          />
-        </>
-      ),
-      onway: (
-        <Note icon="lock">
-          Your job code is{' '}
-          <Txt s={14} w={8} style={{ letterSpacing: 3 }}>
-            {pinOf(b.id)}
-          </Txt>{' '}
-          Share it with {f} when they arrive.
-        </Note>
-      ),
-      working: (
-        <Note icon="wrench">
-          {f} arrived at {b.log.working || nowT()}. You’ll be asked to confirm when they finish.
-        </Note>
-      ),
-      done: (
-        <>
-          <Btn variant="yellow" icon="checkc" title="Confirm job is done" onPress={() => confirmDone(b.id)} testID="tk-confirm" />
-          <Btn variant="ghost" title="Something’s wrong" onPress={() => reportIssue(b.id)} />
-        </>
-      ),
-      confirmed: (
-        <>
-          {b.reviewed ? (
-            <Note icon="star" color={C.yellow}>
-              Thanks for your review!
-            </Note>
-          ) : (
-            <Btn variant="yellow" icon="star" title={`Rate ${f}`} onPress={() => openReview(oid, b.id)} />
-          )}
-          <Btn variant="ghost" title={`Book ${f} again`} onPress={() => openHire(oid)} />
-        </>
-      ),
-    }[b.state];
-  const d = 'M' + ROUTE.map(([x, y]) => `${x * k} ${y * k}`).join(' L');
-  return (
-    <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <View style={{ height: H + ins.top, overflow: 'hidden' }}>
-        {hasMapbox ? (
-          <View style={{ position: 'absolute', left: 0, right: 0, top: 0 }}>
-            {dest || workerAt ? (
-              <RouteMap from={workerAt || dest!} to={dest || workerAt!} live={workerAt} progress={prog} workerPic={W ? myPhoto() : P(b.worker).photo} height={H + ins.top} />
-            ) : (
-              // no place was shared for this job: no made-up pin, just say so
-              <View style={{ height: H + ins.top, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 40, backgroundColor: C.s1 }}>
-                <Icon name="pin" size={28} color={C.muted} />
-                <Txt s={13} c={C.muted} center>
-                  No exact place was shared for this job. Agree where to meet in chat.
-                </Txt>
+  const started = b.log.working || nowT();
+  const map = b.state === 'onway' && hasMapbox && (dest || workerAt);
+
+  const Hero = ({ icon, title, sub, red }: { icon: GIconName; title: string; sub: string; red?: boolean }) => (
+    <View style={{ alignItems: 'center', paddingTop: red ? 18 : 26, paddingHorizontal: 24 }}>
+      {red ? (
+        <View style={{ width: 132, height: 132, borderRadius: 66, backgroundColor: t.ringB, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: RED, alignItems: 'center', justifyContent: 'center' }}>
+            <GIcon name={icon} size={36} color="#ffffff" sw={2.6} />
+          </View>
+        </View>
+      ) : (
+        <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: t.tabOn, alignItems: 'center', justifyContent: 'center' }}>
+          <GIcon name={icon} size={40} color={t.accent} />
+        </View>
+      )}
+      <T s={24} w={8} ls={-0.5} lh={1.2} center style={{ marginTop: red ? 10 : 16 }}>
+        {title}
+      </T>
+      <T s={14} c={t.muted} center style={{ marginTop: 4 }}>
+        {sub}
+      </T>
+    </View>
+  );
+  const Info = ({ icon, children }: { icon: GIconName; children: React.ReactNode }) => (
+    <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginHorizontal: 16, marginTop: 16, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 18, backgroundColor: t.tabOn }}>
+      <View style={{ marginTop: 1 }}>
+        <GIcon name={icon} size={18} color={t.accent} />
+      </View>
+      <T s={14} lh={1.45} style={{ flex: 1 }}>
+        {children}
+      </T>
+    </View>
+  );
+  const Pay = ({ title, sub }: { title: string; sub: string }) => (
+    <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', marginHorizontal: 16, marginTop: 16, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 20, backgroundColor: t.card, borderWidth: 1, borderColor: t.line }}>
+      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: t.tabOn, alignItems: 'center', justifyContent: 'center' }}>
+        <GIcon name="jobs" size={20} color={t.accent} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <T s={16} w={8}>
+          {title}
+        </T>
+        <T s={13} c={t.muted} style={{ marginTop: 2 }}>
+          {sub}
+        </T>
+      </View>
+    </View>
+  );
+
+  let top: React.ReactNode = null;
+  if (b.state === 'booked')
+    top = W ? (
+      <Hero icon="calendar" title={`${b.title} · ${b.when}`} sub={`Tap the button when you leave, so ${f} can follow you.`} />
+    ) : (
+      <Hero icon="calendar" title={`Booked for ${b.when}`} sub={`${f} will let you know when leaving.`} />
+    );
+  else if (b.state === 'onway')
+    top = (
+      <>
+        {map ? (
+          <View style={{ marginHorizontal: 16, marginTop: 16, borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: t.line }}>
+            <RouteMap from={workerAt || dest!} to={dest || workerAt!} live={workerAt} progress={prog} workerPic={W ? myPhoto() : P(b.worker).photo} height={200} />
+            {b.eta ? (
+              <View style={{ position: 'absolute', left: 12, top: 12, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 14, backgroundColor: t.card }}>
+                <T s={14} w={8}>
+                  {W ? `${f} sees you · ${b.eta} min` : `Arrives in ${b.eta} min`}
+                </T>
               </View>
-            )}
+            ) : null}
+          </View>
+        ) : null}
+        {map ? (
+          <View style={{ paddingTop: 16, paddingHorizontal: 20 }}>
+            <T s={24} w={8} ls={-0.5}>
+              {W ? `On your way to ${f}` : `${f} is on the way`}
+            </T>
+            <T s={14} c={t.muted} style={{ marginTop: 4 }}>
+              {W ? b.area || `${f} can follow you on the map` : b.eta ? `About ${b.eta} min away${fresh != null && fresh > 90 ? ` · seen ${Math.round(fresh / 60)} min ago` : ''}` : 'You’ll get a message on arrival.'}
+            </T>
           </View>
         ) : (
-          <>
-        <Pict pic="img/map-bg" style={{ position: 'absolute', width, height: 612 * k, top: -60 * k }} />
-        <Svg width={width} height={H} style={{ position: 'absolute', top: ins.top }}>
-          <Path d={d} stroke={C.yellow} strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" strokeDasharray="2 9" fill="none" opacity={0.9} />
-          <Circle cx={330 * k} cy={86 * k} r={22} fill={C.yellow} stroke="#000" strokeWidth={3} />
-        </Svg>
-        <View style={{ position: 'absolute', left: 330 * k - 10, top: ins.top + 86 * k - 10 }}>
-          <Icon name="house" size={20} color={C.onAccent} />
-        </View>
-        <View style={{ position: 'absolute', left: px * k - 24, top: ins.top + py * k - 24 }}>
-          <Avatar pic={W ? myPhoto() : P(b.worker).photo} size={48} ring={C.blue} />
-        </View>
-          </>
+          <Hero icon="pin" title={W ? `On your way to ${f}` : `${f} is on the way`} sub={W ? b.area || 'Call or message if you can’t find the place.' : b.eta ? `About ${b.eta} min away` : 'You’ll get a message on arrival.'} />
         )}
-        <View style={[S.rowB, { position: 'absolute', left: 16, right: 16, top: ins.top + 8 }]}>
-          <IconBtn name="back" label="Back" bg="rgba(0,0,0,.6)" onPress={goBack} />
-          <View style={[S.row, { gap: 6, height: 36, paddingHorizontal: 14, borderRadius: 999, backgroundColor: C.yellow }]}>
-            <Icon name={eta[b.state][0]} size={16} color={C.onAccent} />
-            <Txt s={13} w={8} c={C.onAccent}>
-              {eta[b.state][1]}
-            </Txt>
-          </View>
-          <IconBtn name="chat" label={`Message ${f}`} bg="rgba(0,0,0,.6)" onPress={() => openChat(oid)} />
-        </View>
+        {!W ? (
+          <Info icon="shield">
+            Your job code is <T s={14} w={8} ls={2}>{pinOf(b.id)}</T>. Give it to {f} on arrival.
+          </Info>
+        ) : null}
+      </>
+    );
+  else if (b.state === 'working')
+    top = (
+      <View style={{ alignItems: 'center', paddingTop: 16, paddingHorizontal: 24 }}>
+        <Pulse>
+          <Face name={W ? db.user.name || 'You' : o.name} photo={W ? db.user.avatar : o.photo} size={96} />
+        </Pulse>
+        <T s={24} w={8} ls={-0.5} center style={{ marginTop: 6 }}>
+          {W ? 'Working' : `${f} is working`}
+        </T>
+        <T s={14} c={t.muted} center style={{ marginTop: 4 }}>
+          Started at {started}
+        </T>
       </View>
-      <ScrollView style={{ flex: 1, marginTop: -24, borderTopLeftRadius: 28, borderTopRightRadius: 28, backgroundColor: C.bg }} contentContainerStyle={{ padding: 20, paddingBottom: 30 + ins.bottom, gap: 14 }}>
-        <View>
-          <Txt s={22} w={8}>
-            {h}
-          </Txt>
-          <Txt s={14} c={C.muted} style={{ marginTop: 4 }}>
-            {s}
-          </Txt>
-          <View style={{ height: 6, borderRadius: 3, backgroundColor: C.s3, marginTop: 12, overflow: 'hidden' }}>
-            <View style={{ width: `${pctOf(b)}%`, height: 6, backgroundColor: C.yellow }} />
-          </View>
+    );
+  else if (b.state === 'done')
+    top = W ? (
+      <>
+        <Hero red icon="check" title={`Waiting for ${f}`} sub="You marked the job as done." />
+        <Pay title={`Collect ${b.price}`} sub={`Cash or Mobile Money, from ${f}`} />
+      </>
+    ) : (
+      <>
+        <Hero red icon="check" title={`${f} says the job is done`} sub="Check the work, then confirm." />
+        <Pay title={`Pay ${f} ${b.price}`} sub={`Cash or Mobile Money, straight to ${f}`} />
+        <View style={{ gap: 10, paddingTop: 14, paddingHorizontal: 16 }}>
+          <Big testID="tk-confirm" title="Yes, all good" onPress={() => confirmDone(b.id)} />
+          <Ghost testID="tk-problem" title="Not yet, something’s wrong" onPress={() => reportIssue(b.id)} />
         </View>
-        <View style={{ flexDirection: 'row' }}>
-          {STEPS.map(([key, l, i], j) => {
-            const ok = b.state === 'confirmed' || j < idx;
-            const cur = j === idx && b.state !== 'confirmed';
+      </>
+    );
+  else
+    top = (
+      <>
+        <Hero red icon="check" title="Job complete" sub={W ? `${f} confirmed. Agreed price: ${b.price}.` : `Agreed price: ${b.price}. Pay ${f} directly if you haven’t yet.`} />
+        <View style={{ gap: 10, paddingTop: 16, paddingHorizontal: 16 }}>
+          {b.reviewed ? (
+            <T s={14} c={t.muted} center>
+              Thanks for your review.
+            </T>
+          ) : (
+            <Big testID="tk-rate" title={`Rate ${f}`} onPress={() => openReview(oid, b.id)} />
+          )}
+          {!W ? <Ghost title={`Book ${f} again`} onPress={() => openHire(oid)} /> : null}
+        </View>
+      </>
+    );
+
+  // the worker's one next step, on a bar at the bottom
+  const next: { title: string; run: () => Promise<any>; testID: string } | null = !W
+    ? null
+    : b.state === 'booked'
+      ? { title: 'I’m leaving now', run: () => wStart(b.id), testID: 'tk-start' }
+      : b.state === 'onway'
+        ? { title: 'I’ve arrived', run: () => wArrive(b.id), testID: 'tk-arrive' }
+        : b.state === 'working'
+          ? { title: 'The job is done', run: () => wDone(b.id), testID: 'tk-done' }
+          : null;
+  const details: [string, string][] = ([
+    ['Job', b.title],
+    ['When', b.when],
+    ['Price', b.price],
+    ['Where', b.area],
+  ] as [string, string][]).filter((x) => !!x[1]);
+  const cancel = () =>
+    confirm({
+      title: 'Cancel this job?',
+      text: `${f} will be told right away. It’s free to cancel before they leave.`,
+      ok: 'Cancel job',
+      cancel: 'Keep it',
+      danger: true,
+      icon: 'calcheck',
+      onOk: () => {
+        cancelBooking(b.id);
+        router.back();
+      },
+    });
+  return (
+    <View style={{ flex: 1, backgroundColor: t.bg }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top + 16, paddingBottom: (next ? 0 : ins.bottom) + 28 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 }}>
+          <Round testID="tk-back" icon="back" label="Back" onPress={goBack} />
+          <T s={16} w={8}>
+            {W ? `Job for ${f}` : 'Your job'}
+          </T>
+          <Round testID="tk-chat" icon="chat" label={`Message ${f}`} onPress={() => openChat(oid)} />
+        </View>
+        {top}
+        <View style={{ flexDirection: 'row', gap: 6, marginHorizontal: 16, marginTop: 20 }}>
+          {STEPS.map(([key, label], j) => {
+            const on = j <= idx;
             return (
-              <View key={key} style={{ flex: 1, alignItems: 'center', gap: 4 }} accessibilityLabel={`${l}${ok ? ', done' : cur ? ', now' : ''}`}>
-                <View style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: ok ? C.ok : cur ? C.yellow : C.s2 }}>
-                  <Icon name={ok ? 'check' : i} size={16} color={ok || cur ? C.onAccent : C.muted} />
-                </View>
-                <Txt s={10} w={cur ? 8 : 6} c={cur ? C.text : C.muted}>
-                  {l}
-                </Txt>
+              <View key={key} style={{ flex: 1 }} accessibilityLabel={`${label}${j < idx ? ', done' : j === idx ? ', now' : ''}`}>
+                <View style={{ height: 4, borderRadius: 2, backgroundColor: on ? BRAND : t.line }} />
+                <T s={12} w={7} c={on ? t.text : t.muted} lines={1} style={{ marginTop: 6 }}>
+                  {label}
+                </T>
               </View>
             );
           })}
         </View>
-        <View style={[S.row, { gap: 12, padding: 12, borderRadius: 20, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line }]}>
-          <Pressable onPress={() => openProfile(oid)}>
-            <Avatar pic={o.photo} size={48} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginTop: 16, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 20, backgroundColor: t.card, borderWidth: 1, borderColor: t.line }}>
+          <Pressable accessibilityRole="button" accessibilityLabel={`${o.name}’s profile`} onPress={() => (tap(), openProfile(oid))} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+            <Face name={o.name} photo={o.photo} size={48} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <T s={15} w={8} lines={1} style={{ flexShrink: 1 }}>
+                  {o.name}
+                </T>
+                {o.verified ? <GIcon name="tick" size={15} /> : null}
+              </View>
+              <T s={13} c={t.muted} lines={1} style={{ marginTop: 2 }}>
+                {[o.rate ? `${Number(o.rate).toFixed(1)} ★` : '', W ? 'Client' : o.role].filter(Boolean).join(' · ')}
+              </T>
+            </View>
           </Pressable>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <View style={[S.row, { gap: 4 }]}>
-              <Txt s={15} w={8} lines={1}>
-                {o.name}
-              </Txt>
-              {o.verified ? <Verified size={13} /> : null}
-            </View>
-            <View style={[S.row, { gap: 6 }]}>
-              <Txt s={12} c={C.muted}>
-                {o.client ? 'Client' : o.role}
-              </Txt>
-              <Rate r={o.rate} />
-            </View>
-          </View>
-          {callsAvailable() ? <IconBtn name="phone" label={`Call ${f}`} onPress={() => startCall(oid, 'voice')} /> : null}
-          <IconBtn name="chat" label={`Message ${f}`} onPress={() => openChat(oid)} />
+          {callsAvailable() ? <Round testID="tk-call" icon="phone" label={`Call ${f}`} plain bg={RED} color="#ffffff" onPress={() => startCall(oid, 'voice')} /> : null}
+          <Round icon="chat" label={`Message ${f}`} plain bg={t.card2} onPress={() => openChat(oid)} />
         </View>
-        <View style={{ padding: 14, borderRadius: 20, backgroundColor: C.s1, borderWidth: 1, borderColor: C.line, gap: 10 }}>
-          <View style={[S.row, { gap: 8 }]}>
-            <Icon name="job" size={16} color={C.yellow} />
-            <Txt s={14} w={8}>
-              {b.title}
-            </Txt>
-          </View>
-          {(
-            [
-              ['clock', 'When', b.when],
-              ['money', 'Price', b.price],
-              ['pin', 'Where', b.area],
-            ] as [string, string, string][]
-          ).map(([i, l, v]) => (
-            <View key={l} style={[S.row, { gap: 8 }]}>
-              <Icon name={i} size={16} color={C.muted} />
-              <Txt s={13} c={C.muted} style={{ flex: 1 }}>
-                {l}
-              </Txt>
-              <Txt s={13} w={7}>
-                {v}
-              </Txt>
+        <View style={{ marginHorizontal: 16, marginTop: 10, paddingVertical: 4, paddingHorizontal: 16, borderRadius: 20, backgroundColor: t.card, borderWidth: 1, borderColor: t.line }}>
+          {details.map(([label, value], j) => (
+            <View key={label} style={{ paddingVertical: 12, borderBottomWidth: j < details.length - 1 ? 1 : 0, borderBottomColor: t.line }}>
+              <T s={12} w={7} c={t.muted}>
+                {label}
+              </T>
+              <T s={15} w={7} style={{ marginTop: 2 }}>
+                {value}
+              </T>
             </View>
           ))}
         </View>
-        {<Note icon="money">Pay {fname(o.name)} directly as you agreed.</Note>}
-        <View style={{ gap: 10 }}>{act}</View>
+        {!W && b.state === 'booked' ? (
+          <View style={{ alignItems: 'center', paddingTop: 10 }}>
+            <Link testID="tk-cancel" title="Cancel job" color={t.accent} onPress={cancel} />
+          </View>
+        ) : null}
       </ScrollView>
+      {next ? (
+        <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: ins.bottom + 16, borderTopWidth: 1, borderTopColor: t.line, backgroundColor: t.bg }}>
+          <Big testID={next.testID} title={next.title} loading={busy} onPress={() => run(next.run)} />
+        </View>
+      ) : null}
     </View>
   );
 }
-

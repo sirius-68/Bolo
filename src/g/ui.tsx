@@ -22,6 +22,7 @@ export function T({
   style,
   children,
   label,
+  testID,
 }: {
   s?: number;
   w?: Weight;
@@ -33,10 +34,11 @@ export function T({
   style?: StyleProp<TextStyle>;
   children?: ReactNode;
   label?: string;
+  testID?: string;
 }) {
   const t = useG();
   return (
-    <Text accessibilityLabel={label} numberOfLines={lines} maxFontSizeMultiplier={1.3} style={[ft(s, w, c || t.text, lh ?? (s >= 22 ? 1.15 : 1.4), ls ?? (s >= 28 ? -0.7 : s >= 22 ? -0.5 : 0)), center && { textAlign: 'center' }, style]}>
+    <Text testID={testID} accessibilityLabel={label} numberOfLines={lines} maxFontSizeMultiplier={1.3} style={[ft(s, w, c || t.text, lh ?? (s >= 22 ? 1.15 : 1.4), ls ?? (s >= 28 ? -0.7 : s >= 22 ? -0.5 : 0)), center && { textAlign: 'center' }, style]}>
       {children}
     </Text>
   );
@@ -198,6 +200,37 @@ export function Ghost({ title, onPress, testID, style, icon }: { title: string; 
       {icon ? <GIcon name={icon} size={20} color={t.text} /> : null}
       <Text maxFontSizeMultiplier={1.2} style={ft(15, 7, t.text)}>
         {title}
+      </Text>
+    </Pressable>
+  );
+}
+
+/* ---------------- steps ---------------- */
+/** The top of a sign-up step: back, how far along, "1 of 3". */
+export function StepBar({ on, total, onBack }: { on: number; total: number; onBack: () => void }) {
+  const t = useG();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <Round testID="step-back" icon="back" label="Back" onPress={onBack} />
+      <View accessible accessibilityLabel={`Step ${on} of ${total}`} style={{ flex: 1, flexDirection: 'row', gap: 6 }}>
+        {Array.from({ length: total }, (_, i) => (
+          <View key={i} style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: i < on ? RED : t.line }} />
+        ))}
+      </View>
+      <Text maxFontSizeMultiplier={1.2} style={ft(13, 7, t.muted)}>
+        {on} of {total}
+      </Text>
+    </View>
+  );
+}
+/** A choice pill, 44 high (a skill, a distance). Filled red with a tick when picked. */
+export function Pill({ label, on, onPress, testID }: { label: string; on?: boolean; onPress?: () => void; testID?: string }) {
+  const t = useG();
+  return (
+    <Pressable testID={testID} accessibilityRole="button" accessibilityState={{ selected: !!on }} onPress={() => (tap(), onPress?.())} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, height: 44, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1, borderColor: on ? RED : t.line, backgroundColor: on ? RED : t.card, opacity: pressed ? 0.8 : 1 })}>
+      {on ? <GIcon name="check" size={16} color="#ffffff" sw={2.6} /> : null}
+      <Text maxFontSizeMultiplier={1.2} style={ft(15, 7, on ? '#ffffff' : t.text)}>
+        {label}
       </Text>
     </Pressable>
   );
