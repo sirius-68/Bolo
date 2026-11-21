@@ -149,6 +149,11 @@ async function ask(provider: Provider, key: string, model: string, text: string)
       j = await r.json().catch(() => ({}));
     }
   }
+  if (!r.ok && r.status === 402 && provider === 'bazaarlink' && model !== 'auto:free') {
+    // no credit on the BazaarLink account: its free route picks a zero-cost model
+    r = await call('auto:free');
+    j = await r.json().catch(() => ({}));
+  }
   if (!r.ok) throw new Why(r.status, code());
   return String(j?.choices?.[0]?.message?.content || '');
 }
