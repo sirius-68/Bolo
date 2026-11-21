@@ -16,12 +16,13 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 /** The trades people can be matched to (the app's categories). */
 const TRADES = ['Delivery', 'Plumber', 'Electrician', 'Cleaner', 'Mechanic', 'Developer', 'Designer', 'Teacher', 'Driver', 'Accountant', 'Sales', 'Admin', 'Cook', 'Nurse', 'Builder', 'Hairdresser', 'Tailor', 'Security', 'Writer', 'Events', 'Nanny', 'Farmer', 'Engineer', 'Coach'];
 
-type Provider = 'anthropic' | 'openai' | 'openrouter' | 'google' | 'groq' | 'xai' | 'deepseek' | 'cerebras' | 'nvidia' | 'fireworks' | 'perplexity' | 'together' | 'huggingface' | 'vsegpt' | 'aitunnel' | 'custom';
+type Provider = 'anthropic' | 'openai' | 'openrouter' | 'google' | 'groq' | 'xai' | 'deepseek' | 'cerebras' | 'nvidia' | 'fireworks' | 'perplexity' | 'together' | 'huggingface' | 'vsegpt' | 'aitunnel' | 'bazaarlink' | 'custom';
 /** Which service a key belongs to, read from its shape. A key is only ever sent to the service it belongs to:
     one whose shape isn't recognised is sent nowhere (the answer then says what the key looks like, never the key). */
 function providerOf(key: string): Provider | null {
   if (Deno.env.get('AI_BASE_URL')) return 'custom';
   if (key.startsWith('sk-ant-')) return 'anthropic';
+  if (key.startsWith('sk-bl-')) return 'bazaarlink';
   if (key.startsWith('sk-or-vv-')) return 'vsegpt';
   if (key.startsWith('sk-aitunnel-')) return 'aitunnel';
   if (key.startsWith('sk-or-')) return 'openrouter';
@@ -40,7 +41,7 @@ function providerOf(key: string): Provider | null {
 }
 /** What a key looks like, without giving any of it away: a well-known beginning (or none), its length, its alphabet. */
 function shapeOf(key: string): string {
-  const known = ['sk-ant-', 'sk-or-', 'sk-proj-', 'sk-svcacct-', 'sk-admin-', 'sk-', 'AIza', 'AQ.', 'gsk_', 'xai-', 'hf_', 'pplx-', 'fw_', 'csk-', 'nvapi-', 'r8_', 'tgp_', 'key-', 'eyJ', 'ghp_', 'github_pat_', 'sbp_', 'Bearer'];
+  const known = ['sk-ant-', 'sk-bl-', 'sk-or-', 'sk-proj-', 'sk-svcacct-', 'sk-admin-', 'sk-', 'AIza', 'AQ.', 'gsk_', 'xai-', 'hf_', 'pplx-', 'fw_', 'csk-', 'nvapi-', 'r8_', 'tgp_', 'key-', 'eyJ', 'ghp_', 'github_pat_', 'sbp_', 'Bearer'];
   const pre = known.find((p) => key.startsWith(p)) || 'none';
   const body = key.slice(pre === 'none' ? 0 : pre.length);
   const kind = /^[0-9a-f]+$/.test(body) ? 'hex' : /^[0-9a-zA-Z]+$/.test(body) ? 'letters-digits' : /^[\w-]+$/.test(body) ? 'letters-digits-dashes' : /^[\w.-]+$/.test(body) ? 'with-dots' : 'other';
@@ -67,6 +68,8 @@ const DEFAULT_MODEL: Record<Provider, string> = {
   huggingface: 'meta-llama/Llama-3.3-70B-Instruct',
   vsegpt: 'openai/gpt-4o-mini',
   aitunnel: 'gpt-4o-mini',
+  // BazaarLink (bazaarlink.ai): one key for many models, named "maker/model"
+  bazaarlink: 'openai/gpt-4o-mini',
   custom: 'gpt-4o-mini',
 };
 /** Services that speak the same "chat completions" language as OpenAI. */
@@ -84,6 +87,7 @@ const BASE: Partial<Record<Provider, string>> = {
   huggingface: 'https://router.huggingface.co/v1',
   vsegpt: 'https://api.vsegpt.ru/v1',
   aitunnel: 'https://api.aitunnel.ru/v1',
+  bazaarlink: 'https://api.bazaarlink.ai/v1',
 };
 /** Small, fast models are enough here. When the usual one is gone, the first of these the key can use is taken. */
 const SMALL = [/haiku/, /flash/, /-mini/, /nano/, /llama-3\.\d-70b/, /deepseek-chat/];
