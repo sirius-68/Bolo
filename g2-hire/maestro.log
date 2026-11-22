@@ -1,0 +1,49 @@
+Running on test
+ > Flow getit, someone hiring (find the plumber, profile, account, chat, call, ask for prices, live status)
+Launch app "cm.bolo.app" with clear state... COMPLETED
+Run dismiss.yaml...
+  Run flow when "isn't responding" is visible...
+  Run flow when "isn't responding" is visible... SKIPPED
+  Run flow when id: story-close is visible...
+  Run flow when id: story-close is visible... SKIPPED
+Run dismiss.yaml... COMPLETED
+Assert that id: intro-continue is visible... COMPLETED
+Tap on id: intro-continue... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: where-skip is visible...
+  Tap on id: where-skip... COMPLETED
+Run flow when id: where-skip is visible... COMPLETED
+Assert that id: home-big is visible... COMPLETED
+Run toneed.yaml...
+  Tap on id: home-big... COMPLETED
+  Run flow when id: listen-type is visible...
+    Wait for animation to end... COMPLETED
+    Tap on id: listen-type... COMPLETED
+  Run flow when id: listen-type is visible... COMPLETED
+  Assert that id: need-input is visible... COMPLETED
+Run toneed.yaml... COMPLETED
+Tap on id: need-Plumber... COMPLETED
+Assert that id: workers-top is visible... COMPLETED
+Take screenshot h01-workers... COMPLETED
+Tap on id: workers-top... COMPLETED
+Assert that id: profile-call is visible... COMPLETED
+Take screenshot h02-profile... COMPLETED
+Tap on id: profile-chat... COMPLETED
+Assert that id: signin-send is visible... COMPLETED
+Take screenshot h03-signin-to-message... COMPLETED
+Open getit://qa?email=${HIRE_EMAIL}&password=${TOUR_PASSWORD}&name=Tour%20Hira... COMPLETED
+Assert that id: home-big is visible... FAILED
+
+Assertion is false: id: home-big is visible
+
+Assertion 'id: home-big is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state
+- This could be a real regression that needs to be addressed
+
+==== Debug output (logs & screenshots) ====
+
+/home/runner/.maestro/tests/2026-11-22_182016
+exit=1
