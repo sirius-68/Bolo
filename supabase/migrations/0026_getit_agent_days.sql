@@ -11,8 +11,6 @@
 --    The pick is also ordered a little differently: among offers that are in time, the record for this kind
 --    of job (in half stars) comes first, then the price, and only then who can come soonest. Before, "now"
 --    beat "this afternoon" even when the client had asked for "today".
---    With no budget, an offer that costs over half as much again as the cheapest one in time comes after the
---    others (a budget, when there is one, is the limit instead).
 -- 3. "Book the best offer for me" needs a budget: without one the agent would book at any price. With no
 --    budget it always asks first.
 -- Safe to run more than once.
@@ -58,16 +56,7 @@ begin
   if p_when ~* '^\s*by\M' and diff > 0 then return 4; end if;
   return case when diff <= 0 then 2 when diff = 1 then 3 else 4 end;
 end $$;
-/** "Can come today." for the list of what the agent did: the saved day said the way people say it. */
-create or replace function private.when_words(p_when text, p_made timestamptz, p_tz integer) returns text language sql immutable as $$
-  select case
-    when coalesce(trim(p_when), '') = '' then ''
-    else 'Can come ' || case private.when_rank(p_when, p_made, p_tz)
-      when 0 then 'now' when 1 then 'within the hour' when 2 then 'today' when 3 then 'tomorrow'
-      else case when p_when ~ '^(By|This|Next|In|Any|Flexible)' then lower(left(p_when, 1)) || substr(p_when, 2) else 'on ' || p_when end end || '.'
-  end;
-$$;
-revoke all on function private.tz_of(jsonb), private.when_rank(text, timestamptz, integer), private.when_words(text, timestamptz, integer) from public, anon, authenticated;
+revoke all on function private.tz_of(jsonb), private.when_rank(text, timestamptz, integer) from public, anon, authenticated;
 
 -- ================================================================ the agent's rules, reading the day
 create or replace function private.agent_eval_do(p_post text) returns void
@@ -88,7 +77,6 @@ declare
   bid uuid;
   who text;
   tz int;
-  cheapest int;
 begin
   select * into r from agent_runs where post_id = p_post for update;
   if not found then return; end if;
@@ -112,7 +100,7 @@ begin
 
   -- 1. offers: note each one; ask once about the budget when the price is above it
   for a in
-    select x.id, x.applicant_id, x.price, x.when_text, x.counter, x.counter_state, x.created_at, pr.name, pr.services
+    select x.id, x.applicant_id, x.price, x.when_text, x.counter, x.counter_state, pr.name, pr.services
       from applications x join profiles pr on pr.id = x.applicant_id
      where x.post_id = p_post and x.stage not in ('withdrawn', 'declined')
      order by x.created_at
@@ -121,7 +109,7 @@ begin
     who := private.first_name(a.name);
     -- (written once, with the price they first gave)
     perform private.agent_log(p_post, 'offer:' || a.id, who || ' offered ' || private.fcfa(amt),
-      private.when_words(a.when_text, a.created_at, tz));
+      case when coalesce(a.when_text, '') <> '' then 'Can come ' || lower(left(a.when_text, 1)) || substr(a.when_text, 2) || '.' else '' end);
     if r.budget is not null and amt > r.budget and a.counter_state is null then
       fl := private.listed_price(a.services, svc);
       if r.budget >= greatest(fl, ceil(amt * 0.6)::int) then
@@ -172,13 +160,6 @@ begin
     return;
   end if;
 
-  -- with no budget, the cheapest offer that is in time sets the scale: one that costs over half as much again
-  -- is not "best" on its record alone
-  select min(private.amount_of(x.price)) into cheapest
-    from applications x
-   where x.post_id = p_post and x.stage not in ('withdrawn', 'declined') and private.amount_of(x.price) > 0
-     and private.when_rank(x.when_text, x.created_at, tz) <= private.want_rank(r.want);
-
   select x.id, x.applicant_id, x.price, x.when_text, pr.name,
          private.amount_of(x.price) as amount,
          ((r.budget is null or private.amount_of(x.price) <= r.budget) and private.when_rank(x.when_text, x.created_at, tz) <= private.want_rank(r.want)) as fit
@@ -198,7 +179,6 @@ begin
             (r.budget is null or private.amount_of(x.price) <= r.budget) desc,
             -- how much later than wanted (everyone in time counts the same: "today" was asked, so 2 pm doesn't beat 4 pm)
             greatest(private.when_rank(x.when_text, x.created_at, tz), private.want_rank(r.want)),
-            (r.budget is null and cheapest is not null and private.amount_of(x.price) > cheapest * 1.5),
             -- their record, in half stars: a 4.6 doesn't beat a 4.5 that costs half as much
             round(q.score * 2) desc,
             private.amount_of(x.price),
@@ -314,91 +294,3 @@ begin
   end if;
   return new;
 end $$;
-
--- ================================================================ "Asked 12 plumbers": the real number
-/** How many workers were told about my request (0 for a request that isn't mine). The waiting screen says this
-    number, not how many workers of that skill exist nearby: some switched job alerts off, and they are asked
-    a few at a time. */
-create or replace function public.request_told(p_post text) returns integer
-language sql stable security definer set search_path = public as $$
-  select count(*)::int from notifications x
-   where x.event_key = 'newjob:' || p_post
-     and exists (select 1 from posts p where p.id = p_post and p.author_id = auth.uid());
-$$;
-revoke all on function public.request_told(text) from public, anon;
-grant execute on function public.request_told(text) to authenticated;
-
--- ================================================================ "then more if needed", for every request
--- The app tells people that getit asks the best-placed workers first and more if nobody answers. That was only
--- true for requests handled by the agent: any other request went to up to 12 workers once. Now a request with
--- no offer after 6 minutes goes to 8 more, up to three times: from the waiting screen while it is open, and
--- once a minute from the database when it can.
-create or replace function private.request_widen(p_post text) returns integer
-language plpgsql security definer set search_path = public, private as $$
-declare po posts; last_at timestamptz; n int;
-begin
-  select * into po from posts where id = p_post;
-  if not found or po.kind <> 'request' or coalesce(po.status, 'open') <> 'open' or po.business_id is not null then return 0; end if;
-  if coalesce(po.data ->> 'agent', '') = '1' and exists (select 1 from agent_runs r where r.post_id = p_post and r.state in ('asking', 'pick', 'booked')) then return 0; end if;  -- the agent has its own rounds
-  if exists (select 1 from applications a where a.post_id = p_post and a.stage not in ('withdrawn', 'declined')) then return 0; end if;
-  select max(x.created_at), count(*) into last_at, n from notifications x where x.event_key = 'newjob:' || p_post;
-  if n >= 36 or coalesce(last_at, po.created_at) > now() - interval '6 minutes' then return 0; end if;
-  return private.getit_ask(p_post, 8);
-end $$;
-revoke all on function private.request_widen(text) from public, anon, authenticated;
-
-/** From the waiting screen: ask more workers when it is time (the owner's own request only). Returns how many were told. */
-create or replace function public.request_ask_more(p_post text) returns integer
-language plpgsql security definer set search_path = public, private as $$
-begin
-  if not exists (select 1 from posts p where p.id = p_post and p.author_id = auth.uid()) then return 0; end if;
-  return private.request_widen(p_post);
-end $$;
-revoke all on function public.request_ask_more(text) from public, anon;
-grant execute on function public.request_ask_more(text) to authenticated;
-
-create or replace function private.request_widen_all() returns void
-language plpgsql security definer set search_path = public, private as $$
-declare x record;
-begin
-  for x in select p.id from posts p
-            where p.kind = 'request' and p.status = 'open' and p.business_id is null
-              and p.created_at > now() - interval '3 hours' and p.created_at < now() - interval '6 minutes'
-              and not exists (select 1 from applications a where a.post_id = p.id) loop
-    begin
-      perform private.request_widen(x.id);
-    exception when others then
-      raise warning 'request_widen(%) failed: %', x.id, sqlerrm;
-    end;
-  end loop;
-end $$;
-revoke all on function private.request_widen_all() from public, anon, authenticated;
-
-do $$
-begin
-  if exists (select 1 from pg_extension where extname = 'pg_cron') then
-    perform cron.unschedule(jobid) from cron.job where jobname = 'getit-widen';
-    perform cron.schedule('getit-widen', '*/2 * * * *', 'select private.request_widen_all()');
-  end if;
-exception when others then
-  raise notice 'getit-widen is not scheduled here: %', sqlerrm;
-end $$;
-
--- ================================================================ the pick changed its offer
--- A worker may change the price or the time of an offer. If that offer is the agent's pick, "best offer" may no
--- longer be true: the agent says so and looks at the offers again (before the usual check runs).
-create or replace function public.agent_pick_changed() returns trigger
-language plpgsql security definer set search_path = public, private as $$
-begin
-  if new.price is distinct from old.price or new.when_text is distinct from old.when_text then
-    update agent_runs
-       set state = 'asking', pick = null,
-           log = log || jsonb_build_array(jsonb_build_object('k', 'changed:' || extract(epoch from now())::bigint, 'at', now(),
-                 't', private.first_name((select name from profiles where id = new.applicant_id)) || ' changed their offer', 's', 'Looking at the offers again.'))
-     where post_id = new.post_id and state = 'pick' and pick = new.id;
-  end if;
-  return new;
-end $$;
-revoke all on function public.agent_pick_changed() from public, anon, authenticated;
-drop trigger if exists applications_agent_pick on public.applications;
-create trigger applications_agent_pick before update of price, when_text on public.applications for each row execute function public.agent_pick_changed();
