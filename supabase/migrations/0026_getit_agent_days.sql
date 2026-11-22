@@ -11,6 +11,8 @@
 --    The pick is also ordered a little differently: among offers that are in time, the record for this kind
 --    of job (in half stars) comes first, then the price, and only then who can come soonest. Before, "now"
 --    beat "this afternoon" even when the client had asked for "today".
+--    With no budget, an offer that costs over half as much again as the cheapest one in time comes after the
+--    others (a budget, when there is one, is the limit instead).
 -- 3. "Book the best offer for me" needs a budget: without one the agent would book at any price. With no
 --    budget it always asks first.
 -- Safe to run more than once.
@@ -77,6 +79,7 @@ declare
   bid uuid;
   who text;
   tz int;
+  cheapest int;
 begin
   select * into r from agent_runs where post_id = p_post for update;
   if not found then return; end if;
@@ -160,6 +163,13 @@ begin
     return;
   end if;
 
+  -- with no budget, the cheapest offer that is in time sets the scale: one that costs over half as much again
+  -- is not "best" on its record alone
+  select min(private.amount_of(x.price)) into cheapest
+    from applications x
+   where x.post_id = p_post and x.stage not in ('withdrawn', 'declined') and private.amount_of(x.price) > 0
+     and private.when_rank(x.when_text, x.created_at, tz) <= private.want_rank(r.want);
+
   select x.id, x.applicant_id, x.price, x.when_text, pr.name,
          private.amount_of(x.price) as amount,
          ((r.budget is null or private.amount_of(x.price) <= r.budget) and private.when_rank(x.when_text, x.created_at, tz) <= private.want_rank(r.want)) as fit
@@ -179,6 +189,7 @@ begin
             (r.budget is null or private.amount_of(x.price) <= r.budget) desc,
             -- how much later than wanted (everyone in time counts the same: "today" was asked, so 2 pm doesn't beat 4 pm)
             greatest(private.when_rank(x.when_text, x.created_at, tz), private.want_rank(r.want)),
+            (r.budget is null and cheapest is not null and private.amount_of(x.price) > cheapest * 1.5),
             -- their record, in half stars: a 4.6 doesn't beat a 4.5 that costs half as much
             round(q.score * 2) desc,
             private.amount_of(x.price),
@@ -363,3 +374,22 @@ begin
 exception when others then
   raise notice 'getit-widen is not scheduled here: %', sqlerrm;
 end $$;
+
+-- ================================================================ the pick changed its offer
+-- A worker may change the price or the time of an offer. If that offer is the agent's pick, "best offer" may no
+-- longer be true: the agent says so and looks at the offers again (before the usual check runs).
+create or replace function public.agent_pick_changed() returns trigger
+language plpgsql security definer set search_path = public, private as $$
+begin
+  if new.price is distinct from old.price or new.when_text is distinct from old.when_text then
+    update agent_runs
+       set state = 'asking', pick = null,
+           log = log || jsonb_build_array(jsonb_build_object('k', 'changed:' || extract(epoch from now())::bigint, 'at', now(),
+                 't', private.first_name((select name from profiles where id = new.applicant_id)) || ' changed their offer', 's', 'Looking at the offers again.'))
+     where post_id = new.post_id and state = 'pick' and pick = new.id;
+  end if;
+  return new;
+end $$;
+revoke all on function public.agent_pick_changed() from public, anon, authenticated;
+drop trigger if exists applications_agent_pick on public.applications;
+create trigger applications_agent_pick before update of price, when_text on public.applications for each row execute function public.agent_pick_changed();

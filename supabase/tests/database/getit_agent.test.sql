@@ -1,7 +1,7 @@
 -- Services under a skill, ratings per service, and the getit agent.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(79);
+select plan(81);
 
 insert into auth.users (id, email, raw_user_meta_data) values
   ('a0000000-0000-0000-0000-0000000000a1', 'hira@test.getit', '{"name": "Hira M"}'),
@@ -210,6 +210,13 @@ set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-0000000000a1"}'
 select is((with v as materialized (select public.agent_tick('g5') as j) select o ->> 'name' from v, jsonb_array_elements(v.j -> 'offers') o where o ->> 'id' = v.j ->> 'pick'), 'Paul N', 'for a leak the pick is Paul: his record for leak repair counts more than coming a little sooner');
 select is((with v as materialized (select public.agent_tick('g6') as j) select o ->> 'name' from v, jsonb_array_elements(v.j -> 'offers') o where o ->> 'id' = v.j ->> 'pick'), 'Mary T', 'for a water heater it is Mary: Paul’s 5★ for leaks is not counted for heaters, where he has 3★');
 select is((select (o ->> 'service_rating')::numeric from jsonb_array_elements(public.agent_tick('g6') -> 'offers') o where o ->> 'name' = 'Paul N'), 3.0, 'and the offer shows Paul’s rating for water heaters, not his combined one');
+
+-- ---- what if the pick changes their price afterwards? "Best offer" is looked at again.
+set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-0000000000b1"}';
+update public.applications set price = 'XAF 30,000' where post_id = 'g5' and applicant_id = 'b0000000-0000-0000-0000-0000000000b1';
+set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-0000000000a1"}';
+select is((with v as materialized (select public.agent_tick('g5') as j) select o ->> 'name' from v, jsonb_array_elements(v.j -> 'offers') o where o ->> 'id' = v.j ->> 'pick'), 'Mary T', 'Paul raised his price to almost four times Mary’s: the pick is Mary now. A better record is not “best” at any price');
+select ok((select log::text like '%changed their offer%' from public.agent_runs where post_id = 'g5'), 'and “What getit did” says that he changed his offer');
 
 -- ---- any request: the real number of workers asked, and more when nobody answers
 insert into public.posts (id, author_id, kind, title, cat, data, location) values

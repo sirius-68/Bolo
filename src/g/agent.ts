@@ -142,7 +142,9 @@ export function whyLocal(v: AgentView, o: AgentOffer): string {
     ? ' It is the only offer so far.'
     : cheaper.length && o.fit
       ? ` ${[weaker ? `${n(weaker)} cheaper ${weaker === 1 ? 'offer has' : 'offers have'} a weaker or shorter record` : '', late ? `${n(late)} cheaper ${late === 1 ? 'offer' : 'offers'} can’t come in time` : ''].filter(Boolean).join(', and ')}.`.replace(/^ (.)/, (m, c) => ' ' + c.toUpperCase())
-      : ` Best of ${v.offers.length} offers.`;
+      : others.some((x) => x.fit && x.amount > o.amount * 1.5 && (x.service_rating || x.rating || 0) > (o.service_rating || o.rating || 0))
+        ? ` Best of ${v.offers.length} offers: a better-rated one costs much more.`
+        : ` Best of ${v.offers.length} offers.`;
   return `${first}: ${bits.join(', ')}.${tail}`;
 }
 const WHY: Record<string, string> = {};

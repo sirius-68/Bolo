@@ -111,6 +111,8 @@ export type RequestFor = {
   /** what the words said about when and how much ("today", "5000") */
   when?: Want | null;
   budget?: number | null;
+  /** telling the agent again: whether it was booking the best offer by itself */
+  auto?: boolean;
 };
 const WHEN_OF: Record<Want, string> = { now: 'As soon as possible', today: 'Today', tomorrow: 'Tomorrow', week: 'This week' };
 /** "Get prices from plumbers near you": what, details, a photo, when and where. Sending needs an account. */
@@ -126,7 +128,7 @@ function RequestSheet({ o }: { o: RequestFor }) {
   const [photo, setPhoto] = useState<string | null>(old?.photos?.[0] || null);
   const [when, setWhen] = useState(o.when ? WHEN_OF[o.when] : old ? WHENS.find(([k]) => whenText(old.when) === k || old.when === k)?.[0] || '' : 'As soon as possible');
   const [budget, setBudget] = useState(o.budget ? String(o.budget) : '');
-  const [auto, setAuto] = useState(false);
+  const [auto, setAuto] = useState(!!o.auto);
   const cap = +budget.replace(/[^\d]/g, '') || 0;
   const [where, setWhere] = useState<Where>((old?.type as Where) && WHERES.some(([k]) => k === old?.type) ? (old!.type as Where) : whereFor(o.trade));
   const [busy, setBusy] = useState(false);

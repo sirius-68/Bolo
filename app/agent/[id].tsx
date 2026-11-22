@@ -141,7 +141,7 @@ export default function Agent() {
     if (x) take(x);
     else toast('That didn’t go through. Check your connection and try again.');
   };
-  const rebrief = () => openRequest({ trade: v.trade, need: v.title, postId: v.post, agent: true, budget: v.budget, when: v.want });
+  const rebrief = () => openRequest({ trade: v.trade, need: v.title, postId: v.post, agent: true, budget: v.budget, when: v.want, auto: v.auto });
   const callSomeone = () => router.push(`/workers?trade=${encodeURIComponent(v.trade)}&need=${encodeURIComponent(v.title)}${v.service ? `&service=${encodeURIComponent(v.service)}` : ''}` as any);
   const waiting = v.offers.filter((o) => o.counter_state === 'asked').length;
 
