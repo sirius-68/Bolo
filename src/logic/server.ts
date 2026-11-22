@@ -271,7 +271,9 @@ async function loadPosts() {
   ]);
   const rows = [...(mine.data || []), ...(recent.data || [])].filter((r: any, i, a) => a.findIndex((x: any) => x.id === r.id) === i);
   await Promise.all([ensurePeople(rows.map((r: any) => r.author_id)), ensureBiz(rows.map((r: any) => r.business_id))]);
-  const fresh = rows.filter((r: any) => !blockedIds().has(r.author_id)).map(postFrom);
+  const { GONE, CLOSED } = require('./work');
+  const fresh = rows.filter((r: any) => !blockedIds().has(r.author_id) && !GONE.has(r.id)).map(postFrom);
+  fresh.forEach((p) => CLOSED.has(p.id) && (p.status = 'closed'));
   // A request I sent a moment ago may still be on its way to the server, or have arrived after this list was
   // asked for: keep it, or it would vanish from the screen that is showing it.
   const have = new Set(fresh.map((p) => p.id));
@@ -763,6 +765,7 @@ export function notifBusiness(id: string): string | null | undefined {
   return n ? n.business_id || null : undefined;
 }
 function placeNotif(n: any) {
+  if (NOTIF_GONE.has(n.id)) return;
   NOTIF_RAW[n.id] = n;
   const C = !!(n.business_id && myBizOf(n.business_id));
   const N = C ? db.NOTIFS_C : db.NOTIFS_W;
@@ -780,14 +783,20 @@ async function loadNotifs() {
   db.NOTIFS_C = [];
   (data || []).reverse().forEach(placeNotif);
 }
-export async function setNotifRead(ids: string[]) {
+export async function setNotifRead(ids: string[], read = true) {
   if (!ids.length) return;
-  await supabase.from('notifications').update({ read_at: new Date().toISOString() }).in('id', ids).is('read_at', null);
+  ids.forEach((id) => NOTIF_RAW[id] && (NOTIF_RAW[id].read_at = read ? new Date().toISOString() : null));
+  if (read) await supabase.from('notifications').update({ read_at: new Date().toISOString() }).in('id', ids).is('read_at', null);
+  else await supabase.from('notifications').update({ read_at: null }).in('id', ids);
 }
+/** Updates I deleted in this session: a list reloaded a moment later must not bring them back. */
+const NOTIF_GONE = new Set<string>();
 export async function deleteNotifRows(ids: string[]) {
   if (!ids.length) return;
+  ids.forEach((id) => (NOTIF_GONE.add(id), delete NOTIF_RAW[id]));
   await supabase.from('notifications').delete().in('id', ids);
 }
+
 
 /* ================================================================ load everything, keep it live */
 let loading: Promise<void> | null = null;

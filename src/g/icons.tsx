@@ -44,6 +44,9 @@ const LINE: Record<string, Shape[]> = {
   flag: ['M5 21V4M5 4h11l-2 4 2 4H5'],
   lock: ['M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z'],
   refresh: ['M20 11a8 8 0 0 0-14.3-4.3L4 8.5M4 4v4.5h4.5', 'M4 13a8 8 0 0 0 14.3 4.3L20 15.5M20 20v-4.5h-4.5'],
+  trash: ['M4 7h16', 'M9 7V4.5h6V7', 'M6.5 7l1 13h9l1-13', 'M10 11v5.5M14 11v5.5'],
+  unread: ['M4 6.5h16v11H4z', 'M4 7l8 6 8-6'],
+  belloff: ['M6 8a6 6 0 0 1 9.5-4.9M18 8c0 7 3 9 3 9H7.5', 'M10.3 21a1.94 1.94 0 0 0 3.4 0', 'M4 4l16 16'],
 };
 
 export type GIconName = keyof typeof LINE | 'spark' | 'star' | 'tick' | 'dots' | 'play' | 'pause';

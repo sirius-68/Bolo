@@ -107,6 +107,8 @@ export type Thread = {
   pinned?: number;
   on?: number;
   unread?: number;
+  /** I marked this chat as not read (my own reminder; see markChatUnread) */
+  marked?: number;
   typing?: number;
   next?: string;
   job?: string;
@@ -416,6 +418,9 @@ export function makeDb() {
     CONV: {} as Record<string, { key: string; inbox: 'W' | 'C' }>,
     /** chats hidden on this phone ("Delete chat"): conversation id → hidden at (ms) */
     HIDDEN: {} as Record<string, number>,
+    /** finished jobs and answered offers I removed from my lists ("b:<booking>" / "o:<request>"): key → when (ms).
+        Only my own list changes: the other person keeps theirs, and earnings and ratings are not touched. */
+    HIDE: {} as Record<string, number>,
     /** when everything was last loaded from the server */
     syncedAt: 0,
   };

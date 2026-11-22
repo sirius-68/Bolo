@@ -151,14 +151,14 @@ export function Round({ icon, label, onPress, color, bg, size = 44, testID, plai
   );
 }
 /** Two or three choices side by side (Dark | Light, Messages | Updates). */
-export function Seg<V extends string>({ items, value, onChange, h = 40 }: { items: [V, string][]; value: V; onChange: (v: V) => void; h?: number }) {
+export function Seg<V extends string>({ items, value, onChange, h = 40, ids }: { items: [V, string][]; value: V; onChange: (v: V) => void; h?: number; ids?: string }) {
   const t = useG();
   return (
     <View style={{ flexDirection: 'row', gap: 4, padding: 4, borderRadius: 18, backgroundColor: t.card2 }}>
       {items.map(([v, label]) => {
         const on = v === value;
         return (
-          <Pressable key={v} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => (tap(), onChange(v))} style={{ flex: 1, height: h, borderRadius: 14, backgroundColor: on ? RED : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+          <Pressable key={v} testID={ids ? `${ids}-${v}` : undefined} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => (tap(), onChange(v))} style={{ flex: 1, height: h, borderRadius: 14, backgroundColor: on ? RED : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
             <Text maxFontSizeMultiplier={1.2} style={ft(h >= 44 ? 15 : 14, 7, on ? '#ffffff' : t.text)}>
               {label}
             </Text>

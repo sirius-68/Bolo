@@ -117,7 +117,7 @@ export function thread(id: string): Thread {
   }
   return T[id];
 }
-export const unreadMsgs = () => ORDER().reduce((a, id) => a + (THREADS()[id]?.unread || 0), 0);
+export const unreadMsgs = () => ORDER().reduce((a, id) => a + (THREADS()[id]?.unread || (THREADS()[id]?.marked ? 1 : 0)), 0);
 export const unreadNotifs = () => NOTIFS().filter((n) => !n.read).length;
 export const postById = (id: string) => db.POSTS.find((p) => p.id === id) || db.POSTS.find((p) => (p as any).tmp === id);
 export function aboutOf(id: string) {

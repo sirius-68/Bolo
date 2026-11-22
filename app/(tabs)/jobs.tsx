@@ -7,10 +7,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, Booking } from '../../src/data/db';
 import { useLive } from '../../src/logic/live';
 import { P, fname, postById } from '../../src/logic/core';
-import { myBookings, trOther } from '../../src/logic/work';
+import { closeJob, hideFromJobs, myBookings, trOther, withdrawOffer } from '../../src/logic/work';
 import { earnedThisWeek, money, myRequests, whenText, working } from '../../src/g/data';
 import { GIcon, GIconName } from '../../src/g/icons';
+import { confirm, toast } from '../../src/g/notice';
 import { Pull } from '../../src/g/parts';
+import { SelAction, SelectActions, SelectHead, SelectMark, useSelect } from '../../src/g/select';
 import { openSignIn } from '../../src/g/signin';
 import { TAB_SPACE } from '../../src/g/TabBar';
 import { RED, useG } from '../../src/g/theme';
@@ -44,9 +46,9 @@ export default function Jobs() {
   const all = signed ? myBookings() : [];
   const mine = work ? all.filter((b) => b.worker === 'me') : all.filter((b) => b.client === 'me');
   const now = mine.filter((b) => b.state !== 'confirmed');
-  const before = mine.filter((b) => b.state === 'confirmed');
+  const before = mine.filter((b) => b.state === 'confirmed' && !db.HIDE['b:' + b.id]);
   const asked = signed && !work ? myRequests() : [];
-  const sent = work ? Object.keys(db.myOffers).map((id) => ({ id, o: db.myOffers[id], po: postById(id) })).filter((x) => x.po) : [];
+  const sent = work ? Object.keys(db.myOffers).filter((id) => !db.HIDE['o:' + id]).map((id) => ({ id, o: db.myOffers[id], po: postById(id) })).filter((x) => x.po) : [];
   const week = earnedThisWeek();
 
   const head = (text: string) => (
@@ -54,9 +56,69 @@ export default function Jobs() {
       {text}
     </T>
   );
-  const line = (key: string, left: React.ReactNode, title: string, time: string, sub: string, live: boolean, onPress: () => void, unread?: boolean) => (
-    <Pressable key={key} testID={`job-${key}`} accessibilityRole="button" onPress={() => (tap(), onPress())} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 70, paddingVertical: 10, paddingHorizontal: 2, borderBottomWidth: 1, borderBottomColor: t.line, opacity: pressed ? 0.7 : 1 })}>
-      {left}
+  /* Hold a row to select it; then cancel requests, withdraw offers or take finished jobs off the list, several at once.
+     Keys: "b:<booking>", "r:<request>", "o:<request I sent a price for>". */
+  const sel = useSelect();
+  const offerTaken = (id: string) => {
+    const po = postById(id);
+    return !po || po.status === 'booked' || po.status === 'closed' || !!po.booked;
+  };
+  const shown: string[] = work
+    ? tab === 'active'
+      ? now.map((b) => 'b:' + b.id)
+      : tab === 'offers'
+        ? sent.map((x) => 'o:' + x.id)
+        : before.map((b) => 'b:' + b.id)
+    : [...now.map((b) => 'b:' + b.id), ...asked.map((po) => 'r:' + po.id), ...before.map((b) => 'b:' + b.id)];
+  React.useEffect(() => sel.keep(shown));
+  const removeSel = () => {
+    const ids = (pre: string) => sel.ids.filter((k) => k.startsWith(pre)).map((k) => k.slice(2));
+    const reqs = ids('r:');
+    const offs = ids('o:');
+    const waiting = offs.filter((id) => db.myOffers[id]?.state !== 'acc' && !offerTaken(id));
+    const answered = offs.filter((id) => !waiting.includes(id));
+    const bks = ids('b:').map((id) => all.find((b) => b.id === id)).filter(Boolean) as Booking[];
+    const live = bks.filter((b) => b.state !== 'confirmed');
+    const done = bks.filter((b) => b.state === 'confirmed');
+    const n = reqs.length + offs.length + done.length;
+    const liveNote = live.length ? (live.length === 1 ? 'The job in progress stays: open it to cancel it, so the other person is told why.' : `The ${live.length} jobs in progress stay: open one to cancel it, so the other person is told why.`) : '';
+    if (!n) return toast(liveNote || 'Nothing to remove');
+    const parts = [
+      reqs.length ? (reqs.length === 1 ? 'Your request is cancelled: workers stop seeing it.' : `${reqs.length} requests are cancelled: workers stop seeing them.`) : '',
+      waiting.length ? (waiting.length === 1 ? 'Your offer is withdrawn: the client no longer sees your price.' : `${waiting.length} offers are withdrawn: the clients no longer see your prices.`) : '',
+      answered.length + done.length ? `${answered.length + done.length === 1 ? 'The finished one leaves' : 'The finished ones leave'} your list only. ${work ? 'Your earnings and ratings don’t change.' : 'The worker keeps it, and ratings don’t change.'}` : '',
+      liveNote,
+    ].filter(Boolean);
+    confirm({
+      title: n === 1 ? (reqs.length ? 'Cancel this request?' : waiting.length ? 'Withdraw this offer?' : 'Remove from your list?') : `Remove ${n} from your list?`,
+      text: parts.join(' '),
+      ok: n === 1 && reqs.length ? 'Cancel request' : n === 1 && waiting.length ? 'Withdraw offer' : 'Remove',
+      cancel: 'Keep',
+      danger: true,
+      onOk: () => {
+        reqs.forEach(closeJob);
+        waiting.forEach(withdrawOffer);
+        hideFromJobs([...answered.map((id) => 'o:' + id), ...done.map((b) => 'b:' + b.id)]);
+        sel.clear();
+        if (n > 1) toast(`${n} removed`);
+      },
+    });
+  };
+  const actions: SelAction[] = [{ id: 'delete', icon: 'trash', label: sel.ids.length === 1 && sel.ids[0].startsWith('r:') ? 'Cancel request' : sel.ids.length === 1 && sel.ids[0].startsWith('o:') && !offerTaken(sel.ids[0].slice(2)) && db.myOffers[sel.ids[0].slice(2)]?.state !== 'acc' ? 'Withdraw offer' : 'Remove', danger: true, run: removeSel }];
+
+  const line = (key: string, left: React.ReactNode, title: string, time: string, sub: string, live: boolean, onPress: () => void, unread?: boolean, sk?: string) => (
+    <Pressable
+      key={key}
+      testID={`job-${key}`}
+      accessibilityRole="button"
+      accessibilityHint={sk ? 'Press and hold to select' : undefined}
+      accessibilityState={sk ? { selected: sel.has(sk) } : undefined}
+      onPress={() => (sk ? sel.press(sk, onPress) : sel.on ? undefined : (tap(), onPress()))}
+      onLongPress={sk ? () => sel.hold(sk) : undefined}
+      delayLongPress={350}
+      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 70, paddingVertical: 10, paddingHorizontal: 2, borderBottomWidth: 1, borderBottomColor: t.line, opacity: pressed ? 0.6 : 1 })}
+    >
+      {sk && sel.on ? <SelectMark on={sel.has(sk)} /> : left}
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
           <T s={15} w={8} lines={1} style={{ flexShrink: 1 }}>
@@ -81,7 +143,7 @@ export default function Jobs() {
   const job = (b: Booking, live: boolean) => {
     const other = P(trOther(b));
     const needsMe = b.state === 'done' && b.client === 'me';
-    return line(b.id, <Face name={other?.name || '?'} photo={other?.photo} size={48} />, b.title, live ? '' : whenText(b.when), [other?.name ? (live ? other.name : fname(other.name)) : '', standing(b)].filter(Boolean).join(' · '), live, () => router.push(`/track/${b.id}` as any), needsMe);
+    return line(b.id, <Face name={other?.name || '?'} photo={other?.photo} size={48} />, b.title, live ? '' : whenText(b.when), [other?.name ? (live ? other.name : fname(other.name)) : '', standing(b)].filter(Boolean).join(' · '), live, () => router.push(`/track/${b.id}` as any), needsMe, 'b:' + b.id);
   };
   const empty = (title: string, sub: string) => (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingBottom: 60, paddingTop: 40 }}>
@@ -111,7 +173,7 @@ export default function Jobs() {
             {sent.map(({ id, o, po }) => {
               const c = P(po!.client || '');
               const taken = po!.status === 'booked' || po!.status === 'closed' || !!po!.booked;
-              return line(id, <Face name={c?.name || '?'} photo={c?.photo} size={48} />, po!.title || 'Job', po!.time, `Your price ${money(o.price)} · ${o.state === 'acc' ? 'accepted' : taken ? 'someone else was chosen' : `waiting for ${fname(c?.name || 'the client')}`}`, o.state === 'acc', () => router.push(`/wrequest/${id}` as any));
+              return line(id, <Face name={c?.name || '?'} photo={c?.photo} size={48} />, po!.title || 'Job', po!.time, `Your price ${money(o.price)} · ${o.state === 'acc' ? 'accepted' : taken ? 'someone else was chosen' : `waiting for ${fname(c?.name || 'the client')}`}`, o.state === 'acc', () => router.push(`/wrequest/${id}` as any), false, 'o:' + id);
             })}
           </>
         ) : (
@@ -133,7 +195,7 @@ export default function Jobs() {
         {now.map((b) => job(b, true))}
         {asked.map((po) => {
           const n = (po.offerList || []).length || po.offers || 0;
-          return line(po.id, dot('bell'), po.title || po.cat || 'Request', po.time, n ? `${n} ${n === 1 ? 'offer' : 'offers'} · tap to choose` : 'Asking for prices · waiting for offers', true, () => router.push((n > 1 ? `/offers/${po.id}` : `/asked/${po.id}`) as any), n > 0);
+          return line(po.id, dot('bell'), po.title || po.cat || 'Request', po.time, n ? `${n} ${n === 1 ? 'offer' : 'offers'} · tap to choose` : 'Asking for prices · waiting for offers', true, () => router.push((n > 1 ? `/offers/${po.id}` : `/asked/${po.id}`) as any), n > 0, 'r:' + po.id);
         })}
         {before.length ? head('Before') : null}
         {before.map((b) => job(b, false))}
@@ -141,10 +203,19 @@ export default function Jobs() {
     );
   return (
     <Screen top={28} style={{ paddingHorizontal: 20 }}>
-      <T s={34} w={8} lh={1.15} ls={-0.8}>
-        Jobs
-      </T>
-      {work ? (
+      {sel.on ? (
+        <>
+          <SelectHead sel={sel} all={shown} />
+          <View style={{ marginTop: 16 }}>
+            <SelectActions actions={actions} />
+          </View>
+        </>
+      ) : (
+        <T s={34} w={8} lh={1.15} ls={-0.8}>
+          Jobs
+        </T>
+      )}
+      {work && !sel.on ? (
         <>
           <View style={{ marginTop: 16, paddingVertical: 16, paddingHorizontal: 18, borderRadius: 22, backgroundColor: RED }}>
             <T s={13} w={7} c="#ffffff">
@@ -159,6 +230,7 @@ export default function Jobs() {
           </View>
           <View style={{ marginTop: 16 }}>
             <Seg
+              ids="jobs"
               items={[
                 ['active', 'Active'],
                 ['offers', sent.length ? `Offers · ${sent.length}` : 'Offers'],

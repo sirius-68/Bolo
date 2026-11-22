@@ -5,10 +5,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, Notif } from '../../src/data/db';
 import { useLive } from '../../src/logic/live';
 import { NOTIFS, ORDER, P, THREADS } from '../../src/logic/core';
-import { preview, readNotif } from '../../src/logic/work';
+import { deleteChats, deleteNotifs, markChatRead, markChatUnread, markNotifs, muteChat, preview, readNotif } from '../../src/logic/work';
 import { goTo } from '../../src/g/goto';
 import { openChat } from '../../src/g/nav';
+import { confirm } from '../../src/g/notice';
 import { Pull } from '../../src/g/parts';
+import { SelAction, SelectActions, SelectHead, SelectMark, useSelect } from '../../src/g/select';
 import { openChatMenu, openTeamNote } from '../../src/g/sheets';
 import { tap } from '../../src/g/touch';
 import { working } from '../../src/g/data';
@@ -36,8 +38,30 @@ export default function Inbox() {
   const chats = signed ? ORDER().filter((id) => T0[id] && P(id)?.name && (T0[id].cid || T0[id].msgs.length)) : [];
   const notes = signed ? NOTIFS() : [];
   const newNotes = notes.filter((n) => !n.read).length;
+  // hold a row to select it, then act on several at once
+  const sel = useSelect();
+  const listIds = tab === 'msgs' ? chats : notes.map((n) => n.id);
+  React.useEffect(() => sel.keep(listIds));
+  const picked = sel.ids;
+  let actions: SelAction[] = [];
+  if (sel.on && tab === 'msgs') {
+    const ths = picked.map((id) => T0[id]).filter(Boolean);
+    const anyNew = ths.some((th) => th.unread || th.marked);
+    const allMuted = ths.length > 0 && ths.every((th) => th.muted);
+    actions = [
+      anyNew ? { id: 'read', icon: 'checks', label: 'Mark as read', run: () => (picked.forEach(markChatRead), sel.clear()) } : { id: 'unread', icon: 'unread', label: 'Mark as unread', run: () => (picked.forEach(markChatUnread), sel.clear()) },
+      { id: 'mute', icon: allMuted ? 'bell' : 'belloff', label: allMuted ? 'Unmute' : 'Mute', run: () => (picked.forEach((id) => muteChat(id, !allMuted)), sel.clear()) },
+      { id: 'delete', icon: 'trash', label: 'Delete', danger: true, run: () => confirm({ title: picked.length === 1 ? 'Delete this chat?' : `Delete ${picked.length} chats?`, text: 'They leave your Inbox. The other person keeps theirs, and a new message brings a chat back.', ok: 'Delete', danger: true, onOk: () => (deleteChats(picked), sel.clear()) }) },
+      ...(picked.length === 1 ? [{ id: 'more', icon: 'dots' as const, label: 'More', run: () => (openChatMenu(picked[0]), sel.clear()) }] : []),
+    ];
+  } else if (sel.on) {
+    const anyNew = notes.some((n) => picked.includes(n.id) && !n.read);
+    actions = [
+      anyNew ? { id: 'read', icon: 'checks', label: 'Mark as read', run: () => (markNotifs(picked, true), sel.clear()) } : { id: 'unread', icon: 'unread', label: 'Mark as unread', run: () => (markNotifs(picked, false), sel.clear()) },
+      { id: 'delete', icon: 'trash', label: 'Delete', danger: true, run: () => confirm({ title: picked.length === 1 ? 'Delete this update?' : `Delete ${picked.length} updates?`, text: 'This only clears your list. Your jobs, offers and chats stay as they are.', ok: 'Delete', danger: true, onOk: () => (deleteNotifs(picked), sel.clear()) }) },
+    ];
+  }
   const openNote = (n: Notif) => {
-    tap();
     readNotif(n.id);
     const who = typeof n.who === 'string' ? n.who : Array.isArray(n.who) ? n.who[0] : '';
     // a missed call: the chat with them, where calling back is one tap
@@ -62,18 +86,27 @@ export default function Inbox() {
   );
   return (
     <Screen top={28} style={{ paddingHorizontal: 20 }}>
-      <T s={34} w={8} lh={1.15} ls={-0.8}>
-        Inbox
-      </T>
+      {sel.on ? (
+        <SelectHead sel={sel} all={listIds} />
+      ) : (
+        <T s={34} w={8} lh={1.15} ls={-0.8}>
+          Inbox
+        </T>
+      )}
       <View style={{ marginTop: 16 }}>
-        <Seg
-          items={[
-            ['msgs', 'Messages'],
-            ['updates', newNotes ? `Updates · ${newNotes}` : 'Updates'],
-          ]}
-          value={tab}
-          onChange={setTab}
-        />
+        {sel.on ? (
+          <SelectActions actions={actions} />
+        ) : (
+          <Seg
+            ids="inbox"
+            items={[
+              ['msgs', 'Messages'],
+              ['updates', newNotes ? `Updates · ${newNotes}` : 'Updates'],
+            ]}
+            value={tab}
+            onChange={setTab}
+          />
+        )}
       </View>
       <ScrollView showsVerticalScrollIndicator={false} refreshControl={signed ? <Pull /> : undefined} contentContainerStyle={{ paddingBottom: TAB_SPACE + ins.bottom, flexGrow: 1 }}>
         {tab === 'msgs' ? (
@@ -87,8 +120,8 @@ export default function Inbox() {
                 const p = P(id);
                 const [cls, txt] = preview(th, false);
                 return (
-                  <Pressable key={id} testID={`chat-${id}`} accessibilityRole="button" accessibilityHint="Long-press for options" onPress={() => (tap(), openChat(id))} onLongPress={() => (tap(), openChatMenu(id))} delayLongPress={350} style={rowStyle(i === chats.length - 1)}>
-                    <Face name={p.name} photo={p.photo} size={48} />
+                  <Pressable key={id} testID={`chat-row-${i}`} accessibilityRole="button" accessibilityHint="Press and hold to select" accessibilityState={{ selected: sel.has(id) }} onPress={() => sel.press(id, () => openChat(id))} onLongPress={() => sel.hold(id)} delayLongPress={350} style={rowStyle(i === chats.length - 1)}>
+                    {sel.on ? <SelectMark on={sel.has(id)} /> : <Face name={p.name} photo={p.photo} size={48} />}
                     <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
                         <T s={15} w={8} lines={1} style={{ flexShrink: 1 }}>
@@ -98,11 +131,12 @@ export default function Inbox() {
                           {th.time}
                         </T>
                       </View>
-                      <T s={13} w={th.unread ? 7 : 5} c={cls === 'typing' ? t.accent : th.unread ? t.text : t.muted} lines={1}>
+                      <T s={13} w={th.unread || th.marked ? 7 : 5} c={cls === 'typing' ? t.accent : th.unread || th.marked ? t.text : t.muted} lines={1}>
+                        {th.muted ? 'Muted · ' : ''}
                         {txt}
                       </T>
                     </View>
-                    {th.unread ? dot : null}
+                    {th.unread || th.marked ? dot : null}
                   </Pressable>
                 );
               })}
@@ -119,8 +153,10 @@ export default function Inbox() {
               const who = typeof n.who === 'string' ? P(n.who) : Array.isArray(n.who) && n.who[0] ? P(n.who[0]) : undefined;
               const team = !who || n.bolo;
               return (
-                <Pressable key={n.id} testID={`update-${n.id}`} accessibilityRole="button" onPress={() => openNote(n)} style={rowStyle(i === notes.length - 1)}>
-                  {team ? (
+                <Pressable key={n.id} testID={`update-${i}`} accessibilityRole="button" accessibilityHint="Press and hold to select" accessibilityState={{ selected: sel.has(n.id) }} onPress={() => sel.press(n.id, () => openNote(n))} onLongPress={() => sel.hold(n.id)} delayLongPress={350} style={rowStyle(i === notes.length - 1)}>
+                  {sel.on ? (
+                    <SelectMark on={sel.has(n.id)} />
+                  ) : team ? (
                     <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: RED, alignItems: 'center', justifyContent: 'center' }}>
                       <Text style={ft(18, 8, '#ffffff')}>g</Text>
                     </View>

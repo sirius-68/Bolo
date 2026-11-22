@@ -91,7 +91,33 @@ const jobPoint = (f: JobForm) => {
   return c ? `POINT(${c[0]} ${c[1]})` : null;
 };
 /** Upload photos picked on the phone to the public post-photo folder; returns 'uri:https://…' pictures. */
-export async function uploadPostPhotos(photos: string[]): Promise<string[]> {
+/** Things I removed in this session: a list reloaded a moment later must not bring them back. */
+export const GONE = new Set<string>();
+/** Remove something I posted (a work photo, a request). Gone at once; put back, with a word, if the server refuses. */
+export async function removePost(id: string): Promise<boolean> {
+  const po = db.POSTS.find((p) => p.id === id);
+  GONE.add(id);
+  if (po && (po as any).tmp) GONE.add((po as any).tmp);
+  db.POSTS = db.POSTS.filter((p) => p.id !== id);
+  bump();
+  if (id.startsWith('tmp_')) return true; // still on its way up: createPost sees it is gone and stops
+  try {
+    const { error } = await supabase.from('posts').delete().eq('id', id);
+    if (error) throw error;
+    // the picture file too, when it is mine (best effort)
+    const url = String(po?.src || po?.photos?.[0] || '').replace(/^uri:/, '');
+    const m = url.match(/\/job-photos\/(.+)$/);
+    if (m && m[1].startsWith(db.uid + '/')) void supabase.storage.from('job-photos').remove([decodeURIComponent(m[1].split('?')[0])]);
+    return true;
+  } catch (e) {
+    GONE.delete(id);
+    if (po && !db.POSTS.includes(po)) db.POSTS.unshift(po);
+    bump();
+    fail(e);
+    return false;
+  }
+}
+export async function uploadPostPhotos(photos: string[], quiet = false): Promise<string[]> {
   const { File } = require('expo-file-system');
   const out: string[] = [];
   for (const ph of photos) {
@@ -106,7 +132,7 @@ export async function uploadPostPhotos(photos: string[]): Promise<string[]> {
       if (error) throw error;
       out.push('uri:' + supabase.storage.from('job-photos').getPublicUrl(path).data.publicUrl);
     } catch {
-      toast('A photo couldn’t be uploaded and was left out');
+      if (!quiet) toast('A photo couldn’t be uploaded and was left out');
     }
   }
   return out;
@@ -232,13 +258,23 @@ export function createPost(p: { kind: 'photo' | 'text' | 'avail'; text: string; 
   (async () => {
     try {
       if (biz && !biz.remoteId) throw new Error('Your business page is still saving. Try again in a moment.');
-      const photos = p.src ? await uploadPostPhotos([p.src]) : [];
+      const photos = p.src ? await uploadPostPhotos([p.src], true) : [];
+      // a photo that didn't go up is not saved as an empty tile
+      if (p.src && !photos.length) throw new Error('That photo couldn’t be uploaded. Check your connection and try again.');
+      // removed again while it was still going up: nothing to save
+      if (GONE.has(po.id)) return;
       const { data, error } = await supabase
         .from('posts')
         .insert({ author_id: db.uid, business_id: biz?.remoteId || null, kind: p.kind, body: p.text, photos: photos.map((x) => x.replace(/^uri:/, '')), cat: w ? mySkill() : null, area: cityLabel(), data: { tags: p.tags || [], job: p.job, slots: p.slots } })
         .select('id')
         .single();
       if (error) throw error;
+      if (GONE.has(po.id)) {
+        // removed while it was being saved: take it off the server too, so it never comes back
+        GONE.add(data.id);
+        await supabase.from('posts').delete().eq('id', data.id);
+        return;
+      }
       (po as any).tmp = po.id;
       po.id = data.id;
       if (photos[0]) po.src = photos[0];
@@ -251,9 +287,12 @@ export function createPost(p: { kind: 'photo' | 'text' | 'avail'; text: string; 
   })();
   return po;
 }
+/** Requests I closed in this session (a list reloaded a moment later must not show them open again). */
+export const CLOSED = new Set<string>();
 export function closeJob(id: string) {
   const i = db.POSTS.findIndex((p) => p.id === id);
   if (i < 0) return;
+  CLOSED.add(id);
   const po = db.POSTS.splice(i, 1)[0];
   toast('Job closed');
   bump();
@@ -263,6 +302,7 @@ export function closeJob(id: string) {
     .eq('id', id)
     .then(({ error }) => {
       if (error) {
+        CLOSED.delete(id);
         db.POSTS.splice(i, 0, po);
         bump();
         fail(error);
@@ -275,6 +315,7 @@ const cvStored = (cv: CvFile | null) => (cv ? { name: cv.name, kb: cv.kb, src: c
 
 /* =========================== offers (Regular finds work) =========================== */
 export function sendOffer(id: string, price: string, whenKey: string, msg: string, cv: CvFile | null) {
+  delete db.HIDE['o:' + id]; // a new price for a request I had taken off my list shows again
   const po = postById(id)!;
   const p = `XAF ${(+price).toLocaleString('en-US')}`;
   const when = dayText(whenKey);
@@ -429,8 +470,9 @@ export function markChatRead(id: string) {
   if (!th) return;
   readChatNotif(id);
   if (th.cid) markRead(th.cid);
-  if (th.unread) {
+  if (th.unread || th.marked) {
     th.unread = 0;
+    th.marked = undefined;
     bump();
   }
 }
@@ -566,6 +608,58 @@ export function deleteChat(id: string) {
     if (cid) delete db.HIDDEN[cid];
     bump();
   });
+}
+/** Several chats at once (Inbox, hold to select). One "Undo" brings them all back. */
+export function deleteChats(ids: string[]) {
+  const T = THREADS();
+  const O = ORDER();
+  const kept = ids.map((id) => ({ id, th: T[id], i: O.indexOf(id) })).filter((x) => x.th);
+  if (!kept.length) return;
+  // from the bottom of the list up, so the places stay right for "Undo"
+  [...kept].sort((a, b) => b.i - a.i).forEach(({ id, th, i }) => {
+    delete T[id];
+    if (i >= 0) O.splice(i, 1);
+    if (th.cid) db.HIDDEN[th.cid] = Date.now();
+  });
+  bump();
+  undoBar(kept.length === 1 ? 'Chat deleted' : `${kept.length} chats deleted`, () => {
+    [...kept].sort((a, b) => a.i - b.i).forEach(({ id, th, i }) => {
+      T[id] = th;
+      if (!O.includes(id)) O.splice(i < 0 ? O.length : Math.min(i, O.length), 0, id);
+      if (th.cid) delete db.HIDDEN[th.cid];
+    });
+    bump();
+  });
+}
+/** Show a chat as not read yet (to come back to it). A mark of my own, on this phone: the other person's
+    "seen" ticks don't change, because I did read it. Opening the chat clears it. */
+export function markChatUnread(id: string) {
+  const th = THREADS()[id];
+  if (!th || th.unread || th.marked) return;
+  th.marked = 1;
+  bump();
+}
+/** Updates (Inbox, hold to select): mark as read or not read, or delete. */
+export function markNotifs(ids: string[], read: boolean) {
+  const hit = NOTIFS().filter((n) => ids.includes(n.id) && !!n.read !== read);
+  if (!hit.length) return;
+  hit.forEach((n) => (n.read = read ? 1 : 0));
+  bump();
+  void setNotifRead(hit.map((n) => n.id), read);
+}
+export function deleteNotifs(ids: string[]) {
+  const N = NOTIFS();
+  const hit = N.filter((n) => ids.includes(n.id));
+  if (!hit.length) return;
+  hit.forEach((n) => N.splice(N.indexOf(n), 1));
+  bump();
+  toast(hit.length === 1 ? 'Update deleted' : `${hit.length} updates deleted`);
+  void deleteNotifRows(hit.map((n) => n.id));
+}
+/** Take finished jobs and answered offers off my own lists (see db.HIDE). */
+export function hideFromJobs(keys: string[]) {
+  keys.forEach((k) => (db.HIDE[k] = Date.now()));
+  bump();
 }
 export function muteChat(id: string, on: boolean) {
   const th = THREADS()[id];

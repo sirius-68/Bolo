@@ -1,6 +1,6 @@
-/* The "you" sheet: appearance, your account, your area, notifications, and switching between hiring and working. */
+/* The "you" sheet: hiring or working (the switch on top), your account, your area, notifications, dark mode. */
 import React from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { db } from '../data/db';
 import { useLive } from '../logic/live';
@@ -12,7 +12,8 @@ import { confirm } from './notice';
 import { openAccount, openArea, openHelp, openNotifs, openSaved } from './sheets';
 import { openSignIn } from './signin';
 import { getLook, setLook, useG } from './theme';
-import { goHome } from './touch';
+import { Switch } from './parts';
+import { goHome, tap } from './touch';
 import { MenuRow, Round, Seg, T, gsheet } from './ui';
 
 export function openMe() {
@@ -32,6 +33,7 @@ function MeSheet() {
   const work = working() && signed;
   const name = db.user.name ? fname(db.user.name) : 'You';
   const saved = (db.saved as string[]).length;
+  const dark = getLook() === 'dark';
   return (
     <View>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -40,18 +42,37 @@ function MeSheet() {
         </T>
         <Round testID="me-close" icon="x" label="Close" bg={t.card2} onPress={() => gsheet.close()} />
       </View>
+      {/* what you are here for: hiring or working. Each side has its own home, jobs and inbox. */}
       <T s={13} w={7} c="muted" style={{ marginTop: 12, marginBottom: 8 }}>
-        Appearance
+        You’re using getit to
       </T>
       <Seg
         h={44}
+        ids="me-mode"
         items={[
-          ['dark', 'Dark'],
-          ['light', 'Light'],
+          ['hire', 'Find a worker'],
+          ['work', 'Get work'],
         ]}
-        value={getLook()}
-        onChange={setLook}
+        value={work ? 'work' : 'hire'}
+        onChange={(m) => {
+          if (m === (work ? 'work' : 'hire')) return;
+          gsheet.close();
+          setTimeout(() => {
+            if (m === 'hire') {
+              setMode('hire');
+              goHome();
+            } else if (signed && db.user.skills.length) {
+              setMode('work');
+              goHome();
+            } else router.push('/wland' as any); // no skill yet: set up as a worker first
+          }, 240);
+        }}
       />
+      {!work && !(signed && db.user.skills.length) ? (
+        <T s={12} c="muted" style={{ marginTop: 6 }}>
+          “Get work” sets you up as a worker: your skill, how you work, your number.
+        </T>
+      ) : null}
       <View style={{ marginTop: 8 }}>
         {signed ? (
           <MenuRow testID="me-account" label={db.user.name || 'Your account'} value={work ? 'Your profile' : 'Account'} onPress={then(() => (work ? router.push('/wprofile' as any) : openAccount()))} />
@@ -62,20 +83,12 @@ function MeSheet() {
         {signed && !work ? <MenuRow testID="me-saved" label="Saved workers" value={saved ? String(saved) : 'None yet'} onPress={then(() => openSaved())} /> : null}
         <MenuRow testID="me-area" label="Your area" value={hasArea() ? areaLabel() : 'Choose'} onPress={then(() => openArea())} />
         {signed ? <MenuRow testID="me-notifs" label="Notifications" value="On" onPress={then(() => openNotifs())} /> : null}
-        <MenuRow
-          testID="me-mode"
-          label={work ? 'Find a worker' : 'Get work on getit'}
-          value={work ? 'Hire someone' : 'Offer a skill'}
-          onPress={then(() => {
-            if (work) {
-              setMode('hire');
-              goHome();
-            } else if (signed && db.user.skills.length) {
-              setMode('work');
-              goHome();
-            } else router.push('/wland' as any);
-          })}
-        />
+        <Pressable testID="me-dark" accessibilityRole="switch" accessibilityState={{ checked: dark }} accessibilityLabel="Dark mode" onPress={() => (tap(), setLook(dark ? 'light' : 'dark'))} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingVertical: 6, paddingHorizontal: 2, borderBottomWidth: 1, borderBottomColor: t.line }}>
+          <T s={15} w={8} style={{ flex: 1 }}>
+            Dark mode
+          </T>
+          <Switch on={dark} />
+        </Pressable>
         <MenuRow testID="me-new" label="What’s new" onPress={then(() => openWhatsNew())} />
         <MenuRow testID="me-help" label="Help and feedback" last={!signed} onPress={then(() => openHelp())} />
         {signed ? (
