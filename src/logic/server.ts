@@ -94,7 +94,7 @@ export const facePic = (name: string, id: string) => logoPic(initials(name), col
 const pic = (url?: string | null) => (url ? 'uri:' + url : null);
 
 /* ================================================================ people and business pages */
-export const PROFILE_COLS = 'id,name,avatar_url,city,bio,role,biz_only,intents,skills,skill_list,level,years,work_status,hire_status,area,experience,education,languages,services,verified,availability,created_at,lng,lat,followers,following,jobs_done,hires,rating,reviews';
+export const PROFILE_COLS = 'id,name,avatar_url,city,bio,role,biz_only,intents,skills,skill_list,level,years,work_status,hire_status,area,experience,education,languages,services,verified,availability,created_at,lng,lat,followers,following,jobs_done,hires,rating,reviews,client_rating,client_reviews';
 export function personFrom(r: any): Person {
   const skills: string[] = r.skills || [];
   // someone who lists no skills is here to hire (or just looking): no "Hire" button, no years of experience
@@ -105,7 +105,7 @@ export function personFrom(r: any): Person {
     name,
     role: skills[0] || 'Member',
     tag: skills.slice(1, 3).join(' · ') || undefined,
-    years: skills.length ? r.years || 0 : 0,
+    years: 0, // getit never asks for years of experience, so none are shown
     rate: Number(r.rating) || 0,
     dist: kmFromMe(r.lng, r.lat),
     area: r.area?.home || r.city || '',
@@ -114,6 +114,9 @@ export function personFrom(r: any): Person {
     verified: r.verified ? 1 : 0,
     jobs: r.jobs_done || 0,
     reviews: String(r.reviews || 0),
+    crate: Number(r.client_rating) || 0,
+    creviews: Number(r.client_reviews) || 0,
+    services: (Array.isArray(r.services) ? r.services : []).filter((x: any) => x && x.skill && x.pub !== false && !x.draft).map((x: any) => String(x.skill)),
     followers: r.followers || 0,
     hires: r.hires || 0,
     client: client ? 1 : undefined,
@@ -208,10 +211,10 @@ async function loadPeople() {
 export async function loadReviewsOf(id: string) {
   const uid = R(id);
   if (!uid) return;
-  const { data } = await supabase.from('reviews').select('id,reviewer_id,stars,tags,body,what,created_at').eq('reviewee_id', uid).order('created_at', { ascending: false }).limit(50);
+  const { data } = await supabase.from('reviews').select('id,reviewer_id,stars,tags,body,what,service,created_at').eq('reviewee_id', uid).eq('as_worker', true).order('created_at', { ascending: false }).limit(50);
   await ensurePeople((data || []).map((r: any) => r.reviewer_id));
   db.REVIEWS[id] = (data || []).map(
-    (r: any): Review => ({ stars: r.stars, tags: r.tags || [], text: r.body || '', name: r.reviewer_id === db.uid ? db.user.name || 'You' : db.P[r.reviewer_id]?.name || 'getit member', photo: r.reviewer_id === db.uid ? db.user.avatar || facePic(db.user.name, ME()) : db.P[r.reviewer_id]?.photo || facePic('?', r.reviewer_id), time: ago(r.created_at) }),
+    (r: any): Review => ({ stars: r.stars, tags: r.tags || [], text: r.body || '', name: r.reviewer_id === db.uid ? db.user.name || 'You' : db.P[r.reviewer_id]?.name || 'getit member', photo: r.reviewer_id === db.uid ? db.user.avatar || facePic(db.user.name, ME()) : db.P[r.reviewer_id]?.photo || facePic('?', r.reviewer_id), time: ago(r.created_at), service: r.service || undefined, what: r.what || undefined }),
   );
 }
 
@@ -287,7 +290,7 @@ const blockedIds = () => BLOCKED;
 async function loadApplications() {
   const myPostIds = db.POSTS.filter((p) => p.mine && p.kind === 'request').map((p) => p.id);
   const [mineQ, onMine] = await Promise.all([
-    supabase.from('applications').select('id,post_id,price,when_text,msg,cv,stage,created_at').eq('applicant_id', ME()).then(need),
+    supabase.from('applications').select('id,post_id,price,when_text,msg,cv,stage,created_at,counter,counter_state').eq('applicant_id', ME()).then(need),
     myPostIds.length ? supabase.from('applications').select('id,post_id,applicant_id,price,when_text,msg,cv,stage,created_at').in('post_id', myPostIds).neq('stage', 'withdrawn').order('created_at').then(need) : Promise.resolve({ data: [] as any[] }),
   ]);
   db.myOffers = {};
@@ -295,7 +298,7 @@ async function loadApplications() {
     if (a.stage === 'withdrawn') return;
     const po = db.POSTS.find((p) => p.id === a.post_id);
     const app = po?.as === 'business';
-    db.myOffers[a.post_id] = { id: a.id, price: a.price, when: a.when_text, state: ['short', 'interview', 'offer', 'hired', 'accepted'].includes(a.stage) ? 'acc' : 'sent', app: app ? 1 : undefined, stage: stageText(a.stage, app), cv: a.cv };
+    db.myOffers[a.post_id] = { id: a.id, price: a.price, when: a.when_text, ask: a.counter_state === 'asked' && a.counter ? a.counter : undefined, state: ['short', 'interview', 'offer', 'hired', 'accepted'].includes(a.stage) ? 'acc' : 'sent', app: app ? 1 : undefined, stage: stageText(a.stage, app), cv: a.cv };
   });
   await ensurePeople((onMine.data || []).map((a: any) => a.applicant_id));
   myPostIds.forEach((pid) => {
@@ -637,7 +640,7 @@ export function markRead(cid: string) {
 }
 
 /* ================================================================ bookings */
-const BOOKING_COLS = 'id,worker_id,client_id,business_id,post_id,conversation_id,title,when_text,price,amount,area,state,eta_min,log,created_at,dest_lng,dest_lat';
+const BOOKING_COLS = 'id,worker_id,client_id,business_id,post_id,conversation_id,title,when_text,price,amount,area,state,eta_min,log,created_at,dest_lng,dest_lat,service';
 const REVIEWED = new Set<string>();
 function bookingFrom(r: any): Booking {
   const iWork = r.worker_id === db.uid;
@@ -661,6 +664,8 @@ function bookingFrom(r: any): Booking {
     as: r.business_id && r.client_id === db.uid ? 'business' : 'regular',
     reviewed: REVIEWED.has(r.id) ? 1 : undefined,
     amt: r.amount,
+    service: r.service || undefined,
+    post: r.post_id || undefined,
     cid: r.conversation_id || undefined,
     // when the last step was taken (for "this week" on the worker's Jobs tab)
     stepAt: +new Date(r.log?.[r.state] || r.updated_at || r.created_at || Date.now()),

@@ -10,6 +10,7 @@ import { RED, ft, useG } from '../src/g/theme';
 import { Big, Pill, StepBar, T } from '../src/g/ui';
 import { Top } from '../src/g/parts';
 import { titleOf } from '../src/g/data';
+import { confirm } from '../src/g/notice';
 import { applyWorkerDraft, tradesLike, workerDraft } from '../src/g/worker';
 import { db } from '../src/data/db';
 import { goBack } from '../src/g/touch';
@@ -35,8 +36,19 @@ export default function W1() {
       const a = (db.PR.area || {}) as any;
       d.ways = Array.isArray(a.ways) && a.ways.length ? a.ways : ['go'];
       d.range = Number(a.radius) >= 50 ? 0 : Number(a.radius) || 5;
-      applyWorkerDraft();
-      return goBack();
+      const was = db.user.skills[0] || '';
+      const n = (db.PR.services || []).filter((x) => x && x.skill && !x.draft).length;
+      const save = () => (applyWorkerDraft(), goBack());
+      // a new main skill takes the old one's services with it: say so first
+      if (was && was !== (d.trade || d.skill) && n)
+        return confirm({
+          title: `Change your main skill to ${d.skill}?`,
+          text: `Your ${n} ${was.toLowerCase()} ${n === 1 ? 'service and its price leave' : 'services and their prices leave'} your profile, and you stop getting ${was.toLowerCase()} requests. Ratings you already have stay, under the services they were for.`,
+          ok: 'Change skill',
+          cancel: 'Keep ' + was,
+          onOk: save,
+        });
+      return save();
     }
     router.push('/w2' as any);
   };
@@ -49,7 +61,7 @@ export default function W1() {
             What’s your main skill?
           </T>
           <T s={15} lh={1.45} c={t.muted} style={{ marginBottom: 16 }}>
-            Type the work you do best, or tap one below. You can add other skills later.
+            Type the work you do most, or tap one below. Next you choose the services you do under it.
           </T>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, height: 56, paddingHorizontal: 16, borderRadius: 18, backgroundColor: t.card, borderWidth: 1, borderColor: t.line }}>
             <GIcon name="search" size={20} color={t.muted} />

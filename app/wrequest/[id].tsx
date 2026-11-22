@@ -70,7 +70,7 @@ export default function WRequest() {
                 {c.name}
               </T>
               <T s={13} c="muted" lines={1}>
-                {[c.rate ? `${c.rate.toFixed(1)} ★ as a client` : 'New on getit', c.hires ? `${c.hires} ${c.hires === 1 ? 'job' : 'jobs'} on getit` : ''].filter(Boolean).join(' · ')}
+                {[c.crate ? `${c.crate.toFixed(1)} ★ as a client (${c.creviews} ${c.creviews === 1 ? 'worker' : 'workers'})` : c.hires ? 'Not rated yet as a client' : 'New on getit', c.hires ? `${c.hires} ${c.hires === 1 ? 'job' : 'jobs'} booked` : ''].filter(Boolean).join(' · ')}
               </T>
             </View>
           </Card>

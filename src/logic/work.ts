@@ -57,11 +57,11 @@ export function follow(id: string) {
 }
 const myPlace = () => (db.user.coord ? { lng: db.user.coord[0], lat: db.user.coord[1] } : {});
 /** Sends a priced job request to a person in chat; when they accept, the job is booked. */
-export function sendHireRequest(id: string, job: string, price: string, whenKey: string) {
+export function sendHireRequest(id: string, job: string, price: string, whenKey: string, service?: string | null) {
   const when = dayText(whenKey);
   add(db.hired, id); // shows as "Requested" until they answer
   bump();
-  sendMessage(id, inboxNow(), 'offer', '', { job, price, when, dur: 'Hire request', worker: 'recipient', area: [db.PR.area.home, cityLabel()].filter(Boolean).join(', '), ...myPlace() })
+  sendMessage(id, inboxNow(), 'offer', '', { job, price, when, dur: 'Hire request', ...(service ? { service } : {}), worker: 'recipient', area: [db.PR.area.home, cityLabel()].filter(Boolean).join(', '), ...myPlace() })
     .then(() => toast(`Request sent to ${P(id).name}`))
     .catch((e) => {
       db.hired = db.hired.filter((x) => x !== id);
@@ -82,6 +82,10 @@ export type JobForm = {
   area: string;
   urgent: boolean;
   photos: string[];
+  /** the service under the skill ("House wiring"), when one was named */
+  service?: string | null;
+  /** handed to the getit agent: it starts by asking 3 workers */
+  agent?: boolean;
   /** where the job is [lng, lat] when a city was chosen; null = no place (remote); undefined = where I am */
   at?: [number, number] | null;
 };
@@ -162,6 +166,8 @@ export function postJob(f: JobForm): Post {
     urgent: f.urgent,
     offerList: [],
     status: 'open',
+    ...(f.service ? { service: f.service } : {}),
+    ...(f.agent ? { agent: '1' } : {}),
     coord: f.at === undefined ? (/remote|online/i.test(f.area) ? undefined : db.user.coord || undefined) : f.at || undefined,
   };
   db.POSTS.unshift(job);
@@ -184,7 +190,7 @@ export function postJob(f: JobForm): Post {
           urgent: !!job.urgent,
           budget_num: +b || 0,
           photos: photos.map((p) => p.replace(/^uri:/, '')),
-          data: { budget: job.budget, when: job.when, type: job.type, openings: job.openings },
+          data: { budget: job.budget, when: job.when, type: job.type, openings: job.openings, ...(f.service ? { service: f.service } : {}), ...(f.agent ? { agent: '1', tz: -new Date().getTimezoneOffset() } : {}) },
           location: jobPoint(f),
         })
         .select('id')
@@ -223,6 +229,7 @@ export function updateJob(id: string, f: JobForm, keepWhen = false) {
     photos: [...f.photos],
     urgent: f.urgent,
     edited: 1,
+    service: f.service || undefined,
   });
   // the place only changes when another city was chosen in the form
   if (f.at !== undefined) po.coord = f.at || undefined;
@@ -236,7 +243,7 @@ export function updateJob(id: string, f: JobForm, keepWhen = false) {
       const photos = await uploadPostPhotos(po.photos || []);
       const { error } = await supabase
         .from('posts')
-        .update({ title: po.title, body: po.text, cat: po.cat, area: po.area, urgent: !!po.urgent, budget_num: +b || 0, photos: photos.map((x) => x.replace(/^uri:/, '')), data: { budget: po.budget, when: po.when, type: po.type, openings: po.openings, edited: 1 }, ...(f.at !== undefined ? { location: jobPoint(f) } : {}) })
+        .update({ title: po.title, body: po.text, cat: po.cat, area: po.area, urgent: !!po.urgent, budget_num: +b || 0, photos: photos.map((x) => x.replace(/^uri:/, '')), data: { budget: po.budget, when: po.when, type: po.type, openings: po.openings, edited: 1, ...(po.service ? { service: po.service } : {}), ...(po.agent ? { agent: po.agent, tz: -new Date().getTimezoneOffset() } : {}) }, ...(f.at !== undefined ? { location: jobPoint(f) } : {}) })
         .eq('id', po.id);
       if (error) throw error;
       po.photos = photos;
@@ -448,7 +455,8 @@ export function resumeSharing() {
 export function submitReview(target: string, bid: string | null, stars: number, tags: string[], text: string) {
   const b = bid ? bk(bid) : null;
   if (!b) return toast('You can review someone after a job with them is confirmed');
-  (db.REVIEWS[target] = db.REVIEWS[target] || []).unshift({ stars, tags, text, name: db.user.name || 'You', photo: db.user.avatar || 'img/me', time: 'now' });
+  // the list on a profile is about someone's work: a rating I give a client is not added to it
+  if (b.worker === target) (db.REVIEWS[target] = db.REVIEWS[target] || []).unshift({ stars, tags, text, name: db.user.name || 'You', photo: db.user.avatar || 'img/me', time: 'now', service: b.service, what: b.title });
   b.reviewed = 1;
   markReviewed(b.id);
   bump();
@@ -527,14 +535,16 @@ export function answerOffer(id: string, i: number, st: 'acc' | 'dec') {
     bump();
   })();
 }
-export function sendQuote(id: string, job: string, price: string, whenKey: string, as?: 'worker' | 'client') {
+export function sendQuote(id: string, job: string, price: string, whenKey: string, as?: 'worker' | 'client', service?: string | null) {
   const when = dayText(whenKey);
   const hiring = as ? as === 'client' : hiringIn(id);
   sendMessage(id, inboxNow(), 'offer', '', {
     job: job || 'Job',
     price: `XAF ${(+price).toLocaleString('en-US')}`,
     when,
-    dur: hiring ? 'Price offered by you' : [mySkill(), `${db.user.years} yrs experience`].filter(Boolean).join(' · '),
+    // (what the price is for: the service, or the skill; never a number of years nobody gave)
+    dur: hiring ? 'Price offered by you' : service || mySkill() || 'Price',
+    ...(service ? { service } : {}),
     worker: hiring ? 'recipient' : 'sender',
     area: [db.PR.area.home, cityLabel()].filter(Boolean).join(', '),
     ...(hiring ? myPlace() : {}),

@@ -3,6 +3,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db, Person } from '../data/db';
 import { CATS, detectCat } from '../data/catalog';
+import { serviceFor, servicesOf } from '../../supabase/functions/_shared/services';
 import { supabase } from '../lib/supabase';
 import { bump } from '../logic/live';
 import { cityLabel, kmOf } from '../logic/core';
@@ -92,22 +93,46 @@ export function tradeFor(text: string): string | null {
   const guess = detectCat(q);
   return guess && CATS.some(([c]) => c === guess) ? guess : null;
 }
-/** What was understood from someone's words. */
-export type Understood = { trade: string | null; title: string };
-/** Understand a need: the word list first (instant, works offline); when it finds nothing, the server's AI,
+/** What was understood from someone's words: the skill, the service under it (when the words say), a title,
+    and, when the person said them, when they want it and what they can pay. */
+export type Understood = { trade: string | null; title: string; service?: string | null; when?: 'now' | 'today' | 'tomorrow' | 'week' | null; budget?: number | null };
+/** "today", "now", "5000", "5k", "10 mille": what the words say about when and how much (nothing when they don't). */
+export function hintsOf(text: string): Pick<Understood, 'when' | 'budget'> {
+  const q = ' ' + text.toLowerCase() + ' ';
+  const when = /\b(now|right now|asap|urgent|immediately|tout de suite|maintenant|now now|sharp sharp)\b/.test(q) ? 'now' : /\b(today|aujourd.?hui|this (morning|afternoon|evening)|tonight|ce soir)\b/.test(q) ? 'today' : /\b(tomorrow|demain)\b/.test(q) ? 'tomorrow' : /\b(this week|cette semaine|weekend|week-end|saturday|sunday|monday|tuesday|wednesday|thursday|friday)\b/.test(q) ? 'week' : null;
+  let budget: number | null = null;
+  const m = q.match(/(\d[\d ,.]{0,9}\d|\d)\s*(k|mille|thousand)?\s*(fcfa|cfa|xaf|frs?|francs?)?\b/g) || [];
+  for (const hit of m) {
+    const p = hit.match(/(\d[\d ,.]*\d|\d)\s*(k|mille|thousand)?\s*(fcfa|cfa|xaf|frs?|francs?)?/);
+    if (!p) continue;
+    const n = +p[1].replace(/[ ,.]/g, '') * (p[2] ? 1000 : 1);
+    // a price, not "2 rooms" or "3 children": an amount with a unit, or at least 500
+    if ((p[2] || p[3] || n >= 500) && n >= 100 && n <= 100000000) budget = n;
+  }
+  return { when, budget };
+}
+/** Understand a need: the word lists first (instant, works offline); when they find no skill, the server's AI,
     which also reads French and Pidgin. Gives up after a few seconds so nobody waits on a slow connection. */
 export async function understand(text: string): Promise<Understood> {
   const said = text.trim();
   const local = tradeFor(said);
-  if (local) return { trade: local, title: titleOf(said) };
-  if (said.length < 3) return { trade: null, title: titleOf(said) };
+  const hints = hintsOf(said);
+  if (local) return { trade: local, title: titleOf(said), service: serviceFor(local, said), ...hints };
+  if (said.length < 3) return { trade: null, title: titleOf(said), ...hints };
   try {
     const ask = supabase.functions.invoke('understand', { body: { text: said.slice(0, 200) } });
     const r: any = await Promise.race([ask, new Promise((res) => setTimeout(() => res(null), 7000))]);
     const d = r?.data;
-    if (d && typeof d.trade === 'string' && CATS.some(([c]) => c === d.trade)) return { trade: d.trade, title: typeof d.title === 'string' && d.title.trim() ? titleOf(d.title) : titleOf(said) };
+    if (d && typeof d.trade === 'string' && CATS.some(([c]) => c === d.trade))
+      return {
+        trade: d.trade,
+        title: typeof d.title === 'string' && d.title.trim() ? titleOf(d.title) : titleOf(said),
+        service: (typeof d.service === 'string' && servicesOf(d.trade).includes(d.service) ? d.service : null) || serviceFor(d.trade, said),
+        when: hints.when || (['now', 'today', 'tomorrow', 'week'].includes(d.when) ? d.when : null),
+        budget: hints.budget || (Number(d.budget) >= 100 ? Math.round(Number(d.budget)) : null),
+      };
   } catch {}
-  return { trade: null, title: titleOf(said) };
+  return { trade: null, title: titleOf(said), ...hints };
 }
 /** "Plumber" → "plumbers", "Delivery" → "delivery people". */
 export function plural(trade: string) {

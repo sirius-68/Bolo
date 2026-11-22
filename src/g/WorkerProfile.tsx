@@ -16,6 +16,7 @@ import { openBook } from './sheets';
 import { tap } from './touch';
 import { withAccount } from './signin';
 import { kmText } from './data';
+import { RatingsByService, scopeOf, useServiceRatings } from './ratings';
 import { GIcon } from './icons';
 import { RED, useG } from './theme';
 import { Big, Face, Round, Screen, T } from './ui';
@@ -26,7 +27,8 @@ function priceOf(x: any): string {
   return n > 0 ? `from ${n.toLocaleString('en-US')} FCFA` : 'Ask';
 }
 
-export function WorkerProfile({ id }: { id: string }) {
+/** `service`: the service the person looking needs (from their request), so that one's rating comes first. */
+export function WorkerProfile({ id, service }: { id: string; service?: string }) {
   useLive();
   const t = useG();
   const ins = useSafeAreaInsets();
@@ -45,6 +47,11 @@ export function WorkerProfile({ id }: { id: string }) {
     .filter((u): u is string => typeof u === 'string' && u.startsWith('uri:'))
     .slice(0, 9);
   const reviews = db.REVIEWS[id] || [];
+  // what the rating is made of: one line per service (see ratings.tsx)
+  const byService = useServiceRatings(id);
+  const total = byService.reduce((a, r) => a + r.reviews, 0) || +p.reviews || 0;
+  const scope = scopeOf(byService, total);
+  const listedNames = prices.map(([n]) => n);
   const where = [p.role !== 'Member' ? p.role : '', p.area, kmText(p) ? `${kmText(p)} away` : ''].filter(Boolean).join(' · ');
   // how they work, as they said when joining (older profiles have none of this, and show nothing)
   const ar = (profileRaw(id)?.area || {}) as { ways?: string[]; radius?: number };
@@ -105,9 +112,21 @@ export function WorkerProfile({ id }: { id: string }) {
           ) : null}
         </View>
         <View style={{ flexDirection: 'row', gap: 8, marginHorizontal: 16, marginTop: 18 }}>
-          {stat(p.rate ? `${p.rate.toFixed(1)} ★` : 'New', 'Rating')}
+          {/* someone who only hires: what workers said about them as a client (never shown as a rating of work) */}
+          {p.client ? (
+            <>
+              {stat(p.crate ? `${p.crate.toFixed(1)} ★` : 'New', 'As a client')}
+              {stat(String(p.creviews || 0), p.creviews === 1 ? 'Rating from a worker' : 'Ratings from workers')}
+              {stat(String(p.hires || 0), 'Jobs booked')}
+            </>
+          ) : (
+            <>
+          {/* the one number says what it covers: "for all 3 services", never just "Rating" */}
+          {stat(p.rate ? `${p.rate.toFixed(1)} ★` : 'New', p.rate ? (scope ? scope.charAt(0).toUpperCase() + scope.slice(1) : 'Rating') : 'No ratings yet')}
+          {stat(String(total), total === 1 ? 'Rating' : 'Ratings')}
           {stat(String(p.jobs || 0), 'Jobs done')}
-          {stat(p.years ? `${p.years} yr` : '–', 'Experience')}
+            </>
+          )}
         </View>
         <View style={{ paddingHorizontal: 20 }}>
           {about.bio ? (
@@ -118,9 +137,18 @@ export function WorkerProfile({ id }: { id: string }) {
               </T>
             </>
           ) : null}
+          {!p.client && (byService.some((r) => r.reviews > 0) || listedNames.length > 1) ? (
+            <>
+              {h2('Ratings by service', 2)}
+              <T s={13} lh={1.45} c={t.muted} style={{ marginBottom: 4 }}>
+                {p.rate ? `${p.rate.toFixed(1)} ★ is the average of all ${total} ${total === 1 ? 'rating' : 'ratings'}. Here is what each was for.` : `${f} has no ratings yet.`}
+              </T>
+              <RatingsByService rows={byService} listed={listedNames} focus={service} />
+            </>
+          ) : null}
           {prices.length ? (
             <>
-              {h2('Prices', 4)}
+              {h2(`What ${f} does`, 4)}
               {prices.map(([name, price], i) => (
                 <View key={name + i} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 48, borderBottomWidth: 1, borderBottomColor: t.line }}>
                   <T s={15} style={{ flex: 1 }}>
@@ -145,7 +173,9 @@ export function WorkerProfile({ id }: { id: string }) {
               </View>
             </>
           ) : null}
-          {h2(`Reviews · ${reviews.length || p.reviews || 0}`, 10)}
+          {!p.client ? (
+            <>
+          {h2(`What clients said · ${reviews.length || total}`, 10)}
           {reviews.length ? (
             <View style={{ gap: 10 }}>
               {reviews.map((r, i) => (
@@ -159,7 +189,7 @@ export function WorkerProfile({ id }: { id: string }) {
                     </T>
                   </View>
                   <T s={13} w={7} c={t.accent} style={{ marginTop: 4 }}>
-                    {[`${r.stars} ★`, ...(r.tags || [])].join(' · ')}
+                    {[`${r.stars} ★`, r.service || '', ...(r.tags || [])].filter(Boolean).join(' · ')}
                   </T>
                   {r.text ? (
                     <T s={14} lh={1.5} style={{ marginTop: 6 }}>
@@ -171,10 +201,10 @@ export function WorkerProfile({ id }: { id: string }) {
             </View>
           ) : (
             <T s={14} lh={1.5} c={t.muted}>
-              No reviews yet. {f} is new on getit.
+              No reviews yet. {p.jobs ? `${f} has done ${p.jobs} ${p.jobs === 1 ? 'job' : 'jobs'} on getit, not rated yet.` : `${f} is new on getit.`}
             </T>
           )}
-          <Pressable testID="profile-book" accessibilityRole="button" onPress={() => (tap(), openBook({ worker: id, need: '' }))} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1, borderColor: t.line, backgroundColor: t.card, opacity: pressed ? 0.8 : 1 })}>
+          <Pressable testID="profile-book" accessibilityRole="button" onPress={() => (tap(), openBook({ worker: id, need: '', service }))} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1, borderColor: t.line, backgroundColor: t.card, opacity: pressed ? 0.8 : 1 })}>
             <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: t.tabOn, alignItems: 'center', justifyContent: 'center' }}>
               <GIcon name="calendar" size={20} color={t.accent} />
             </View>
@@ -188,6 +218,12 @@ export function WorkerProfile({ id }: { id: string }) {
             </View>
             <GIcon name="chev" size={18} color={t.muted} />
           </Pressable>
+            </>
+          ) : (
+            <T s={14} lh={1.5} c={t.muted} style={{ marginTop: 24 }}>
+              {f} uses getit to find workers. {p.creviews ? `Workers who did a job for ${f} gave ${p.crate?.toFixed(1)} ★ on average.` : 'No worker has rated them yet.'}
+            </T>
+          )}
         </View>
       </ScrollView>
       <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 + ins.bottom, borderTopWidth: 1, borderTopColor: t.line, backgroundColor: t.bg }}>

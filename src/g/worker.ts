@@ -47,7 +47,7 @@ export function workLine(d: { skill: string; ways: Way[]; range: number }, place
   return [d.skill, local ? place : '', d.ways.includes('go') ? (d.range ? `up to ${d.range} km` : `all of ${cityLabel() || 'the city'}`) : '', d.ways.includes('come') ? 'own shop' : '', d.ways.includes('online') ? 'works online' : ''].filter(Boolean).join(' · ');
 }
 
-/** Write the draft to the profile (after sign-in). Skills already on the account are kept; the new one comes first. */
+/** Write the draft to the profile (after sign-in). A worker has one main skill: this one replaces any other. */
 export function applyWorkerDraft(): boolean {
   const d = draft;
   if (!d || !d.skill.trim() || !d.ways.length) return false;
@@ -55,8 +55,12 @@ export function applyWorkerDraft(): boolean {
   const name = titleOf(d.skill);
   const cat = d.trade || name;
   if (!u.intents.includes('find')) u.intents = ['find', ...u.intents];
-  u.skills = [cat, ...u.skills.filter((c) => c !== cat)];
-  const list = Array.isArray(u.skillList) ? u.skillList.filter((e) => e.c !== cat) : [];
+  // one main skill: a new one replaces the old one (and the old one's requests stop coming). The services
+  // listed under the old skill go with it, because every service belongs to its skill.
+  const changed = !!u.skills[0] && u.skills[0] !== cat;
+  u.skills = [cat];
+  if (changed) db.PR.services = [];
+  const list: typeof u.skillList = [];
   const known = SKILLS.find((x) => x.c === cat && x.n.toLowerCase() === name.toLowerCase());
   u.skillList = [known ? { si: known.i, n: known.n, a: known.a, c: cat, x: {}, xo: {}, lv: 'Intermediate' } : { si: -1, n: name, a: SKILLS.find((x) => x.c === cat)?.a || 'Other', c: cat, x: {}, xo: {}, lv: 'Intermediate', custom: 1 }, ...list];
   db.PR.area = { ...db.PR.area, radius: d.range || 50, ways: d.ways, reach: d.ways.includes('online') ? d.reach : undefined } as any;

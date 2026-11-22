@@ -42,6 +42,7 @@ import {
   updateJob,
 } from '../logic/work';
 import { WHENS, WHERES, Where, amount, areaLabel, hasArea, money, plural, titleOf, whenText, whereFor } from './data';
+import { myServices, priceFor, serviceFor, servicesOf } from './services';
 import { GIcon, GIconName } from './icons';
 import { openChat } from './nav';
 import { confirm, toast } from './notice';
@@ -84,8 +85,20 @@ function Opt({ label, on, onPress, testID }: { label: string; on: boolean; onPre
   );
 }
 
+/** "What kind of job?": the services under a skill, as chips. None chosen = any work of the skill. */
+function ServiceChips({ list, value, onChange, ids }: { list: string[]; value: string | null; onChange: (v: string | null) => void; ids: string }) {
+  if (!list.length) return null;
+  return (
+    <Wrap>
+      {list.map((name, i) => (
+        <Opt key={name} testID={`${ids}-${i}`} label={name} on={value === name} onPress={() => onChange(value === name ? null : name)} />
+      ))}
+    </Wrap>
+  );
+}
+
 /* ====================================================================== get prices from several workers */
-export type RequestFor = { trade: string; need: string; /** change a request already sent */ postId?: string };
+export type RequestFor = { trade: string; need: string; /** the service under the skill, when the words said one */ service?: string | null; /** change a request already sent */ postId?: string };
 /** "Get prices from plumbers near you": what, details, a photo, when and where. Sending needs an account. */
 export function openRequest(o: RequestFor) {
   gsheet.show(() => <RequestSheet o={o} />);
@@ -100,6 +113,8 @@ function RequestSheet({ o }: { o: RequestFor }) {
   const [when, setWhen] = useState(old ? WHENS.find(([k]) => whenText(old.when) === k || old.when === k)?.[0] || '' : 'As soon as possible');
   const [where, setWhere] = useState<Where>((old?.type as Where) && WHERES.some(([k]) => k === old?.type) ? (old!.type as Where) : whereFor(o.trade));
   const [busy, setBusy] = useState(false);
+  // the service under the skill: read from the words, changed with a tap; none = any work of the skill
+  const [service, setService] = useState<string | null>(old ? old.service || null : o.service ?? serviceFor(o.trade, o.need));
   const many = plural(o.trade);
   const place = hasArea() ? areaLabel() : '';
   const ok = need.trim().length >= 3 && (where === 'online' || !!place);
@@ -116,6 +131,7 @@ function RequestSheet({ o }: { o: RequestFor }) {
     area: where === 'online' ? 'Online' : place,
     urgent: when === 'As soon as possible',
     photos: photo ? [photo] : [],
+    service,
     at: where === 'online' ? null : undefined,
   });
   const send = () => {
@@ -172,6 +188,15 @@ function RequestSheet({ o }: { o: RequestFor }) {
           </T>
         </View>
       </Pressable>
+      {servicesOf(o.trade).length ? (
+        <>
+          <Small>What kind of job? (optional)</Small>
+          <ServiceChips ids="req-svc" list={servicesOf(o.trade)} value={service} onChange={setService} />
+          <T s={13} lh={1.45} c="muted" style={{ marginTop: 8 }}>
+            {service ? `${many.charAt(0).toUpperCase() + many.slice(1)} who do ${service.toLowerCase()} are asked first.` : `Not sure? Leave it: any ${o.trade.toLowerCase()} can answer.`}
+          </T>
+        </>
+      ) : null}
       <Small>When?</Small>
       <Wrap>
         {WHENS.map(([k]) => (
@@ -190,7 +215,7 @@ function RequestSheet({ o }: { o: RequestFor }) {
         ))}
       </Wrap>
       {where !== 'online' && !place ? (
-        <Pressable testID="req-area" accessibilityRole="button" onPress={() => openArea(() => openRequest({ ...o, need }))} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: t.tabOn }}>
+        <Pressable testID="req-area" accessibilityRole="button" onPress={() => openArea(() => openRequest({ ...o, need, service }))} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: t.tabOn }}>
           <GIcon name="pin" size={18} color={t.accent} />
           <T s={14} w={7} style={{ flex: 1 }}>
             Choose your area first, so we ask people near you
@@ -205,7 +230,7 @@ function RequestSheet({ o }: { o: RequestFor }) {
       <SheetFoot>
         {/* no area yet: the button says so and opens the area picker (the reason may be out of sight) */}
         {where !== 'online' && !place ? (
-          <Big testID="req-send" title="Choose your area to continue" quiet={need.trim().length < 3} onPress={() => need.trim().length >= 3 && openArea(() => openRequest({ ...o, need }))} />
+          <Big testID="req-send" title="Choose your area to continue" quiet={need.trim().length < 3} onPress={() => need.trim().length >= 3 && openArea(() => openRequest({ ...o, need, service }))} />
         ) : (
           <Big testID="req-send" title={old ? 'Save changes' : `Ask ${many} near you`} loading={busy} quiet={!ok} onPress={send} />
         )}
@@ -219,6 +244,8 @@ export type BookFor = {
   worker: string;
   /** what the job is */
   need: string;
+  /** the service the job is for, when known */
+  service?: string | null;
   /** booking an offer they sent on my request: the request and the offer's place in its list */
   postId?: string;
   offer?: number;
@@ -238,6 +265,9 @@ function BookSheet({ o }: { o: BookFor }) {
   const [when, setWhen] = useState('Today');
   const [price, setPrice] = useState('');
   const [busy, setBusy] = useState(false);
+  // someone with several services: which one this job is for (their rating is kept per service)
+  const theirs = p.services || [];
+  const [service, setService] = useState<string | null>(o.service && theirs.includes(o.service) ? o.service : theirs.length === 1 ? theirs[0] : theirs.find((x) => x === serviceFor(p.role, o.need || '')) || null);
   const book = () => {
     if (busy) return;
     if (off && po) {
@@ -246,7 +276,8 @@ function BookSheet({ o }: { o: BookFor }) {
       // the job opens as soon as the booking is back from the server
       let n = 0;
       const wait = setInterval(() => {
-        const b = db.BOOKINGS.find((x) => x.worker === o.worker && x.client === 'me' && x.state === 'booked');
+        // this request's booking (not an older one with the same worker)
+        const b = db.BOOKINGS.find((x) => x.worker === o.worker && x.client === 'me' && x.state === 'booked' && (!x.post || x.post === po.id));
         if (b || ++n > 24) {
           clearInterval(wait);
           gsheet.close();
@@ -257,19 +288,28 @@ function BookSheet({ o }: { o: BookFor }) {
     }
     if (need.trim().length < 3) return toast('Say what the job is, in a few words');
     Keyboard.dismiss();
-    sendHireRequest(o.worker, titleOf(need), price ? `XAF ${(+price).toLocaleString('en-US')}` : 'Agreed by call', when);
+    sendHireRequest(o.worker, titleOf(need), price ? `XAF ${(+price).toLocaleString('en-US')}` : 'Agreed by call', when, service);
     then(() => openChat(o.worker));
   };
   return (
     <View>
       <H>Book {f}?</H>
       {off ? (
-        <Details sheet style={{ marginTop: 14 }} rows={[['What', po?.title], ['When', whenText(off.when)], ['Price', money(off.price)]]} />
+        <Details sheet style={{ marginTop: 14 }} rows={[['What', po?.title], ...(po?.service ? ([['Service', po.service]] as [string, string][]) : []), ['When', whenText(off.when)], ['Price', money(off.price)]]} />
       ) : (
         <>
           <Sub>{f} gets the booking and accepts it. Then you can follow the job, chat and rate it.</Sub>
           <Label>What</Label>
           <Input testID="book-need" value={need} onChangeText={setNeed} placeholder="For example: fix a leaking sink" maxLength={60} />
+          {theirs.length > 1 ? (
+            <>
+              <Small>Which of {f}’s services is it?</Small>
+              <ServiceChips ids="book-svc" list={theirs} value={service} onChange={setService} />
+              <T s={13} lh={1.45} c="muted" style={{ marginTop: 8 }}>
+                Your rating afterwards counts for this service.
+              </T>
+            </>
+          ) : null}
           <Small>When</Small>
           <Wrap>
             {['Today', 'Tomorrow', 'This week'].map((k) => (
@@ -341,6 +381,10 @@ function RateSheet({ id, after }: { id: string; after?: (stars: number) => void 
         <Face name={p.name} photo={p.photo} size={64} />
         <T s={24} w={8} ls={-0.5} center style={{ marginTop: 12 }}>
           {iWork ? `How was ${f} as a client?` : `How did ${f} do?`}
+        </T>
+        {/* what the stars are for: this job, and (for a worker) this service only */}
+        <T testID="rate-for" s={14} lh={1.45} c="muted" center style={{ marginTop: 6, maxWidth: 300 }}>
+          {iWork ? `For “${b.title}”. It shows on ${f}’s profile as a client.` : b.service ? `For “${b.title}”. Your stars count for ${f}’s ${b.service.toLowerCase()} rating.` : `For “${b.title}”.`}
         </T>
         <View style={{ flexDirection: 'row', gap: 6, marginTop: 14 }}>
           {[1, 2, 3, 4, 5].map((n) => (
@@ -461,12 +505,16 @@ function OfferSheet({ o }: { o: { postId?: string; chat?: string } }) {
   const who = po?.client || o.chat || '';
   const f = fname(P(who)?.name || '');
   // my own price for this kind of job, when I gave one
-  const mine = (db.PR.services || []).find((s) => s && +s.price > 0);
+  const forSvc = po?.service ? priceFor(db.PR.services, po.service) : 0;
+  const mine = forSvc ? { price: forSvc } : (db.PR.services || []).find((s) => s && +s.price > 0);
   // the field starts empty, so what is typed is exactly the price; the usual price is one of the chips below
   const [price, setPrice] = useState('');
   const [when, setWhen] = useState(po?.urgent ? 'Now' : 'Today');
   const [note, setNote] = useState('');
   const [job, setJob] = useState(po?.title || THREADS()[who]?.job || '');
+  // a price sent in chat: which of my services it is for (a request already says its own)
+  const mineNames = myServices().map((x) => x.skill);
+  const [svc, setSvc] = useState<string | null>(mineNames.length === 1 ? mineNames[0] : null);
   const base = amount(mine?.price) || amount(price) || 5000;
   const chips = [...new Set([0.8, 1, 1.25, 1.5].map((k) => Math.max(500, Math.round((base * k) / 500) * 500)))];
   const n = amount(price);
@@ -480,7 +528,7 @@ function OfferSheet({ o }: { o: { postId?: string; chat?: string } }) {
       return then(() => router.replace(`/wsent?id=${po.id}` as any));
     }
     if (job.trim().length < 3) return toast('Say what the job is, in a few words');
-    sendQuote(who, titleOf(job), String(n), time ? `Today, ${time}` : key, 'worker');
+    sendQuote(who, titleOf(job), String(n), time ? `Today, ${time}` : key, 'worker', svc);
     gsheet.close();
   };
   return (
@@ -491,7 +539,17 @@ function OfferSheet({ o }: { o: { postId?: string; chat?: string } }) {
           <View style={{ height: 14 }} />
           <Label>The job</Label>
           <Input testID="offer-job" value={job} onChangeText={setJob} placeholder="For example: fix a leaking sink" maxLength={60} />
+          {mineNames.length > 1 ? (
+            <>
+              <Small>Which of your services is it?</Small>
+              <ServiceChips ids="offer-svc" list={mineNames} value={svc} onChange={setSvc} />
+            </>
+          ) : null}
         </>
+      ) : po.service ? (
+        <T s={13} w={7} c="muted" style={{ marginTop: 10 }}>
+          {`For: ${po.service}${forSvc ? ` · you list it from ${forSvc.toLocaleString('en-US')} FCFA` : mineNames.length && !mineNames.some((x) => x.toLowerCase() === po.service!.toLowerCase()) ? ' · not one of your listed services' : ''}`}
+        </T>
       ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, height: 64, paddingHorizontal: 18, borderRadius: 20, backgroundColor: t.card2, borderWidth: 2, borderColor: RED }}>
         <Input testID="offer-price" accessibilityLabel="Your price in FCFA" value={price ? (+price).toLocaleString('en-US') : ''} onChangeText={(v) => setPrice(v.replace(/[^\d]/g, '').slice(0, 8))} placeholder="0" keyboardType="number-pad" autoFocus style={[ft(28, 8, t.text), { flex: 1, height: 60, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 }]} />

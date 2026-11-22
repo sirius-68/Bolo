@@ -17,6 +17,11 @@ export type Person = {
   verified?: number;
   jobs: number;
   reviews: string;
+  /** what workers said about them as a client: average and how many (kept apart from the rating of their work) */
+  crate?: number;
+  creviews?: number;
+  /** the services they list under their skill */
+  services?: string[];
   followers: number;
   hires?: number;
   client?: number;
@@ -36,6 +41,9 @@ export type Offer = { by: string; price: string; when: string; msg: string; stag
 /** A CV attached to an offer: the person's getit CV (src 'profile'), or a file they picked (sent in the chat; uri/mime only exist on the sender's phone). */
 export type CvFile = { name: string; kb: number; src?: string; uri?: string; mime?: string };
 export type Post = {
+  /** a request: the service under the skill it is for, and whether the getit agent handles it */
+  service?: string;
+  agent?: string;
   /** changed after it was posted */
   edited?: number;
   id: string;
@@ -167,6 +175,10 @@ export type Booking = {
   as?: 'regular' | 'business';
   reviewed?: number;
   amt?: number;
+  /** the service the job is for ("House wiring"), when it named one */
+  service?: string;
+  /** the request it came from */
+  post?: string;
   /** the chat this booking belongs to */
   cid?: string;
   /** when its latest step was taken (ms) */
@@ -303,8 +315,10 @@ export type MyBiz = {
   remoteId?: string;
 };
 export type SkillEntry = { si: number; n: string; a: string; c: string | null; x: Record<string, any>; xo: Record<string, string[]>; lv: string; custom?: number; desc?: string };
-export type MyOffer = { price: string; when: string; state: 'sent' | 'acc'; app?: number; stage?: string; cv?: CvFile | null };
-export type Review = { stars: number; tags: string[]; text: string; name: string; photo: Pic; time: string };
+/** `ask`: the getit agent asked whether this amount (the client's budget, in FCFA) works; waiting for my answer. */
+export type MyOffer = { price: string; when: string; state: 'sent' | 'acc'; app?: number; stage?: string; cv?: CvFile | null; ask?: number };
+/** `service`: what the rated job was for (when it named one). Only ratings of someone's WORK are kept here. */
+export type Review = { stars: number; tags: string[]; text: string; name: string; photo: Pic; time: string; service?: string; what?: string };
 export type Service = { id: string; skill: string; price: number | string; unit: string; where: string; desc: string; pub: boolean; boost: number; draft?: boolean };
 
 /* ------------------------------ catalogue only: no sample people, posts or chats ------------------------------ */
@@ -336,7 +350,7 @@ export function makeDb() {
       country: '' as string,
       bio: '',
       skills: [] as string[],
-      years: 3,
+      years: 0,
       level: 'Mid-level',
       jobTypes: [] as string[],
       workTypes: [] as string[],
@@ -370,7 +384,7 @@ export function makeDb() {
       areas: [] as string[],
       fields: [] as string[],
       headline: '',
-      years: 3,
+      years: 0,
       role: '',
       creds: [] as string[],
       link: '',

@@ -92,10 +92,37 @@ name: getit, a new worker (skill, how you work, number, you're on getit, prices,
       id: "wprice-save"
     timeout: 10000
 - takeScreenshot: w07-prices
+# two services of the skill, the first with a price
+- tapOn:
+    id: "wsvc-0"
+- tapOn:
+    id: "wsvc-1"
 - tapOn:
     id: "wprice-0"
 - inputText: "5000"
 - hideKeyboard
+# a service of another trade is refused
+- scrollUntilVisible:
+    element:
+      id: "wsvc-add"
+    direction: DOWN
+    timeout: 8000
+- tapOn:
+    id: "wsvc-add"
+- inputText: "Braids and twists"
+- hideKeyboard
+- tapOn:
+    id: "wsvc-add-ok"
+- extendedWaitUntil:
+    visible:
+      id: "wsvc-err"
+    timeout: 12000
+- takeScreenshot: w08a-service-refused
+- scrollUntilVisible:
+    element:
+      id: "wprice-after"
+    direction: DOWN
+    timeout: 8000
 - tapOn:
     id: "wprice-after"
 - takeScreenshot: w08-prices-filled

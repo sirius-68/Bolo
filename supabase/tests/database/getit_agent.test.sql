@@ -1,7 +1,7 @@
 -- Services under a skill, ratings per service, and the getit agent.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(53);
+select plan(61);
 
 insert into auth.users (id, email, raw_user_meta_data) values
   ('a0000000-0000-0000-0000-0000000000a1', 'hira@test.getit', '{"name": "Hira M"}'),
@@ -45,11 +45,12 @@ select is(public.agent_start('g1', 6000, 'today', false) ->> 'state', 'asking', 
 select is((public.agent_tick('g1') ->> 'told')::int, 3, 'the agent knows 3 were asked');
 select is((public.agent_left() ->> 'used')::int, 0, 'no free try is used before it brings an offer');
 
+-- (the app saves when a worker can come as a day: "Sun 22 Nov, now", "Mon 23 Nov"; the test writes it the same way)
 -- ---- prices come in. Above the budget: the worker is asked once, never below their own listed price
 set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-0000000000b1"}';
-insert into public.applications (post_id, price, when_text, msg) values ('g1', 'XAF 7,000', 'Today, now', 'I have the parts');
+insert into public.applications (post_id, price, when_text, msg) values ('g1', 'XAF 7,000', to_char((now() at time zone 'UTC') + interval '1 hour', 'Dy FMDD Mon') || ', now', 'I have the parts');
 set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-0000000000b2"}';
-insert into public.applications (post_id, price, when_text, msg) values ('g1', 'XAF 9,000', 'Today', '');
+insert into public.applications (post_id, price, when_text, msg) values ('g1', 'XAF 9,000', to_char((now() at time zone 'UTC') + interval '1 hour', 'Dy FMDD Mon'), '');
 reset role;
 select is((select counter_state from public.applications where post_id = 'g1' and applicant_id = 'b0000000-0000-0000-0000-0000000000b1'), 'asked', 'Paul (7,000, lists this from 5,000) is asked if the budget works');
 select is((select counter from public.applications where post_id = 'g1' and applicant_id = 'b0000000-0000-0000-0000-0000000000b1'), 6000, 'the question is the budget, not less');
@@ -59,7 +60,7 @@ select is((select price from public.applications where post_id = 'g1' and applic
 
 set local role authenticated;
 set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-0000000000b3"}';
-insert into public.applications (post_id, price, when_text, msg) values ('g1', 'XAF 6,000', 'Tomorrow', '');
+insert into public.applications (post_id, price, when_text, msg) values ('g1', 'XAF 6,000', to_char((now() at time zone 'UTC') + interval '25 hours', 'Dy FMDD Mon'), '');
 set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-0000000000a1"}';
 select is(public.agent_tick('g1') ->> 'state', 'asking', 'three offers are in, but it waits for Paul’s answer before deciding');
 set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-0000000000b2"}';
@@ -77,6 +78,17 @@ set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-0000000000a1"}'
 select is((public.agent_left() ->> 'used')::int, 1, 'one free try is used now');
 select is((select (o ->> 'fit')::boolean from jsonb_array_elements(public.agent_tick('g1') -> 'offers') o where o ->> 'name' = 'Mary T'), false, 'the screen knows Mary’s offer is not in time');
 select ok((select (o ->> 'does_service')::boolean from jsonb_array_elements(public.agent_tick('g1') -> 'offers') o where o ->> 'name' = 'Paul N'), 'and that Paul lists this service');
+
+-- ---- reading "when" as the app saves it
+reset role;
+select is(private.when_rank('Sun 22 Nov, now', '2026-11-22 10:00+00', 60), 0, '"…, now" is now');
+select is(private.when_rank('Sun 22 Nov', '2026-11-22 10:00+00', 60), 2, 'the same day is today');
+select is(private.when_rank('Mon 23 Nov', '2026-11-22 10:00+00', 60), 3, 'the next day is tomorrow');
+select is(private.when_rank('Mon 23 Nov', '2026-11-22 22:30+00', 180), 2, 'for someone three hours ahead of UTC it is already the 23rd: today');
+select is(private.when_rank('By Sun 29 Nov', '2026-11-22 10:00+00', 60), 4, '"by Sunday" is some time this week');
+select is(private.when_rank('Fri 2 Jan', '2026-12-30 10:00+00', 60), 4, 'a day after New Year is later, not last January');
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-0000000000a1"}';
 
 -- ---- Hira books the pick; a request is booked once
 select lives_ok($$ select public.accept_application((select pick from public.agent_runs where post_id = 'g1')) $$, 'Hira books Paul');
@@ -112,7 +124,7 @@ insert into public.posts (id, author_id, kind, title, cat, urgent, data, locatio
   ('g2', auth.uid(), 'request', 'Blocked drain', 'Plumber', true, '{"type": "place", "agent": "1"}', st_setsrid(st_makepoint(9.2410, 4.1530), 4326)::geography);
 select is(public.agent_start('g2', 5000, 'now', true) ->> 'state', 'asking', 'a second request, with "book the best offer for me" on');
 set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-0000000000b4"}';
-insert into public.applications (post_id, price, when_text) values ('g2', 'XAF 4,000', 'Today, in 1 hour');
+insert into public.applications (post_id, price, when_text) values ('g2', 'XAF 4,000', to_char((now() at time zone 'UTC') + interval '1 hour', 'Dy FMDD Mon') || ', in 1 hour');
 reset role;
 select is((select state from public.agent_runs where post_id = 'g2'), 'asking', 'one offer of three asked: it waits a little for the others');
 update public.applications set created_at = now() - interval '4 minutes' where post_id = 'g2';
@@ -122,6 +134,13 @@ select is(public.agent_tick('g2') ->> 'state', 'booked', 'three minutes later (i
 reset role;
 select is((select worker_id from public.bookings where post_id = 'g2'), 'b0000000-0000-0000-0000-0000000000b4'::uuid, 'Tom is booked');
 select is((select status from public.posts where id = 'g2'), 'booked', 'and the request is closed to others');
+
+select throws_ok($$ select public.agent_start('g2', 9000, 'now', true) $$, null, null, 'a request that is booked can’t be handed to the agent again');
+reset role;
+insert into public.posts (id, author_id, kind, title, cat, data) values ('g9', 'a0000000-0000-0000-0000-0000000000a1', 'request', 'Fix a pipe', 'Plumber', '{"type": "place", "agent": "1"}');
+insert into public.agent_runs (post_id, client_id, budget, want, auto) values ('g9', 'a0000000-0000-0000-0000-0000000000a1', null, 'today', true);
+select is((select auto from public.agent_runs where post_id = 'g9'), false, 'with no budget the agent never books on its own: it asks first');
+delete from public.posts where id = 'g9';
 
 -- ---- nobody offers this: it asks again, then says so; the person can keep asking or take over
 set local role authenticated;
