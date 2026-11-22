@@ -274,7 +274,7 @@ export default function Track() {
                 {o.verified ? <GIcon name="tick" size={15} /> : null}
               </View>
               <T s={13} c={t.muted} lines={1} style={{ marginTop: 2 }}>
-                {W ? [o.crate ? `${o.crate.toFixed(1)} ★ as a client` : '', 'Client'].filter(Boolean).join(' · ') : [theirRating, b.service || o.role].filter(Boolean).join(' · ')}
+                {W ? [o.crate ? `${o.crate.toFixed(1)} ★ as a client` : '', 'Client'].filter(Boolean).join(' · ') : [theirRating, theirRating.includes(' for ') ? '' : b.service || o.role].filter(Boolean).join(' · ')}
               </T>
             </View>
           </Pressable>

@@ -13,9 +13,9 @@ import { openChat } from '../src/g/nav';
 import { openAgentPro, openRequest } from '../src/g/sheets';
 import { Tries, Want, agentLeft, triesLeft } from '../src/g/agent';
 import { ratingFor, scopeOf, useServiceRatings } from '../src/g/ratings';
-import { offers } from '../src/g/services';
+import { offers, serviceFor } from '../src/g/services';
 import { canListen } from '../src/g/speech';
-import { areaLabel, findWorkers, hasArea, kmText, localWorkers, plural } from '../src/g/data';
+import { areaLabel, findWorkers, hasArea, isNear, kmText, localWorkers, plural } from '../src/g/data';
 import { GIcon } from '../src/g/icons';
 import { BRAND, useG } from '../src/g/theme';
 import { Big, Face, Link, Round, Screen, T } from '../src/g/ui';
@@ -30,7 +30,7 @@ export default function Workers() {
   const need = typeof p.need === 'string' && p.need ? p.need : trade;
   const many = plural(trade);
   // the service under the skill the words pointed at ("House wiring"), and what they said about when and how much
-  const service = typeof p.service === 'string' && p.service ? p.service : null;
+  const service = typeof p.service === 'string' && p.service ? p.service : serviceFor(trade, need);
   const when = (['now', 'today', 'tomorrow', 'week'] as Want[]).find((w) => w === p.when) || null;
   const budget = +(p.budget || 0) >= 100 ? Math.round(+p.budget!) : null;
   const [tries, setTries] = useState<Tries | null>(null);
@@ -51,7 +51,11 @@ export default function Workers() {
   useEffect(load, [trade]);
   // those who say they do this very service come first; the order among them stays (closest, then best rated)
   const does = (id: string) => offers((db.P[id].services || []).map((skill) => ({ skill })), service);
-  const list = ids.filter((id) => db.P[id]).sort((a, b) => +does(b) - +does(a));
+  // the list of a skill holds workers from everywhere: those near me first (2), then unknown (1), then other towns (0)
+  const nearness = (id: string) => (isNear(id) === true ? 2 : isNear(id) === null ? 1 : 0);
+  const list = ids.filter((id) => db.P[id]).sort((a, b) => nearness(b) - nearness(a) || +does(b) - +does(a));
+  const nearN = list.filter((id) => isNear(id) === true).length;
+  const knowArea = list.every((id) => isNear(id) !== null);
   const topId = pick && list.includes(pick) ? pick : list[0];
   const top = topId ? db.P[topId] : undefined;
   useEffect(() => {
@@ -88,13 +92,13 @@ export default function Workers() {
         </View>
         <View style={{ paddingHorizontal: 20, paddingTop: 14 }}>
           <T s={13} w={8} ls={0.4} c={t.accent}>
-            {(list.length ? `${list.length} ${list.length === 1 ? trade : many} near you` : state === 'loading' ? `Looking for ${many}` : many).toUpperCase()}
+            {(!list.length ? (state === 'loading' ? `Looking for ${many}` : many) : !knowArea ? `${list.length} ${list.length === 1 ? trade : many} on getit` : nearN ? `${nearN} ${nearN === 1 ? trade : many} near you` : `No ${many} near you yet · ${list.length} in other towns`).toUpperCase()}
           </T>
           <T s={28} w={8} lh={1.15} ls={-0.6} style={{ marginTop: 4, marginBottom: 2 }}>
             {need}
           </T>
           <T s={14} c={t.muted}>
-            {hasArea() ? `${areaLabel()} · free to contact` : 'Free to contact'}
+            {hasArea() ? `${areaLabel()} · free to contact` : list.length && !knowArea ? 'Choose your area to see who is near you · free to contact' : 'Free to contact'}
           </T>
         </View>
 
@@ -110,7 +114,7 @@ export default function Workers() {
                   {top.verified ? <GIcon name="tick" size={18} /> : null}
                 </View>
                 <T s={14} c={t.muted} lines={1} style={{ marginTop: 2 }}>
-                  {[service && does(topId) ? service : trade, kmText(top) ? `${kmText(top)} away` : top.area].filter(Boolean).join(' · ')}
+                  {[service && does(topId) ? service : trade, kmText(top) ? `${kmText(top)} away` : top.area, isNear(topId) === false ? 'not in your town' : ''].filter(Boolean).join(' · ')}
                 </T>
               </View>
               <GIcon name="chev" size={18} color={t.muted} />
@@ -206,7 +210,7 @@ export default function Workers() {
         {more.length ? (
           <>
             <T s={17} w={8} style={{ marginHorizontal: 20, marginTop: 22, marginBottom: 10 }}>
-              More {many} nearby
+              {!knowArea ? `More ${many}` : more.every((id) => isNear(id) === true) ? `More ${many} nearby` : more.some((id) => isNear(id) === true) ? `More ${many}: nearby first, then other towns` : `${many.charAt(0).toUpperCase() + many.slice(1)} in other towns`}
             </T>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 4, gap: 10 }}>
               {more.map((id) => {
@@ -219,7 +223,7 @@ export default function Workers() {
                         {m.name}
                       </T>
                       <T s={13} c={t.muted} lines={1}>
-                        {[m.rate ? `${m.rate.toFixed(1)} ★${(m.services || []).length > 1 ? ' overall' : ''}` : 'New', kmText(m)].filter(Boolean).join(' · ')}
+                        {[m.rate ? `${m.rate.toFixed(1)} ★${(m.services || []).length > 1 ? ' overall' : ''}` : 'New', kmText(m) || (isNear(id) === false ? m.area : '')].filter(Boolean).join(' · ')}
                       </T>
                       <T s={12} w={7} c={service && does(id) ? t.accent : t.muted} lines={1}>
                         {service && does(id) ? `Does ${service.toLowerCase()}` : (m.services || []).length ? `${m.services!.length} ${m.services!.length === 1 ? 'service' : 'services'}` : trade}

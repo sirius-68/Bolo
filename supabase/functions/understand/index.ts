@@ -121,7 +121,7 @@ Be generous with close work (an electrician may repair fridges; a builder may pa
 /** One or two sentences on why an offer was picked. Only the facts given may be used. */
 const WHY_SYSTEM = `You explain, to a person hiring a local worker, why one offer is the best of those received. You are given facts as JSON.
 Write one or two short plain sentences (at most 220 characters in all), in simple English a person reading on a phone understands at once. Say the name, the price, when they can come, and the one or two facts that make this offer better than the others (within the budget, sooner, better rated for this kind of job, cheaper). When "over_budget" or "late" is true, say that plainly.
-Use only the facts given: never invent a number, a rating, a distance or a promise. Do not greet, do not use quotes, markdown or emoji. Answer with the sentences only.`;
+Use only the facts given: never invent a number, a rating, a distance or a promise. Prices are in FCFA: write them as in “5,500 FCFA”. You do not know whether the worker is a man or a woman: never write he, she, his or her; use the first name or “they”. A rating is for the service named, or for all their services together: say which. Do not greet, do not use quotes, markdown or emoji. Answer with the sentences only.`;
 
 async function ask(provider: Provider, key: string, model: string, system: string, user: string, max = 160): Promise<string> {
   if (provider === 'anthropic') {

@@ -141,7 +141,7 @@ export function WorkerProfile({ id, service }: { id: string; service?: string })
             <>
               {h2('Ratings by service', 2)}
               <T s={13} lh={1.45} c={t.muted} style={{ marginBottom: 4 }}>
-                {p.rate ? `${p.rate.toFixed(1)} ★ is the average of all ${total} ${total === 1 ? 'rating' : 'ratings'}. Here is what each was for.` : `${f} has no ratings yet.`}
+                {p.rate ? (total === 1 ? `${p.rate.toFixed(1)} ★ comes from 1 rating. Here is what it was for.` : `${p.rate.toFixed(1)} ★ is the average of all ${total} ratings. Here is what each was for.`) : `${f} has no ratings yet.`}
               </T>
               <RatingsByService rows={byService} listed={listedNames} focus={service} />
             </>

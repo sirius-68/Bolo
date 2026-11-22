@@ -172,6 +172,18 @@ function rank(ids: string[]) {
     .filter((id) => db.P[id] && !isBlocked(id))
     .sort((a, b) => far(db.P[a]) - far(db.P[b]) || db.P[b].rate - db.P[a].rate || db.P[b].jobs - db.P[a].jobs);
 }
+/** Is this worker near me? Within 25 km when both places are known; otherwise in my town. null = can't tell
+    (I haven't chosen an area). The list of a skill holds workers from everywhere: "near you" is only said of these. */
+export function isNear(id: string): boolean | null {
+  const p = db.P[id];
+  const km = kmOf(p?.dist);
+  if (km) return km <= 25;
+  const town = (x: any) => String(x || '').replace(/ CM$/, '').trim().toLowerCase();
+  const mine = town(cityLabel());
+  if (!mine) return null;
+  const theirs = town(PROFILE_RAW[id]?.city) || town(p?.area);
+  return !!theirs && (theirs === mine || theirs.includes(mine) || mine.includes(theirs));
+}
 /** "1.2 km" from the model's "1.2km away"; empty when the distance isn't known. */
 export const kmText = (p: Person) => {
   const n = kmOf(p.dist);

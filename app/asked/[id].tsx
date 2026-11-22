@@ -80,7 +80,7 @@ export default function Asked() {
         { label: offers.length > 1 ? `See ${offers.length} offers` : 'See the offer', run: () => router.push(`/offers/${po.id}` as any) },
       ],
     };
-  } else if (near === 0)
+  } else if (near === 0 || (told === 0 && mins > 1))
     st = {
       title: `No ${many} on getit near you yet`,
       sub: keep ? 'OK. Your request stays open, and we’ll tell you the moment someone who offers this joins.' : `Your request stays open. Still need a ${one}?`,

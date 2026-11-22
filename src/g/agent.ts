@@ -158,7 +158,8 @@ export async function whyAI(v: AgentView, o: AgentOffer): Promise<string | null>
     const r: any = await Promise.race([ask, new Promise((res) => setTimeout(() => res(null), 9000))]);
     const text = typeof r?.data?.why === 'string' ? r.data.why.trim() : '';
     // the AI's sentence must carry the real price: one that doesn't is dropped
-    if (text.length >= 20 && text.replace(/[ ,.]/g, '').includes(String(o.amount))) return (WHY[key] = text);
+    // …and it never guesses whether the worker is a man or a woman
+    if (text.length >= 20 && text.replace(/[ ,.]/g, '').includes(String(o.amount)) && !/\b(he|she|his|her|him|hers)\b/i.test(text)) return (WHY[key] = text);
   } catch {}
   return null;
 }

@@ -58,7 +58,16 @@ begin
   if p_when ~* '^\s*by\M' and diff > 0 then return 4; end if;
   return case when diff <= 0 then 2 when diff = 1 then 3 else 4 end;
 end $$;
-revoke all on function private.tz_of(jsonb), private.when_rank(text, timestamptz, integer) from public, anon, authenticated;
+/** "Can come today." for the list of what the agent did: the saved day said the way people say it. */
+create or replace function private.when_words(p_when text, p_made timestamptz, p_tz integer) returns text language sql immutable as $$
+  select case
+    when coalesce(trim(p_when), '') = '' then ''
+    else 'Can come ' || case private.when_rank(p_when, p_made, p_tz)
+      when 0 then 'now' when 1 then 'within the hour' when 2 then 'today' when 3 then 'tomorrow'
+      else case when p_when ~ '^(By|This|Next|In|Any|Flexible)' then lower(left(p_when, 1)) || substr(p_when, 2) else 'on ' || p_when end end || '.'
+  end;
+$$;
+revoke all on function private.tz_of(jsonb), private.when_rank(text, timestamptz, integer), private.when_words(text, timestamptz, integer) from public, anon, authenticated;
 
 -- ================================================================ the agent's rules, reading the day
 create or replace function private.agent_eval_do(p_post text) returns void
@@ -103,7 +112,7 @@ begin
 
   -- 1. offers: note each one; ask once about the budget when the price is above it
   for a in
-    select x.id, x.applicant_id, x.price, x.when_text, x.counter, x.counter_state, pr.name, pr.services
+    select x.id, x.applicant_id, x.price, x.when_text, x.counter, x.counter_state, x.created_at, pr.name, pr.services
       from applications x join profiles pr on pr.id = x.applicant_id
      where x.post_id = p_post and x.stage not in ('withdrawn', 'declined')
      order by x.created_at
@@ -112,7 +121,7 @@ begin
     who := private.first_name(a.name);
     -- (written once, with the price they first gave)
     perform private.agent_log(p_post, 'offer:' || a.id, who || ' offered ' || private.fcfa(amt),
-      case when coalesce(a.when_text, '') <> '' then 'Can come ' || lower(left(a.when_text, 1)) || substr(a.when_text, 2) || '.' else '' end);
+      private.when_words(a.when_text, a.created_at, tz));
     if r.budget is not null and amt > r.budget and a.counter_state is null then
       fl := private.listed_price(a.services, svc);
       if r.budget >= greatest(fl, ceil(amt * 0.6)::int) then
