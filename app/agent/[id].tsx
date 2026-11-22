@@ -10,7 +10,7 @@ import { useLive } from '../../src/logic/live';
 import { fname, postById } from '../../src/logic/core';
 import { refreshBooking, refreshPosts } from '../../src/logic/server';
 import { closeJob } from '../../src/logic/work';
-import { AgentOffer, AgentView, WANT_TEXT, agentMore, agentStop, agentTick, offerRating, triesLeft, whyAI, whyLocal } from '../../src/g/agent';
+import { AgentOffer, AgentView, STARTING, WANT_TEXT, agentMore, agentStop, agentTick, offerRating, triesLeft, whyAI, whyLocal } from '../../src/g/agent';
 import { low, money, plural, whenText } from '../../src/g/data';
 import { GIcon } from '../../src/g/icons';
 import { confirm, toast } from '../../src/g/notice';
@@ -30,8 +30,11 @@ export default function Agent() {
   useLive();
   const t = useG();
   const ins = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const po = postById(id);
+  const p = useLocalSearchParams<{ id: string }>();
+  // opened while the request is still being sent: its real id comes when the server has it
+  const start = STARTING[p.id];
+  const po = postById(start?.post || p.id);
+  const id = start?.post || (po && !String(po.id).startsWith('tmp_') ? po.id : String(p.id).startsWith('tmp_') ? '' : p.id);
   const [v, setV] = useState<AgentView | null>(null);
   const [state, setState] = useState<'loading' | 'ok' | 'none' | 'failed'>('loading');
   const [why, setWhy] = useState<string | null>(null);
@@ -50,6 +53,7 @@ export default function Agent() {
     }
   };
   useEffect(() => {
+    if (!id) return;
     let live = true;
     let fails = 0;
     const ask = async () => {
@@ -85,6 +89,21 @@ export default function Agent() {
       {body}
     </View>
   );
+  if (!v && start && start.state !== 'ok') {
+    const sending = start.state === 'sending';
+    return shell(
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 10 }}>
+        {sending ? <ActivityIndicator color={BRAND} /> : null}
+        <T testID="agent-starting" s={20} w={8} center>
+          {sending ? 'Sending your request…' : start.state === 'pro' ? 'You’ve used your 3 free tries' : 'getit couldn’t take this one'}
+        </T>
+        <T s={15} lh={1.5} c="muted" center>
+          {sending ? 'Then getit starts asking workers.' : start.state === 'pro' ? 'Your request was sent as an ordinary one: its offers show under Jobs.' : start.msg}
+        </T>
+        {!sending && start.post ? <Link testID="agent-plain" title="Open the request" onPress={() => router.replace(`/asked/${start.post}` as any)} /> : null}
+      </View>,
+    );
+  }
   if (!v) {
     return shell(
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 10 }}>

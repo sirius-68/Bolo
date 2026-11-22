@@ -91,24 +91,29 @@ export async function agentStart(post: string, b: Brief): Promise<AgentView | 'p
   if (error) return /pro_needed/.test(error.message || '') ? 'pro' : friendly(error);
   return view(data) || 'Something went wrong on our side. Please try again in a few minutes.';
 }
-/** Post a request and hand it to the agent in one go. Gives the request's id, 'pro', or a message to show. */
-export async function agentRequest(form: JobForm, b: Brief): Promise<{ post: string } | 'pro' | string> {
-  const left = await agentLeft();
-  if (left && !left.pro && left.used >= left.free) return 'pro';
+/** A request being sent and handed to the agent, by the id it had while it was sent (the screen opens at once and waits on this). */
+export const STARTING: Record<string, { state: 'sending' | 'ok' | 'pro' | 'failed'; post?: string; msg?: string }> = {};
+/** Post a request and hand it to the agent. Gives the key the agent's screen is opened with; the rest happens in
+    the background, and STARTING[key] says how it went. */
+export function agentRequest(form: JobForm, b: Brief): string {
   const job = postJob({ ...form, agent: true });
-  // the request is saved in the background: wait for its real id (a few seconds; longer with a photo)
-  for (let i = 0; i < 150 && String(job.id).startsWith('tmp_'); i++) {
-    await new Promise((r) => setTimeout(r, 300));
-    if (!db.POSTS.includes(job)) return 'Your request couldn’t be sent. Check your connection and try again.';
-  }
-  if (String(job.id).startsWith('tmp_')) return 'Your request is taking long to send. Open it from Jobs in a moment.';
-  const r = await agentStart(job.id, b);
-  if (typeof r === 'string') {
+  const key = String(job.id);
+  STARTING[key] = { state: 'sending' };
+  (async () => {
+    const set = (x: (typeof STARTING)[string]) => ((STARTING[key] = x), bump());
+    // the request is saved in the background: wait for its real id (a few seconds; longer with a photo)
+    for (let i = 0; i < 150 && String(job.id).startsWith('tmp_'); i++) {
+      await new Promise((r) => setTimeout(r, 300));
+      if (!db.POSTS.includes(job)) return set({ state: 'failed', msg: 'Your request couldn’t be sent. Check your connection and try again.' });
+    }
+    if (String(job.id).startsWith('tmp_')) return set({ state: 'failed', msg: 'Your request is taking long to send. Open it from Jobs in a moment.' });
+    const r = await agentStart(job.id, b);
     // posted, but the agent didn't start: it carries on as an ordinary request, which is said plainly
-    return r === 'pro' ? 'pro' : `${r} Your request was sent as an ordinary one: offers will show under Jobs.`;
-  }
-  bump();
-  return { post: job.id };
+    if (r === 'pro') return set({ state: 'pro', post: job.id });
+    if (typeof r === 'string') return set({ state: 'failed', post: job.id, msg: `${r} Your request was sent as an ordinary one: its offers show under Jobs.` });
+    set({ state: 'ok', post: job.id });
+  })();
+  return key;
 }
 
 /* ---------------- wording ---------------- */

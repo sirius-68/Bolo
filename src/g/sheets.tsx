@@ -43,7 +43,7 @@ import {
 } from '../logic/work';
 import { WHENS, WHERES, Where, amount, areaLabel, hasArea, money, plural, titleOf, whenText, whereFor } from './data';
 import { myServices, priceFor, serviceFor, servicesOf } from './services';
-import { WANT_OF, Want, agentRequest, agentStart } from './agent';
+import { WANT_OF, Want, agentLeft, agentRequest, agentStart } from './agent';
 import { GIcon, GIconName } from './icons';
 import { openChat } from './nav';
 import { confirm, toast } from './notice';
@@ -172,12 +172,11 @@ function RequestSheet({ o }: { o: RequestFor }) {
       return void setTimeout(
         () =>
           withAccount('let getit handle it', async () => {
+            // (someone who just signed in may have used their free tries on this account)
+            const left = await agentLeft();
+            if (left && !left.pro && left.used >= left.free) return openAgentPro();
             // the agent's screen opens at once and waits there while the request is sent
-            toast('Sending your request…');
-            const r = await agentRequest(f, brief);
-            if (r === 'pro') return openAgentPro();
-            if (typeof r === 'string') return toast(r);
-            router.push(`/agent/${r.post}` as any);
+            router.push(`/agent/${agentRequest(f, brief)}` as any);
           }),
         240,
       );
