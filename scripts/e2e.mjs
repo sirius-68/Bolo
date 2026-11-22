@@ -288,6 +288,11 @@ if (ready) {
     const left = must(await A.sb.rpc('agent_left'));
     expect(left.free === 3, 'free tries are not 3');
     const v0 = must(await A.sb.rpc('agent_start', { p_post: p.id, p_budget: 5500, p_want: 'now', p_auto: false }), 'agent_start');
+    // the waiting screen's numbers: how many workers were told, and asking more (nothing more in the first minutes)
+    const told = must(await A.sb.rpc('request_told', { p_post: p.id }), 'request_told');
+    expect(typeof told === 'number' && told === v0.told, `request_told says ${told}, the agent says ${v0.told}`);
+    expect(must(await B.sb.rpc('request_told', { p_post: p.id })) === 0, 'someone else can read how many were told');
+    expect(must(await A.sb.rpc('request_ask_more', { p_post: p.id }), 'request_ask_more') === 0, 'more workers were asked straight away');
     expect(v0.state === 'asking', 'the agent did not start: ' + v0.state);
     const peek = must(await B.sb.rpc('agent_tick', { p_post: p.id }));
     expect(peek === null, 'someone else can read the agent’s notes');
@@ -312,6 +317,7 @@ if (ready) {
     const o = v.offers.find((x) => x.id === v.pick);
     expect(o && o.amount === 5500 && o.fit === true, 'the pick is not Ben at 5,500, within budget and in time');
     expect(v.log.some((l) => /^Asked /.test(l.t)) && v.log.some((l) => /agreed to/.test(l.t)), 'the steps are not in “What getit did”');
+    expect(v.log.some((l) => /^Can come now\.$/.test(l.s)), 'the log does not say “Can come now.”: ' + JSON.stringify(v.log.map((l) => l.s)));
     expect(must(await A.sb.rpc('agent_left')).used === 1, 'a run that brought an offer was not counted');
     const bid = must(await A.sb.rpc('accept_application', { p_application: off.id }), 'book the pick');
     const done = must(await A.sb.rpc('agent_tick', { p_post: p.id }));
