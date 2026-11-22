@@ -99,10 +99,16 @@ create or replace view public.profile_stats as
          (select count(*)::int from public.bookings b where b.worker_id = p.id and b.state = 'confirmed') as jobs_done,
          (select count(*)::int from public.bookings b where b.client_id = p.id and b.state = 'confirmed') as hires,
          (select round(avg(r.stars)::numeric, 1) from public.reviews r where r.reviewee_id = p.id and r.as_worker) as rating,
-         (select count(*)::int from public.reviews r where r.reviewee_id = p.id and r.as_worker) as reviews,
+         (select count(*)::int from public.reviews r where r.reviewee_id = p.id and r.as_worker) as reviews
+  from public.profiles p where p.deleted_at is null;
+
+-- (a view of its own: the columns of profile_stats stay as the first migrations made them)
+create or replace view public.profile_client_stats as
+  select p.id,
          (select round(avg(r.stars)::numeric, 1) from public.reviews r where r.reviewee_id = p.id and not r.as_worker) as client_rating,
          (select count(*)::int from public.reviews r where r.reviewee_id = p.id and not r.as_worker) as client_reviews
   from public.profiles p where p.deleted_at is null;
+grant select on public.profile_client_stats to anon, authenticated;
 
 create or replace view public.profile_cards with (security_invoker = true) as
   select p.id, p.name, p.avatar_url, p.city, p.bio, p.role, p.biz_only, p.intents, p.skills, p.skill_list, p.level, p.years,
@@ -111,8 +117,8 @@ create or replace view public.profile_cards with (security_invoker = true) as
          coalesce(s.followers, 0) as followers, coalesce(s.following, 0) as following, coalesce(s.jobs_done, 0) as jobs_done,
          coalesce(s.hires, 0) as hires, s.rating, coalesce(s.reviews, 0) as reviews,
          (p.visible and p.suspended_at is null) as visible,
-         s.client_rating, coalesce(s.client_reviews, 0) as client_reviews
-  from public.profiles p left join public.profile_stats s on s.id = p.id
+         c.client_rating, coalesce(c.client_reviews, 0) as client_reviews
+  from public.profiles p left join public.profile_stats s on s.id = p.id left join public.profile_client_stats c on c.id = p.id
   where p.deleted_at is null;
 grant select on public.profile_cards to anon, authenticated;
 

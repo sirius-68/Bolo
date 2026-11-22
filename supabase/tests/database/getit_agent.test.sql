@@ -98,7 +98,7 @@ select ok((select as_worker from public.reviews where reviewee_id = 'b0000000-00
 select ok(not (select as_worker from public.reviews where reviewee_id = 'a0000000-0000-0000-0000-0000000000a1'), 'Hira was rated as the client');
 select is((select rating from public.profile_stats where id = 'b0000000-0000-0000-0000-0000000000b1'), 5.0, 'Paul’s rating is what clients said about his work');
 select is((select rating from public.profile_stats where id = 'a0000000-0000-0000-0000-0000000000a1'), null, 'Hira has no rating as a worker: the 2★ she got as a client is not mixed in');
-select is((select client_rating from public.profile_stats where id = 'a0000000-0000-0000-0000-0000000000a1'), 2.0, 'it is kept apart, as her rating as a client');
+select is((select client_rating from public.profile_cards where id = 'a0000000-0000-0000-0000-0000000000a1'), 2.0, 'it is kept apart, as her rating as a client');
 select is((select reviews from public.profile_cards where id = 'a0000000-0000-0000-0000-0000000000a1'), 0, 'her profile card shows no worker reviews');
 select is((select service from public.service_ratings('b0000000-0000-0000-0000-0000000000b1') limit 1), 'Leak repair', 'ratings per service: Leak repair');
 select is((select rating from public.service_ratings('b0000000-0000-0000-0000-0000000000b1') where service = 'Leak repair'), 5.0, '5★');
