@@ -2,6 +2,7 @@
    the person who booked sees where the worker is and confirms at the end; the worker moves the job along
    with one button at the bottom (leave, arrive, done). */
 import React, { useEffect, useRef, useState } from 'react';
+import { ratingText, useServiceRatings } from '../../src/g/ratings';
 import { Animated, Easing, Pressable, ScrollView, Share, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -66,7 +67,11 @@ export default function Track() {
   useEffect(() => {
     if (id && !bk(id)) void refreshBooking(id);
   }, [id]);
+  // the worker's rating, for the service this job is for when they have one (else said as combined)
+  const them = b && b.worker !== 'me' ? b.worker : '';
+  const theirRows = useServiceRatings(them);
   if (!b) return <Gone title="This job isn’t here any more" text="It may have been cancelled." />;
+  const theirRating = them && P(them)?.rate ? ratingText(theirRows, b.service, P(them).rate, +P(them).reviews || 0) : '';
   const W = b.worker === 'me';
   const oid = trOther(b);
   const o = P(oid);
@@ -210,7 +215,7 @@ export default function Track() {
           ) : (
             <Big testID="tk-rate" title={`Rate ${f}`} onPress={() => openRate(b.id, () => router.replace((W ? `/wclosed?b=${b.id}` : `/thanks?b=${b.id}`) as any))} />
           )}
-          {!W ? <Ghost title={`Book ${f} again`} onPress={() => openBook({ worker: oid, need: b.title })} /> : null}
+          {!W ? <Ghost title={`Book ${f} again`} onPress={() => openBook({ worker: oid, need: b.title, service: b.service })} /> : null}
         </View>
       </>
     );
@@ -269,7 +274,7 @@ export default function Track() {
                 {o.verified ? <GIcon name="tick" size={15} /> : null}
               </View>
               <T s={13} c={t.muted} lines={1} style={{ marginTop: 2 }}>
-                {[o.rate ? `${Number(o.rate).toFixed(1)} ★` : '', W ? 'Client' : o.role].filter(Boolean).join(' · ')}
+                {W ? [o.crate ? `${o.crate.toFixed(1)} ★ as a client` : '', 'Client'].filter(Boolean).join(' · ') : [theirRating, b.service || o.role].filter(Boolean).join(' · ')}
               </T>
             </View>
           </Pressable>

@@ -13,7 +13,7 @@ export default function JobLink() {
     (async () => {
       if (id && !postById(id)) await loadPost(id).catch(() => {});
       const po = id ? postById(id) : undefined;
-      router.replace((po ? (po.mine ? `/asked/${po.id}` : `/wrequest/${po.id}`) : '/find') as any);
+      router.replace((po ? (po.mine ? (po.agent === '1' ? `/agent/${po.id}` : `/asked/${po.id}`) : `/wrequest/${po.id}`) : '/find') as any);
     })();
   }, [id]);
   return <View style={{ flex: 1, backgroundColor: t.bg }} />;

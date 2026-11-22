@@ -23,6 +23,8 @@ export const openWorker = (id: string) => router.push(`/profile/${id}` as any);
 export function openRequestOf(postId: string) {
   const po = db.POSTS.find((p) => p.id === postId || (p as any).tmp === postId);
   if (!po) return;
-  if (po.mine) router.push(((po.offerList || []).length > 1 ? `/offers/${po.id}` : `/asked/${po.id}`) as any);
+  // handled by the getit agent: its own screen (status, its pick, every offer, what it did)
+  if (po.mine && po.agent === '1' && !String(po.id).startsWith('tmp_')) router.push(`/agent/${po.id}` as any);
+  else if (po.mine) router.push(((po.offerList || []).length > 1 ? `/offers/${po.id}` : `/asked/${po.id}`) as any);
   else router.push(`/wrequest/${po.id}` as any);
 }

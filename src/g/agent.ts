@@ -96,8 +96,8 @@ export async function agentRequest(form: JobForm, b: Brief): Promise<{ post: str
   const left = await agentLeft();
   if (left && !left.pro && left.used >= left.free) return 'pro';
   const job = postJob({ ...form, agent: true });
-  // the request is saved in the background: wait for its real id (a few seconds at most)
-  for (let i = 0; i < 60 && String(job.id).startsWith('tmp_'); i++) {
+  // the request is saved in the background: wait for its real id (a few seconds; longer with a photo)
+  for (let i = 0; i < 150 && String(job.id).startsWith('tmp_'); i++) {
     await new Promise((r) => setTimeout(r, 300));
     if (!db.POSTS.includes(job)) return 'Your request couldn’t be sent. Check your connection and try again.';
   }

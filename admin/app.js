@@ -1186,7 +1186,7 @@ async function person(id) {
       put(
         body,
         h('div', { class: 'row' }, avatar(p.name, p.avatar_url), h('div', { class: 'grow' }, h('h2', { class: 'clip' }, p.name || 'No name'), h('div', { class: 'small muted' }, [(p.skills || []).length ? (p.skills || []).slice(0, 3).join(', ') : 'Hiring', p.city].filter(Boolean).join(' · '))), h('button', { class: 'btn sm', onclick: () => close() }, 'Close')),
-        h('div', { class: 'row wrap' }, p.verified ? pill('ID verified', 'g') : pill('ID not verified'), d.confirmed ? pill('Contact confirmed', 'g') : pill('Contact not confirmed', 'o'), p.suspended_at ? pill('Suspended', 'r') : null, p.deleted_at ? pill('Deleted') : null, p.visible === false ? pill('Hidden from search') : null, p.biz_only ? pill('Business account') : null),
+        h('div', { class: 'row wrap' }, p.verified ? pill('ID verified', 'g') : pill('ID not verified'), p.pro_regular ? pill('Pro', 'g') : null, d.confirmed ? pill('Contact confirmed', 'g') : pill('Contact not confirmed', 'o'), p.suspended_at ? pill('Suspended', 'r') : null, p.deleted_at ? pill('Deleted') : null, p.visible === false ? pill('Hidden from search') : null, p.biz_only ? pill('Business account') : null),
         p.suspended_at ? h('div', { class: 'quote small' }, 'Suspended ' + ago(p.suspended_at) + (p.suspended_note ? ': ' + p.suspended_note : '')) : null,
         kv([['Email', mail(d.email)], ['Phone', d.phone], ['Joined', fmtDate(p.created_at)], ['Last sign-in', fmtDate(d.last_sign_in_at)], ['About', p.bio], ['Account id', h('span', { class: 'tiny faint' }, p.id)]]),
         h('div', { class: 'tiles small-tiles' }, [['Requests sent', c.posts], ['Prices sent', c.offers], ['Jobs', c.bookings], ['Jobs they cancelled', c.cancelled ?? '–'], ['Messages sent', c.messages], ['Blocked by', c.blocked_by]].map(([l, n]) => h('div', { class: 'tile' }, h('span', { class: 'muted tiny' }, l), h('b', { class: 'num' }, n)))),
@@ -1197,11 +1197,11 @@ async function person(id) {
               { class: 'col' },
               h('h3', {}, 'As a worker'),
               kv([
-                ['Skills', (p.skills || []).join(', ')],
+                ['Main skill', (p.skills || []).join(', ')],
                 ['Available', p.work_status === 'off' ? 'Paused (not shown to clients)' : p.visible === false ? 'Hidden' : 'Yes, clients can find them'],
                 ['How they work', (Array.isArray(p.area?.ways) ? p.area.ways : []).map((w) => ({ go: 'Goes to clients', come: 'Clients come to their shop', online: 'Works online' })[w] || w).join(' · ')],
                 ['Area', [p.area?.home, p.city].filter(Boolean).join(', ') + (Number(p.area?.radius) ? (Number(p.area.radius) >= 50 ? ' · all of the city' : ` · up to ${p.area.radius} km`) : '')],
-                ['Prices', (Array.isArray(p.services) ? p.services : []).filter((x) => x && x.name).slice(0, 6).map((x) => x.name + (Number(x.price) ? ' ' + Number(x.price).toLocaleString() + ' FCFA' : '')).join(' · ')],
+                ['Services', (Array.isArray(p.services) ? p.services : []).filter((x) => x && (x.skill || x.name) && !x.draft).slice(0, 12).map((x) => (x.skill || x.name) + (Number(x.price) ? ' ' + Number(x.price).toLocaleString() + ' FCFA' : '')).join(' · ') || 'None chosen'],
                 ['Jobs done', d.stats ? num(d.stats.jobs_done) : null],
                 ['Rating', d.stats?.rating ? `★ ${Number(d.stats.rating).toFixed(1)} from ${d.stats.reviews} review${d.stats.reviews === 1 ? '' : 's'}` : 'No ratings yet'],
               ]),
@@ -1223,6 +1223,10 @@ async function person(id) {
               { class: 'row wrap' },
               h('button', { class: 'btn y', onclick: () => writeTo(id, p.name) }, 'Message'),
               h('button', { class: 'btn', onclick: () => contentOf(id, p.name) }, 'What they asked for'),
+              // Pro lifts the three free tries of the agent (it can't be bought in the app yet)
+              mod
+                ? h('button', { class: 'btn', onclick: () => decide({ title: p.pro_regular ? `Take Pro from ${p.name || 'this account'}?` : `Give ${p.name || 'this account'} Pro?`, text: p.pro_regular ? 'The agent goes back to three free tries for them. They are told.' : 'The getit agent has no limit for them. They are told in their Updates.', ok: p.pro_regular ? 'Take Pro away' : 'Give Pro', run: async () => (await rpc('admin_give_pro', { p_user: id, p_on: !p.pro_regular }), toast(p.pro_regular ? 'Pro is off' : 'Pro is on'), load()) }) }, p.pro_regular ? 'Take Pro away' : 'Give Pro')
+                : null,
               mod
                 ? p.verified
                   ? h('button', { class: 'btn', onclick: () => decide({ title: `Remove ${p.name || 'this account'}’s ID badge?`, text: 'They are told and can verify again.', note: 'Reason shown to them', required: true, danger: true, ok: 'Remove badge', run: async (n) => (await rpc('admin_set_verified', { p_user: id, p_on: false, p_note: n }), toast('Badge removed'), load()) }) }, 'Remove ID badge')

@@ -1,5 +1,6 @@
 /* The "you" sheet: hiring or working (the switch on top), your account, your area, notifications, dark mode. */
 import React from 'react';
+import { prefOn } from '../logic/notify';
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { db } from '../data/db';
@@ -16,6 +17,11 @@ import { Switch } from './parts';
 import { goHome, tap } from './touch';
 import { MenuRow, Round, Seg, T, gsheet } from './ui';
 
+/** What the notification switches say, in a word ("On" only when they all are). */
+function notifState() {
+  const on = (['jobs', 'messages', 'reminders', 'news'] as const).filter((c) => prefOn(c)).length;
+  return on === 4 ? 'On' : on === 0 ? 'Off' : on === 3 && !prefOn('news') ? 'On, no news' : 'Some off';
+}
 export function openMe() {
   gsheet.show(() => <MeSheet />);
 }
@@ -82,7 +88,7 @@ function MeSheet() {
         {work ? <MenuRow testID="me-settings" label="Your account" value="Name, sign-in" onPress={then(() => openAccount())} /> : null}
         {signed && !work ? <MenuRow testID="me-saved" label="Saved workers" value={saved ? String(saved) : 'None yet'} onPress={then(() => openSaved())} /> : null}
         <MenuRow testID="me-area" label="Your area" value={hasArea() ? areaLabel() : 'Choose'} onPress={then(() => openArea())} />
-        {signed ? <MenuRow testID="me-notifs" label="Notifications" value="On" onPress={then(() => openNotifs())} /> : null}
+        {signed ? <MenuRow testID="me-notifs" label="Notifications" value={notifState()} onPress={then(() => openNotifs())} /> : null}
         <Pressable testID="me-dark" accessibilityRole="switch" accessibilityState={{ checked: dark }} accessibilityLabel="Dark mode" onPress={() => (tap(), setLook(dark ? 'light' : 'dark'))} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingVertical: 6, paddingHorizontal: 2, borderBottomWidth: 1, borderBottomColor: t.line }}>
           <T s={15} w={8} style={{ flex: 1 }}>
             Dark mode

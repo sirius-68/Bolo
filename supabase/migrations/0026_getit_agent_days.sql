@@ -244,3 +244,20 @@ begin
 end $$;
 drop trigger if exists agent_runs_budget on public.agent_runs;
 create trigger agent_runs_budget before insert or update of budget, auto on public.agent_runs for each row execute function public.agent_no_blind_booking();
+
+-- ================================================================ Pro, given by getit's team (until it can be paid for)
+/** Admin: switch a person's Pro on or off and tell them. Pro lifts the agent's three free tries. */
+create or replace function public.admin_give_pro(p_user uuid, p_on boolean) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not is_admin() then raise exception 'admins only'; end if;
+  update profiles set pro_regular = coalesce(p_on, false) where id = p_user;
+  if not found then raise exception 'account not found'; end if;
+  perform bolo_audit('pro.set', 'profiles', p_user::text, jsonb_build_object('regular', coalesce(p_on, false)));
+  perform bolo_notify(p_user, null, 'pro', 'account',
+    case when p_on then 'getit Pro is on for your account. The getit agent can find and compare offers for you as often as you like.'
+         else 'getit Pro is off for your account. Asking for prices yourself stays free.' end,
+    jsonb_build_object('k', 'notifs'), 'pro:' || p_user || ':' || extract(epoch from now())::bigint);
+end $$;
+revoke all on function public.admin_give_pro(uuid, boolean) from public, anon;
+grant execute on function public.admin_give_pro(uuid, boolean) to authenticated;

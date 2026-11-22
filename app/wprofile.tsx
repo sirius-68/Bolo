@@ -1,5 +1,6 @@
 /* Your profile, as a worker: how full it is, and each part one tap away. */
 import React from 'react';
+import { RatingsByService, scopeOf, useServiceRatings } from '../src/g/ratings';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,7 +33,11 @@ export default function WProfile() {
   const st: any = (myStats as any)?.() || {};
   const rating = Number(st.rating) || 0;
   const reviews = Number(st.reviews) || 0;
-  const done = [!!db.user.avatar, priced > 0 || !!a.afterSee, photos > 0, id === 'verified' || id === 'review', ways.length > 0, hasArea()];
+  // what the one number is made of: per service, so the line under my name says what it covers
+  const byService = useServiceRatings('me');
+  const scope = scopeOf(byService, reviews);
+  const listedNames = services.filter((s) => s.pub !== false).map((s) => s.skill);
+  const done = [!!db.user.avatar, services.length > 0, photos > 0, id === 'verified' || id === 'review', ways.length > 0, hasArea()];
   const pct = Math.round((40 + (60 * done.filter(Boolean).length) / done.length) / 5) * 5;
   const how = [ways.includes('go') ? (range ? `Visits up to ${range} km` : `Visits across ${cityLabel() || 'the city'}`) : '', ways.includes('come') ? 'Own shop' : '', ways.includes('online') ? 'Online' : ''].filter(Boolean).join(' · ');
   const photo = async () => {
@@ -64,7 +69,7 @@ export default function WProfile() {
               {workLine({ skill: db.user.skills.join(', ') || 'No skill yet', ways, range }, hasArea() ? areaLabel() : '')}
             </T>
             <T s={13} w={7} c="accent" style={{ marginTop: 6 }}>
-              {reviews ? `${rating.toFixed(1)} ★ from ${reviews} ${reviews === 1 ? 'review' : 'reviews'}` : 'New on getit · no ratings yet'}
+              {reviews ? `${rating.toFixed(1)} ★ ${scope && !/^from/.test(scope) ? `${scope} · ` : 'from '}${reviews} ${reviews === 1 ? 'rating' : 'ratings'}` : 'New on getit · no ratings yet'}
             </T>
           </View>
         </Card>
@@ -82,12 +87,23 @@ export default function WProfile() {
           </View>
         </Card>
         <View style={{ marginTop: 8 }}>
-          <MenuRow testID="wprofile-prices" label="Services and prices" value={a.afterSee && !priced ? 'Price after a look' : priced ? `${priced} ${priced === 1 ? 'service' : 'services'}` : 'Not set yet'} onPress={() => router.push('/wprices' as any)} />
+          <MenuRow testID="wprofile-prices" label="Services and prices" value={!services.length ? 'None chosen yet' : `${services.length} ${services.length === 1 ? 'service' : 'services'}${priced === services.length ? '' : a.afterSee ? ' · price after a look' : priced ? ` · ${priced} with a price` : ' · no prices yet'}`} onPress={() => router.push('/wprices' as any)} />
           <MenuRow testID="wprofile-photos" label="Photos of your work" value={photos ? `${photos} ${photos === 1 ? 'photo' : 'photos'}` : 'None yet'} onPress={() => router.push('/wphotos' as any)} />
           <MenuRow testID="wprofile-id" label="ID check" value={id === 'verified' ? 'Checked' : id === 'review' ? 'Checking' : 'Not done yet'} onPress={() => router.push('/wid' as any)} />
           <MenuRow testID="wprofile-how" label="How you work" value={how || 'Not set yet'} onPress={() => router.push('/w2?edit=1' as any)} />
           <MenuRow testID="wprofile-area" label="Your area" value={hasArea() ? areaLabel() : 'Choose'} onPress={() => openArea()} />
         </View>
+        {byService.some((r) => r.reviews > 0) ? (
+          <Card pad={0} style={{ marginTop: 14, paddingVertical: 10, paddingHorizontal: 16 }}>
+            <T s={15} w={8} style={{ marginTop: 4 }}>
+              Your ratings by service
+            </T>
+            <T s={13} lh={1.45} c="muted" style={{ marginTop: 2, marginBottom: 4 }}>
+              Clients see these, and which service each rating was for.
+            </T>
+            <RatingsByService rows={byService} listed={listedNames} />
+          </Card>
+        ) : null}
         <SwitchCard
           testID="wprofile-urgent"
           title="I take urgent jobs"

@@ -173,7 +173,7 @@ export default function Jobs() {
             {sent.map(({ id, o, po }) => {
               const c = P(po!.client || '');
               const taken = po!.status === 'booked' || po!.status === 'closed' || !!po!.booked;
-              return line(id, <Face name={c?.name || '?'} photo={c?.photo} size={48} />, po!.title || 'Job', po!.time, `Your price ${money(o.price)} · ${o.state === 'acc' ? 'accepted' : taken ? 'someone else was chosen' : `waiting for ${fname(c?.name || 'the client')}`}`, o.state === 'acc', () => router.push(`/wrequest/${id}` as any), false, 'o:' + id);
+              return line(id, <Face name={c?.name || '?'} photo={c?.photo} size={48} />, po!.title || 'Job', po!.time, o.ask && !taken && o.state !== 'acc' ? `Can you do it for ${money(o.ask)}? · tap to answer` : `Your price ${money(o.price)} · ${o.state === 'acc' ? 'accepted' : taken ? 'someone else was chosen' : `waiting for ${fname(c?.name || 'the client')}`}`, o.state === 'acc' || (!!o.ask && !taken), () => router.push(`/wrequest/${id}` as any), !!o.ask && !taken && o.state !== 'acc', 'o:' + id);
             })}
           </>
         ) : (
@@ -195,6 +195,8 @@ export default function Jobs() {
         {now.map((b) => job(b, true))}
         {asked.map((po) => {
           const n = (po.offerList || []).length || po.offers || 0;
+          // handled by the getit agent: its screen says where it stands (and whether it needs me)
+          if (po.agent === '1' && !String(po.id).startsWith('tmp_')) return line(po.id, dot('bell'), po.title || po.cat || 'Request', po.time, n ? `getit is handling it · ${n} ${n === 1 ? 'offer' : 'offers'} so far` : 'getit is handling it · asking workers', true, () => router.push(`/agent/${po.id}` as any), false, 'r:' + po.id);
           return line(po.id, dot('bell'), po.title || po.cat || 'Request', po.time, n ? `${n} ${n === 1 ? 'offer' : 'offers'} · tap to choose` : 'Asking for prices · waiting for offers', true, () => router.push((n > 1 ? `/offers/${po.id}` : `/asked/${po.id}`) as any), n > 0, 'r:' + po.id);
         })}
         {before.length ? head('Before') : null}

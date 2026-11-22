@@ -45,7 +45,7 @@ export default function Listen() {
     if (!u.trade) return type(words);
     setTrade(u.trade);
     setPhase('finding');
-    setTimeout(() => live.current && router.replace(`/workers?trade=${encodeURIComponent(u.trade!)}&need=${encodeURIComponent(u.title)}` as any), 500);
+    setTimeout(() => live.current && router.replace(`/workers?trade=${encodeURIComponent(u.trade!)}&need=${encodeURIComponent(u.title)}${u.service ? `&service=${encodeURIComponent(u.service)}` : ''}${u.when ? `&when=${u.when}` : ''}${u.budget ? `&budget=${u.budget}` : ''}` as any), 500);
   };
   const start = async (fr = french) => {
     if (!SR) return type();

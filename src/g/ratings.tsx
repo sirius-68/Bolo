@@ -87,3 +87,26 @@ export function RatingsByService({ rows, listed, focus }: { rows: ServiceRating[
     </View>
   );
 }
+
+/** A worker's rating in words that say what it is for: "4.9 ★ for house wiring (3)", "4.6 ★ for all 3 services",
+    "4.6 ★ from 5 ratings", or "New on getit". For lists of offers, where a bare "4.6 ★" would read as being for this job. */
+export function ratingText(rows: ServiceRating[], service: string | undefined | null, overall: number, total: number): string {
+  const r = ratingFor(rows, service, overall, total);
+  if (!r.stars) return 'New on getit';
+  if (r.own && service) return `${r.stars.toFixed(1)} ★ for ${service.toLowerCase()} (${r.n})`;
+  const scope = scopeOf(rows, total);
+  return `${r.stars.toFixed(1)} ★ ${scope || 'overall'}${service && rows.some((x) => x.service && x.reviews > 0) ? `, none for ${service.toLowerCase()}` : ''}`;
+}
+/** The same, as a hook for one person (loads their ratings per service once). */
+export function useRatingText(id: string, service: string | undefined | null, overall: number, total: number): string {
+  return ratingText(useServiceRatings(id), service, overall, total);
+}
+/** The same, as a line of text (for rows in a list, where a hook can't be called per row). */
+export function RatingText({ id, service, overall, total, tail }: { id: string; service?: string | null; overall: number; total: number; tail?: string }) {
+  const text = useRatingText(id, service, overall, total);
+  return (
+    <T s={13} c="muted" lines={2}>
+      {[text, tail].filter(Boolean).join(' · ')}
+    </T>
+  );
+}

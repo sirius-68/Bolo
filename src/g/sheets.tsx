@@ -43,6 +43,7 @@ import {
 } from '../logic/work';
 import { WHENS, WHERES, Where, amount, areaLabel, hasArea, money, plural, titleOf, whenText, whereFor } from './data';
 import { myServices, priceFor, serviceFor, servicesOf } from './services';
+import { WANT_OF, Want, agentRequest, agentStart } from './agent';
 import { GIcon, GIconName } from './icons';
 import { openChat } from './nav';
 import { confirm, toast } from './notice';
@@ -98,7 +99,20 @@ function ServiceChips({ list, value, onChange, ids }: { list: string[]; value: s
 }
 
 /* ====================================================================== get prices from several workers */
-export type RequestFor = { trade: string; need: string; /** the service under the skill, when the words said one */ service?: string | null; /** change a request already sent */ postId?: string };
+export type RequestFor = {
+  trade: string;
+  need: string;
+  /** the service under the skill, when the words said one */
+  service?: string | null;
+  /** change a request already sent */
+  postId?: string;
+  /** hand it to the getit agent: it asks, compares and comes back with the best offer */
+  agent?: boolean;
+  /** what the words said about when and how much ("today", "5000") */
+  when?: Want | null;
+  budget?: number | null;
+};
+const WHEN_OF: Record<Want, string> = { now: 'As soon as possible', today: 'Today', tomorrow: 'Tomorrow', week: 'This week' };
 /** "Get prices from plumbers near you": what, details, a photo, when and where. Sending needs an account. */
 export function openRequest(o: RequestFor) {
   gsheet.show(() => <RequestSheet o={o} />);
@@ -110,14 +124,17 @@ function RequestSheet({ o }: { o: RequestFor }) {
   const [need, setNeed] = useState(old?.title || o.need);
   const [details, setDetails] = useState(old?.text || '');
   const [photo, setPhoto] = useState<string | null>(old?.photos?.[0] || null);
-  const [when, setWhen] = useState(old ? WHENS.find(([k]) => whenText(old.when) === k || old.when === k)?.[0] || '' : 'As soon as possible');
+  const [when, setWhen] = useState(o.when ? WHEN_OF[o.when] : old ? WHENS.find(([k]) => whenText(old.when) === k || old.when === k)?.[0] || '' : 'As soon as possible');
+  const [budget, setBudget] = useState(o.budget ? String(o.budget) : '');
+  const [auto, setAuto] = useState(false);
+  const cap = +budget.replace(/[^\d]/g, '') || 0;
   const [where, setWhere] = useState<Where>((old?.type as Where) && WHERES.some(([k]) => k === old?.type) ? (old!.type as Where) : whereFor(o.trade));
   const [busy, setBusy] = useState(false);
   // the service under the skill: read from the words, changed with a tap; none = any work of the skill
   const [service, setService] = useState<string | null>(old ? old.service || null : o.service ?? serviceFor(o.trade, o.need));
   const many = plural(o.trade);
   const place = hasArea() ? areaLabel() : '';
-  const ok = need.trim().length >= 3 && (where === 'online' || !!place);
+  const ok = need.trim().length >= 3 && (where === 'online' || !!place) && (!o.agent || !budget.trim() || cap >= 100);
   const form = (): JobForm => ({
     title: titleOf(need),
     text: details.trim(),
@@ -137,9 +154,33 @@ function RequestSheet({ o }: { o: RequestFor }) {
   const send = () => {
     if (!ok || busy) return;
     Keyboard.dismiss();
+    const brief = { budget: cap || null, want: WANT_OF[when] || ('week' as Want), auto: auto && cap > 0 };
     if (old) {
       updateJob(old.id, form(), !when);
+      // told again (a new budget, a new time): the agent looks at the offers afresh
+      if (o.agent)
+        void agentStart(old.id, brief).then((r) => {
+          if (r === 'pro') openAgentPro();
+          else if (typeof r === 'string') toast(r);
+          else bump();
+        });
       return gsheet.close();
+    }
+    if (o.agent) {
+      const f = form();
+      gsheet.close();
+      return void setTimeout(
+        () =>
+          withAccount('let getit handle it', async () => {
+            // the agent's screen opens at once and waits there while the request is sent
+            toast('Sending your request…');
+            const r = await agentRequest(f, brief);
+            if (r === 'pro') return openAgentPro();
+            if (typeof r === 'string') return toast(r);
+            router.push(`/agent/${r.post}` as any);
+          }),
+        240,
+      );
     }
     setBusy(true);
     gsheet.close();
@@ -154,8 +195,8 @@ function RequestSheet({ o }: { o: RequestFor }) {
   };
   return (
     <View>
-      <H>{old ? 'Change your request' : `Get prices from ${many} near you`}</H>
-      <Sub>{old ? 'Workers who already have it see the new details.' : 'getit asks the closest ones first, then more if needed, and keeps you posted. You choose who to book.'}</Sub>
+      <H>{old ? 'Change your request' : o.agent ? `Let getit find your ${o.trade.toLowerCase()}` : `Get prices from ${many} near you`}</H>
+      <Sub>{old ? 'Workers who already have it see the new details.' : o.agent ? 'getit asks the best-fitting ones a few at a time, checks each price against your budget, and comes back with the best offer. You can take over at any moment.' : 'getit asks the closest ones first, then more if needed, and keeps you posted. You choose who to book.'}</Sub>
       <Label>What you need</Label>
       <Input testID="req-need" value={need} onChangeText={setNeed} maxLength={60} style={ft(16, 7, t.text)} />
       <View style={{ height: 14 }} />
@@ -208,6 +249,20 @@ function RequestSheet({ o }: { o: RequestFor }) {
           {WHENS.find(([k]) => k === when)?.[1]}
         </T>
       ) : null}
+      {o.agent ? (
+        <>
+          <Small>Your budget (optional)</Small>
+          <Input testID="req-budget" value={budget} onChangeText={(v) => setBudget(v.replace(/[^\d]/g, '').slice(0, 9))} placeholder="In FCFA, for example 5000" keyboardType="number-pad" style={ft(16, 7, t.text)} />
+          <T s={13} lh={1.45} c="muted" style={{ marginTop: 8 }}>
+            {budget.trim() && cap < 100
+              ? 'That looks too low to be a budget.'
+              : cap
+                ? `Workers don’t see it. They name their price; when one is above ${money(cap)}, getit asks them once whether ${money(cap)} works.`
+                : 'With no budget, getit picks on who can come in time, their record for this kind of job, then price. It always asks you before booking.'}
+          </T>
+          {cap >= 100 ? <SwitchCard testID="req-auto" title="Book the best offer for me" sub={`Only when it is within ${money(cap)} and in time. Otherwise getit shows you its pick and you decide.`} on={auto} onChange={setAuto} style={{ marginTop: 12 }} /> : null}
+        </>
+      ) : null}
       <Small>Where should it happen?</Small>
       <Wrap>
         {WHERES.map(([k, label]) => (
@@ -232,9 +287,36 @@ function RequestSheet({ o }: { o: RequestFor }) {
         {where !== 'online' && !place ? (
           <Big testID="req-send" title="Choose your area to continue" quiet={need.trim().length < 3} onPress={() => need.trim().length >= 3 && openArea(() => openRequest({ ...o, need, service }))} />
         ) : (
-          <Big testID="req-send" title={old ? 'Save changes' : `Ask ${many} near you`} loading={busy} quiet={!ok} onPress={send} />
+          <Big testID="req-send" title={old ? 'Save changes' : o.agent ? 'Start' : `Ask ${many} near you`} loading={busy} quiet={!ok} onPress={send} />
         )}
       </SheetFoot>
+    </View>
+  );
+}
+
+/* ====================================================================== the agent: free tries used */
+/** "You've used your 3 free tries": Pro isn't sold in the app yet, so asking for it goes to the team. */
+export function openAgentPro() {
+  gsheet.show(() => <AgentProSheet />);
+}
+function AgentProSheet() {
+  const [busy, setBusy] = useState(false);
+  const ask = async () => {
+    if (busy) return;
+    setBusy(true);
+    const { error } = await supabase.from('feedback').insert({ topic: 'account', body: 'I’d like getit Pro, to keep using the agent that finds and compares offers for me.', app_version: `${process.env.EXPO_PUBLIC_BUILD || 'dev'}` });
+    setBusy(false);
+    if (error) return toast(friendly(error));
+    gsheet.close();
+    toast('Sent. We answer in your Inbox, under Updates');
+  };
+  return (
+    <View>
+      <H>You’ve used your 3 free tries</H>
+      <Sub mb={12}>The agent that asks, compares and comes back with the best offer is part of getit Pro.</Sub>
+      <Hint icon="shield">Pro can’t be bought in the app yet. Tell us you want it and a person at getit answers you. Asking for prices yourself stays free, as always.</Hint>
+      <Big testID="pro-ask" title="Tell getit I want Pro" loading={busy} onPress={ask} style={{ marginTop: 18 }} />
+      <Link testID="pro-later" title="Not now" color="text" onPress={() => gsheet.close()} style={{ alignSelf: 'center', marginTop: 4 }} />
     </View>
   );
 }
@@ -712,7 +794,8 @@ function HelpSheet() {
     if (body.trim().length < 5 || busy) return;
     if (!db.loggedIn) return toast('Sign in first, so we can answer you');
     setBusy(true);
-    const { error } = await supabase.from('feedback').insert({ topic, body: body.trim(), app_version: `${process.env.EXPO_PUBLIC_BUILD || 'dev'}` });
+    // the server keeps a short list of topics (problem, idea, account, safety, other)
+    const { error } = await supabase.from('feedback').insert({ topic: topic === 'Problem' ? 'problem' : topic === 'Idea' ? 'idea' : 'other', body: body.trim(), app_version: `${process.env.EXPO_PUBLIC_BUILD || 'dev'}` });
     setBusy(false);
     if (error) return toast(friendly(error));
     Keyboard.dismiss();

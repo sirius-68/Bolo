@@ -1,5 +1,5 @@
 /* A job request, as a worker sees it: what, who, when, roughly where. Send a price, or ask a question first. */
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
@@ -7,12 +7,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../../src/data/db';
 import { useLive } from '../../src/logic/live';
 import { P, fname, postById } from '../../src/logic/core';
-import { kmFromMe, loadPost } from '../../src/logic/server';
+import { kmFromMe, loadPost, refreshPosts } from '../../src/logic/server';
 import { withdrawOffer } from '../../src/logic/work';
-import { money, whenText } from '../../src/g/data';
+import { agentAnswer } from '../../src/g/agent';
+import { amount, money, whenText } from '../../src/g/data';
 import { openChat } from '../../src/g/nav';
-import { confirm } from '../../src/g/notice';
-import { Card, Details, Kicker, Top } from '../../src/g/parts';
+import { confirm, toast } from '../../src/g/notice';
+import { Card, Details, Hint, Kicker, Top } from '../../src/g/parts';
 import { openOffer } from '../../src/g/sheets';
 import { withAccount } from '../../src/g/signin';
 import { useG } from '../../src/g/theme';
@@ -24,8 +25,11 @@ export default function WRequest() {
   const ins = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const po = postById(id);
+  const [answering, setAnswering] = useState(false);
   useEffect(() => {
     if (id && !postById(id)) void loadPost(id);
+    // fresh on opening: an offer of mine may have a question waiting ("can you do it for 5,000?")
+    else void refreshPosts();
   }, [id]);
   if (!po)
     return (
@@ -48,6 +52,17 @@ export default function WRequest() {
   const mine = db.myOffers[po.id];
   const photo = po.photos?.[0];
   const taken = po.status === 'booked' || po.status === 'closed' || !!po.booked;
+  const viaAgent = po.agent === '1';
+  // the getit agent asked whether the client's budget works (once; my price stays unless I say yes)
+  const ask = mine && mine.state !== 'acc' && !taken ? mine.ask : undefined;
+  const answer = async (yes: boolean) => {
+    if (!mine?.id || answering) return;
+    setAnswering(true);
+    const err = await agentAnswer(mine.id, yes);
+    await refreshPosts();
+    setAnswering(false);
+    toast(err || (yes ? `Your price is now ${money(ask!)}. ${f} is told.` : `You keep ${money(mine.price)}. ${f} still sees your offer.`));
+  };
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: ins.top + 16, paddingBottom: 24 }}>
@@ -86,11 +101,32 @@ export default function WRequest() {
           rows={[
             ['When', whenText(po.when) || 'Any time'],
             ['Where', online ? `Online${c?.area ? ` · ${f} is in ${c.area}` : ''}` : [po.area, kmTxt].filter(Boolean).join(' · ') || 'Near you', online ? 'You work together by chat and calls on getit' : 'You get the exact place by chat or call once you’re booked'],
-            ['Budget', /^XAF\s*[1-9]/.test(po.budget || '') ? money(po.budget) : `${f} hasn’t set a price`],
+            // handled by the agent: a budget may exist, but workers name their own price first
+            ['Budget', /^XAF\s*[1-9]/.test(po.budget || '') ? money(po.budget) : viaAgent ? 'Not shown. Name your own price' : `${f} hasn’t set a price`],
+            ...(po.service ? ([['Kind of job', po.service]] as [string, string][]) : []),
           ]}
         />
+        {viaAgent ? (
+          <Hint icon="shield" style={{ marginHorizontal: 20, marginTop: 14 }}>
+            getit is collecting offers for {f} and compares price, time and your record for this kind of job. If your price is above {f}’s budget, you are asked once whether the budget works.
+          </Hint>
+        ) : null}
       </ScrollView>
       <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: ins.bottom + 24, borderTopWidth: 1, borderTopColor: t.line, backgroundColor: t.bg }}>
+        {ask ? (
+          <View testID="wreq-ask" style={{ padding: 14, marginBottom: 12, borderRadius: 20, borderWidth: 1, borderColor: t.accent, backgroundColor: t.card }}>
+            <T s={15} w={8} lh={1.35}>
+              Can you do it for {money(ask)}?
+            </T>
+            <T s={13} lh={1.45} c="muted" style={{ marginTop: 4 }}>
+              That is {f}’s budget. You offered {money(mine!.price)}{amount(mine!.price) > ask ? `, ${money(amount(mine!.price) - ask)} more` : ''}. Say yes and your price becomes {money(ask)}; say no and your offer stays as it is.
+            </T>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+              <Big testID="wreq-ask-yes" title={`Yes, ${money(ask)}`} h={48} loading={answering} style={{ flex: 1 }} onPress={() => void answer(true)} />
+              <Ghost testID="wreq-ask-no" title="Keep my price" style={{ flex: 1, height: 48, borderRadius: 24 }} onPress={() => void answer(false)} />
+            </View>
+          </View>
+        ) : null}
         {mine ? (
           <T s={14} w={7} c="accent" center style={{ marginBottom: 10 }}>
             Your offer: {money(mine.price)} · {whenText(mine.when)} · {mine.state === 'acc' ? 'accepted' : `waiting for ${f}`}

@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyAvoid } from '../src/g/keyboard';
 import { tap } from '../src/g/touch';
-import { NEEDS, understand } from '../src/g/data';
+import { NEEDS, Understood, understand } from '../src/g/data';
 import { canListen } from '../src/g/speech';
 import { GIcon } from '../src/g/icons';
 import { RED, ft, useG } from '../src/g/theme';
@@ -21,7 +21,8 @@ export default function Need() {
   const [busy, setBusy] = useState(false);
   const input = useRef<TextInput>(null);
   const close = () => (router.canGoBack() ? router.back() : router.replace('/find' as any));
-  const open = (need: string, trade: string) => router.push(`/workers?trade=${encodeURIComponent(trade)}&need=${encodeURIComponent(need)}` as any);
+  const open = (need: string, trade: string, u?: Understood) =>
+    router.push(`/workers?trade=${encodeURIComponent(trade)}&need=${encodeURIComponent(need)}${u?.service ? `&service=${encodeURIComponent(u.service)}` : ''}${u?.when ? `&when=${u.when}` : ''}${u?.budget ? `&budget=${u.budget}` : ''}` as any);
   const find = async () => {
     const text = q.trim();
     if (!text) return input.current?.focus();
@@ -30,7 +31,7 @@ export default function Need() {
     const u = await understand(text);
     setBusy(false);
     if (!u.trade) return setMiss(true);
-    open(u.title, u.trade);
+    open(u.title, u.trade, u);
   };
   return (
     <KeyAvoid style={{ flex: 1, backgroundColor: t.bg }}>

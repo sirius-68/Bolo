@@ -32,7 +32,7 @@ export default function WDone() {
           ? `People ${near} looking for ${who} can now find your shop and call you.`
           : `People ${near} looking for ${who} can now find you and call you.`;
   const boosts: [string, GIconName, () => void, string][] = [
-    ['Set your prices', 'wallet', () => router.push('/wprices' as any), 'wdone-prices'],
+    ['Choose your services and prices', 'wallet', () => router.push('/wprices' as any), 'wdone-prices'],
     ['Add photos of your work', 'camera', () => router.push('/wphotos' as any), 'wdone-photos'],
     ['Check your ID for a blue tick', 'shield', () => router.push('/wid' as any), 'wdone-id'],
   ];

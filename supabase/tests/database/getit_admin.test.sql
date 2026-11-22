@@ -1,7 +1,7 @@
 -- The admin panel's view of getit: requests, the prices sent for them, jobs, workers.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(22);
+select plan(26);
 
 insert into auth.users (id, email, raw_user_meta_data) values
   ('a0000000-0000-0000-0000-0000000000a1', 'ada@test.getit', '{"name": "Ada"}'),
@@ -58,6 +58,15 @@ select is(public.admin_jobs('live') -> 0 ->> 'worker', 'Paul', 'the job is liste
 select is(public.admin_jobs('live') -> 0 ->> 'client', 'Hira', 'and the client');
 select is(jsonb_array_length(public.admin_people(null, 'available')), 1, 'People → Available now: only Paul');
 select is(public.admin_person('c0000000-0000-0000-0000-0000000000c3') -> 'jobs' -> 0 ->> 'side', 'worker', 'Paul''s account shows the job, as the worker');
+
+-- Pro, given by the team: it lifts the agent's free tries, and the person is told
+set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-0000000000b2"}';
+select throws_ok($$ select public.admin_give_pro('b0000000-0000-0000-0000-0000000000b2', true) $$, null, null, 'nobody gives themselves Pro');
+set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-0000000000a1"}';
+select lives_ok($$ select public.admin_give_pro('b0000000-0000-0000-0000-0000000000b2', true) $$, 'an admin gives Hira Pro');
+reset role;
+select is((select pro_regular from public.profiles where id = 'b0000000-0000-0000-0000-0000000000b2'), true, 'Pro is on');
+select is((select count(*)::int from public.notifications where recipient_id = 'b0000000-0000-0000-0000-0000000000b2' and type = 'pro'), 1, 'and Hira is told');
 
 select * from finish();
 rollback;

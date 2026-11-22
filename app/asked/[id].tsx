@@ -58,18 +58,18 @@ export default function Asked() {
   const one = (trade || 'worker').toLowerCase();
   const offers = po.offerList || [];
   const mins = po.at ? (Date.now() - po.at) / 60000 : 0;
-  const callSomeone = () => router.push(`/workers?trade=${encodeURIComponent(trade)}&need=${encodeURIComponent(po.title || '')}` as any);
+  const callSomeone = () => router.push(`/workers?trade=${encodeURIComponent(trade)}&need=${encodeURIComponent(po.title || '')}${po.service ? `&service=${encodeURIComponent(po.service)}` : ''}` as any);
   let st: { good?: boolean; title: string; sub: string; acts: Act[] };
   if (offers.length) {
-    // the best so far: the lowest price among those who can come soonest
+    // the lowest price so far, said as that (the offers screen sorts by best match, soonest or price)
     const best = offers.map((o, i) => ({ o, i })).sort((a, b) => (parseInt(a.o.price.replace(/[^\d]/g, ''), 10) || 9e9) - (parseInt(b.o.price.replace(/[^\d]/g, ''), 10) || 9e9))[0];
     const who = fname(P(best.o.by).name);
     st = {
       good: true,
-      title: `${who} offered ${money(best.o.price)}`,
+      title: offers.length > 1 ? `Lowest so far: ${who}, ${money(best.o.price)}` : `${who} offered ${money(best.o.price)}`,
       sub: `Can come ${low(whenText(best.o.when))}. ${offers.length > 1 ? `${offers.length} offers so far.` : 'Still asking the others.'}`,
       acts: [
-        { label: `Book ${who}`, main: true, run: () => openBook({ worker: best.o.by, need: po.title || '', postId: po.id, offer: best.i }) },
+        { label: `Book ${who}`, main: true, run: () => openBook({ worker: best.o.by, need: po.title || '', service: po.service, postId: po.id, offer: best.i }) },
         { label: offers.length > 1 ? `See ${offers.length} offers` : 'See the offer', run: () => router.push(`/offers/${po.id}` as any) },
       ],
     };

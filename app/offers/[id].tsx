@@ -10,6 +10,7 @@ import { amount, kmText, money, whenText } from '../../src/g/data';
 import { GIcon } from '../../src/g/icons';
 import { Kicker, Top } from '../../src/g/parts';
 import { openBook } from '../../src/g/sheets';
+import { RatingText } from '../../src/g/ratings';
 import { openChat } from '../../src/g/nav';
 import { RED, useG } from '../../src/g/theme';
 import { tap } from '../../src/g/touch';
@@ -69,7 +70,7 @@ export default function Offers() {
             const f = fname(p.name);
             return (
               <View key={o.id || i} style={{ padding: 16, borderRadius: 24, backgroundColor: t.card, borderWidth: 1, borderColor: t.line }}>
-                <Pressable accessibilityRole="button" accessibilityLabel={`See ${p.name}’s profile`} onPress={() => (tap(), router.push(`/profile/${o.by}` as any))} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Pressable accessibilityRole="button" accessibilityLabel={`See ${p.name}’s profile`} onPress={() => (tap(), router.push(`/profile/${o.by}${po?.service ? `?service=${encodeURIComponent(po.service)}` : ''}` as any))} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                   <Face name={p.name} photo={p.photo} size={52} />
                   <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
@@ -78,9 +79,7 @@ export default function Offers() {
                       </T>
                       {p.verified ? <GIcon name="tick" size={15} /> : null}
                     </View>
-                    <T s={13} c="muted" lines={1}>
-                      {[p.rate ? `${p.rate.toFixed(1)} ★` : 'New on getit', kmText(p)].filter(Boolean).join(' · ')}
-                    </T>
+                    <RatingText id={o.by} service={po?.service} overall={p.rate} total={+p.reviews || 0} tail={kmText(p)} />
                   </View>
                   <T s={18} w={8}>
                     {money(o.price)}
@@ -98,7 +97,7 @@ export default function Offers() {
                   </T>
                 </View>
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
-                  <Big testID={`offer-accept-${i}`} h={48} title="Accept" style={{ flex: 1 }} onPress={() => openBook({ worker: o.by, need: po?.title || '', postId: po!.id, offer: i })} />
+                  <Big testID={`offer-accept-${i}`} h={48} title="Accept" style={{ flex: 1 }} onPress={() => openBook({ worker: o.by, need: po?.title || '', service: po?.service, postId: po!.id, offer: i })} />
                   <Round testID={`offer-chat-${i}`} icon="chat" label={`Message ${f}`} size={48} plain bg={t.card2} onPress={() => openChat(o.by)} />
                 </View>
               </View>

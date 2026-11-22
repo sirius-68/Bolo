@@ -66,6 +66,8 @@ export default function Inbox() {
     const who = typeof n.who === 'string' ? n.who : Array.isArray(n.who) ? n.who[0] : '';
     // a missed call: the chat with them, where calling back is one tap
     if (n.type === 'missed' && who) return openChat(who);
+    // from the getit agent about a request of mine: straight to it (its screen says the rest)
+    if (n.type === 'agent' && n.go && n.go.k !== 'notifs') return goTo(n.go);
     // from the getit team: read it in full
     if (n.bolo || n.go?.k === 'notifs') return openTeamNote('From getit', updateText(n));
     if (n.go) return goTo(n.go);
