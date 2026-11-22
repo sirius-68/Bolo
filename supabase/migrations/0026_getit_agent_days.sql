@@ -294,3 +294,72 @@ begin
   end if;
   return new;
 end $$;
+
+-- ================================================================ "Asked 12 plumbers": the real number
+/** How many workers were told about my request (0 for a request that isn't mine). The waiting screen says this
+    number, not how many workers of that skill exist nearby: some switched job alerts off, and they are asked
+    a few at a time. */
+create or replace function public.request_told(p_post text) returns integer
+language sql stable security definer set search_path = public as $$
+  select count(*)::int from notifications x
+   where x.event_key = 'newjob:' || p_post
+     and exists (select 1 from posts p where p.id = p_post and p.author_id = auth.uid());
+$$;
+revoke all on function public.request_told(text) from public, anon;
+grant execute on function public.request_told(text) to authenticated;
+
+-- ================================================================ "then more if needed", for every request
+-- The app tells people that getit asks the best-placed workers first and more if nobody answers. That was only
+-- true for requests handled by the agent: any other request went to up to 12 workers once. Now a request with
+-- no offer after 6 minutes goes to 8 more, up to three times: from the waiting screen while it is open, and
+-- once a minute from the database when it can.
+create or replace function private.request_widen(p_post text) returns integer
+language plpgsql security definer set search_path = public, private as $$
+declare po posts; last_at timestamptz; n int;
+begin
+  select * into po from posts where id = p_post;
+  if not found or po.kind <> 'request' or coalesce(po.status, 'open') <> 'open' or po.business_id is not null then return 0; end if;
+  if coalesce(po.data ->> 'agent', '') = '1' and exists (select 1 from agent_runs r where r.post_id = p_post and r.state in ('asking', 'pick', 'booked')) then return 0; end if;  -- the agent has its own rounds
+  if exists (select 1 from applications a where a.post_id = p_post and a.stage not in ('withdrawn', 'declined')) then return 0; end if;
+  select max(x.created_at), count(*) into last_at, n from notifications x where x.event_key = 'newjob:' || p_post;
+  if n >= 36 or coalesce(last_at, po.created_at) > now() - interval '6 minutes' then return 0; end if;
+  return private.getit_ask(p_post, 8);
+end $$;
+revoke all on function private.request_widen(text) from public, anon, authenticated;
+
+/** From the waiting screen: ask more workers when it is time (the owner's own request only). Returns how many were told. */
+create or replace function public.request_ask_more(p_post text) returns integer
+language plpgsql security definer set search_path = public, private as $$
+begin
+  if not exists (select 1 from posts p where p.id = p_post and p.author_id = auth.uid()) then return 0; end if;
+  return private.request_widen(p_post);
+end $$;
+revoke all on function public.request_ask_more(text) from public, anon;
+grant execute on function public.request_ask_more(text) to authenticated;
+
+create or replace function private.request_widen_all() returns void
+language plpgsql security definer set search_path = public, private as $$
+declare x record;
+begin
+  for x in select p.id from posts p
+            where p.kind = 'request' and p.status = 'open' and p.business_id is null
+              and p.created_at > now() - interval '3 hours' and p.created_at < now() - interval '6 minutes'
+              and not exists (select 1 from applications a where a.post_id = p.id) loop
+    begin
+      perform private.request_widen(x.id);
+    exception when others then
+      raise warning 'request_widen(%) failed: %', x.id, sqlerrm;
+    end;
+  end loop;
+end $$;
+revoke all on function private.request_widen_all() from public, anon, authenticated;
+
+do $$
+begin
+  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+    perform cron.unschedule(jobid) from cron.job where jobname = 'getit-widen';
+    perform cron.schedule('getit-widen', '*/2 * * * *', 'select private.request_widen_all()');
+  end if;
+exception when others then
+  raise notice 'getit-widen is not scheduled here: %', sqlerrm;
+end $$;

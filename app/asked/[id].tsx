@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { supabase } from '../../src/lib/supabase';
 import { useLive } from '../../src/logic/live';
 import { P, fname, postById } from '../../src/logic/core';
 import { refreshPosts } from '../../src/logic/server';
@@ -28,13 +29,19 @@ export default function Asked() {
   const trade = po?.cat || '';
   const [near, setNear] = useState<number | null>(() => (trade ? localWorkers(trade).length || null : null));
   const [keep, setKeep] = useState(false);
+  // how many workers were really told (they are asked a few at a time; some switched job alerts off)
+  const [told, setTold] = useState<number | null>(null);
   const [, tick] = useState(0);
   // who could answer, and fresh offers while this screen is open
   useEffect(() => {
     let live = true;
     if (trade) void findWorkers(trade).then((r) => live && setNear(r.ids.length));
+    const count = () => id && !String(id).startsWith('tmp_') && void supabase.rpc('request_told', { p_post: id }).then(({ data, error }) => live && !error && typeof data === 'number' && setTold(data));
     void refreshPosts();
-    const x = setInterval(() => (void refreshPosts(), tick((n) => n + 1)), 20000);
+    count();
+    // nobody answered after a few minutes: more workers are asked (the server decides whether it is time)
+    const more = () => id && !String(id).startsWith('tmp_') && !(postById(id)?.offerList || []).length && void supabase.rpc('request_ask_more', { p_post: id }).then(({ data }) => live && data && count());
+    const x = setInterval(() => (void refreshPosts(), more(), count(), tick((n) => n + 1)), 20000);
     return () => {
       live = false;
       clearInterval(x);
@@ -82,10 +89,10 @@ export default function Asked() {
   else if (mins > 12)
     st = {
       title: 'No one’s free yet',
-      sub: keep ? 'OK, still asking. We’ll tell you the moment someone answers.' : `All ${many} nearby have your request. Still need a ${one}?`,
+      sub: keep ? 'OK, still asking. We’ll tell you the moment someone answers.' : `${told ? `${told} ${told === 1 ? one : many}` : `The ${many} nearby`} ${told === 1 ? 'has' : 'have'} your request. Still need a ${one}?`,
       acts: keep ? [{ label: 'Call someone', run: callSomeone }] : [{ label: 'Keep waiting', main: true, run: () => setKeep(true) }, { label: 'Call someone', run: callSomeone }, { label: 'Change time', run: () => openRequest({ trade, need: po.title || '', postId: po.id }) }],
     };
-  else st = { title: near ? `Asking ${near} ${near === 1 ? one : many} near you` : `Asking ${many} near you`, sub: 'We’ll update you here as they answer. You can close getit.', acts: [] };
+  else st = { title: told ? `Asked ${told} ${told === 1 ? one : many} near you` : `Asking ${many} near you`, sub: told && near && near > told ? `The best-fitting ones first; more are asked if they don’t answer. We’ll update you here. You can close getit.` : 'We’ll update you here as they answer. You can close getit.', acts: [] };
   const cancel = () =>
     confirm({
       title: 'Cancel this request?',

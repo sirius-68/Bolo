@@ -1,7 +1,7 @@
 -- Services under a skill, ratings per service, and the getit agent.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(72);
+select plan(79);
 
 insert into auth.users (id, email, raw_user_meta_data) values
   ('a0000000-0000-0000-0000-0000000000a1', 'hira@test.getit', '{"name": "Hira M"}'),
@@ -210,6 +210,24 @@ set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-0000000000a1"}'
 select is((with v as materialized (select public.agent_tick('g5') as j) select o ->> 'name' from v, jsonb_array_elements(v.j -> 'offers') o where o ->> 'id' = v.j ->> 'pick'), 'Paul N', 'for a leak the pick is Paul: his record for leak repair counts more than coming a little sooner');
 select is((with v as materialized (select public.agent_tick('g6') as j) select o ->> 'name' from v, jsonb_array_elements(v.j -> 'offers') o where o ->> 'id' = v.j ->> 'pick'), 'Mary T', 'for a water heater it is Mary: Paul’s 5★ for leaks is not counted for heaters, where he has 3★');
 select is((select (o ->> 'service_rating')::numeric from jsonb_array_elements(public.agent_tick('g6') -> 'offers') o where o ->> 'name' = 'Paul N'), 3.0, 'and the offer shows Paul’s rating for water heaters, not his combined one');
+
+-- ---- any request: the real number of workers asked, and more when nobody answers
+insert into public.posts (id, author_id, kind, title, cat, data, location) values
+  ('p1', auth.uid(), 'request', 'Pipe burst', 'Plumber', '{"type": "place"}', st_setsrid(st_makepoint(9.2411, 4.1531), 4326)::geography);
+select is(public.request_told('p1'), 5, 'the five plumbers with job alerts on were told (Quinn switched them off)');
+select is(public.request_ask_more('p1'), 0, 'nobody more is asked in the first minutes');
+set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-0000000000b1"}';
+select is(public.request_told('p1'), 0, 'the number is for the person who asked');
+select is(public.request_ask_more('p1'), 0, 'and only they can have more workers asked');
+reset role;
+-- (as if two of them had not been reached yet, and six minutes had passed)
+delete from public.notifications where event_key = 'newjob:p1' and recipient_id in ('b0000000-0000-0000-0000-0000000000b4', 'b0000000-0000-0000-0000-0000000000b5');
+update public.notifications set created_at = now() - interval '7 minutes' where event_key = 'newjob:p1';
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-0000000000a1"}';
+select is(public.request_ask_more('p1'), 2, 'six minutes without an offer: the next workers are asked');
+select is(public.request_told('p1'), 5, 'and the count follows');
+select is(public.request_ask_more('p1'), 0, 'not again straight away');
 
 select * from finish();
 rollback;

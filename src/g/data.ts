@@ -206,10 +206,10 @@ export const low = (s: string) => (s ? s.charAt(0).toLowerCase() + s.slice(1) : 
 /* ---------------- requests (asking several workers for a price) ---------------- */
 /** When should they come? The answer also says how urgent it is, so there is nothing more to ask. */
 export const WHENS: [string, string][] = [
-  ['As soon as possible', 'Workers who take urgent jobs are asked first. Urgent jobs often cost more.'],
+  ['As soon as possible', 'It rings on the phones of workers who take urgent jobs. Urgent jobs often cost more.'],
   ['Today', 'The best-fitting workers nearby are asked, and each offer comes to you as it arrives.'],
   ['Tomorrow', 'Workers answer when they can. We tell you about each offer.'],
-  ['This week', 'More workers are asked over time. Offers show here as they arrive.'],
+  ['This week', 'More workers are asked if nobody answers. Offers show here as they arrive.'],
 ];
 /** Where the job happens. */
 export type Where = 'place' | 'shop' | 'online';
