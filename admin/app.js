@@ -1224,7 +1224,7 @@ async function person(id) {
               h('button', { class: 'btn y', onclick: () => writeTo(id, p.name) }, 'Message'),
               h('button', { class: 'btn', onclick: () => contentOf(id, p.name) }, 'What they asked for'),
               // Pro lifts the three free tries of the agent (it can't be bought in the app yet)
-              mod
+              ['owner', 'admin'].includes(state.me.role)
                 ? h('button', { class: 'btn', onclick: () => decide({ title: p.pro_regular ? `Take Pro from ${p.name || 'this account'}?` : `Give ${p.name || 'this account'} Pro?`, text: p.pro_regular ? 'The agent goes back to three free tries for them. They are told.' : 'The getit agent has no limit for them. They are told in their Updates.', ok: p.pro_regular ? 'Take Pro away' : 'Give Pro', run: async () => (await rpc('admin_give_pro', { p_user: id, p_on: !p.pro_regular }), toast(p.pro_regular ? 'Pro is off' : 'Pro is on'), load()) }) }, p.pro_regular ? 'Take Pro away' : 'Give Pro')
                 : null,
               mod

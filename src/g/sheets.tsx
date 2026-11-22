@@ -11,7 +11,7 @@ import { db } from '../data/db';
 import { countryByIso } from '../data/countries';
 import { supabase } from '../lib/supabase';
 import { bump, useLive } from '../logic/live';
-import { P, THREADS, cityLabel, fname, postById } from '../logic/core';
+import { P, THREADS, cityLabel, dayText, fname, postById } from '../logic/core';
 import { Place, gpsCity, searchCities, setCityManually } from '../logic/here';
 import { NCAT_PREF } from '../logic/notify';
 import { pickImage, pickDocument } from '../logic/media';
@@ -452,11 +452,14 @@ function RateSheet({ id, after }: { id: string; after?: (stars: number) => void 
   const [stars, setStars] = useState(0);
   const [tags, setTags] = useState<string[]>([]);
   const [text, setText] = useState('');
+  // a job that named no service, with a worker who lists some: the client can say which one it was
+  const [svc, setSvc] = useState<string | null>(null);
   if (!b) return <H>This job is no longer here</H>;
   const other = trOther(b);
   const p = P(other);
   const f = fname(p.name);
   const iWork = b.worker === 'me';
+  const theirs = !iWork && !b.service ? p.services || [] : [];
   return (
     <View>
       <View style={{ alignItems: 'center' }}>
@@ -466,7 +469,7 @@ function RateSheet({ id, after }: { id: string; after?: (stars: number) => void 
         </T>
         {/* what the stars are for: this job, and (for a worker) this service only */}
         <T testID="rate-for" s={14} lh={1.45} c="muted" center style={{ marginTop: 6, maxWidth: 300 }}>
-          {iWork ? `For “${b.title}”. It shows on ${f}’s profile as a client.` : b.service ? `For “${b.title}”. Your stars count for ${f}’s ${b.service.toLowerCase()} rating.` : `For “${b.title}”.`}
+          {iWork ? `For “${b.title}”. It shows on ${f}’s profile as a client.` : b.service || svc ? `For “${b.title}”. Your stars count for ${f}’s ${(b.service || svc)!.toLowerCase()} rating.` : theirs.length ? `For “${b.title}”. With no service chosen, your stars count for ${f}’s other jobs.` : `For “${b.title}”.`}
         </T>
         <View style={{ flexDirection: 'row', gap: 6, marginTop: 14 }}>
           {[1, 2, 3, 4, 5].map((n) => (
@@ -479,6 +482,12 @@ function RateSheet({ id, after }: { id: string; after?: (stars: number) => void 
           {WORDS[stars]}
         </T>
       </View>
+      {theirs.length ? (
+        <>
+          <Small mt={18}>Which of {f}’s services was it? (optional)</Small>
+          <ServiceChips ids="rate-svc" list={theirs} value={svc} onChange={setSvc} />
+        </>
+      ) : null}
       <Small mt={18}>{stars && stars < 3 ? 'What went wrong?' : 'What went well?'}</Small>
       <Wrap>
         {(iWork ? TAGS_CLIENT : TAGS_WORKER).map((n) => (
@@ -495,7 +504,7 @@ function RateSheet({ id, after }: { id: string; after?: (stars: number) => void 
         style={{ marginTop: 18 }}
         onPress={() => {
           Keyboard.dismiss();
-          submitReview(other, b.id, stars, tags, text);
+          submitReview(other, b.id, stars, tags, text, svc);
           then(() => after?.(stars));
         }}
       />
@@ -606,11 +615,12 @@ function OfferSheet({ o }: { o: { postId?: string; chat?: string } }) {
     const key = when === 'Now' || when === 'In 1 hour' ? 'Today' : when;
     const time = when === 'Now' ? 'now' : when === 'In 1 hour' ? 'in 1 hour' : '';
     if (po) {
-      sendOffer(po.id, String(n), time ? `Today, ${time}` : key, note, null);
+      // saved as a day ("Sun 22 Nov, now"), so it still reads right tomorrow
+      sendOffer(po.id, String(n), time ? dayText('Today', time) : key, note, null);
       return then(() => router.replace(`/wsent?id=${po.id}` as any));
     }
     if (job.trim().length < 3) return toast('Say what the job is, in a few words');
-    sendQuote(who, titleOf(job), String(n), time ? `Today, ${time}` : key, 'worker', svc);
+    sendQuote(who, titleOf(job), String(n), time ? dayText('Today', time) : key, 'worker', svc);
     gsheet.close();
   };
   return (

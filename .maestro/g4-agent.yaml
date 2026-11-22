@@ -1,0 +1,226 @@
+appId: cm.bolo.app
+name: getit, the agent (the client hands a request to getit with a budget, the worker is asked whether the budget works, getit comes back with its pick, the client books it; then press and hold to select)
+---
+# ---- the client hands the request to getit
+- launchApp:
+    clearState: true
+- runFlow: dismiss.yaml
+- extendedWaitUntil:
+    visible:
+      id: "intro-continue"
+    timeout: 40000
+- openLink: "getit://qa?email=${HIRE_EMAIL}&password=${TOUR_PASSWORD}&name=Tour%20Hira"
+- extendedWaitUntil:
+    visible:
+      id: "home-big"
+    timeout: 60000
+- waitForAnimationToEnd
+- runFlow: dismiss.yaml
+- runFlow: toneed.yaml
+- tapOn:
+    id: "need-Plumber"
+- extendedWaitUntil:
+    visible:
+      id: "workers-agent"
+    timeout: 20000
+- waitForAnimationToEnd
+# the rating on the card says what it is for
+- takeScreenshot: a01-workers-with-agent
+- assertVisible:
+    id: "workers-agent-left"
+- tapOn:
+    id: "workers-agent"
+- extendedWaitUntil:
+    visible:
+      id: "req-need"
+    timeout: 10000
+- tapOn:
+    id: "req-need"
+- eraseText: 40
+- inputText: "Agent sink ${RUN.slice(-4)}"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "req-budget"
+    direction: DOWN
+    timeout: 8000
+- tapOn:
+    id: "req-budget"
+- inputText: "5500"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "req-where-online"
+    direction: DOWN
+    timeout: 8000
+- runFlow:
+    when:
+      visible: "Choose your area to continue"
+    commands:
+      - tapOn:
+          id: "req-where-online"
+- takeScreenshot: a02-brief
+- tapOn:
+    id: "req-send"
+- extendedWaitUntil:
+    visible:
+      id: "agent-status"
+    timeout: 60000
+- waitForAnimationToEnd
+- takeScreenshot: a03-agent-asking
+- assertVisible:
+    id: "agent-brief"
+- assertVisible: ".*budget 5,500 FCFA.*"
+# ---- the worker names a price above the budget, and is asked once whether the budget works
+- launchApp:
+    clearState: true
+- runFlow: dismiss.yaml
+- extendedWaitUntil:
+    visible:
+      id: "intro-continue"
+    timeout: 40000
+- openLink: "getit://qa?email=${WORK_EMAIL}&password=${TOUR_PASSWORD}&name=Tour%20Wanda"
+- extendedWaitUntil:
+    visible:
+      id: "home-big"
+    timeout: 60000
+- waitForAnimationToEnd
+- runFlow: dismiss.yaml
+- extendedWaitUntil:
+    visible: "Agent sink ${RUN.slice(-4)}"
+    timeout: 30000
+- tapOn: "Agent sink ${RUN.slice(-4)}"
+- extendedWaitUntil:
+    visible:
+      id: "wreq-price"
+    timeout: 15000
+# the budget is not shown to workers: they name their own price
+- assertVisible: "Not shown. Name your own price"
+- takeScreenshot: a04-worker-sees-request
+- tapOn:
+    id: "wreq-price"
+- extendedWaitUntil:
+    visible:
+      id: "offer-send"
+    timeout: 10000
+- tapOn:
+    id: "offer-price"
+- inputText: "7000"
+- hideKeyboard
+- assertVisible: "Send 7,000 FCFA"
+- tapOn:
+    id: "offer-send"
+- extendedWaitUntil:
+    visible:
+      id: "wsent-back"
+    timeout: 20000
+- tapOn:
+    id: "wsent-back"
+- tapOn:
+    id: "tab-jobs"
+- tapOn: "Offers.*"
+- extendedWaitUntil:
+    visible: "Agent sink ${RUN.slice(-4)}"
+    timeout: 15000
+- tapOn: "Agent sink ${RUN.slice(-4)}"
+- extendedWaitUntil:
+    visible:
+      id: "wreq-ask"
+    timeout: 45000
+- takeScreenshot: a05-can-you-do-it-for
+- assertVisible: "Can you do it for 5,500 FCFA.*"
+- tapOn:
+    id: "wreq-ask-yes"
+- extendedWaitUntil:
+    visible: "Your offer: 5,500 FCFA.*"
+    timeout: 30000
+- takeScreenshot: a06-worker-agreed
+# ---- the client comes back: getit has its pick, with the reason
+- launchApp:
+    clearState: true
+- runFlow: dismiss.yaml
+- extendedWaitUntil:
+    visible:
+      id: "intro-continue"
+    timeout: 40000
+- openLink: "getit://qa?email=${HIRE_EMAIL}&password=${TOUR_PASSWORD}&name=Tour%20Hira"
+- extendedWaitUntil:
+    visible:
+      id: "home-big"
+    timeout: 60000
+- waitForAnimationToEnd
+- runFlow: dismiss.yaml
+- tapOn:
+    id: "tab-jobs"
+- extendedWaitUntil:
+    visible: "Agent sink ${RUN.slice(-4)}"
+    timeout: 30000
+- takeScreenshot: a07-jobs-with-agent-request
+- tapOn: "Agent sink ${RUN.slice(-4)}"
+- extendedWaitUntil:
+    visible:
+      id: "agent-status"
+    timeout: 20000
+# it decides a few minutes after the first offer (sooner when everyone it asked has answered)
+- extendedWaitUntil:
+    visible:
+      id: "agent-act-book"
+    timeout: 300000
+- waitForAnimationToEnd
+- takeScreenshot: a08-agent-pick
+- assertVisible: "Best offer: Tour, 5,500 FCFA"
+- assertVisible: "Agreed to your budget"
+- scrollUntilVisible:
+    element:
+      id: "agent-stop"
+    direction: DOWN
+    timeout: 8000
+- takeScreenshot: a09-what-getit-did
+- scrollUntilVisible:
+    element:
+      id: "agent-act-book"
+    direction: UP
+    timeout: 8000
+- tapOn:
+    id: "agent-act-book"
+- extendedWaitUntil:
+    visible:
+      id: "book-ok"
+    timeout: 10000
+- takeScreenshot: a10-book-the-pick
+- tapOn:
+    id: "book-ok"
+- extendedWaitUntil:
+    visible:
+      id: "tk-back"
+    timeout: 30000
+- waitForAnimationToEnd
+- takeScreenshot: a11-booked
+- tapOn:
+    id: "tk-back"
+# ---- press and hold a row to select it
+- tapOn:
+    id: "tab-inbox"
+- extendedWaitUntil:
+    visible:
+      id: "chat-row-0"
+    timeout: 15000
+- longPressOn:
+    id: "chat-row-0"
+- extendedWaitUntil:
+    visible:
+      id: "sel-count"
+    timeout: 8000
+- takeScreenshot: a12-select-messages
+- tapOn:
+    id: "sel-close"
+- tapOn:
+    id: "tab-jobs"
+- longPressOn: "Agent sink ${RUN.slice(-4)}"
+- extendedWaitUntil:
+    visible:
+      id: "sel-count"
+    timeout: 8000
+- takeScreenshot: a13-select-jobs
+- tapOn:
+    id: "sel-close"

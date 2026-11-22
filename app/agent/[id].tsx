@@ -321,7 +321,7 @@ export default function Agent() {
           ))}
         </View>
         <T s={13} lh={1.45} c="muted" center style={{ marginHorizontal: 28, marginTop: 14 }}>
-          {v.tries.pro ? 'Included in your getit Pro.' : left ? `${left} free ${left === 1 ? 'try' : 'tries'} left after this one. A try counts only when it brings you an offer.` : 'This was your last free try. A try counts only when it brings you an offer.'}
+          {v.tries.pro ? 'Included in your getit Pro.' : left ? `You have ${left} free ${left === 1 ? 'try' : 'tries'} left. A try is used only when getit comes back with an offer.` : 'You have used your 3 free tries. This request carries on as it is.'}
         </T>
         <View style={{ alignItems: 'center', marginTop: 6 }}>
           {active ? <Link testID="agent-stop" title="Stop, I’ll choose myself" color="text" h={44} onPress={stop} /> : null}

@@ -452,16 +452,18 @@ export function resumeSharing() {
   const b = db.BOOKINGS.find((x) => x.worker === 'me' && x.state === 'onway');
   if (b) void startSharing(b, true);
 }
-export function submitReview(target: string, bid: string | null, stars: number, tags: string[], text: string) {
+/** `service`: which of the worker's services the job was, said by the client when the job itself named none. */
+export function submitReview(target: string, bid: string | null, stars: number, tags: string[], text: string, service?: string | null) {
   const b = bid ? bk(bid) : null;
   if (!b) return toast('You can review someone after a job with them is confirmed');
   // the list on a profile is about someone's work: a rating I give a client is not added to it
-  if (b.worker === target) (db.REVIEWS[target] = db.REVIEWS[target] || []).unshift({ stars, tags, text, name: db.user.name || 'You', photo: db.user.avatar || 'img/me', time: 'now', service: b.service, what: b.title });
+  if (b.worker === target) (db.REVIEWS[target] = db.REVIEWS[target] || []).unshift({ stars, tags, text, name: db.user.name || 'You', photo: db.user.avatar || 'img/me', time: 'now', service: b.service || service || undefined, what: b.title });
+  if (!b.service && service && b.worker === target) b.service = service;
   b.reviewed = 1;
   markReviewed(b.id);
   bump();
   (async () => {
-    const { error } = await supabase.from('reviews').insert({ booking_id: b.id, reviewee_id: R(target), stars, tags, body: text.trim(), what: b.title });
+    const { error } = await supabase.from('reviews').insert({ booking_id: b.id, reviewee_id: R(target), stars, tags, body: text.trim(), what: b.title, ...(!b.service && service && b.worker === target ? { service } : {}) });
     if (error) {
       b.reviewed = undefined;
       db.REVIEWS[target] = (db.REVIEWS[target] || []).slice(1);

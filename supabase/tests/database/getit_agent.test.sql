@@ -1,7 +1,7 @@
 -- Services under a skill, ratings per service, and the getit agent.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(61);
+select plan(72);
 
 insert into auth.users (id, email, raw_user_meta_data) values
   ('a0000000-0000-0000-0000-0000000000a1', 'hira@test.getit', '{"name": "Hira M"}'),
@@ -117,6 +117,22 @@ select is((select rating from public.service_ratings('b0000000-0000-0000-0000-00
 select is((select jobs from public.service_ratings('b0000000-0000-0000-0000-0000000000b1') where service = 'Leak repair'), 1, 'from one job');
 select is((select count(*)::int from public.service_ratings('b0000000-0000-0000-0000-0000000000b1') where service = 'Water heater'), 0, 'nothing is shown for a service he was never rated or booked for');
 
+-- ---- a job booked by call names no service: the client can say which one it was when rating
+insert into public.bookings (id, worker_id, client_id, title, price, amount, state) values
+  ('e0000000-0000-0000-0000-0000000000e1', 'b0000000-0000-0000-0000-0000000000b1', 'a0000000-0000-0000-0000-0000000000a1', 'Heater is cold', 'XAF 20,000', 20000, 'confirmed'),
+  ('e0000000-0000-0000-0000-0000000000e2', 'b0000000-0000-0000-0000-0000000000b1', 'a0000000-0000-0000-0000-0000000000a1', 'Something else', 'XAF 3,000', 3000, 'confirmed');
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-0000000000a1"}';
+insert into public.reviews (booking_id, reviewee_id, stars, body, what, service) values ('e0000000-0000-0000-0000-0000000000e1', 'b0000000-0000-0000-0000-0000000000b1', 3, '', 'Heater is cold', 'water heater');
+insert into public.reviews (booking_id, reviewee_id, stars, body, what, service) values ('e0000000-0000-0000-0000-0000000000e2', 'b0000000-0000-0000-0000-0000000000b1', 4, '', 'Something else', 'Braids and twists');
+reset role;
+select is((select service from public.reviews where booking_id = 'e0000000-0000-0000-0000-0000000000e1'), 'Water heater', 'the stars count for the service the client named, as the worker lists it');
+select is((select service from public.bookings where id = 'e0000000-0000-0000-0000-0000000000e1'), 'Water heater', 'and the job carries it too');
+select is((select service from public.reviews where booking_id = 'e0000000-0000-0000-0000-0000000000e2'), null, 'a service the worker doesn’t list is not taken');
+select is((select rating from public.service_ratings('b0000000-0000-0000-0000-0000000000b1') where service = 'Leak repair'), 5.0, 'Paul: 5★ for leak repair');
+select is((select rating from public.service_ratings('b0000000-0000-0000-0000-0000000000b1') where service = 'Water heater'), 3.0, '3★ for water heaters');
+select is((select rating from public.profile_stats where id = 'b0000000-0000-0000-0000-0000000000b1'), 4.0, 'and 4.0 for all of it together: the one number hides the difference, the lines by service show it');
+
 -- ---- "book it for me": only within the budget and in time, once the clock says so
 set local role authenticated;
 set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-0000000000a1"}';
@@ -174,6 +190,26 @@ update public.profiles set pro_regular = true where id = 'a0000000-0000-0000-000
 set local role authenticated;
 set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-0000000000a1"}';
 select is(public.agent_start('g4', null, 'today', false) ->> 'state', 'asking', 'with Pro it starts');
+
+-- ---- what if a worker has several services? Paul: 5★ for leak repair, 3★ for water heaters. Mary is new.
+-- A leak: Paul is the pick, though Mary can come sooner (both are in time for "today").
+-- A water heater: Mary is the pick. Paul's stars for leaks don't count for heaters.
+insert into public.posts (id, author_id, kind, title, cat, data) values
+  ('g5', auth.uid(), 'request', 'Pipe leaks', 'Plumber', '{"type": "place", "agent": "1", "service": "Leak repair"}'),
+  ('g6', auth.uid(), 'request', 'No hot water', 'Plumber', '{"type": "place", "agent": "1", "service": "Water heater"}');
+select is(public.agent_start('g5', null, 'today', false) ->> 'state', 'asking', '(the agent takes the leak)');
+select is(public.agent_start('g6', null, 'today', false) ->> 'state', 'asking', '(and the water heater)');
+set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-0000000000b3"}';
+insert into public.applications (post_id, price, when_text) values ('g5', 'XAF 8,000', to_char((now() at time zone 'UTC') + interval '1 hour', 'Dy FMDD Mon') || ', now'), ('g6', 'XAF 70,000', to_char((now() at time zone 'UTC') + interval '1 hour', 'Dy FMDD Mon') || ', now');
+set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-0000000000b1"}';
+insert into public.applications (post_id, price, when_text) values ('g5', 'XAF 8,000', to_char((now() at time zone 'UTC') + interval '1 hour', 'Dy FMDD Mon')), ('g6', 'XAF 70,000', to_char((now() at time zone 'UTC') + interval '1 hour', 'Dy FMDD Mon'));
+reset role;
+update public.applications set created_at = now() - interval '10 minutes' where post_id in ('g5', 'g6');
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-0000000000a1"}';
+select is((with v as materialized (select public.agent_tick('g5') as j) select o ->> 'name' from v, jsonb_array_elements(v.j -> 'offers') o where o ->> 'id' = v.j ->> 'pick'), 'Paul N', 'for a leak the pick is Paul: his record for leak repair counts more than coming a little sooner');
+select is((with v as materialized (select public.agent_tick('g6') as j) select o ->> 'name' from v, jsonb_array_elements(v.j -> 'offers') o where o ->> 'id' = v.j ->> 'pick'), 'Mary T', 'for a water heater it is Mary: Paul’s 5★ for leaks is not counted for heaters, where he has 3★');
+select is((select (o ->> 'service_rating')::numeric from jsonb_array_elements(public.agent_tick('g6') -> 'offers') o where o ->> 'name' = 'Paul N'), 3.0, 'and the offer shows Paul’s rating for water heaters, not his combined one');
 
 select * from finish();
 rollback;

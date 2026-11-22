@@ -129,7 +129,15 @@ export function whyLocal(v: AgentView, o: AgentOffer): string {
   else if (others.some((x) => !x.fit) && o.fit) bits.push('and can come in time');
   if (v.service && o.service_reviews > 0) bits.push(`rated ${o.service_rating?.toFixed(1)} ★ for ${v.service.toLowerCase()}`);
   const cheaper = others.filter((x) => x.amount < o.amount);
-  const tail = !others.length ? ' It is the only offer so far.' : cheaper.length && o.fit ? ` ${cheaper.length === 1 ? 'One offer is' : `${cheaper.length} offers are`} cheaper, but ${cheaper.every((x) => !x.fit) ? 'not in time or not within budget' : 'with a weaker record'}.` : ` Best of ${v.offers.length} offers.`;
+  // why a cheaper offer wasn't picked: it comes too late, or its record for this kind of job is weaker or shorter
+  const late = cheaper.filter((x) => !x.fit).length;
+  const weaker = cheaper.length - late;
+  const n = (k: number) => (k === 1 ? 'one' : String(k));
+  const tail = !others.length
+    ? ' It is the only offer so far.'
+    : cheaper.length && o.fit
+      ? ` ${[weaker ? `${n(weaker)} cheaper ${weaker === 1 ? 'offer has' : 'offers have'} a weaker or shorter record` : '', late ? `${n(late)} cheaper ${late === 1 ? 'offer' : 'offers'} can’t come in time` : ''].filter(Boolean).join(', and ')}.`.replace(/^ (.)/, (m, c) => ' ' + c.toUpperCase())
+      : ` Best of ${v.offers.length} offers.`;
   return `${first}: ${bits.join(', ')}.${tail}`;
 }
 const WHY: Record<string, string> = {};

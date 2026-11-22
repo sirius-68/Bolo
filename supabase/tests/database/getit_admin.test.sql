@@ -1,7 +1,7 @@
 -- The admin panel's view of getit: requests, the prices sent for them, jobs, workers.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(26);
+select plan(28);
 
 insert into auth.users (id, email, raw_user_meta_data) values
   ('a0000000-0000-0000-0000-0000000000a1', 'ada@test.getit', '{"name": "Ada"}'),
@@ -62,6 +62,12 @@ select is(public.admin_person('c0000000-0000-0000-0000-0000000000c3') -> 'jobs' 
 -- Pro, given by the team: it lifts the agent's free tries, and the person is told
 set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-0000000000b2"}';
 select throws_ok($$ select public.admin_give_pro('b0000000-0000-0000-0000-0000000000b2', true) $$, null, null, 'nobody gives themselves Pro');
+set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-0000000000a1"}';
+select throws_ok($$ select public.admin_give_pro('b0000000-0000-0000-0000-0000000000b2', true) $$, '42501', null, 'a moderator can’t either: plans are for the owner and admins');
+reset role;
+select is((select pro_regular from public.profiles where id = 'b0000000-0000-0000-0000-0000000000b2'), false, '(nothing changed)');
+update public.admin_users set role = 'admin' where user_id = 'a0000000-0000-0000-0000-0000000000a1';
+set local role authenticated;
 set local request.jwt.claims = '{"sub": "a0000000-0000-0000-0000-0000000000a1"}';
 select lives_ok($$ select public.admin_give_pro('b0000000-0000-0000-0000-0000000000b2', true) $$, 'an admin gives Hira Pro');
 reset role;

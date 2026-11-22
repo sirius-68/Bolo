@@ -30,6 +30,9 @@ export default function WRequest() {
     if (id && !postById(id)) void loadPost(id);
     // fresh on opening: an offer of mine may have a question waiting ("can you do it for 5,000?")
     else void refreshPosts();
+    // while it is open: the answer to my offer, or the agent's question, shows without leaving the screen
+    const timer = setInterval(() => db.myOffers[id] && db.myOffers[id].state !== 'acc' && void refreshPosts(), 12000);
+    return () => clearInterval(timer);
   }, [id]);
   if (!po)
     return (

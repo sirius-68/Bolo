@@ -8,6 +8,9 @@
 --    private.when_rank now reads the day, against the day it was on the asker's phone when the offer was made
 --    (the request carries their clock's distance from UTC, data.tz, in minutes). The two functions that use
 --    it are the same as in 0025 except for that call.
+--    The pick is also ordered a little differently: among offers that are in time, the record for this kind
+--    of job (in half stars) comes first, then the price, and only then who can come soonest. Before, "now"
+--    beat "this afternoon" even when the client had asked for "today".
 -- 3. "Book the best offer for me" needs a budget: without one the agent would book at any price. With no
 --    budget it always asks first.
 -- Safe to run more than once.
@@ -174,9 +177,12 @@ begin
    where x.post_id = p_post and x.stage not in ('withdrawn', 'declined')
    order by ((r.budget is null or private.amount_of(x.price) <= r.budget) and private.when_rank(x.when_text, x.created_at, tz) <= private.want_rank(r.want)) desc,
             (r.budget is null or private.amount_of(x.price) <= r.budget) desc,
-            private.when_rank(x.when_text, x.created_at, tz),
-            q.score desc,
+            -- how much later than wanted (everyone in time counts the same: "today" was asked, so 2 pm doesn't beat 4 pm)
+            greatest(private.when_rank(x.when_text, x.created_at, tz), private.want_rank(r.want)),
+            -- their record, in half stars: a 4.6 doesn't beat a 4.5 that costs half as much
+            round(q.score * 2) desc,
             private.amount_of(x.price),
+            private.when_rank(x.when_text, x.created_at, tz),
             x.created_at
    limit 1;
   if best.id is null then return; end if;
@@ -261,3 +267,30 @@ begin
 end $$;
 revoke all on function public.admin_give_pro(uuid, boolean) from public, anon;
 grant execute on function public.admin_give_pro(uuid, boolean) to authenticated;
+
+-- ================================================================ a rating for a job that named no service
+-- A job booked by call or chat may carry no service. The client who rates it can say which of the worker's
+-- services it was, so the stars count for that service and not for "other jobs". Only a service the worker
+-- lists is taken; a job that already has a service keeps it.
+create or replace function public.review_context() returns trigger language plpgsql security definer set search_path = public as $$
+declare b bookings; said text := nullif(trim(coalesce(new.service, '')), ''); listed text;
+begin
+  select * into b from bookings where id = new.booking_id;
+  if not found then
+    new.service := null;
+    return new;
+  end if;
+  new.as_worker := (b.worker_id = new.reviewee_id);
+  if b.service is not null then
+    new.service := b.service;
+  elsif new.as_worker and said is not null then
+    select s ->> 'skill' into listed
+      from profiles p, jsonb_array_elements(case when jsonb_typeof(p.services) = 'array' then p.services else '[]'::jsonb end) s
+     where p.id = b.worker_id and lower(s ->> 'skill') = lower(said) limit 1;
+    new.service := listed;
+    if listed is not null then update bookings set service = listed where id = b.id and service is null; end if;
+  else
+    new.service := null;
+  end if;
+  return new;
+end $$;

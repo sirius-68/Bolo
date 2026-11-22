@@ -281,6 +281,57 @@ if (ready) {
     expect(st, 'no stats row for Ben');
   });
 
+  // ---- the getit agent: a request with a budget, a price above it, one question, the pick, the booking
+  await step('the agent: a price above the budget is asked about once; a yes makes it the pick; ratings are per service', async () => {
+    const day = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    const p = must(await A.sb.from('posts').insert({ author_id: A.id, business_id: null, kind: 'request', title: 'E2E agent leak', body: '', cat: 'Plumber', area: 'Online', urgent: true, photos: [], data: { type: 'online', when: day, agent: '1', service: 'Leak repair', tz: 60 } }).select('id').single());
+    const left = must(await A.sb.rpc('agent_left'));
+    expect(left.free === 3, 'free tries are not 3');
+    const v0 = must(await A.sb.rpc('agent_start', { p_post: p.id, p_budget: 5500, p_want: 'now', p_auto: false }), 'agent_start');
+    expect(v0.state === 'asking', 'the agent did not start: ' + v0.state);
+    const peek = must(await B.sb.rpc('agent_tick', { p_post: p.id }));
+    expect(peek === null, 'someone else can read the agent’s notes');
+    // Ben names 7,000: above the budget, so he is asked once whether 5,500 works
+    const off = must(await B.sb.from('applications').insert({ post_id: p.id, price: 'XAF 7,000', when_text: `${day}, now`, msg: '' }).select('id').single());
+    const asked = await eventually(async () => {
+      const a = must(await B.sb.from('applications').select('counter,counter_state').eq('id', off.id).maybeSingle());
+      return a?.counter_state === 'asked' ? a : null;
+    });
+    expect(asked && asked.counter === 5500, 'Ben was not asked whether the budget works');
+    const cheat = await B.sb.from('applications').update({ counter_state: 'yes' }).eq('id', off.id);
+    expect(cheat.error, 'a worker could mark the agent’s question as answered without answering it');
+    const wrong = await A.sb.rpc('agent_answer', { p_application: off.id, p_yes: true });
+    expect(wrong.error, 'the client could answer for the worker');
+    must(await B.sb.rpc('agent_answer', { p_application: off.id, p_yes: true }), 'agent_answer');
+    // everyone it asked has answered, or the clock says so: it comes back with its pick
+    const v = await eventually(async () => {
+      const x = must(await A.sb.rpc('agent_tick', { p_post: p.id }));
+      return x?.state === 'pick' ? x : null;
+    }, 240000);
+    expect(v, 'the agent never came back with a pick');
+    const o = v.offers.find((x) => x.id === v.pick);
+    expect(o && o.amount === 5500 && o.fit === true, 'the pick is not Ben at 5,500, within budget and in time');
+    expect(v.log.some((l) => /^Asked /.test(l.t)) && v.log.some((l) => /agreed to/.test(l.t)), 'the steps are not in “What getit did”');
+    expect(must(await A.sb.rpc('agent_left')).used === 1, 'a run that brought an offer was not counted');
+    const bid = must(await A.sb.rpc('accept_application', { p_application: off.id }), 'book the pick');
+    const done = must(await A.sb.rpc('agent_tick', { p_post: p.id }));
+    expect(done.state === 'booked', 'after booking the agent says ' + done.state);
+    const b = must(await A.sb.from('booking_cards').select('service,price').eq('id', bid).maybeSingle());
+    expect(b?.service === 'Leak repair', 'the job does not carry its service');
+    const twice = await A.sb.rpc('accept_application', { p_application: off.id });
+    expect(twice.error, 'a request was booked twice');
+    // the job is done and rated: the stars count for that service, and only as a worker
+    for (const [who, st, eta] of [[B, 'onway', 5], [B, 'working', null], [B, 'done', null], [A, 'confirmed', null]]) must(await who.sb.rpc('booking_step', { p_booking: bid, p_state: st, p_eta: eta }), st);
+    must(await A.sb.from('reviews').insert({ booking_id: bid, reviewee_id: B.id, stars: 4, tags: [], body: '', what: 'E2E agent leak' }));
+    must(await B.sb.from('reviews').insert({ booking_id: bid, reviewee_id: A.id, stars: 1, tags: [], body: '', what: 'E2E agent leak' }));
+    const rows = must(await A.sb.rpc('service_ratings', { p_user: B.id }));
+    const leak = rows.find((r) => r.service === 'Leak repair');
+    expect(leak && Number(leak.rating) === 4 && leak.reviews === 1, 'no rating line for Leak repair');
+    const ana = must(await B.sb.from('profile_cards').select('rating,reviews,client_rating,client_reviews').eq('id', A.id).maybeSingle());
+    expect(!ana.reviews && Number(ana.client_rating) === 1, 'a rating as a client is mixed into the work rating');
+    return `pick ${o.amount} FCFA · ${rows.length} rating lines for Ben`;
+  });
+
   // ---- calls
   await step('several taps on call are one call; missed calls are one notification that counts up', async () => {
     const [a, b, c] = await Promise.all([1, 2, 3].map(() => A.sb.rpc('start_call', { p_conversation: cid, p_kind: 'voice' })));
